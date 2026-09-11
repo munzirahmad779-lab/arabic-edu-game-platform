@@ -40,14 +40,26 @@ const { data: classes, error } = await supabase
   .order("created_at", { ascending: false });
 
 if (error) {
-  console.error("CLASSES_QUERY_ERROR", {
-    message: error.message,
-    code: error.code,
-    details: error.details,
-    hint: error.hint,
-  });
+  return (
+    <div className="space-y-4" dir="rtl">
+      <h1 className="text-2xl font-bold">خطأ في تحميل الفصول</h1>
 
-  throw new Error("تعذر تحميل الفصول الدراسية.");
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+        <p>
+          <strong>message:</strong> {error.message || "(empty)"}
+        </p>
+        <p>
+          <strong>code:</strong> {error.code || "(empty)"}
+        </p>
+        <p>
+          <strong>details:</strong> {error.details || "(empty)"}
+        </p>
+        <p>
+          <strong>hint:</strong> {error.hint || "(empty)"}
+        </p>
+      </div>
+    </div>
+  );
 }
 
   const errorMessage = getErrorMessage(searchParams.error);
