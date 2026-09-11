@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Arabic-first base styles.
+ * The document is set to RTL by default in layout.tsx (dir="rtl", lang="ar")
+ * because the product is Arabic-first, not an app that happens to support
+ * Arabic. Latin-script fragments (numbers, codes, English UI strings used
+ * during early development) still render correctly inside an RTL document —
+ * the browser's own bidi algorithm handles that — so no extra bidi hacks are
+ * added here for Phase 1.
+ */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-neutral-900 antialiased;
+}
+
+/* Arabic text should always use the Arabic-safe font stack, regardless of
+   which element it's in — this is deliberately not scoped to [lang="ar"]
+   only, since MVP content is Arabic-first throughout. */
+body {
+  font-family: theme("fontFamily.arabic");
+}
