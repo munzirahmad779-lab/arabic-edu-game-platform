@@ -29,15 +29,26 @@ export default async function ClassesPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: classes, error } = await supabase
-    .from("classes")
-    .select("id, name, created_at, updated_at")
-    .eq("teacher_id", user!.id)
-    .order("created_at", { ascending: false });
+if (!user) {
+  throw new Error("User is not authenticated.");
+}
 
-  if (error) {
-    throw new Error("تعذر تحميل الفصول الدراسية.");
-  }
+const { data: classes, error } = await supabase
+  .from("classes")
+  .select("id, name, created_at, updated_at")
+  .eq("teacher_id", user.id)
+  .order("created_at", { ascending: false });
+
+if (error) {
+  console.error("CLASSES_QUERY_ERROR", {
+    message: error.message,
+    code: error.code,
+    details: error.details,
+    hint: error.hint,
+  });
+
+  throw new Error("تعذر تحميل الفصول الدراسية.");
+}
 
   const errorMessage = getErrorMessage(searchParams.error);
 
