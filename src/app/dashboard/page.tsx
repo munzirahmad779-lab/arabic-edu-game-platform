@@ -21,10 +21,13 @@ export default function DashboardPage() {
           </p>
         </Link>
 
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 opacity-60 shadow-sm">
+        <Link
+          href="/dashboard/question-banks"
+          className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 hover:shadow"
+        >
           <h2 className="font-semibold">بنك الأسئلة</h2>
-          <p className="mt-2 text-sm text-neutral-600">سيتم تفعيله في المرحلة التالية.</p>
-        </div>
+          <p className="mt-2 text-sm text-neutral-600">إنشاء بنوك الأسئلة واستيرادها من Excel.</p>
+        </Link>
 
         <div className="rounded-lg border border-neutral-200 bg-white p-5 opacity-60 shadow-sm">
           <h2 className="font-semibold">بناء الألعاب</h2>

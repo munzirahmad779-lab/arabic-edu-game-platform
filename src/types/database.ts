@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hand-written Supabase Database type, kept in sync with
  * supabase/migrations/0001_init_schema.sql.
  *
@@ -25,6 +25,9 @@ export type RankingVisibility = "full" | "hidden" | "self_only";
 export type RoomState = "waiting" | "running" | "ended" | "locked";
 export type ConnectionState = "connected" | "disconnected";
 export type ProfileRole = "teacher" | "admin";
+export type QuestionDifficulty = "easy" | "medium" | "hard";
+export type QuestionOptionKey = "A" | "B" | "C" | "D";
+export type QuestionMediaType = "audio" | "image" | "video";
 
 /**
  * Every table's `Relationships` array below matches postgrest-js's
@@ -32,7 +35,7 @@ export type ProfileRole = "teacher" | "admin";
  *   { foreignKeyName: string; columns: string[]; isOneToOne?: boolean;
  *     referencedRelation: string; referencedColumns: string[] }
  * It is intentionally written as inline literal objects rather than typed
- * against a shared interface — typing them against a widened `string`-based
+ * against a shared interface â€” typing them against a widened `string`-based
  * interface would lose the literal string types postgrest-js needs to
  * resolve embedded-resource (join) queries correctly.
  */
@@ -174,6 +177,10 @@ export interface Database {
           explanation: string | null;
           tags: string[];
           media_url: string | null;
+          question_bank_id: string | null;
+          question_text: string | null;
+          difficulty: QuestionDifficulty | null;
+          correct_option_key: QuestionOptionKey | null;
           created_at: string;
           updated_at: string;
         };
@@ -186,6 +193,10 @@ export interface Database {
           explanation?: string | null;
           tags?: string[];
           media_url?: string | null;
+          question_bank_id?: string | null;
+          question_text?: string | null;
+          difficulty?: QuestionDifficulty | null;
+          correct_option_key?: QuestionOptionKey | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -198,6 +209,10 @@ export interface Database {
           explanation?: string | null;
           tags?: string[];
           media_url?: string | null;
+          question_bank_id?: string | null;
+          question_text?: string | null;
+          difficulty?: QuestionDifficulty | null;
+          correct_option_key?: QuestionOptionKey | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -214,6 +229,188 @@ export interface Database {
             columns: ["category_id"];
             isOneToOne: false;
             referencedRelation: "question_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "questions_question_bank_id_fkey";
+            columns: ["question_bank_id"];
+            isOneToOne: false;
+            referencedRelation: "question_banks";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      question_banks: {
+        Row: {
+          id: string;
+          teacher_id: string;
+          name: string;
+          description: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          teacher_id: string;
+          name: string;
+          description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          teacher_id?: string;
+          name?: string;
+          description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_banks_teacher_id_fkey";
+            columns: ["teacher_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      question_options: {
+        Row: {
+          id: string;
+          question_id: string;
+          option_key: QuestionOptionKey;
+          option_text: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          question_id: string;
+          option_key: QuestionOptionKey;
+          option_text: string;
+          position: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          question_id?: string;
+          option_key?: QuestionOptionKey;
+          option_text?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_options_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      question_media: {
+        Row: {
+          id: string;
+          question_id: string;
+          media_type: QuestionMediaType;
+          expected_filename: string;
+          storage_path: string | null;
+          original_filename: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          max_play_count: number | null;
+          attached_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          question_id: string;
+          media_type: QuestionMediaType;
+          expected_filename: string;
+          storage_path?: string | null;
+          original_filename?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          max_play_count?: number | null;
+          attached_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          question_id?: string;
+          media_type?: QuestionMediaType;
+          expected_filename?: string;
+          storage_path?: string | null;
+          original_filename?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          max_play_count?: number | null;
+          attached_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_media_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      question_bank_shares: {
+        Row: {
+          id: string;
+          question_bank_id: string;
+          owner_id: string;
+          shared_with_user_id: string;
+          status: "active" | "revoked";
+          created_at: string;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          question_bank_id: string;
+          owner_id: string;
+          shared_with_user_id: string;
+          status?: "active" | "revoked";
+          created_at?: string;
+          revoked_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          question_bank_id?: string;
+          owner_id?: string;
+          shared_with_user_id?: string;
+          status?: "active" | "revoked";
+          created_at?: string;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_shares_question_bank_id_fkey";
+            columns: ["question_bank_id"];
+            isOneToOne: false;
+            referencedRelation: "question_banks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_bank_shares_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_bank_shares_shared_with_user_id_fkey";
+            columns: ["shared_with_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           }
         ];
@@ -483,7 +680,33 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      import_question_bank_rows: {
+        Args: {
+          p_question_bank_id: string;
+          p_rows: Json;
+        };
+        Returns: number;
+      };
+      update_question_bank_question: {
+        Args: {
+          p_question_id: string;
+          p_category_id: string;
+          p_question_text: string;
+          p_difficulty: string;
+          p_correct_option_key: string;
+          p_options: Json;
+        };
+        Returns: boolean;
+      };
+      delete_question_bank_question: {
+        Args: {
+          p_question_id: string;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
   };
 }
+
