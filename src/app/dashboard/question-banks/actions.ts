@@ -89,6 +89,16 @@ export async function deleteQuestionCategory(formData: FormData) {
     redirectCategoryError("invalid");
   }
 
+  const { count, error: countError } = await supabase
+    .from("questions")
+    .select("id", { count: "exact", head: true })
+    .eq("teacher_id", user.id)
+    .eq("category_id", id)
+    .not("question_bank_id", "is", null);
+
+  if (countError) redirectCategoryError("delete_failed");
+  if ((count ?? 0) > 0) redirectCategoryError("in_use");
+
   const { error } = await supabase
     .from("question_categories")
     .delete()

@@ -281,24 +281,24 @@ export interface Database {
           question_id: string;
           option_key: QuestionOptionKey;
           option_text: string;
-          position: number;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           question_id: string;
           option_key: QuestionOptionKey;
           option_text: string;
-          position: number;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           question_id?: string;
           option_key?: QuestionOptionKey;
           option_text?: string;
-          position?: number;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {

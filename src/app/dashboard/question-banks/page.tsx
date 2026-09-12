@@ -7,6 +7,7 @@ import {
   updateQuestionCategory,
 } from "./actions";
 import { QuestionBankImportForm } from "./import-form";
+import { QuestionMediaManager } from "./media-manager";
 import { QuestionEditor } from "./question-editor";
 
 type SearchParams = { error?: string; category_error?: string };
@@ -36,6 +37,8 @@ function categoryErrorMessage(error?: string) {
       return "Topik gagal diperbarui.";
     case "delete_failed":
       return "Topik gagal dihapus.";
+    case "in_use":
+      return "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal.";
     default:
       return null;
   }
@@ -54,6 +57,19 @@ type OptionRow = {
   question_id: string;
   option_key: "A" | "B" | "C" | "D";
   option_text: string;
+};
+
+type MediaRow = {
+  id: string;
+  question_id: string;
+  media_type: "audio" | "image" | "video";
+  expected_filename: string;
+  storage_path: string | null;
+  original_filename: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  max_play_count: number | null;
+  attached_at: string | null;
 };
 
 const difficultyLabel: Record<NonNullable<QuestionRow["difficulty"]>, string> = {
@@ -113,18 +129,31 @@ export default async function QuestionBanksPage({
   const questionIds = questionRows.map((question) => question.id);
 
   let options: OptionRow[] = [];
+  let media: MediaRow[] = [];
   if (questionIds.length > 0) {
-    const { data, error } = await supabase
-      .from("question_options")
-      .select("question_id, option_key, option_text")
-      .in("question_id", questionIds)
-      .order("option_key", { ascending: true });
+    const [{ data: optionData, error: optionsError }, { data: mediaData, error: mediaError }] =
+      await Promise.all([
+        supabase
+          .from("question_options")
+          .select("question_id, option_key, option_text")
+          .in("question_id", questionIds)
+          .order("option_key", { ascending: true }),
+        supabase
+          .from("question_media")
+          .select(
+            "id, question_id, media_type, expected_filename, storage_path, original_filename, mime_type, size_bytes, max_play_count, attached_at",
+          )
+          .in("question_id", questionIds)
+          .order("created_at", { ascending: true }),
+      ]);
 
-    if (error) {
+    if (optionsError) {
       throw new Error("Gagal memuat pilihan jawaban.");
     }
+    if (mediaError) throw new Error("Gagal memuat media soal.");
 
-    options = (data ?? []) as OptionRow[];
+    options = (optionData ?? []) as OptionRow[];
+    media = (mediaData ?? []) as MediaRow[];
   }
 
   const categoryMap = new Map(
@@ -136,6 +165,13 @@ export default async function QuestionBanksPage({
     const current = optionsByQuestion.get(option.question_id) ?? [];
     current.push(option);
     optionsByQuestion.set(option.question_id, current);
+  }
+
+  const mediaByQuestion = new Map<string, MediaRow[]>();
+  for (const item of media) {
+    const current = mediaByQuestion.get(item.question_id) ?? [];
+    current.push(item);
+    mediaByQuestion.set(item.question_id, current);
   }
 
   const questionsByBank = new Map<string, QuestionRow[]>();
@@ -339,10 +375,15 @@ export default async function QuestionBanksPage({
 
                 <div className="mt-5 border-t border-neutral-200 pt-5">
                   <h4 className="font-semibold">استيراد الأسئلة من Excel</h4>
-                  <p className="mt-1 mb-4 text-sm text-neutral-600">
-                    تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد.
-                  </p>
-                  <QuestionBankImportForm questionBankId={bank.id} />
+                   <p className="mt-1 mb-4 text-sm text-neutral-600">
+                     تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد.
+                   </p>
+                   <p className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-900">
+                     تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط؛ لا تُرفع الملفات الثنائية
+                     مع الاستيراد. يظل السؤال صالحًا، ثم ارفع الملف من بطاقة السؤال لاحقًا بالاسم المطابق
+                     تمامًا لعمود «Nama Media».
+                   </p>
+                   <QuestionBankImportForm questionBankId={bank.id} />
                 </div>
 
                 <div className="mt-6 border-t border-neutral-200 pt-5">
@@ -412,6 +453,10 @@ export default async function QuestionBanksPage({
                                 );
                               })}
                             </div>
+                            <QuestionMediaManager
+                              questionId={question.id}
+                              media={mediaByQuestion.get(question.id) ?? []}
+                            />
                             <QuestionEditor
                               question={{
                                 id: question.id,
@@ -428,6 +473,7 @@ export default async function QuestionBanksPage({
                                 id: category.id,
                                 name: category.name,
                               }))}
+                              mediaCount={(mediaByQuestion.get(question.id) ?? []).length}
                             />
                           </article>
                         );

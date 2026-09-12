@@ -24,10 +24,12 @@ export function QuestionEditor({
   question,
   options,
   categories,
+  mediaCount,
 }: {
   question: Question;
   options: Option[];
   categories: { id: string; name: string }[];
+  mediaCount: number;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -90,14 +92,20 @@ export function QuestionEditor({
         >
           تعديل السؤال
         </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-        >
-          حذف السؤال
-        </button>
+        {mediaCount > 0 ? (
+          <span className="text-sm text-amber-700">
+            احذف الوسائط المرفقة أولًا قبل حذف السؤال.
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            حذف السؤال
+          </button>
+        )}
         {message ? (
           <span role="status" className="text-sm text-green-700">
             {message}
