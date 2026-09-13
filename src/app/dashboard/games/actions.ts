@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { randomInt } from "node:crypto";
 
@@ -147,16 +147,6 @@ export async function createGame(formData: FormData) {
   revalidatePath("/dashboard");
   redirect("/dashboard/games");
 }
-function generateRoomCode(length = 6) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-
-  for (let index = 0; index < length; index += 1) {
-    code += alphabet[randomInt(0, alphabet.length)];
-  }
-
-  return code;
-}
 
 export async function startRoom(formData: FormData) {
   const supabase = await createClient();
@@ -175,178 +165,41 @@ export async function startRoom(formData: FormData) {
     redirect("/dashboard/games?error=invalid_room");
   }
 
-  const { data: roomSource, error: roomError } = await supabase
+  const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, game_id, class_id, state")
+    .select("id, state, game_id")
     .eq("id", roomId)
     .eq("teacher_id", user.id)
     .maybeSingle();
 
-  if (roomError || !roomSource || roomSource.state !== "waiting" || !roomSource.game_id) {
+  if (
+    roomError ||
+    !room ||
+    room.state !== "waiting" ||
+    !room.game_id
+  ) {
     redirect("/dashboard/games?error=invalid_room");
   }
 
-  const { data: game, error: gameError } = await supabase
-    .from("games")
-    .select(
-      "id, name, class_id, game_type, mode, duration_seconds, ranking_visibility",
-    )
-    .eq("id", roomSource.game_id)
+  const { error: updateError } = await supabase
+    .from("rooms")
+    .update({
+      state: "running",
+      started_at: new Date().toISOString(),
+    })
+    .eq("id", room.id)
     .eq("teacher_id", user.id)
-    .maybeSingle();
+    .eq("state", "waiting");
 
-  if (gameError || !game) {
-    redirect("/dashboard/games?error=invalid_game");
-  }
-
-  const { data: gameQuestions, error: gameQuestionsError } = await supabase
-    .from("game_questions")
-    .select("id, question_id, position, explanation_timing")
-    .eq("game_id", game.id)
-    .order("position", { ascending: true });
-
-  if (
-    gameQuestionsError ||
-    !gameQuestions ||
-    gameQuestions.length < 1 ||
-    gameQuestions.length > 40
-  ) {
-    redirect("/dashboard/games?error=invalid_questions");
-  }
-
-  const questionIds = gameQuestions.map((item) => item.question_id);
-
-  const { data: questions, error: questionsError } = await supabase
-    .from("questions")
-    .select(
-      "id, question_text, difficulty, correct_option_key, explanation, question_bank_id",
-    )
-    .in("id", questionIds);
-
-  if (
-    questionsError ||
-    !questions ||
-    questions.length !== questionIds.length
-  ) {
-    redirect("/dashboard/games?error=invalid_questions");
-  }
-
-  const { data: options, error: optionsError } = await supabase
-    .from("question_options")
-    .select("id, question_id, option_key, option_text")
-    .in("question_id", questionIds)
-    .order("option_key", { ascending: true });
-
-  if (optionsError) {
-    redirect("/dashboard/games?error=invalid_questions");
-  }
-
-  const { data: media, error: mediaError } = await supabase
-    .from("question_media")
-    .select(
-      "id, question_id, media_type, expected_filename, storage_path, original_filename, mime_type, size_bytes, max_play_count, attached_at",
-    )
-    .in("question_id", questionIds)
-    .order("created_at", { ascending: true });
-
-  if (mediaError) {
-    redirect("/dashboard/games?error=invalid_media");
-  }
-
-  const questionMap = new Map(
-    questions.map((question) => [question.id, question]),
-  );
-
-  const optionsMap = new Map<string, typeof options>();
-  for (const option of options ?? []) {
-    const current = optionsMap.get(option.question_id) ?? [];
-    current.push(option);
-    optionsMap.set(option.question_id, current);
-  }
-
-  const mediaMap = new Map<string, typeof media>();
-  for (const item of media ?? []) {
-    const current = mediaMap.get(item.question_id) ?? [];
-    current.push(item);
-    mediaMap.set(item.question_id, current);
-  }
-
-  const snapshotQuestions = gameQuestions.map((gameQuestion) => {
-    const question = questionMap.get(gameQuestion.question_id);
-
-    if (!question) {
-      throw new Error("Question missing from game snapshot.");
-    }
-
-    return {
-      id: question.id,
-      position: gameQuestion.position,
-      explanation_timing: gameQuestion.explanation_timing,
-      question_text: question.question_text,
-      difficulty: question.difficulty,
-      correct_option_key: question.correct_option_key,
-      explanation: question.explanation,
-      options: optionsMap.get(question.id) ?? [],
-      media: mediaMap.get(question.id) ?? [],
-    };
-  });
-
-  const snapshot = {
-    version: 1,
-    created_at: new Date().toISOString(),
-    game: {
-      id: game.id,
-      name: game.name,
-      class_id: game.class_id,
-      game_type: game.game_type,
-      mode: game.mode,
-      duration_seconds: game.duration_seconds,
-      ranking_visibility: game.ranking_visibility,
-    },
-    questions: snapshotQuestions,
-  };
-
-  let createdRoomId: string | null = null;
-  let lastInsertError: string | null = null;
-
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const code = generateRoomCode();
-
-    const { data: createdRoom, error: insertError } = await supabase
-      .from("rooms")
-      .insert({
-        code,
-        teacher_id: user.id,
-        game_id: game.id,
-        class_id: game.class_id,
-        state: "waiting",
-        snapshot,
-        capacity: 30,
-      })
-      .select("id")
-      .single();
-
-    if (!insertError && createdRoom) {
-      createdRoomId = createdRoom.id;
-      break;
-    }
-
-    lastInsertError = insertError?.message ?? "Unknown room creation error";
-
-    if (insertError?.code !== "23505") {
-      break;
-    }
-  }
-
-  if (!createdRoomId) {
-    console.error("Room creation failed:", lastInsertError);
-    redirect("/dashboard/games?error=room_create_failed");
+  if (updateError) {
+    console.error("Room start failed:", updateError);
+    redirect("/dashboard/games?error=room_start_failed");
   }
 
   revalidatePath("/dashboard/games");
-  revalidatePath(`/dashboard/games/${game.id}/room`);
+  revalidatePath(`/dashboard/games/${room.game_id}/room`);
 
-  redirect(`/dashboard/games/${game.id}/room?roomId=${createdRoomId}`);
+  redirect(`/dashboard/games/${room.game_id}/room?roomId=${room.id}`);
 }
 function generateUniqueRoomCode(length = 6) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
