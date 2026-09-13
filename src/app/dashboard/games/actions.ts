@@ -181,11 +181,15 @@ export async function startRoom(formData: FormData) {
     redirect("/dashboard/games?error=invalid_room");
   }
 
+  const now = new Date();
+
   const { error: updateError } = await supabase
     .from("rooms")
     .update({
       state: "running",
-      started_at: new Date().toISOString(),
+      started_at: now.toISOString(),
+      current_question_index: 0,
+      question_started_at: new Date(now.getTime() + 3000).toISOString(),
     })
     .eq("id", room.id)
     .eq("teacher_id", user.id)

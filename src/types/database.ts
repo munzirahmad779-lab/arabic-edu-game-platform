@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hand-written Supabase Database type, kept in sync with
  * supabase/migrations/0001_init_schema.sql.
  *
@@ -521,6 +521,8 @@ export interface Database {
           state: RoomState;
           snapshot: Json;
           capacity: number;
+          current_question_index: number;
+          question_started_at: string | null;
           started_at: string | null;
           ended_at: string | null;
           created_at: string;
@@ -535,6 +537,8 @@ export interface Database {
           state?: RoomState;
           snapshot: Json;
           capacity?: number;
+          current_question_index?: number;
+          question_started_at?: string | null;
           started_at?: string | null;
           ended_at?: string | null;
           created_at?: string;
@@ -549,6 +553,8 @@ export interface Database {
           state?: RoomState;
           snapshot?: Json;
           capacity?: number;
+          current_question_index?: number;
+          question_started_at?: string | null;
           started_at?: string | null;
           ended_at?: string | null;
           created_at?: string;
