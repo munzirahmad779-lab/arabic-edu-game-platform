@@ -263,7 +263,7 @@ export default function JoinRoomPage({
           </div>
         ) : null}
 
-        {countdown === 0 && session.question ? (
+        {session.question ? (
           <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
