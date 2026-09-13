@@ -11,6 +11,8 @@ function getErrorMessage(error?: string) {
   switch (error) {
     case "invalid_name":
       return "يجب أن يكون اسم الفصل بين حرف واحد و100 حرف.";
+    case "invalid_subject":
+      return "يجب أن تكون المادة الدراسية فارغة أو بين حرف واحد و100 حرف.";
     case "invalid_update":
       return "بيانات تعديل الفصل غير صحيحة.";
     case "invalid_delete":
@@ -47,7 +49,7 @@ export default async function ClassesPage({
 
   const { data: classes, error } = await supabase
     .from("classes")
-    .select("id, name, created_at, updated_at")
+    .select("id, name, subject, created_at, updated_at")
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -72,7 +74,6 @@ export default async function ClassesPage({
             أنشئ فصولك الدراسية وأدرها من مكان واحد.
           </p>
         </div>
-
         <Link
           href="/dashboard"
           className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition hover:bg-neutral-50"
@@ -98,28 +99,53 @@ export default async function ClassesPage({
           </p>
         </div>
 
-        <form action={createClass} className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <label htmlFor="class-name" className="sr-only">
-            اسم الفصل
-          </label>
+        <form action={createClass} className="mt-5 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor="class-name"
+                className="mb-1 block text-sm font-medium"
+              >
+                اسم الفصل
+              </label>
+              <input
+                id="class-name"
+                name="name"
+                type="text"
+                required
+                minLength={1}
+                maxLength={100}
+                placeholder="مثال: الصف السابع - أ"
+                className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+              />
+            </div>
 
-          <input
-            id="class-name"
-            name="name"
-            type="text"
-            required
-            minLength={1}
-            maxLength={100}
-            placeholder="مثال: الصف السابع - أ"
-            className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-          />
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor="class-subject"
+                className="mb-1 block text-sm font-medium"
+              >
+                المادة الدراسية
+              </label>
+              <input
+                id="class-subject"
+                name="subject"
+                type="text"
+                maxLength={100}
+                placeholder="مثال: النحو"
+                className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+              />
+            </div>
+          </div>
 
-          <button
-            type="submit"
-            className="rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
-          >
-            إنشاء الفصل
-          </button>
+          <div className="flex justify-start">
+            <button
+              type="submit"
+              className="rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+            >
+              إنشاء الفصل
+            </button>
+          </div>
         </form>
       </section>
 
@@ -164,14 +190,32 @@ export default async function ClassesPage({
                       >
                         اسم الفصل
                       </label>
-
                       <input
                         id={`edit-${item.id}`}
                         name="name"
                         type="text"
                         required
+                        minLength={1}
                         maxLength={100}
                         defaultValue={item.name}
+                        className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor={`edit-subject-${item.id}`}
+                        className="block text-sm font-medium"
+                      >
+                        المادة الدراسية
+                      </label>
+                      <input
+                        id={`edit-subject-${item.id}`}
+                        name="subject"
+                        type="text"
+                        maxLength={100}
+                        defaultValue={item.subject ?? ""}
+                        placeholder="مثال: النحو"
                         className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
                       />
                     </div>
@@ -183,7 +227,6 @@ export default async function ClassesPage({
                       >
                         حفظ
                       </button>
-
                       <Link
                         href="/dashboard/classes"
                         className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
@@ -200,9 +243,15 @@ export default async function ClassesPage({
                           {item.name}
                         </h3>
 
+                        <p className="mt-2 text-sm font-medium text-neutral-700">
+                          {item.subject ? item.subject : "بدون مادة"}
+                        </p>
+
                         <p className="mt-2 text-sm text-neutral-500">
                           تم الإنشاء{" "}
-                          {new Date(item.created_at).toLocaleDateString("ar-EG")}
+                          {new Date(item.created_at).toLocaleDateString(
+                            "ar-EG"
+                          )}
                         </p>
                       </div>
 
@@ -218,14 +267,12 @@ export default async function ClassesPage({
                       >
                         فتح الفصل
                       </Link>
-
                       <Link
                         href={`/dashboard/classes?edit=${item.id}`}
                         className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
                       >
                         تعديل
                       </Link>
-
                       <form action={deleteClass}>
                         <input type="hidden" name="id" value={item.id} />
                         <button

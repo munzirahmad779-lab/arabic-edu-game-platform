@@ -5,9 +5,23 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 const MAX_CLASS_NAME_LENGTH = 100;
+const MAX_SUBJECT_LENGTH = 100;
 
 function normalizeName(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeSubject(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const subject = value.trim();
+  return subject === "" ? null : subject;
+}
+
+function isValidSubject(subject: string | null) {
+  return subject === null || subject.length <= MAX_SUBJECT_LENGTH;
 }
 
 export async function createClass(formData: FormData) {
@@ -16,20 +30,25 @@ export async function createClass(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) {
     redirect("/login");
   }
 
   const name = normalizeName(formData.get("name"));
+  const subject = normalizeSubject(formData.get("subject"));
 
   if (!name || name.length > MAX_CLASS_NAME_LENGTH) {
     redirect("/dashboard/classes?error=invalid_name");
   }
 
+  if (!isValidSubject(subject)) {
+    redirect("/dashboard/classes?error=invalid_subject");
+  }
+
   const { error } = await supabase.from("classes").insert({
     teacher_id: user.id,
     name,
+    subject,
   });
 
   if (error) {
@@ -58,14 +77,24 @@ export async function updateClass(formData: FormData) {
 
   const classId = formData.get("id");
   const name = normalizeName(formData.get("name"));
+  const subject = normalizeSubject(formData.get("subject"));
 
-  if (typeof classId !== "string" || !classId || !name || name.length > MAX_CLASS_NAME_LENGTH) {
+  if (
+    typeof classId !== "string" ||
+    !classId ||
+    !name ||
+    name.length > MAX_CLASS_NAME_LENGTH
+  ) {
     redirect("/dashboard/classes?error=invalid_update");
+  }
+
+  if (!isValidSubject(subject)) {
+    redirect("/dashboard/classes?error=invalid_subject");
   }
 
   const { data, error } = await supabase
     .from("classes")
-    .update({ name })
+    .update({ name, subject })
     .eq("id", classId)
     .eq("teacher_id", user.id)
     .select("id")
@@ -100,7 +129,6 @@ export async function deleteClass(formData: FormData) {
   }
 
   const classId = formData.get("id");
-
   if (typeof classId !== "string" || !classId) {
     redirect("/dashboard/classes?error=invalid_delete");
   }
