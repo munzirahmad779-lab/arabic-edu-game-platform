@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 type Participant = {
   id: string;
@@ -16,13 +16,6 @@ type Submission = {
   score_awarded: number;
   is_correct: boolean;
 };
-
-function getClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase browser env vars missing.");
-  return createClient(url, key);
-}
 
 export default function RoomLobby({
   roomId,
@@ -39,7 +32,7 @@ export default function RoomLobby({
 
   useEffect(() => {
     let alive = true;
-    const supabase = getClient();
+    const supabase = createClient();
 
     const refresh = async () => {
       const { data: pData, error: pErr } = await supabase
@@ -50,9 +43,11 @@ export default function RoomLobby({
 
       if (!alive) return;
       if (pErr) {
+        console.error("[RoomLobby] participants error:", pErr);
         setLoadError(pErr.message);
       } else if (pData) {
         setParticipants(pData as Participant[]);
+        setLoadError("");
       }
 
       const { data: sData, error: sErr } = await supabase
@@ -63,10 +58,8 @@ export default function RoomLobby({
       if (!alive) return;
       if (sErr) {
         console.error("[RoomLobby] submissions error:", sErr);
-        setLoadError((prev) => prev || sErr.message);
       } else if (sData) {
         setSubmissions(sData as Submission[]);
-        setLoadError("");
       }
     };
 
@@ -85,7 +78,10 @@ export default function RoomLobby({
   );
 
   const scoreByParticipant = useMemo(() => {
-    const map = new Map<string, { score: number; answered: number; correct: number }>();
+    const map = new Map<
+      string,
+      { score: number; answered: number; correct: number }
+    >();
     for (const sub of submissions) {
       const current = map.get(sub.room_participant_id) ?? {
         score: 0,
@@ -103,7 +99,9 @@ export default function RoomLobby({
   return (
     <div className="mt-5">
       <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="font-bold text-slate-700">{connected.length} متصل الآن</span>
+        <span className="font-bold text-slate-700">
+          {connected.length} متصل الآن
+        </span>
         <span className="text-slate-400">السعة {capacity}</span>
       </div>
 
@@ -117,7 +115,9 @@ export default function RoomLobby({
         <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
           <div className="text-4xl">👥</div>
           <p className="mt-3 font-black text-slate-800">بانتظار انضمام الطلاب</p>
-          <p className="mt-1 text-sm text-slate-500">أرسل كود الغرفة للطلاب لبدء التجمع.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            أرسل كود الغرفة للطلاب لبدء التجمع.
+          </p>
         </div>
       ) : (
         <div className="grid max-h-[22rem] grid-cols-1 gap-3 overflow-auto sm:grid-cols-2">
@@ -135,21 +135,29 @@ export default function RoomLobby({
                       {label.trim().charAt(0) || "ط"}
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate font-black text-slate-900">{label}</div>
+                      <div className="truncate font-black text-slate-900">
+                        {label}
+                      </div>
                       <div className="mt-1 text-xs font-bold text-emerald-600">
-                        {participant.connection_state === "connected" ? "متصل" : "غير متصل"}
+                        {participant.connection_state === "connected"
+                          ? "متصل"
+                          : "غير متصل"}
                       </div>
                     </div>
                   </div>
                   {stats ? (
                     <div className="text-right">
-                      <div className="text-lg font-black text-indigo-700">{stats.score}</div>
+                      <div className="text-lg font-black text-indigo-700">
+                        {stats.score}
+                      </div>
                       <div className="text-xs text-slate-500">
                         {stats.correct}/{stats.answered} صحيح
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs font-bold text-slate-400">لم يجب بعد</div>
+                    <div className="text-xs font-bold text-slate-400">
+                      لم يجب بعد
+                    </div>
                   )}
                 </div>
               </div>
