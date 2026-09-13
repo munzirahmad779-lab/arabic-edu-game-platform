@@ -687,6 +687,112 @@ export interface Database {
           }
         ];
       };
+      class_materials: {
+        Row: {
+          id: string;
+          class_id: string;
+          title: string;
+          content_json: Json | null;
+          youtube_url: string | null;
+          image_path: string | null;
+          pdf_path: string | null;
+          position: number;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          class_id: string;
+          title: string;
+          content_json?: Json | null;
+          youtube_url?: string | null;
+          image_path?: string | null;
+          pdf_path?: string | null;
+          position?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          class_id?: string;
+          title?: string;
+          content_json?: Json | null;
+          youtube_url?: string | null;
+          image_path?: string | null;
+          pdf_path?: string | null;
+          position?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_materials_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      student_sessions: {
+        Row: {
+          id: string;
+          student_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at: string;
+          last_seen_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at?: string;
+          last_seen_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          token_hash?: string;
+          expires_at?: string;
+          created_at?: string;
+          last_seen_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_sessions_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      login_attempts: {
+        Row: {
+          id: string;
+          identifier: string;
+          success: boolean;
+          attempted_at: string;
+        };
+        Insert: {
+          id?: string;
+          identifier: string;
+          success: boolean;
+          attempted_at?: string;
+        };
+        Update: {
+          id?: string;
+          identifier?: string;
+          success?: boolean;
+          attempted_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -748,6 +854,37 @@ export interface Database {
           room_state: string;
           next_question_index: number;
         }>;
+      };
+      student_login: {
+        Args: {
+          p_name: string;
+          p_pin: string;
+          p_ip: string;
+        };
+        Returns: Array<{
+          token: string;
+          student_id: string;
+          name: string;
+          class_id: string;
+          class_name: string;
+        }>;
+      };
+      verify_student_session: {
+        Args: {
+          p_token: string;
+        };
+        Returns: Array<{
+          student_id: string;
+          name: string;
+          class_id: string;
+          class_name: string;
+        }>;
+      };
+      student_logout: {
+        Args: {
+          p_token: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

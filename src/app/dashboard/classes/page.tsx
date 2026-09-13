@@ -245,7 +245,7 @@ export default async function ClassesPage({
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2">
                       <Link
-                        href={`/dashboard/classes?classId=${item.id}`}
+                        href={`/dashboard/classes/${item.id}`}
                         className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800"
                       >
                         فتح الفصل
