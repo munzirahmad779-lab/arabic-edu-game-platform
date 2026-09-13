@@ -6,7 +6,6 @@ type SearchParams = {
   error?: string;
   edit?: string;
 };
-
 function getErrorMessage(error?: string) {
   switch (error) {
     case "invalid_name":
@@ -31,7 +30,6 @@ function getErrorMessage(error?: string) {
       return null;
   }
 }
-
 export default async function ClassesPage({
   searchParams,
 }: {
@@ -52,14 +50,12 @@ export default async function ClassesPage({
     .select("id, name, subject, created_at, updated_at")
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
-
   if (error) {
     throw new Error("تعذر تحميل الفصول الدراسية.");
   }
 
   const errorMessage = getErrorMessage(searchParams.error);
   const editingClass = classes.find((item) => item.id === searchParams.edit);
-
   return (
     <main className="space-y-8" dir="rtl">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -81,7 +77,6 @@ export default async function ClassesPage({
           لوحة التحكم
         </Link>
       </header>
-
       {errorMessage ? (
         <div
           role="alert"
@@ -90,7 +85,6 @@ export default async function ClassesPage({
           {errorMessage}
         </div>
       ) : null}
-
       <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div>
           <h2 className="text-lg font-semibold">إنشاء فصل جديد</h2>
@@ -98,7 +92,6 @@ export default async function ClassesPage({
             أنشئ فصلًا لاستخدامه لاحقًا مع الطلاب والأنشطة والألعاب.
           </p>
         </div>
-
         <form action={createClass} className="mt-5 flex flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="min-w-0 flex-1">
@@ -119,7 +112,6 @@ export default async function ClassesPage({
                 className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
               />
             </div>
-
             <div className="min-w-0 flex-1">
               <label
                 htmlFor="class-subject"
@@ -137,7 +129,6 @@ export default async function ClassesPage({
               />
             </div>
           </div>
-
           <div className="flex justify-start">
             <button
               type="submit"
@@ -148,7 +139,6 @@ export default async function ClassesPage({
           </div>
         </form>
       </section>
-
       <section>
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -162,7 +152,6 @@ export default async function ClassesPage({
             {classes.length} فصل
           </span>
         </div>
-
         {classes.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
             <p className="font-medium text-neutral-700">
@@ -182,7 +171,6 @@ export default async function ClassesPage({
                 {editingClass?.id === item.id ? (
                   <form action={updateClass} className="space-y-4">
                     <input type="hidden" name="id" value={item.id} />
-
                     <div>
                       <label
                         htmlFor={`edit-${item.id}`}
@@ -201,7 +189,6 @@ export default async function ClassesPage({
                         className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
                       />
                     </div>
-
                     <div>
                       <label
                         htmlFor={`edit-subject-${item.id}`}
@@ -219,7 +206,6 @@ export default async function ClassesPage({
                         className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
                       />
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         type="submit"
@@ -242,7 +228,6 @@ export default async function ClassesPage({
                         <h3 className="text-lg font-semibold text-neutral-900">
                           {item.name}
                         </h3>
-
                         <p className="mt-2 text-sm font-medium text-neutral-700">
                           {item.subject ? item.subject : "بدون مادة"}
                         </p>
@@ -254,18 +239,22 @@ export default async function ClassesPage({
                           )}
                         </p>
                       </div>
-
                       <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
                         فصل
                       </span>
                     </div>
-
                     <div className="mt-5 flex flex-wrap gap-2">
                       <Link
                         href={`/dashboard/classes?classId=${item.id}`}
                         className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800"
                       >
                         فتح الفصل
+                      </Link>
+                      <Link
+                        href={`/dashboard/students?classId=${item.id}`}
+                        className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100"
+                      >
+                        إدارة الطلاب
                       </Link>
                       <Link
                         href={`/dashboard/classes?edit=${item.id}`}
