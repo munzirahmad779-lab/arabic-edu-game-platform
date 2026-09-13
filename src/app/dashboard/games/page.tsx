@@ -1,9 +1,10 @@
 ﻿import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createGame, createRoom } from "./actions";
+import { createGame, createRoom, deleteGame } from "./actions";
 
 type SearchParams = {
   error?: string;
+  msg?: string;
 };
 
 function getErrorMessage(error?: string) {
@@ -16,6 +17,12 @@ function getErrorMessage(error?: string) {
       return "توجد أسئلة غير صالحة أو غير متاحة لحسابك.";
     case "create_failed":
       return "تعذر إنشاء اللعبة. حاول مرة أخرى.";
+    case "game_not_found":
+      return "اللعبة غير موجودة أو لا تملك صلاحية حذفها.";
+    case "room_not_found":
+      return "الغرفة غير موجودة أو لا تملك صلاحية حذفها.";
+    case "delete_failed":
+      return "تعذر الحذف. حاول مرة أخرى.";
     default:
       return null;
   }
@@ -62,23 +69,23 @@ export default async function GamesPage({
       .order("created_at", { ascending: false }),
   ]);
 
-if (classesError || banksError || gamesError) {
-  console.error("Games page query errors:", {
-    classesError,
-    banksError,
-    gamesError,
-  });
+  if (classesError || banksError || gamesError) {
+    console.error("Games page query errors:", {
+      classesError,
+      banksError,
+      gamesError,
+    });
 
-  throw new Error(
-    [
-      classesError ? `classes: ${classesError.message}` : "",
-      banksError ? `question_banks: ${banksError.message}` : "",
-      gamesError ? `games: ${gamesError.message}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | ") || "تعذر تحميل بيانات الألعاب."
-  );
-}
+    throw new Error(
+      [
+        classesError ? `classes: ${classesError.message}` : "",
+        banksError ? `question_banks: ${banksError.message}` : "",
+        gamesError ? `games: ${gamesError.message}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | ") || "تعذر تحميل بيانات الألعاب.",
+    );
+  }
 
   const errorMessage = getErrorMessage(searchParams.error);
 
@@ -109,6 +116,9 @@ if (classesError || banksError || gamesError) {
           className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {errorMessage}
+          {searchParams.msg ? (
+            <div className="mt-1 text-xs opacity-80">{searchParams.msg}</div>
+          ) : null}
         </div>
       ) : null}
 
@@ -224,9 +234,7 @@ if (classesError || banksError || gamesError) {
             </div>
 
             <fieldset>
-              <legend className="text-sm font-medium">
-                اختر الأسئلة
-              </legend>
+              <legend className="text-sm font-medium">اختر الأسئلة</legend>
 
               <div className="mt-4 space-y-5">
                 {banks.map((bank) => (
@@ -312,9 +320,7 @@ if (classesError || banksError || gamesError) {
                     <div className="rounded-md bg-violet-50 p-3">
                       <div className="text-xs text-violet-600">الوضع</div>
                       <div className="mt-1 font-medium text-violet-950">
-                        {game.mode === "competitive"
-                          ? "تنافسي"
-                          : "تعليمي"}
+                        {game.mode === "competitive" ? "تنافسي" : "تعليمي"}
                       </div>
                     </div>
 
@@ -326,24 +332,25 @@ if (classesError || banksError || gamesError) {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-2">
-                    <form action={createRoom} className="flex-1">
-                      <input type="hidden" name="game_id" value={game.id} />
-                      <button
-                        type="submit"
-                        className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
-                      >
-                        ▶ تشغيل اللعبة
-                      </button>
-                    </form>
-
-                    <Link
-                      href={`/dashboard/games/${game.id}/room`}
-                      className="rounded-lg border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                  <form action={createRoom} className="mt-4">
+                    <input type="hidden" name="game_id" value={game.id} />
+                    <button
+                      type="submit"
+                      className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
                     >
-                      معاينة
-                    </Link>
-                  </div>
+                      ▶ تشغيل اللعبة
+                    </button>
+                  </form>
+
+                  <form action={deleteGame} className="mt-2">
+                    <input type="hidden" name="game_id" value={game.id} />
+                    <button
+                      type="submit"
+                      className="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                    >
+                      🗑 حذف اللعبة
+                    </button>
+                  </form>
                 </article>
               );
             })}
@@ -365,9 +372,7 @@ async function QuestionsForBank({
 
   const { data: questions, error } = await supabase
     .from("questions")
-    .select(
-      "id, question_text, difficulty, correct_option_key",
-    )
+    .select("id, question_text, difficulty, correct_option_key")
     .eq("question_bank_id", bankId)
     .eq("teacher_id", teacherId)
     .order("created_at", { ascending: true });
@@ -420,5 +425,3 @@ async function QuestionsForBank({
     </div>
   );
 }
-
-

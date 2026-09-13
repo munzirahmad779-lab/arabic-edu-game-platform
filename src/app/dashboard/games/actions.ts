@@ -157,6 +157,71 @@ export async function createGame(formData: FormData) {
   redirect("/dashboard/games");
 }
 
+export async function deleteGame(formData: FormData) {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (e) {
+    console.error("[deleteGame] createClient failed:", e);
+    redirect("/dashboard/games?error=client_failed");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const gameId = normalizeName(formData.get("game_id"));
+  if (!gameId) redirect("/dashboard/games?error=invalid");
+
+  const { data: game, error: gameError } = await supabase
+    .from("games")
+    .select("id")
+    .eq("id", gameId)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (gameError || !game) {
+    redirect("/dashboard/games?error=game_not_found");
+  }
+
+  // Hapus rooms + submissions + participants dulu (foreign key)
+  const { data: rooms } = await supabase
+    .from("rooms")
+    .select("id")
+    .eq("game_id", gameId)
+    .eq("teacher_id", user.id);
+
+  const roomIds = (rooms ?? []).map((r) => r.id);
+
+  if (roomIds.length > 0) {
+    await supabase.from("submissions").delete().in("room_id", roomIds);
+    await supabase.from("room_participants").delete().in("room_id", roomIds);
+    await supabase.from("rooms").delete().in("id", roomIds);
+  }
+
+  // Hapus game_questions lalu games
+  await supabase.from("game_questions").delete().eq("game_id", gameId);
+
+  const { error: deleteError } = await supabase
+    .from("games")
+    .delete()
+    .eq("id", gameId)
+    .eq("teacher_id", user.id);
+
+  if (deleteError) {
+    console.error("[deleteGame] failed:", deleteError);
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(deleteError.message)}`,
+    );
+  }
+
+  revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/games");
+}
+
 const ROOM_CODE_LENGTH = 6;
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -319,7 +384,6 @@ export async function createRoom(formData: FormData) {
   >();
 
   for (const item of media ?? []) {
-    // FIX: lompati baris media yang storage_path-nya kosong/null.
     if (!item.storage_path) {
       console.warn(
         "[createRoom] skip media tanpa storage_path:",
@@ -413,6 +477,58 @@ export async function createRoom(formData: FormData) {
   revalidatePath("/dashboard/games");
   revalidatePath(`/dashboard/games/${game.id}/room`);
   redirect(`/dashboard/games/${game.id}/room?roomId=${room.id}`);
+}
+
+export async function deleteRoom(formData: FormData) {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (e) {
+    console.error("[deleteRoom] createClient failed:", e);
+    redirect("/dashboard/games?error=client_failed");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const roomId = normalizeName(formData.get("room_id"));
+  const gameId = normalizeName(formData.get("game_id"));
+
+  if (!roomId) redirect("/dashboard/games?error=invalid");
+
+  const { data: room, error: roomError } = await supabase
+    .from("rooms")
+    .select("id")
+    .eq("id", roomId)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (roomError || !room) {
+    redirect("/dashboard/games?error=room_not_found");
+  }
+
+  await supabase.from("submissions").delete().eq("room_id", roomId);
+  await supabase.from("room_participants").delete().eq("room_id", roomId);
+
+  const { error: deleteError } = await supabase
+    .from("rooms")
+    .delete()
+    .eq("id", roomId)
+    .eq("teacher_id", user.id);
+
+  if (deleteError) {
+    console.error("[deleteRoom] failed:", deleteError);
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(deleteError.message)}`,
+    );
+  }
+
+  revalidatePath("/dashboard/games");
+  if (gameId) revalidatePath(`/dashboard/games/${gameId}/room`);
+  redirect("/dashboard/games");
 }
 
 export async function startRoom(formData: FormData) {
