@@ -378,7 +378,7 @@ export async function createRoom(formData: FormData) {
       id: string;
       media_type: string;
       public_url: string;
-      mime_type: string;
+      mime_type: string | null;
       max_play_count: number | null;
     }>
   >();
