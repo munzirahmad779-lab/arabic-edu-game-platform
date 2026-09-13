@@ -1,12 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Option = {
   id: string;
   option_key: string;
   option_text: string;
+};
+
+type Media = {
+  id: string;
+  media_type: "image" | "audio" | "video" | string;
+  public_url: string;
+  mime_type?: string;
+  max_play_count?: number | null;
 };
 
 type Question = {
@@ -16,7 +24,7 @@ type Question = {
   difficulty: string;
   explanation_timing: string;
   options: Option[];
-  media?: unknown[];
+  media?: Media[];
 };
 
 type Session = {
@@ -34,6 +42,17 @@ type Session = {
   question_started_at: string | null;
   question: Question | null;
   answer_submitted: boolean;
+  server_time: string;
+};
+
+type RpcClient = {
+  rpc<TResult>(
+    functionName: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{
+    data: TResult[] | null;
+    error: { message: string } | null;
+  }>;
 };
 
 export default function JoinRoomPage({
@@ -43,40 +62,49 @@ export default function JoinRoomPage({
 }) {
   const token = searchParams.token ?? "";
   const [session, setSession] = useState<Session | null>(null);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [now, setNow] = useState(Date.now());
   const [submitting, setSubmitting] = useState(false);
 
+  const skewRef = useRef(0);
+  const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
+
+  useEffect(() => {
+    roomStateRef.current = session?.room_state;
+  }, [session?.room_state]);
+
   const loadSession = useCallback(async () => {
     if (!token) {
-      setError("رابط الغرفة غير صحيح.");
+      setLoadError("رابط الغرفة غير صحيح.");
       return;
     }
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient() as unknown as RpcClient;
+      const { data, error: rpcError } = await supabase.rpc<Session>(
+        "get_game_session",
+        { p_join_token: token },
+      );
 
-    const rpcClient = supabase as unknown as {
-      rpc<TResult>(
-        functionName: string,
-        args: Record<string, unknown>,
-      ): PromiseLike<{
-        data: TResult[] | null;
-        error: { message: string } | null;
-      }>;
-    };
+      if (rpcError || !data || !data[0]) {
+        setLoadError("تعذر تحميل حالة اللعبة.");
+        return;
+      }
 
-    const { data, error: rpcError } = await rpcClient.rpc<Session>(
-      "get_game_session",
-      { p_join_token: token },
-    );
+      const incoming = data[0];
 
-    if (rpcError || !data?.[0]) {
-      setError("تعذر تحميل حالة اللعبة.");
-      return;
+      // FIX: sinkronkan jam device dengan jam server
+      const serverMs = new Date(incoming.server_time).getTime();
+      if (Number.isFinite(serverMs)) {
+        skewRef.current = serverMs - Date.now();
+      }
+
+      setSession(incoming);
+      setLoadError("");
+    } catch {
+      setLoadError("تعذر الاتصال بالخادم.");
     }
-
-    setSession(data[0] as Session);
-    setError("");
   }, [token]);
 
   useEffect(() => {
@@ -84,11 +112,21 @@ export default function JoinRoomPage({
 
     const timer = window.setInterval(() => {
       setNow(Date.now());
-      void loadSession();
+      // FIX: berhenti polling saat room sudah selesai
+      if (roomStateRef.current !== "ended") {
+        void loadSession();
+      }
     }, 1000);
 
     return () => window.clearInterval(timer);
   }, [loadSession]);
+
+  // FIX: reset submitError saat pindah soal
+  useEffect(() => {
+    setSubmitError("");
+  }, [session?.question?.id]);
+
+  const adjustedNow = now + skewRef.current;
 
   const countdown = useMemo(() => {
     if (
@@ -100,14 +138,23 @@ export default function JoinRoomPage({
     }
 
     const remainingMs =
-      new Date(session.question_started_at).getTime() - now;
+      new Date(session.question_started_at).getTime() - adjustedNow;
+    return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+  }, [adjustedNow, session]);
 
-    if (remainingMs > 0) {
-      return Math.ceil(remainingMs / 1000);
+  const answerSecondsLeft = useMemo(() => {
+    if (
+      !session ||
+      session.room_state !== "running" ||
+      !session.question_started_at ||
+      countdown !== 0
+    ) {
+      return null;
     }
 
-    return 0;
-  }, [now, session]);
+    const deadline = new Date(session.question_started_at).getTime() + 15000;
+    return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
+  }, [countdown, adjustedNow, session]);
 
   async function submitAnswer(optionId: string) {
     if (
@@ -115,47 +162,42 @@ export default function JoinRoomPage({
       submitting ||
       session.answer_submitted ||
       session.room_state !== "running" ||
-      countdown !== 0
+      countdown !== 0 ||
+      answerSecondsLeft === 0
     ) {
       return;
     }
 
     setSubmitting(true);
+    setSubmitError("");
 
-    const supabase = createClient();
-
-    const rpcClient = supabase as unknown as {
-      rpc<TResult>(
-        functionName: string,
-        args: Record<string, unknown>,
-      ): PromiseLike<{
-        data: TResult[] | null;
-        error: { message: string } | null;
-      }>;
-    };
-
-    const { error: submitError } = await rpcClient.rpc(
-      "submit_game_answer",
-      {
+    try {
+      const supabase = createClient() as unknown as RpcClient;
+      const { error: submitErr } = await supabase.rpc("submit_game_answer", {
         p_join_token: token,
         p_question_id: session.question.id,
         p_selected_option_id: optionId,
-      },
-    );
+      });
 
-    setSubmitting(false);
+      if (submitErr) {
+        const msg = submitErr.message;
+        if (msg === "ALREADY_SUBMITTED") {
+          setSubmitError("تم تسجيل إجابتك.");
+        } else if (msg === "QUESTION_TIMEOUT") {
+          setSubmitError("انتهى وقت السؤال.");
+        } else if (msg === "QUESTION_NOT_STARTED") {
+          setSubmitError("لم يبدأ السؤال بعد.");
+        } else {
+          setSubmitError("تعذر تسجيل الإجابة.");
+        }
+      }
 
-    if (submitError) {
-      setError(
-        submitError.message === "ALREADY_SUBMITTED"
-          ? "تم تسجيل إجابتك."
-          : "تعذر تسجيل الإجابة.",
-      );
       await loadSession();
-      return;
+    } catch {
+      setSubmitError("تعذر الاتصال بالخادم.");
+    } finally {
+      setSubmitting(false);
     }
-
-    await loadSession();
   }
 
   if (!token) {
@@ -170,26 +212,66 @@ export default function JoinRoomPage({
 
   if (!session) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 text-white" dir="rtl">
+      <main
+        className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 text-white"
+        dir="rtl"
+      >
         <div className="mx-auto max-w-2xl py-16 text-center">
           <div className="text-5xl">🎮</div>
           <h1 className="mt-4 text-2xl font-black">جاري تحميل اللعبة...</h1>
-          {error ? (
-            <p className="mt-3 text-sm text-white/80">{error}</p>
+          {loadError ? (
+            <>
+              <p className="mt-3 text-sm text-white/80">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => void loadSession()}
+                className="mt-6 rounded-2xl bg-white px-6 py-3 font-black text-violet-800 shadow-lg transition hover:bg-violet-50"
+              >
+                إعادة المحاولة
+              </button>
+            </>
           ) : null}
         </div>
       </main>
     );
   }
 
-  if (session.room_state === "ended") {
+if (session.room_state === "ended") {
+  return (
+    <main
+      className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
+      dir="rtl"
+    >
+      <div className="mx-auto max-w-2xl py-12">
+        <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
+          <div className="text-6xl">🏁</div>
+          <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
+          <p className="mt-3 text-white/80">{session.game_name}</p>
+          <a
+            href="/join"
+            className="mt-8 inline-flex rounded-2xl bg-white px-6 py-3 font-black text-emerald-800 shadow-lg transition hover:bg-emerald-50"
+          >
+            الخروج من الغرفة
+          </a>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+  if (session.room_state === "locked") {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white" dir="rtl">
+      <main
+        className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black p-4 text-white"
+        dir="rtl"
+      >
         <div className="mx-auto max-w-2xl py-12">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
-            <div className="text-6xl">🏁</div>
-            <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
-            <p className="mt-3 text-white/80">{session.game_name}</p>
+            <div className="text-6xl">🔒</div>
+            <h1 className="mt-4 text-3xl font-black">الغرفة مقفلة</h1>
+            <p className="mt-3 text-white/80">
+              لا يمكن الانضمام إلى هذه الغرفة حالياً.
+            </p>
           </div>
         </div>
       </main>
@@ -198,12 +280,14 @@ export default function JoinRoomPage({
 
   if (session.room_state === "waiting") {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-8 text-white" dir="rtl">
+      <main
+        className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-8 text-white"
+        dir="rtl"
+      >
         <div className="mx-auto max-w-2xl">
           <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
             <p className="text-sm font-bold text-violet-100">غرفة اللعب</p>
             <h1 className="mt-2 text-3xl font-black">{session.game_name}</h1>
-
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">كود الغرفة</div>
@@ -222,7 +306,6 @@ export default function JoinRoomPage({
                 </div>
               </div>
             </div>
-
             <div className="mt-8 rounded-3xl bg-white/95 p-8 text-center text-slate-900">
               <div className="text-5xl">⏳</div>
               <h2 className="mt-4 text-2xl font-black">أنت في الغرفة</h2>
@@ -237,7 +320,10 @@ export default function JoinRoomPage({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-6 text-white" dir="rtl">
+    <main
+      className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-6 text-white"
+      dir="rtl"
+    >
       <div className="mx-auto max-w-3xl">
         <header className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between gap-4">
@@ -258,21 +344,76 @@ export default function JoinRoomPage({
         {countdown !== null && countdown > 0 ? (
           <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
             <div className="text-sm font-bold text-white/70">استعد!</div>
-            <div className="mt-3 text-8xl font-black tabular-nums">{countdown}</div>
-            <p className="mt-3 text-white/80">ستظهر الإجابة بعد العد التنازلي</p>
+            <div className="mt-3 text-8xl font-black tabular-nums">
+              {countdown}
+            </div>
+            <p className="mt-3 text-white/80">سيظهر السؤال بعد العد التنازلي</p>
           </div>
-        ) : null}
-
-        {session.question ? (
+        ) : session.question ? (
           <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
                 {session.question.difficulty}
               </div>
               <div className="rounded-full bg-amber-100 px-4 py-2 text-xs font-black text-amber-800">
-                15 ثانية
+                {answerSecondsLeft ?? 15} ثانية
               </div>
             </div>
+
+            {/* FIX: render media (image / audio / video) */}
+            {session.question.media && session.question.media.length > 0 ? (
+              <div className="mt-6 space-y-4">
+                {session.question.media.map((m) => {
+                  if (!m.public_url) return null;
+
+                  if (m.media_type === "image") {
+                    return (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={m.id}
+                        src={m.public_url}
+                        alt=""
+                        className="mx-auto max-h-80 rounded-2xl border-2 border-slate-200 object-contain"
+                      />
+                    );
+                  }
+
+                  if (m.media_type === "audio") {
+                    return (
+                      <audio
+                        key={m.id}
+                        src={m.public_url}
+                        controls
+                        controlsList={
+                          m.max_play_count === 1
+                            ? "nodownload noplaybackrate"
+                            : undefined
+                        }
+                        className="mx-auto w-full max-w-md"
+                      />
+                    );
+                  }
+
+                  if (m.media_type === "video") {
+                    return (
+                      <video
+                        key={m.id}
+                        src={m.public_url}
+                        controls
+                        controlsList={
+                          m.max_play_count === 1
+                            ? "nodownload noplaybackrate"
+                            : undefined
+                        }
+                        className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+            ) : null}
 
             <h2 className="mt-8 text-center text-3xl font-black leading-relaxed sm:text-4xl">
               {session.question.question_text}
@@ -283,7 +424,11 @@ export default function JoinRoomPage({
                 <button
                   key={option.id}
                   type="button"
-                  disabled={submitting || session.answer_submitted}
+                  disabled={
+                    submitting ||
+                    session.answer_submitted ||
+                    answerSecondsLeft === 0
+                  }
                   onClick={() => void submitAnswer(option.id)}
                   className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-right text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -297,17 +442,30 @@ export default function JoinRoomPage({
 
             {session.answer_submitted ? (
               <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
-                ✅ تم تسجيل إجابتك، بانتظار بقية الطلاب.
+                تم تسجيل إجابتك. بانتظار بقية المشاركين...
               </div>
             ) : null}
 
-            {error ? (
+            {submitError ? (
               <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
-                {error}
+                {submitError}
+              </div>
+            ) : null}
+
+            {loadError ? (
+              <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-center text-sm font-bold text-amber-800">
+                {loadError}
               </div>
             ) : null}
           </section>
-        ) : null}
+        ) : (
+          <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
+            <h2 className="text-2xl font-black">جاري تجهيز السؤال...</h2>
+            {loadError ? (
+              <p className="mt-3 text-sm text-white/80">{loadError}</p>
+            ) : null}
+          </div>
+        )}
       </div>
     </main>
   );
