@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GlobalBackgroundAudio } from "@/components/global-background-audio";
 
 export const metadata: Metadata = {
   title: "منصة الألعاب التعليمية للغة العربية",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body>{children}</body>
+      <body>
+        {children}
+        <GlobalBackgroundAudio />
+      </body>
     </html>
   );
 }

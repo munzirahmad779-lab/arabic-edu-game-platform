@@ -164,6 +164,14 @@ export interface Database {
         Update: { id?: string; session_id?: string; participant_name?: string; final_score?: number; rank?: number; correct_count?: number; total_questions?: number; avg_response_ms?: number; created_at?: string; };
         Relationships: [{ foreignKeyName: "room_session_participants_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
       };
+      teacher_audio_settings: {
+        Row: { teacher_id: string; enabled: boolean; audio_path: string | null; audio_url: string | null; volume: number; play_on_dashboard: boolean; play_on_login: boolean; play_on_student: boolean; play_on_game: boolean; play_on_final: boolean; updated_at: string; };
+        Insert: { teacher_id: string; enabled?: boolean; audio_path?: string | null; audio_url?: string | null; volume?: number; play_on_dashboard?: boolean; play_on_login?: boolean; play_on_student?: boolean; play_on_game?: boolean; play_on_final?: boolean; updated_at?: string; };
+        Update: { teacher_id?: string; enabled?: boolean; audio_path?: string | null; audio_url?: string | null; volume?: number; play_on_dashboard?: boolean; play_on_login?: boolean; play_on_student?: boolean; play_on_game?: boolean; play_on_final?: boolean; updated_at?: string; };
+        Relationships: [
+          { foreignKeyName: "teacher_audio_settings_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"]; }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
