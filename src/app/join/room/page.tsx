@@ -23,6 +23,7 @@ type Question = {
   question_text: string;
   difficulty: string;
   explanation_timing: string;
+  time_limit_seconds?: number;
   options: Option[];
   media?: Media[];
 };
@@ -45,6 +46,19 @@ type Session = {
   server_time: string;
 };
 
+type LeaderboardRow = {
+  participant_id: string;
+  participant_name: string;
+  is_self: boolean;
+  answered_count: number;
+  correct_count: number;
+  weighted_correct: number;
+  weighted_total: number;
+  avg_response_ms: number;
+  final_score: number;
+  rnk: number;
+};
+
 type RpcClient = {
   rpc<TResult>(
     functionName: string,
@@ -55,6 +69,18 @@ type RpcClient = {
   }>;
 };
 
+const DIFFICULTY_AR: Record<string, string> = {
+  easy: "سهل",
+  medium: "متوسط",
+  hard: "صعب",
+};
+
+const DIFFICULTY_COLOR: Record<string, string> = {
+  easy: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  hard: "bg-rose-100 text-rose-800",
+};
+
 export default function JoinRoomPage({
   searchParams,
 }: {
@@ -62,6 +88,7 @@ export default function JoinRoomPage({
 }) {
   const token = searchParams.token ?? "";
   const [session, setSession] = useState<Session | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loadError, setLoadError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -79,7 +106,6 @@ export default function JoinRoomPage({
       setLoadError("رابط الغرفة غير صحيح.");
       return;
     }
-
     try {
       const supabase = createClient() as unknown as RpcClient;
       const { data, error: rpcError } = await supabase.rpc<Session>(
@@ -93,8 +119,6 @@ export default function JoinRoomPage({
       }
 
       const incoming = data[0];
-
-      // FIX: sinkronkan jam device dengan jam server
       const serverMs = new Date(incoming.server_time).getTime();
       if (Number.isFinite(serverMs)) {
         skewRef.current = serverMs - Date.now();
@@ -107,21 +131,37 @@ export default function JoinRoomPage({
     }
   }, [token]);
 
+  const loadLeaderboard = useCallback(async () => {
+    if (!token) return;
+    try {
+      const supabase = createClient() as unknown as RpcClient;
+      const { data, error: rpcError } = await supabase.rpc<LeaderboardRow>(
+        "get_room_leaderboard_student",
+        { p_join_token: token },
+      );
+      if (!rpcError && data) {
+        setLeaderboard(data);
+      }
+    } catch {
+      // ignore
+    }
+  }, [token]);
+
   useEffect(() => {
     void loadSession();
+    void loadLeaderboard();
 
     const timer = window.setInterval(() => {
       setNow(Date.now());
-      // FIX: berhenti polling saat room sudah selesai
       if (roomStateRef.current !== "ended") {
         void loadSession();
+        void loadLeaderboard();
       }
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [loadSession]);
+  }, [loadSession, loadLeaderboard]);
 
-  // FIX: reset submitError saat pindah soal
   useEffect(() => {
     setSubmitError("");
   }, [session?.question?.id]);
@@ -136,11 +176,12 @@ export default function JoinRoomPage({
     ) {
       return null;
     }
-
     const remainingMs =
       new Date(session.question_started_at).getTime() - adjustedNow;
     return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
   }, [adjustedNow, session]);
+
+  const timeLimitSec = session?.question?.time_limit_seconds ?? 20;
 
   const answerSecondsLeft = useMemo(() => {
     if (
@@ -151,10 +192,10 @@ export default function JoinRoomPage({
     ) {
       return null;
     }
-
-    const deadline = new Date(session.question_started_at).getTime() + 15000;
+    const deadline =
+      new Date(session.question_started_at).getTime() + timeLimitSec * 1000;
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
-  }, [countdown, adjustedNow, session]);
+  }, [countdown, adjustedNow, session, timeLimitSec]);
 
   async function submitAnswer(optionId: string) {
     if (
@@ -193,6 +234,7 @@ export default function JoinRoomPage({
       }
 
       await loadSession();
+      await loadLeaderboard();
     } catch {
       setSubmitError("تعذر الاتصال بالخادم.");
     } finally {
@@ -236,29 +278,160 @@ export default function JoinRoomPage({
     );
   }
 
-if (session.room_state === "ended") {
-  return (
-    <main
-      className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
-      dir="rtl"
-    >
-      <div className="mx-auto max-w-2xl py-12">
-        <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
-          <div className="text-6xl">🏁</div>
-          <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
-          <p className="mt-3 text-white/80">{session.game_name}</p>
-          <a
-            href="/join"
-            className="mt-8 inline-flex rounded-2xl bg-white px-6 py-3 font-black text-emerald-800 shadow-lg transition hover:bg-emerald-50"
-          >
-            الخروج من الغرفة
-          </a>
-        </div>
-      </div>
-    </main>
-  );
-}
+  // ================== ENDED STATE ==================
+  if (session.room_state === "ended") {
+    const me = leaderboard.find((r) => r.is_self);
+    const podium = leaderboard.slice(0, 3);
+    const myIdx = me ? leaderboard.findIndex((r) => r.is_self) : -1;
 
+    return (
+      <main
+        className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
+        dir="rtl"
+      >
+        <div className="mx-auto max-w-3xl py-8 space-y-6">
+          <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
+            <div className="text-6xl">🏁</div>
+            <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
+            <p className="mt-2 text-white/80">{session.game_name}</p>
+
+            {me ? (
+              <div className="mt-8 rounded-3xl bg-white p-6 text-slate-900 shadow-xl">
+                <p className="text-xs font-bold text-slate-500">
+                  نتيجتك النهائية
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-6">
+                  <div className="text-center">
+                    <div className="text-5xl font-black text-emerald-700 tabular-nums">
+                      {me.final_score}
+                    </div>
+                    <div className="mt-1 text-xs font-bold text-slate-500">
+                      من 100
+                    </div>
+                  </div>
+                  <div className="h-16 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <div className="text-5xl font-black text-violet-700 tabular-nums">
+                      #{me.rnk}
+                    </div>
+                    <div className="mt-1 text-xs font-bold text-slate-500">
+                      من {leaderboard.length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-emerald-50 p-3 text-center">
+                    <div className="text-xs font-bold text-emerald-700">
+                      إجابات صحيحة
+                    </div>
+                    <div className="mt-1 text-lg font-black text-emerald-900">
+                      {me.correct_count} / {session.question_count}
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 p-3 text-center">
+                    <div className="text-xs font-bold text-amber-700">
+                      متوسط سرعة الإجابة
+                    </div>
+                    <div className="mt-1 text-lg font-black text-amber-900">
+                      {(me.avg_response_ms / 1000).toFixed(1)} ثانية
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
+            <h2 className="text-lg font-black text-white">
+              🏆 لوحة المتصدرين
+            </h2>
+
+            {podium.length > 0 ? (
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                {[podium[1], podium[0], podium[2]].map((row, i) => {
+                  if (!row) return <div key={i} />;
+                  const medal = row.rnk === 1 ? "🥇" : row.rnk === 2 ? "🥈" : "🥉";
+                  const height = row.rnk === 1 ? "pt-6" : "pt-3";
+                  return (
+                    <div key={row.participant_id} className={`${height}`}>
+                      <div className="text-3xl">{medal}</div>
+                      <div className="mt-1 truncate text-sm font-bold text-white">
+                        {row.participant_name}
+                      </div>
+                      <div className="text-lg font-black text-white/90 tabular-nums">
+                        {row.final_score}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="mt-6 max-h-96 overflow-auto rounded-2xl bg-white">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-slate-100">
+                  <tr>
+                    <th className="px-3 py-2 text-right font-bold text-slate-600">
+                      #
+                    </th>
+                    <th className="px-3 py-2 text-right font-bold text-slate-600">
+                      الاسم
+                    </th>
+                    <th className="px-3 py-2 text-right font-bold text-slate-600">
+                      صحيح
+                    </th>
+                    <th className="px-3 py-2 text-right font-bold text-slate-600">
+                      النقاط
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((row) => (
+                    <tr
+                      key={row.participant_id}
+                      className={
+                        row.is_self
+                          ? "bg-violet-100 font-black text-violet-900"
+                          : "border-t border-slate-100"
+                      }
+                    >
+                      <td className="px-3 py-2 font-black">{row.rnk}</td>
+                      <td className="px-3 py-2">
+                        {row.participant_name}
+                        {row.is_self ? (
+                          <span className="ml-2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-black text-white">
+                            أنت
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.correct_count} / {session.question_count}
+                      </td>
+                      <td className="px-3 py-2 font-mono font-black">
+                        {row.final_score}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <a
+              href="/join"
+              className="inline-flex rounded-2xl bg-white px-6 py-3 font-black text-emerald-800 shadow-lg transition hover:bg-emerald-50"
+            >
+              الخروج من الغرفة
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // ================== LOCKED STATE ==================
   if (session.room_state === "locked") {
     return (
       <main
@@ -278,6 +451,7 @@ if (session.room_state === "ended") {
     );
   }
 
+  // ================== WAITING STATE ==================
   if (session.room_state === "waiting") {
     return (
       <main
@@ -290,7 +464,9 @@ if (session.room_state === "ended") {
             <h1 className="mt-2 text-3xl font-black">{session.game_name}</h1>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
-                <div className="text-xs font-bold text-slate-500">كود الغرفة</div>
+                <div className="text-xs font-bold text-slate-500">
+                  كود الغرفة
+                </div>
                 <div className="mt-2 text-xl font-black tracking-[0.12em]">
                   {session.room_code}
                 </div>
@@ -300,7 +476,9 @@ if (session.room_state === "ended") {
                 <div className="mt-2 font-black">{session.participant_name}</div>
               </div>
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
-                <div className="text-xs font-bold text-slate-500">المشاركون</div>
+                <div className="text-xs font-bold text-slate-500">
+                  المشاركون
+                </div>
                 <div className="mt-2 text-2xl font-black">
                   {session.participant_count}
                 </div>
@@ -319,6 +497,10 @@ if (session.room_state === "ended") {
     );
   }
 
+  // ================== RUNNING STATE ==================
+  const myRow = leaderboard.find((r) => r.is_self);
+  const top3 = leaderboard.slice(0, 3);
+
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-6 text-white"
@@ -328,17 +510,30 @@ if (session.room_state === "ended") {
         <header className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-white/70">سباق الكلمات العربية</p>
+              <p className="text-sm font-bold text-white/70">
+                سباق الكلمات العربية
+              </p>
               <h1 className="mt-1 text-2xl font-black">{session.game_name}</h1>
             </div>
             <div className="rounded-2xl bg-white/15 px-4 py-3 text-center">
               <div className="text-xs text-white/70">السؤال</div>
               <div className="text-lg font-black">
-                {Math.min(session.question_index + 1, session.question_count)} /{" "}
-                {session.question_count}
+                {Math.min(session.question_index + 1, session.question_count)}{" "}
+                / {session.question_count}
               </div>
             </div>
           </div>
+
+          {myRow ? (
+            <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/15 px-4 py-2 text-xs">
+              <span className="font-bold">
+                ترتيبك: #{myRow.rnk} من {leaderboard.length}
+              </span>
+              <span className="font-black tabular-nums">
+                {myRow.final_score} نقطة
+              </span>
+            </div>
+          ) : null}
         </header>
 
         {countdown !== null && countdown > 0 ? (
@@ -352,20 +547,30 @@ if (session.room_state === "ended") {
         ) : session.question ? (
           <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between gap-3">
-              <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
-                {session.question.difficulty}
+              <div
+                className={`rounded-full px-4 py-2 text-xs font-black ${
+                  DIFFICULTY_COLOR[session.question.difficulty] ??
+                  "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {DIFFICULTY_AR[session.question.difficulty] ??
+                  session.question.difficulty}
               </div>
-              <div className="rounded-full bg-amber-100 px-4 py-2 text-xs font-black text-amber-800">
-                {answerSecondsLeft ?? 15} ثانية
+              <div
+                className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
+                  (answerSecondsLeft ?? timeLimitSec) <= 5
+                    ? "bg-rose-100 text-rose-800 animate-pulse"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                ⏱ {answerSecondsLeft ?? timeLimitSec} ثانية
               </div>
             </div>
 
-            {/* FIX: render media (image / audio / video) */}
             {session.question.media && session.question.media.length > 0 ? (
               <div className="mt-6 space-y-4">
                 {session.question.media.map((m) => {
                   if (!m.public_url) return null;
-
                   if (m.media_type === "image") {
                     return (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -377,7 +582,6 @@ if (session.room_state === "ended") {
                       />
                     );
                   }
-
                   if (m.media_type === "audio") {
                     return (
                       <audio
@@ -393,7 +597,6 @@ if (session.room_state === "ended") {
                       />
                     );
                   }
-
                   if (m.media_type === "video") {
                     return (
                       <video
@@ -409,7 +612,6 @@ if (session.room_state === "ended") {
                       />
                     );
                   }
-
                   return null;
                 })}
               </div>
@@ -451,12 +653,6 @@ if (session.room_state === "ended") {
                 {submitError}
               </div>
             ) : null}
-
-            {loadError ? (
-              <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-center text-sm font-bold text-amber-800">
-                {loadError}
-              </div>
-            ) : null}
           </section>
         ) : (
           <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
@@ -466,6 +662,32 @@ if (session.room_state === "ended") {
             ) : null}
           </div>
         )}
+
+        {top3.length > 0 ? (
+          <section className="mt-4 rounded-2xl bg-white/10 p-4 shadow-xl backdrop-blur">
+            <p className="text-xs font-bold text-white/70">
+              🏆 المتصدرون الآن
+            </p>
+            <div className="mt-2 space-y-1">
+              {top3.map((row) => (
+                <div
+                  key={row.participant_id}
+                  className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-sm ${
+                    row.is_self ? "bg-white/20 font-black" : "bg-white/5"
+                  }`}
+                >
+                  <span className="truncate">
+                    #{row.rnk} {row.participant_name}
+                    {row.is_self ? " (أنت)" : ""}
+                  </span>
+                  <span className="font-black tabular-nums">
+                    {row.final_score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
