@@ -282,7 +282,6 @@ export default function JoinRoomPage({
   if (session.room_state === "ended") {
     const me = leaderboard.find((r) => r.is_self);
     const podium = leaderboard.slice(0, 3);
-    const myIdx = me ? leaderboard.findIndex((r) => r.is_self) : -1;
 
     return (
       <main

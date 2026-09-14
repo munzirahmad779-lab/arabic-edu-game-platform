@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import JoinLinkActions from "./join-link-actions";
 import { createClient } from "@/lib/supabase/server";
 import RoomLobby from "./room-lobby";
@@ -68,25 +69,47 @@ export default async function RoomPage({
   };
 
   const gameName = snapshot.game?.name ?? "اللعبة";
-  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  const publicBaseUrl = (
-    productionHost
-      ? `https://${productionHost}`
-      : (process.env.APP_PUBLIC_URL ?? "http://localhost:3000")
-  ).replace(/\/$/, "");
+
+  // Deteksi URL publik otomatis dari header request.
+  // Prioritas: APP_PUBLIC_URL (kalau di-set manual) → host header.
+  const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
+  let publicBaseUrl: string;
+
+  if (envPublicUrl) {
+    publicBaseUrl = envPublicUrl;
+  } else {
+    const headersList = await headers();
+    const host = headersList.get("host")?.trim() ?? "";
+    const xfp = headersList.get("x-forwarded-proto")?.trim();
+    const isLocal =
+      host.startsWith("localhost") ||
+      host.startsWith("127.") ||
+      /^\d+\.\d+\.\d+\.\d+/.test(host);
+    const proto = xfp ?? (isLocal ? "http" : "https");
+    publicBaseUrl = host ? `${proto}://${host}` : "http://localhost:3000";
+  }
 
   const joinUrl = `${publicBaseUrl}/join?code=${room.code}`;
   const questionCount = snapshot.questions?.length ?? 0;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dbeafe,_transparent_35%),radial-gradient(circle_at_bottom_left,_#fce7f3,_transparent_35%)] p-4 sm:p-6" dir="rtl">
+    <main
+      className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dbeafe,_transparent_35%),radial-gradient(circle_at_bottom_left,_#fce7f3,_transparent_35%)] p-4 sm:p-6"
+      dir="rtl"
+    >
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-2xl">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="text-sm font-semibold text-white/75">غرفة اللعب</div>
-              <h1 className="mt-1 text-3xl font-black sm:text-4xl">{gameName}</h1>
-              <p className="mt-2 text-sm text-white/80">اجمع طلابك هنا قبل بدء سباق الكلمات العربية.</p>
+              <div className="text-sm font-semibold text-white/75">
+                غرفة اللعب
+              </div>
+              <h1 className="mt-1 text-3xl font-black sm:text-4xl">
+                {gameName}
+              </h1>
+              <p className="mt-2 text-sm text-white/80">
+                اجمع طلابك هنا قبل بدء سباق الكلمات العربية.
+              </p>
             </div>
             <Link
               href="/dashboard/games"
@@ -101,35 +124,63 @@ export default async function RoomPage({
           <section className="rounded-[2rem] border border-indigo-100 bg-white p-6 shadow-xl">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-3xl bg-indigo-50 p-5 text-center">
-                <div className="text-sm font-bold text-indigo-600">كود الغرفة</div>
-                <div className="mt-2 text-lg font-black tracking-[0.08em] text-center text-indigo-950">{room.code}</div>
+                <div className="text-sm font-bold text-indigo-600">
+                  كود الغرفة
+                </div>
+                <div className="mt-2 text-center text-lg font-black tracking-[0.08em] text-indigo-950">
+                  {room.code}
+                </div>
               </div>
               <div className="rounded-3xl bg-fuchsia-50 p-5 text-center">
-                <div className="text-sm font-bold text-fuchsia-600">المشاركون</div>
-                <div className="mt-2 text-4xl font-black text-fuchsia-950">{participants?.length ?? 0}</div>
+                <div className="text-sm font-bold text-fuchsia-600">
+                  المشاركون
+                </div>
+                <div className="mt-2 text-4xl font-black text-fuchsia-950">
+                  {participants?.length ?? 0}
+                </div>
               </div>
               <div className="rounded-3xl bg-amber-50 p-5 text-center">
                 <div className="text-sm font-bold text-amber-700">الأسئلة</div>
-                <div className="mt-2 text-4xl font-black text-amber-950">{questionCount}</div>
+                <div className="mt-2 text-4xl font-black text-amber-950">
+                  {questionCount}
+                </div>
               </div>
             </div>
 
             <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-center text-white">
-              <div className="text-sm font-semibold text-white/60">رابط الانضمام</div>
+              <div className="text-sm font-semibold text-white/60">
+                رابط الانضمام
+              </div>
               <JoinLinkActions joinUrl={joinUrl} />
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+              💡 شارك الرابط الموجود أعلاه مع الطلاب. افتح هذه الصفحة من نفس
+              العنوان الذي سيفتحه الطلاب (مثلاً عبر Cloudflare أو IP الشبكة
+              المحلية) حتى يكون الرابط صالحًا لهم.
             </div>
           </section>
 
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-black text-slate-950">الطلاب في الغرفة</h2>
-                <p className="mt-1 text-sm text-slate-500">تتحدث القائمة تلقائيًا مع وصول المشاركين.</p>
+                <h2 className="text-xl font-black text-slate-950">
+                  الطلاب في الغرفة
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  تتحدث القائمة تلقائيًا مع وصول المشاركين.
+                </p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">{room.state === "waiting" ? "في الانتظار" : "بدأت"}</span>
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                {room.state === "waiting" ? "في الانتظار" : "بدأت"}
+              </span>
             </div>
 
-            <RoomLobby roomId={room.id} initialParticipants={(participants ?? []) as Participant[]} capacity={room.capacity} />
+            <RoomLobby
+              roomId={room.id}
+              initialParticipants={(participants ?? []) as Participant[]}
+              capacity={room.capacity}
+            />
 
             {room.state === "waiting" ? (
               <form action={startRoom} className="mt-5">
