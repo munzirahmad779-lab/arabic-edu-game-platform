@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 const MEDIA_BUCKET = "question-media";
-const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
+const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
 const VALID_PAGES = ["dashboard", "login", "student", "game", "final"] as const;
 
 function readString(fd: FormData, key: string) {
