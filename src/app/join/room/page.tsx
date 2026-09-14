@@ -37,12 +37,14 @@ type Session = {
   room_id: string;
   room_code: string;
   game_name: string;
+  game_mode: string;
+  game_duration_seconds: number;
+  started_at: string | null;
   room_state: "waiting" | "running" | "ended" | "locked";
   participant_id: string;
   participant_name: string;
   participant_count: number;
   capacity: number;
-  duration_seconds: number;
   question_index: number;
   question_count: number;
   question_started_at: string | null;
@@ -86,7 +88,22 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   hard: "bg-rose-100 text-rose-800",
 };
 
+const MODE_AR: Record<string, string> = {
+  competitive: "تنافسي",
+  cooperative: "تعاوني",
+  endless: "بلا نهاية",
+  practice: "تمرين",
+  learning: "تعليمي",
+};
+
 const HEARTBEAT_INTERVAL_MS = 5000;
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m > 0) return `${m}:${String(s).padStart(2, "0")}`;
+  return `${s}`;
+}
 
 export default function JoinRoomPage({
   searchParams,
@@ -220,6 +237,7 @@ export default function JoinRoomPage({
   }, []);
 
   const adjustedNow = now + skewRef.current;
+  const isCooperative = session?.game_mode === "cooperative";
 
   const countdown = useMemo(() => {
     if (
@@ -234,9 +252,11 @@ export default function JoinRoomPage({
     return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
   }, [adjustedNow, session]);
 
+  // Competitive: timer per soal. Cooperative: tidak ada per-soal.
   const timeLimitSec = session?.question?.time_limit_seconds ?? 20;
 
   const answerSecondsLeft = useMemo(() => {
+    if (isCooperative) return null;
     if (
       !session ||
       session.room_state !== "running" ||
@@ -248,7 +268,19 @@ export default function JoinRoomPage({
     const deadline =
       new Date(session.question_started_at).getTime() + timeLimitSec * 1000;
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
-  }, [countdown, adjustedNow, session, timeLimitSec]);
+  }, [countdown, adjustedNow, session, timeLimitSec, isCooperative]);
+
+  // Cooperative: timer total.
+  const totalSecondsLeft = useMemo(() => {
+    if (!isCooperative) return null;
+    if (!session || session.room_state !== "running" || !session.started_at) {
+      return null;
+    }
+    const deadline =
+      new Date(session.started_at).getTime() +
+      session.game_duration_seconds * 1000;
+    return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
+  }, [adjustedNow, session, isCooperative]);
 
   async function submitAnswer(optionId: string) {
     if (
@@ -257,7 +289,8 @@ export default function JoinRoomPage({
       session.answer_submitted ||
       session.room_state !== "running" ||
       countdown !== 0 ||
-      answerSecondsLeft === 0
+      (totalSecondsLeft !== null && totalSecondsLeft === 0) ||
+      (!isCooperative && answerSecondsLeft === 0)
     ) {
       return;
     }
@@ -279,6 +312,8 @@ export default function JoinRoomPage({
           setSubmitError("تم تسجيل إجابتك.");
         } else if (msg === "QUESTION_TIMEOUT") {
           setSubmitError("انتهى وقت السؤال.");
+        } else if (msg === "GAME_TIMEOUT") {
+          setSubmitError("انتهى وقت اللعبة.");
         } else if (msg === "QUESTION_NOT_STARTED") {
           setSubmitError("لم يبدأ السؤال بعد.");
         } else {
@@ -434,7 +469,7 @@ export default function JoinRoomPage({
                       متوسط سرعة الإجابة
                     </div>
                     <div className="mt-1 text-lg font-black text-amber-900">
-                      {(me.avg_response_ms / 1000).toFixed(1)} ثانية
+                      {(me.avg_response_ms / 1000).toFixed(1)} ث
                     </div>
                   </div>
                 </div>
@@ -559,7 +594,12 @@ export default function JoinRoomPage({
       >
         <div className="mx-auto max-w-2xl">
           <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
-            <p className="text-sm font-bold text-violet-100">غرفة اللعب</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-violet-100">غرفة اللعب</p>
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-black">
+                {MODE_AR[session.game_mode] ?? session.game_mode}
+              </span>
+            </div>
             <h1 className="mt-2 text-3xl font-black">{session.game_name}</h1>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
@@ -610,9 +650,14 @@ export default function JoinRoomPage({
         <header className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-white/70">
-                سباق الكلمات العربية
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-bold text-white/70">
+                  سباق الكلمات العربية
+                </p>
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-black">
+                  {MODE_AR[session.game_mode] ?? session.game_mode}
+                </span>
+              </div>
               <h1 className="mt-1 text-2xl font-black">{session.game_name}</h1>
             </div>
             <div className="rounded-2xl bg-white/15 px-4 py-3 text-center">
@@ -623,6 +668,22 @@ export default function JoinRoomPage({
               </div>
             </div>
           </div>
+
+          {/* Timer total untuk cooperative */}
+          {isCooperative && totalSecondsLeft !== null ? (
+            <div
+              className={`mt-3 flex items-center justify-between rounded-2xl px-4 py-2 text-sm font-black transition ${
+                totalSecondsLeft <= 30
+                  ? "animate-pulse bg-rose-500/80 text-white"
+                  : "bg-white/20 text-white"
+              }`}
+            >
+              <span>⏱ الوقت المتبقي</span>
+              <span className="tabular-nums" dir="ltr">
+                {formatDuration(totalSecondsLeft)}
+              </span>
+            </div>
+          ) : null}
 
           {myRow ? (
             <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/15 px-4 py-2 text-xs">
@@ -658,15 +719,23 @@ export default function JoinRoomPage({
                 {DIFFICULTY_AR[session.question.difficulty] ??
                   session.question.difficulty}
               </div>
-              <div
-                className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
-                  (answerSecondsLeft ?? timeLimitSec) <= 5
-                    ? "animate-pulse bg-rose-100 text-rose-800"
-                    : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                ⏱ {answerSecondsLeft ?? timeLimitSec} ثانية
-              </div>
+
+              {/* Competitive: per-question timer. Cooperative: badge saja. */}
+              {isCooperative ? (
+                <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
+                  وضع تعاوني — بلا مؤقت لكل سؤال
+                </div>
+              ) : (
+                <div
+                  className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
+                    (answerSecondsLeft ?? timeLimitSec) <= 5
+                      ? "animate-pulse bg-rose-100 text-rose-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  ⏱ {answerSecondsLeft ?? timeLimitSec} ث
+                </div>
+              )}
             </div>
 
             {session.question.media && session.question.media.length > 0 ? (
@@ -743,7 +812,8 @@ export default function JoinRoomPage({
                   disabled={
                     submitting ||
                     session.answer_submitted ||
-                    answerSecondsLeft === 0
+                    (!isCooperative && answerSecondsLeft === 0) ||
+                    (isCooperative && totalSecondsLeft === 0)
                   }
                   onClick={() => void submitAnswer(option.id)}
                   className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-right text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"

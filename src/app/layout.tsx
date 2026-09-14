@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body>
+      <body suppressHydrationWarning>
         <PageTransition>{children}</PageTransition>
         <GlobalBackgroundAudio />
       </body>

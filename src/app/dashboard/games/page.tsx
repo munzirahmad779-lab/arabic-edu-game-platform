@@ -21,6 +21,8 @@ function getErrorMessage(error?: string) {
       return "اللعبة غير موجودة أو لا تملك صلاحية حذفها.";
     case "room_not_found":
       return "الغرفة غير موجودة أو لا تملك صلاحية حذفها.";
+    case "invalid_mode":
+      return "هذا الوضع مخصص للتدريب الذاتي في بوابة الطالب، ولا يحتاج غرفة.";
     case "delete_failed":
       return "تعذر الحذف. حاول مرة أخرى.";
     default:
@@ -28,32 +30,12 @@ function getErrorMessage(error?: string) {
   }
 }
 
-const MODE_LABEL: Record<string, { ar: string; desc: string; forRoom: boolean }> = {
-  competitive: {
-    ar: "تنافسي",
-    desc: "مؤقت لكل سؤال — سرعة ودقة",
-    forRoom: true,
-  },
-  cooperative: {
-    ar: "تعاوني",
-    desc: "مؤقت إجمالي — أكمل جميع الأسئلة قبل نهاية الوقت",
-    forRoom: true,
-  },
-  endless: {
-    ar: "بلا نهاية",
-    desc: "تدريب ذاتي — بدون وقت، مع تصحيح وتفسير",
-    forRoom: false,
-  },
-  practice: {
-    ar: "تمرين",
-    desc: "تدريب حسب الموضوع — مع تصحيح وتفسير",
-    forRoom: false,
-  },
-  learning: {
-    ar: "تعليمي (قديم)",
-    desc: "وضع قديم — يظهر كـ تعاوني في الواجهة",
-    forRoom: true,
-  },
+const MODE_LABEL: Record<string, { ar: string; forRoom: boolean }> = {
+  competitive: { ar: "تنافسي", forRoom: true },
+  cooperative: { ar: "تعاوني", forRoom: true },
+  endless: { ar: "بلا نهاية", forRoom: false },
+  practice: { ar: "تمرين", forRoom: false },
+  learning: { ar: "تعليمي (قديم)", forRoom: true },
 };
 
 export default async function GamesPage({
@@ -186,6 +168,7 @@ export default async function GamesPage({
               const modeInfo = MODE_LABEL[game.mode] ?? MODE_LABEL.competitive;
               const isRoomMode = modeInfo.forRoom;
               const hasBacksound = Boolean(game.backsound_track_id);
+              const durationMinutes = Math.round(game.duration_seconds / 60);
 
               return (
                 <article
@@ -211,7 +194,7 @@ export default async function GamesPage({
                       {modeInfo.ar}
                     </span>
                     <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
-                      {game.duration_seconds} ث
+                      {durationMinutes} د
                     </span>
                     {hasBacksound ? (
                       <span className="rounded-md bg-fuchsia-50 px-2 py-1 font-bold text-fuchsia-700">
@@ -343,31 +326,31 @@ export default async function GamesPage({
                 </select>
                 <p className="mt-2 text-xs text-neutral-500">
                   ملاحظة: وضعا «بلا نهاية» و«تمرين» لا يحتاجان غرفة — يتم
-                  الوصول إليهما من بوابة الطالب مباشرة. سيتم إضافتهما إلى
-                  البوابة في التحديث القادم.
+                  الوصول إليهما من بوابة الطالب مباشرة.
                 </p>
               </div>
 
               <div>
                 <label
-                  htmlFor="duration-seconds"
+                  htmlFor="duration-minutes"
                   className="block text-sm font-medium"
                 >
-                  مدة اللعبة بالثواني
+                  مدة اللعبة بالدقائق
                 </label>
                 <input
-                  id="duration-seconds"
-                  name="duration_seconds"
+                  id="duration-minutes"
+                  name="duration_minutes"
                   type="number"
-                  min={30}
-                  max={3600}
-                  step={30}
-                  defaultValue={300}
+                  min={1}
+                  max={60}
+                  step={1}
+                  defaultValue={5}
                   required
                   className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm"
                 />
                 <p className="mt-1 text-xs text-neutral-500">
-                  في الوضع التعاوني: هذه هي مدة الإكمال الكلية.
+                  في الوضع التعاوني: هذه هي المدة الكلية لإكمال كل الأسئلة.
+                  في الوضع التنافسي: مدة تقريبية للعبة.
                 </p>
               </div>
 

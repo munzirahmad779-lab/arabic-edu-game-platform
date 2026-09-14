@@ -53,7 +53,7 @@ export async function createGame(formData: FormData) {
   const name = normalizeName(formData.get("name"));
   const classId = normalizeName(formData.get("class_id"));
   const mode = parseGameMode(formData.get("mode"));
-  const durationSeconds = Number(formData.get("duration_seconds"));
+  const durationMinutes = Number(formData.get("duration_minutes"));
   const rankingVisibility = parseRankingVisibility(
     formData.get("ranking_visibility"),
   );
@@ -68,15 +68,17 @@ export async function createGame(formData: FormData) {
     name.length > MAX_GAME_NAME_LENGTH ||
     !classId ||
     !mode ||
-    !Number.isInteger(durationSeconds) ||
-    durationSeconds < 30 ||
-    durationSeconds > 3600 ||
+    !Number.isInteger(durationMinutes) ||
+    durationMinutes < 1 ||
+    durationMinutes > 60 ||
     !rankingVisibility ||
     questionIds.length < 1 ||
     questionIds.length > 40
   ) {
     redirect("/dashboard/games?error=invalid");
   }
+
+  const durationSeconds = durationMinutes * 60;
 
   const { data: classRow, error: classError } = await supabase
     .from("classes")
@@ -149,9 +151,9 @@ export async function createGame(formData: FormData) {
   }
 
   // Explanation timing:
-  // - cooperative: after_each_question (santai, guru bisa pilih)
   // - competitive: never
-  // - endless & practice: after_each_question (untuk belajar)
+  // - cooperative: after_each_question (belajar santai)
+  // - endless/practice: after_each_question (untuk belajar mandiri)
   const explanationTiming: ExplanationTiming =
     mode === "cooperative" ||
     mode === "learning" ||
@@ -318,9 +320,7 @@ export async function createRoom(formData: FormData) {
 
   // Endless & Practice hanya untuk portal siswa (self-practice), bukan room.
   if (game.mode === "endless" || game.mode === "practice") {
-    redirect(
-      `/dashboard/games?error=invalid_game&msg=${encodeURIComponent("هذا الوضع مخصص للتدريب الذاتي في بوابة الطالب، ولا يحتاج غرفة")}`,
-    );
+    redirect(`/dashboard/games?error=invalid_mode`);
   }
 
   const { data: existingRooms, error: existingRoomError } = await supabase
