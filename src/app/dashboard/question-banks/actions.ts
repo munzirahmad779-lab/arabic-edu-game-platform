@@ -144,6 +144,37 @@ export async function createQuestionBank(formData: FormData) {
   redirect("/dashboard/question-banks");
 }
 
+export async function deleteQuestionBank(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const raw = formData.get("bank_id");
+  const bankId = typeof raw === "string" ? raw.trim() : "";
+
+  if (!/^[0-9a-f-]{36}$/i.test(bankId)) {
+    redirect("/dashboard/question-banks?error=invalid_bank_id");
+  }
+
+  const { error } = await supabase.rpc("delete_question_bank", {
+    p_bank_id: bankId,
+  });
+
+  if (error) {
+    console.error("[deleteQuestionBank]", error);
+    redirect(
+      `/dashboard/question-banks?error=${encodeURIComponent(error.message)}`,
+    );
+  }
+
+  revalidatePath("/dashboard/question-banks");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/question-banks?deleted=1");
+}
+
 export async function importQuestionBankRows(questionBankId: string, rows: QuestionImportRow[]) {
   const supabase = await createClient();
   const {

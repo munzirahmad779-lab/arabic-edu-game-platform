@@ -820,6 +820,12 @@ export interface Database {
         };
         Returns: boolean;
       };
+      delete_question_bank: {
+        Args: {
+          p_bank_id: string;
+        };
+        Returns: undefined;
+      };
       get_game_session: {
         Args: { p_join_token: string };
         Returns: Array<{

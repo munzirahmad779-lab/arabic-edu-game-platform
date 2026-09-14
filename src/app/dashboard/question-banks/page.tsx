@@ -9,8 +9,15 @@ import {
 import { QuestionBankImportForm } from "./import-form";
 import { QuestionMediaManager } from "./media-manager";
 import { QuestionEditor } from "./question-editor";
+import { DeleteBankForm } from "./delete-bank-form";
 
-type SearchParams = { error?: string; category_error?: string };
+type SearchParams = {
+  error?: string;
+  category_error?: string;
+  deleted?: string;
+  bank?: string;
+  cat?: string;
+};
 
 function errorMessage(error?: string) {
   switch (error) {
@@ -20,8 +27,10 @@ function errorMessage(error?: string) {
       return "Buku soal dengan nama tersebut sudah ada.";
     case "create_bank_failed":
       return "Buku soal gagal dibuat.";
+    case "invalid_bank_id":
+      return "معرف البنك غير صالح.";
     default:
-      return null;
+      return error ? `خطأ: ${error}` : null;
   }
 }
 
@@ -77,6 +86,10 @@ const difficultyLabel: Record<NonNullable<QuestionRow["difficulty"]>, string> = 
   medium: "Sedang",
   hard: "Sulit",
 };
+
+function isValidUuid(v: string | undefined): v is string {
+  return typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
+}
 
 export default async function QuestionBanksPage({
   searchParams,
@@ -198,6 +211,15 @@ export default async function QuestionBanksPage({
           لوحة التحكم
         </Link>
       </div>
+
+      {searchParams.deleted === "1" ? (
+        <div
+          role="alert"
+          className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        >
+          ✓ تم حذف بنك الأسئلة بنجاح.
+        </div>
+      ) : null}
 
       {errorMessage(searchParams.error) ? (
         <div
@@ -351,6 +373,23 @@ export default async function QuestionBanksPage({
           banks.map((bank) => {
             const bankQuestions = questionsByBank.get(bank.id) ?? [];
 
+            // Filter per bank
+            const isFilterActive = searchParams.bank === bank.id;
+            const activeCat = (() => {
+              if (!isFilterActive) return undefined;
+              const c = searchParams.cat;
+              if (!c) return undefined;
+              if (c === "__none__") return c;
+              if (isValidUuid(c)) return c;
+              return undefined;
+            })();
+
+            const filteredBankQuestions = activeCat
+              ? activeCat === "__none__"
+                ? bankQuestions.filter((q) => !q.category_id)
+                : bankQuestions.filter((q) => q.category_id === activeCat)
+              : bankQuestions;
+
             return (
               <article
                 key={bank.id}
@@ -359,9 +398,16 @@ export default async function QuestionBanksPage({
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="font-semibold">{bank.name}</h3>
-                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
-                      {bankQuestions.length} soal tersimpan
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
+                        {bankQuestions.length} soal tersimpan
+                      </span>
+                      <DeleteBankForm
+                        bankId={bank.id}
+                        bankName={bank.name}
+                        questionCount={bankQuestions.length}
+                      />
+                    </div>
                   </div>
 
                   {bank.description ? (
@@ -390,17 +436,75 @@ export default async function QuestionBanksPage({
                   <div className="flex items-center justify-between gap-3">
                     <h4 className="font-semibold">الأسئلة المحفوظة</h4>
                     <span className="text-sm text-neutral-500">
-                      {bankQuestions.length} سؤال
+                      {filteredBankQuestions.length} / {bankQuestions.length} سؤال
                     </span>
                   </div>
 
-                  {bankQuestions.length === 0 ? (
+                  {bankQuestions.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link
+                        href={`/dashboard/question-banks?bank=${bank.id}`}
+                        className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
+                          isFilterActive && !activeCat
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                        }`}
+                      >
+                        الكل ({bankQuestions.length})
+                      </Link>
+
+                      {(categories ?? []).map((cat) => {
+                        const count = bankQuestions.filter(
+                          (q) => q.category_id === cat.id,
+                        ).length;
+                        if (count === 0) return null;
+                        const isActive = isFilterActive && activeCat === cat.id;
+                        return (
+                          <Link
+                            key={cat.id}
+                            href={`/dashboard/question-banks?bank=${bank.id}&cat=${cat.id}`}
+                            className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
+                              isActive
+                                ? "border-violet-600 bg-violet-600 text-white"
+                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                            }`}
+                          >
+                            {cat.name} ({count})
+                          </Link>
+                        );
+                      })}
+
+                      {(() => {
+                        const noneCount = bankQuestions.filter(
+                          (q) => !q.category_id,
+                        ).length;
+                        if (noneCount === 0) return null;
+                        const isActive = isFilterActive && activeCat === "__none__";
+                        return (
+                          <Link
+                            href={`/dashboard/question-banks?bank=${bank.id}&cat=__none__`}
+                            className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
+                              isActive
+                                ? "border-amber-600 bg-amber-600 text-white"
+                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                            }`}
+                          >
+                            بدون موضوع ({noneCount})
+                          </Link>
+                        );
+                      })()}
+                    </div>
+                  ) : null}
+
+                  {filteredBankQuestions.length === 0 ? (
                     <div className="mt-4 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-                      لا توجد أسئلة محفوظة في هذا البنك.
+                      {bankQuestions.length === 0
+                        ? "لا توجد أسئلة محفوظة في هذا البنك."
+                        : "لا توجد أسئلة تطابق الفلتر المحدد."}
                     </div>
                   ) : (
                     <div className="mt-4 space-y-4">
-                      {bankQuestions.map((question, index) => {
+                      {filteredBankQuestions.map((question, index) => {
                         const questionOptions = optionsByQuestion.get(question.id) ?? [];
 
                         return (
