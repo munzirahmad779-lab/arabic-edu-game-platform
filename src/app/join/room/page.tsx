@@ -81,6 +81,8 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   hard: "bg-rose-100 text-rose-800",
 };
 
+const HEARTBEAT_INTERVAL_MS = 5000;
+
 export default function JoinRoomPage({
   searchParams,
 }: {
@@ -90,11 +92,13 @@ export default function JoinRoomPage({
   const [session, setSession] = useState<Session | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loadError, setLoadError] = useState("");
+  const [sessionEnded, setSessionEnded] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [now, setNow] = useState(Date.now());
   const [submitting, setSubmitting] = useState(false);
 
   const skewRef = useRef(0);
+  const lastHeartbeatRef = useRef(0);
   const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
 
   useEffect(() => {
@@ -113,7 +117,20 @@ export default function JoinRoomPage({
         { p_join_token: token },
       );
 
-      if (rpcError || !data || !data[0]) {
+      if (rpcError) {
+        // Cek apakah room sudah di-arsip / join_token tidak valid lagi
+        if (
+          rpcError.message === "INVALID_JOIN_TOKEN" ||
+          rpcError.message.includes("INVALID")
+        ) {
+          setSessionEnded(true);
+          return;
+        }
+        setLoadError("تعذر تحميل حالة اللعبة.");
+        return;
+      }
+
+      if (!data || !data[0]) {
         setLoadError("تعذر تحميل حالة اللعبة.");
         return;
       }
@@ -147,20 +164,40 @@ export default function JoinRoomPage({
     }
   }, [token]);
 
+  const sendHeartbeat = useCallback(async () => {
+    if (!token) return;
+    try {
+      const supabase = createClient() as unknown as RpcClient;
+      await supabase.rpc("heartbeat_room_participant", {
+        p_join_token: token,
+      });
+    } catch {
+      // ignore
+    }
+  }, [token]);
+
   useEffect(() => {
     void loadSession();
     void loadLeaderboard();
+    void sendHeartbeat();
 
     const timer = window.setInterval(() => {
-      setNow(Date.now());
-      if (roomStateRef.current !== "ended") {
+      const nowTs = Date.now();
+      setNow(nowTs);
+
+      if (roomStateRef.current !== "ended" && !sessionEnded) {
         void loadSession();
         void loadLeaderboard();
+      }
+
+      if (nowTs - lastHeartbeatRef.current > HEARTBEAT_INTERVAL_MS) {
+        lastHeartbeatRef.current = nowTs;
+        void sendHeartbeat();
       }
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [loadSession, loadLeaderboard]);
+  }, [loadSession, loadLeaderboard, sendHeartbeat, sessionEnded]);
 
   useEffect(() => {
     setSubmitError("");
@@ -252,6 +289,34 @@ export default function JoinRoomPage({
     );
   }
 
+  // Sesi direset oleh guru — arahkan siswa untuk join ulang
+  if (sessionEnded) {
+    return (
+      <main
+        className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-4 text-white"
+        dir="rtl"
+      >
+        <div className="mx-auto max-w-2xl py-16 text-center">
+          <div className="rounded-[2rem] bg-white/10 p-8 shadow-2xl backdrop-blur">
+            <div className="text-6xl">🔁</div>
+            <h1 className="mt-4 text-2xl font-black">
+              تم إغلاق هذه الجلسة
+            </h1>
+            <p className="mt-3 text-white/80">
+              بدأ المعلم جلسة جديدة في نفس الغرفة. يمكنك الانضمام من جديد.
+            </p>
+            <a
+              href="/join"
+              className="mt-6 inline-flex rounded-2xl bg-white px-6 py-3 font-black text-slate-900 shadow-lg transition hover:bg-slate-100"
+            >
+              العودة إلى صفحة الانضمام
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (!session) {
     return (
       <main
@@ -278,7 +343,6 @@ export default function JoinRoomPage({
     );
   }
 
-  // ================== ENDED STATE ==================
   if (session.room_state === "ended") {
     const me = leaderboard.find((r) => r.is_self);
     const podium = leaderboard.slice(0, 3);
@@ -288,7 +352,7 @@ export default function JoinRoomPage({
         className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
         dir="rtl"
       >
-        <div className="mx-auto max-w-3xl py-8 space-y-6">
+        <div className="mx-auto max-w-3xl space-y-6 py-8">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🏁</div>
             <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
@@ -301,7 +365,7 @@ export default function JoinRoomPage({
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-6">
                   <div className="text-center">
-                    <div className="text-5xl font-black text-emerald-700 tabular-nums">
+                    <div className="text-5xl font-black tabular-nums text-emerald-700">
                       {me.final_score}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
@@ -310,7 +374,7 @@ export default function JoinRoomPage({
                   </div>
                   <div className="h-16 w-px bg-slate-200" />
                   <div className="text-center">
-                    <div className="text-5xl font-black text-violet-700 tabular-nums">
+                    <div className="text-5xl font-black tabular-nums text-violet-700">
                       #{me.rnk}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
@@ -350,7 +414,8 @@ export default function JoinRoomPage({
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                 {[podium[1], podium[0], podium[2]].map((row, i) => {
                   if (!row) return <div key={i} />;
-                  const medal = row.rnk === 1 ? "🥇" : row.rnk === 2 ? "🥈" : "🥉";
+                  const medal =
+                    row.rnk === 1 ? "🥇" : row.rnk === 2 ? "🥈" : "🥉";
                   const height = row.rnk === 1 ? "pt-6" : "pt-3";
                   return (
                     <div key={row.participant_id} className={`${height}`}>
@@ -358,7 +423,7 @@ export default function JoinRoomPage({
                       <div className="mt-1 truncate text-sm font-bold text-white">
                         {row.participant_name}
                       </div>
-                      <div className="text-lg font-black text-white/90 tabular-nums">
+                      <div className="text-lg font-black tabular-nums text-white/90">
                         {row.final_score}
                       </div>
                     </div>
@@ -430,7 +495,6 @@ export default function JoinRoomPage({
     );
   }
 
-  // ================== LOCKED STATE ==================
   if (session.room_state === "locked") {
     return (
       <main
@@ -450,7 +514,6 @@ export default function JoinRoomPage({
     );
   }
 
-  // ================== WAITING STATE ==================
   if (session.room_state === "waiting") {
     return (
       <main
@@ -472,7 +535,9 @@ export default function JoinRoomPage({
               </div>
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">أنت</div>
-                <div className="mt-2 font-black">{session.participant_name}</div>
+                <div className="mt-2 font-black">
+                  {session.participant_name}
+                </div>
               </div>
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">
@@ -496,7 +561,6 @@ export default function JoinRoomPage({
     );
   }
 
-  // ================== RUNNING STATE ==================
   const myRow = leaderboard.find((r) => r.is_self);
   const top3 = leaderboard.slice(0, 3);
 
@@ -541,7 +605,9 @@ export default function JoinRoomPage({
             <div className="mt-3 text-8xl font-black tabular-nums">
               {countdown}
             </div>
-            <p className="mt-3 text-white/80">سيظهر السؤال بعد العد التنازلي</p>
+            <p className="mt-3 text-white/80">
+              سيظهر السؤال بعد العد التنازلي
+            </p>
           </div>
         ) : session.question ? (
           <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
@@ -558,7 +624,7 @@ export default function JoinRoomPage({
               <div
                 className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
                   (answerSecondsLeft ?? timeLimitSec) <= 5
-                    ? "bg-rose-100 text-rose-800 animate-pulse"
+                    ? "animate-pulse bg-rose-100 text-rose-800"
                     : "bg-amber-100 text-amber-800"
                 }`}
               >

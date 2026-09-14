@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { startRoom } from "../../actions";
 
+const ACTIVE_WINDOW_MS = 60_000;
+
 export default function StartGameButton({
   roomId,
   initialCount,
@@ -19,10 +21,12 @@ export default function StartGameButton({
     const supabase = createClient();
 
     const refresh = async () => {
+      const cutoff = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
       const { count: c, error } = await supabase
         .from("room_participants")
         .select("id", { count: "exact", head: true })
-        .eq("room_id", roomId);
+        .eq("room_id", roomId)
+        .gte("last_seen_at", cutoff);
 
       if (!alive) return;
       if (!error && typeof c === "number") setCount(c);

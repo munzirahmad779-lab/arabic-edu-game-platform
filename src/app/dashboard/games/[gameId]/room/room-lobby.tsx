@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Participant = {
@@ -9,6 +9,7 @@ type Participant = {
   guest_name: string | null;
   connection_state: "connected" | "disconnected";
   joined_at: string;
+  last_seen_at: string;
 };
 
 type LeaderboardRow = {
@@ -34,6 +35,9 @@ type RpcClient = {
   }>;
 };
 
+// Peserta dianggap masih aktif kalau heartbeat < 60 detik lalu
+const ACTIVE_WINDOW_MS = 60_000;
+
 export default function RoomLobby({
   roomId,
   initialParticipants,
@@ -45,6 +49,7 @@ export default function RoomLobby({
 }) {
   const [participants, setParticipants] = useState(initialParticipants);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
+  const [now, setNow] = useState(Date.now());
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
@@ -54,7 +59,9 @@ export default function RoomLobby({
     const refresh = async () => {
       const { data: pData, error: pErr } = await supabase
         .from("room_participants")
-        .select("id, student_id, guest_name, connection_state, joined_at")
+        .select(
+          "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
+        )
         .eq("room_id", roomId)
         .order("joined_at", { ascending: true });
 
@@ -82,7 +89,10 @@ export default function RoomLobby({
     };
 
     void refresh();
-    const fallback = window.setInterval(refresh, 2000);
+    const fallback = window.setInterval(() => {
+      setNow(Date.now());
+      refresh();
+    }, 2000);
 
     return () => {
       alive = false;
@@ -90,19 +100,36 @@ export default function RoomLobby({
     };
   }, [roomId]);
 
-  const connectedCount = participants.filter(
-    (p) => p.connection_state === "connected",
-  ).length;
+  // Hanya tampilkan peserta yang last_seen_at < 60 detik lalu
+  const activeParticipants = useMemo(() => {
+    const cutoff = now - ACTIVE_WINDOW_MS;
+    return participants.filter((p) => {
+      const ts = new Date(p.last_seen_at).getTime();
+      return Number.isFinite(ts) && ts >= cutoff;
+    });
+  }, [participants, now]);
 
-  const boardByParticipant = new Map(
-    leaderboard.map((r) => [r.participant_id, r]),
+  const activeIds = useMemo(
+    () => new Set(activeParticipants.map((p) => p.id)),
+    [activeParticipants],
+  );
+
+  // Filter leaderboard: hanya peserta yang masih aktif
+  const activeLeaderboard = useMemo(
+    () => leaderboard.filter((r) => activeIds.has(r.participant_id)),
+    [leaderboard, activeIds],
+  );
+
+  const boardByParticipant = useMemo(
+    () => new Map(activeLeaderboard.map((r) => [r.participant_id, r])),
+    [activeLeaderboard],
   );
 
   return (
     <div className="mt-5">
       <div className="mb-4 flex items-center justify-between text-sm">
         <span className="font-bold text-slate-700">
-          {connectedCount} متصل الآن
+          {activeParticipants.length} متصل الآن
         </span>
         <span className="text-slate-400">السعة {capacity}</span>
       </div>
@@ -113,23 +140,25 @@ export default function RoomLobby({
         </div>
       ) : null}
 
-      {participants.length === 0 ? (
+      {activeParticipants.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
           <div className="text-4xl">👥</div>
-          <p className="mt-3 font-black text-slate-800">بانتظار انضمام الطلاب</p>
+          <p className="mt-3 font-black text-slate-800">
+            بانتظار انضمام الطلاب
+          </p>
           <p className="mt-1 text-sm text-slate-500">
             أرسل كود الغرفة للطلاب لبدء التجمع.
           </p>
         </div>
       ) : (
         <div className="max-h-[28rem] space-y-2 overflow-auto">
-          {leaderboard.length > 0 ? (
+          {activeLeaderboard.length > 0 ? (
             <div className="mb-3 rounded-2xl border-2 border-amber-200 bg-gradient-to-l from-amber-50 to-yellow-50 p-3">
               <p className="text-xs font-black text-amber-700">
                 🏆 ترتيب مباشر
               </p>
               <div className="mt-2 space-y-1">
-                {leaderboard.slice(0, 5).map((row) => (
+                {activeLeaderboard.slice(0, 5).map((row) => (
                   <div
                     key={row.participant_id}
                     className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
@@ -140,7 +169,7 @@ export default function RoomLobby({
                       </span>
                       <span className="truncate">{row.participant_name}</span>
                     </span>
-                    <span className="font-mono font-black text-amber-700 tabular-nums">
+                    <span className="font-mono font-black tabular-nums text-amber-700">
                       {row.final_score}
                     </span>
                   </div>
@@ -150,12 +179,12 @@ export default function RoomLobby({
           ) : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {participants.map((participant, index) => {
+            {activeParticipants.map((participant, index) => {
+              const stats = boardByParticipant.get(participant.id);
               const label =
-                boardByParticipant.get(participant.id)?.participant_name ??
+                stats?.participant_name ??
                 participant.guest_name ??
                 `طالب ${index + 1}`;
-              const stats = boardByParticipant.get(participant.id);
               return (
                 <div
                   key={participant.id}
@@ -171,9 +200,7 @@ export default function RoomLobby({
                           {label}
                         </div>
                         <div className="mt-1 text-xs font-bold text-emerald-600">
-                          {participant.connection_state === "connected"
-                            ? "متصل"
-                            : "غير متصل"}
+                          متصل
                         </div>
                       </div>
                     </div>
@@ -183,7 +210,7 @@ export default function RoomLobby({
                           <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-black text-amber-800">
                             #{stats.rnk}
                           </span>
-                          <span className="font-mono text-lg font-black text-indigo-700 tabular-nums">
+                          <span className="font-mono text-lg font-black tabular-nums text-indigo-700">
                             {stats.final_score}
                           </span>
                         </div>

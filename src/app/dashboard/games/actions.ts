@@ -186,7 +186,6 @@ export async function deleteGame(formData: FormData) {
     redirect("/dashboard/games?error=game_not_found");
   }
 
-  // Hapus rooms + submissions + participants dulu (foreign key)
   const { data: rooms } = await supabase
     .from("rooms")
     .select("id")
@@ -198,10 +197,10 @@ export async function deleteGame(formData: FormData) {
   if (roomIds.length > 0) {
     await supabase.from("submissions").delete().in("room_id", roomIds);
     await supabase.from("room_participants").delete().in("room_id", roomIds);
+    await supabase.from("room_sessions").delete().in("room_id", roomIds);
     await supabase.from("rooms").delete().in("id", roomIds);
   }
 
-  // Hapus game_questions lalu games
   await supabase.from("game_questions").delete().eq("game_id", gameId);
 
   const { error: deleteError } = await supabase
@@ -512,6 +511,7 @@ export async function deleteRoom(formData: FormData) {
 
   await supabase.from("submissions").delete().eq("room_id", roomId);
   await supabase.from("room_participants").delete().eq("room_id", roomId);
+  await supabase.from("room_sessions").delete().eq("room_id", roomId);
 
   const { error: deleteError } = await supabase
     .from("rooms")
@@ -572,4 +572,41 @@ export async function startRoom(formData: FormData) {
 
   revalidatePath(`/dashboard/games/${room.game_id}/room`);
   redirect(`/dashboard/games/${room.game_id}/room?roomId=${room.id}`);
+}
+
+export async function archiveRoomSession(formData: FormData) {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (e) {
+    console.error("[archiveRoomSession] createClient failed:", e);
+    redirect("/dashboard/games?error=client_failed");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const roomId = normalizeName(formData.get("room_id"));
+  const gameId = normalizeName(formData.get("game_id"));
+
+  if (!roomId || !gameId) {
+    redirect("/dashboard/games?error=invalid");
+  }
+
+  const { error } = await supabase.rpc("archive_room_session", {
+    p_room_id: roomId,
+  });
+
+  if (error) {
+    console.error("[archiveRoomSession] failed:", error);
+    redirect(
+      `/dashboard/games/${gameId}/room?roomId=${roomId}&error=${encodeURIComponent(error.message)}`,
+    );
+  }
+
+  revalidatePath(`/dashboard/games/${gameId}/room`);
+  redirect(`/dashboard/games/${gameId}/room?roomId=${roomId}&archived=1`);
 }

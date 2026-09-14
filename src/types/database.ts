@@ -116,9 +116,9 @@ export interface Database {
         ];
       };
       room_participants: {
-        Row: { id: string; room_id: string; student_id: string | null; guest_name: string | null; connection_state: ConnectionState; joined_at: string; };
-        Insert: { id?: string; room_id: string; student_id?: string | null; guest_name?: string | null; connection_state?: ConnectionState; joined_at?: string; };
-        Update: { id?: string; room_id?: string; student_id?: string | null; guest_name?: string | null; connection_state?: ConnectionState; joined_at?: string; };
+        Row: { id: string; room_id: string; student_id: string | null; guest_name: string | null; connection_state: ConnectionState; joined_at: string; last_seen_at: string; };
+        Insert: { id?: string; room_id: string; student_id?: string | null; guest_name?: string | null; connection_state?: ConnectionState; joined_at?: string; last_seen_at?: string; };
+        Update: { id?: string; room_id?: string; student_id?: string | null; guest_name?: string | null; connection_state?: ConnectionState; joined_at?: string; last_seen_at?: string; };
         Relationships: [
           { foreignKeyName: "room_participants_room_id_fkey"; columns: ["room_id"]; isOneToOne: false; referencedRelation: "rooms"; referencedColumns: ["id"]; },
           { foreignKeyName: "room_participants_student_id_fkey"; columns: ["student_id"]; isOneToOne: false; referencedRelation: "students"; referencedColumns: ["id"]; }
@@ -151,6 +151,18 @@ export interface Database {
         Insert: { id?: string; identifier: string; success: boolean; attempted_at?: string; };
         Update: { id?: string; identifier?: string; success?: boolean; attempted_at?: string; };
         Relationships: [];
+      };
+      room_sessions: {
+        Row: { id: string; room_id: string; session_number: number; started_at: string | null; ended_at: string | null; created_at: string; };
+        Insert: { id?: string; room_id: string; session_number: number; started_at?: string | null; ended_at?: string | null; created_at?: string; };
+        Update: { id?: string; room_id?: string; session_number?: number; started_at?: string | null; ended_at?: string | null; created_at?: string; };
+        Relationships: [{ foreignKeyName: "room_sessions_room_id_fkey"; columns: ["room_id"]; isOneToOne: false; referencedRelation: "rooms"; referencedColumns: ["id"]; }];
+      };
+      room_session_participants: {
+        Row: { id: string; session_id: string; participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms: number; created_at: string; };
+        Insert: { id?: string; session_id: string; participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms?: number; created_at?: string; };
+        Update: { id?: string; session_id?: string; participant_name?: string; final_score?: number; rank?: number; correct_count?: number; total_questions?: number; avg_response_ms?: number; created_at?: string; };
+        Relationships: [{ foreignKeyName: "room_session_participants_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
       };
     };
     Views: Record<string, never>;
@@ -201,6 +213,35 @@ export interface Database {
           answered_count: number; correct_count: number;
           weighted_correct: number; weighted_total: number;
           avg_response_ms: number; final_score: number; rnk: number;
+        }>;
+      };
+      heartbeat_room_participant: {
+        Args: { p_join_token: string };
+        Returns: undefined;
+      };
+      archive_room_session: {
+        Args: { p_room_id: string };
+        Returns: string;
+      };
+      list_room_sessions: {
+        Args: { p_room_id: string };
+        Returns: Array<{
+          session_id: string;
+          session_number: number;
+          started_at: string | null;
+          ended_at: string | null;
+          participant_count: number;
+        }>;
+      };
+      get_room_session_detail: {
+        Args: { p_session_id: string };
+        Returns: Array<{
+          participant_name: string;
+          final_score: number;
+          rank: number;
+          correct_count: number;
+          total_questions: number;
+          avg_response_ms: number;
         }>;
       };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };

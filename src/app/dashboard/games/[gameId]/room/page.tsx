@@ -4,8 +4,10 @@ import JoinLinkActions from "./join-link-actions";
 import { createClient } from "@/lib/supabase/server";
 import RoomLobby from "./room-lobby";
 import StartGameButton from "./start-game-button";
+import ArchiveButton from "./archive-button";
+import SessionHistory from "./session-history";
 
-type SearchParams = { roomId?: string };
+type SearchParams = { roomId?: string; archived?: string; error?: string };
 
 type Participant = {
   id: string;
@@ -13,6 +15,15 @@ type Participant = {
   guest_name: string | null;
   connection_state: "connected" | "disconnected";
   joined_at: string;
+  last_seen_at: string;
+};
+
+type SessionRow = {
+  session_id: string;
+  session_number: number;
+  started_at: string | null;
+  ended_at: string | null;
+  participant_count: number;
 };
 
 export default async function RoomPage({
@@ -59,11 +70,22 @@ export default async function RoomPage({
     );
   }
 
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+
   const { data: participants } = await supabase
     .from("room_participants")
-    .select("id, student_id, guest_name, connection_state, joined_at")
+    .select(
+      "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
+    )
     .eq("room_id", room.id)
+    .gte("last_seen_at", cutoff)
     .order("joined_at", { ascending: true });
+
+  const { data: sessionList } = await supabase.rpc("list_room_sessions", {
+    p_room_id: room.id,
+  });
+
+  const sessions = (sessionList ?? []) as SessionRow[];
 
   const snapshot = room.snapshot as {
     game?: { name?: string; duration_seconds?: number; mode?: string };
@@ -72,7 +94,6 @@ export default async function RoomPage({
 
   const gameName = snapshot.game?.name ?? "اللعبة";
 
-  // Deteksi URL publik otomatis dari header request.
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let publicBaseUrl: string;
 
@@ -120,6 +141,18 @@ export default async function RoomPage({
             </Link>
           </div>
         </header>
+
+        {searchParams.archived === "1" ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
+            ✓ تم أرشفة الجلسة بنجاح. الغرفة جاهزة لجلسة جديدة.
+          </div>
+        ) : null}
+
+        {searchParams.error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-800">
+            خطأ: {searchParams.error}
+          </div>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-[2rem] border border-indigo-100 bg-white p-6 shadow-xl">
@@ -169,11 +202,15 @@ export default async function RoomPage({
                   الطلاب في الغرفة
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  تتحدث القائمة تلقائيًا مع وصول المشاركين.
+                  يظهر فقط الطلاب النشطون خلال آخر 60 ثانية.
                 </p>
               </div>
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-                {room.state === "waiting" ? "في الانتظار" : "بدأت"}
+                {room.state === "waiting"
+                  ? "في الانتظار"
+                  : room.state === "running"
+                    ? "بدأت"
+                    : "انتهت"}
               </span>
             </div>
 
@@ -188,13 +225,25 @@ export default async function RoomPage({
                 roomId={room.id}
                 initialCount={participants?.length ?? 0}
               />
-            ) : (
+            ) : null}
+
+            {room.state === "running" ? (
               <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-800">
-                تم تشغيل الغرفة. واجهة سباق الكلمات ستستخدم حالة الغرفة هذه.
+                اللعبة جارية الآن.
               </div>
-            )}
+            ) : null}
+
+            {room.state === "ended" ? (
+              <ArchiveButton
+                roomId={room.id}
+                gameId={params.gameId}
+                participantCount={participants?.length ?? 0}
+              />
+            ) : null}
           </section>
         </div>
+
+        <SessionHistory sessions={sessions} />
       </div>
     </main>
   );
