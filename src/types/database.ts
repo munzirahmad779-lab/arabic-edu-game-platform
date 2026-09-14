@@ -29,17 +29,6 @@ export type QuestionDifficulty = "easy" | "medium" | "hard";
 export type QuestionOptionKey = "A" | "B" | "C" | "D";
 export type QuestionMediaType = "audio" | "image" | "video";
 
-/**
- * Every table's `Relationships` array below matches postgrest-js's
- * GenericRelationship shape:
- *   { foreignKeyName: string; columns: string[]; isOneToOne?: boolean;
- *     referencedRelation: string; referencedColumns: string[] }
- * It is intentionally written as inline literal objects rather than typed
- * against a shared interface — typing them against a widened `string`-based
- * interface would lose the literal string types postgrest-js needs to
- * resolve embedded-resource (join) queries correctly.
- */
-
 export interface Database {
   public: {
     Tables: {
@@ -825,6 +814,13 @@ export interface Database {
           p_bank_id: string;
         };
         Returns: undefined;
+      };
+      import_students_to_class: {
+        Args: {
+          p_class_id: string;
+          p_rows: Json;
+        };
+        Returns: number;
       };
       get_game_session: {
         Args: { p_join_token: string };

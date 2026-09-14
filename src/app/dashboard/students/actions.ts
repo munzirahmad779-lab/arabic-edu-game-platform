@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { StudentImportRow } from "@/lib/student/excel";
 
 function getField(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -124,4 +125,69 @@ export async function deleteStudent(formData: FormData) {
 
   revalidatePath("/dashboard/students");
   redirect(`/dashboard/students?classId=${encodeURIComponent(classId)}&deleted=1`);
+}
+
+export async function importStudents(
+  classId: string,
+  rows: StudentImportRow[],
+): Promise<{ ok: true; imported: number } | { ok: false; message: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "انتهت الجلسة. سجّل الدخول مرة أخرى." };
+  }
+
+  if (!/^[0-9a-f-]{36}$/i.test(classId)) {
+    return { ok: false, message: "الفصل غير صالح." };
+  }
+
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 200) {
+    return { ok: false, message: "عدد الطلاب يجب أن يكون بين 1 و200." };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc(
+    "import_students_to_class",
+    {
+      p_class_id: classId,
+      p_rows: rows,
+    },
+  );
+
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.includes("DUPLICATE_STUDENT_IN_FILE")) {
+      return {
+        ok: false,
+        message: "يوجد اسم مكرر داخل الملف. تأكد أن كل اسم فريد.",
+      };
+    }
+    if (msg.includes("DUPLICATE_STUDENT")) {
+      return {
+        ok: false,
+        message:
+          "يوجد طالب بنفس الاسم في هذا الفصل. احذف الاسم المكرر من الملف أو من الفصل.",
+      };
+    }
+    if (msg.includes("INVALID_PIN_FORMAT")) {
+      return { ok: false, message: "يوجد PIN غير صالح في الملف." };
+    }
+    if (msg.includes("INVALID_NAME")) {
+      return { ok: false, message: "يوجد اسم غير صالح في الملف." };
+    }
+    if (msg.includes("CLASS_NOT_FOUND")) {
+      return { ok: false, message: "الفصل غير موجود." };
+    }
+    if (msg.includes("FORBIDDEN")) {
+      return { ok: false, message: "لا تملك صلاحية على هذا الفصل." };
+    }
+    return { ok: false, message: msg || "فشل الاستيراد." };
+  }
+
+  revalidatePath("/dashboard/students");
+  return { ok: true, imported: Number(data) || 0 };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createStudent, deleteStudent, resetStudentPin } from "./actions";
+import { StudentImportForm } from "./import-form";
 
 type SearchParams = {
   classId?: string;
@@ -183,175 +184,222 @@ export default async function StudentsPage({
             </section>
 
             {activeClass ? (
-              <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl">
-                  <div>
-                    <p className="text-sm font-bold text-violet-600">
-                      إضافة طالب
-                    </p>
-                    <h2 className="mt-1 text-2xl font-black text-slate-950">
-                      {activeClass.name}
-                    </h2>
-                    <p className="mt-2 text-sm text-slate-500">
-                      اختر PIN من 4 إلى 6 أرقام، ثم أعطه للطالب.
-                    </p>
-                  </div>
-
-                  <form action={createStudent} className="mt-6 space-y-4">
-                    <input
-                      type="hidden"
-                      name="class_id"
-                      value={activeClass.id}
-                    />
-
+              <>
+                <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                  <div className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl">
                     <div>
-                      <label
-                        htmlFor="student-name"
-                        className="block text-sm font-bold"
-                      >
-                        اسم الطالب
-                      </label>
-                      <input
-                        id="student-name"
-                        name="name"
-                        type="text"
-                        maxLength={100}
-                        required
-                        className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="student-pin"
-                        className="block text-sm font-bold"
-                      >
-                        PIN الطالب
-                      </label>
-                      <input
-                        id="student-pin"
-                        name="pin"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{4,6}"
-                        minLength={4}
-                        maxLength={6}
-                        required
-                        autoComplete="new-password"
-                        className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-center tracking-[0.3em] outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full rounded-2xl bg-gradient-to-l from-indigo-600 to-violet-600 px-5 py-3.5 font-black text-white shadow-lg hover:-translate-y-0.5"
-                    >
-                      إضافة الطالب
-                    </button>
-                  </form>
-                </div>
-
-                <div className="rounded-[2rem] border border-fuchsia-100 bg-white p-6 shadow-xl">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-bold text-fuchsia-600">
-                        قائمة الطلاب
+                      <p className="text-sm font-bold text-violet-600">
+                        إضافة طالب
                       </p>
                       <h2 className="mt-1 text-2xl font-black text-slate-950">
-                        {students?.length ?? 0} طالب
+                        {activeClass.name}
                       </h2>
-                    </div>
-
-                    <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-black text-fuchsia-700">
-                      {activeClass.name}
-                    </span>
-                  </div>
-
-                  {!students?.length ? (
-                    <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                      <div className="text-4xl">👤</div>
-                      <p className="mt-3 font-bold text-slate-700">
-                        لا يوجد طلاب بعد
+                      <p className="mt-2 text-sm text-slate-500">
+                        اختر PIN من 4 إلى 6 أرقام، ثم أعطه للطالب.
                       </p>
                     </div>
-                  ) : (
-                    <div className="mt-6 space-y-3">
-                      {students.map((student) => (
-                        <div
-                          key={student.id}
-                          className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+
+                    <form action={createStudent} className="mt-6 space-y-4">
+                      <input
+                        type="hidden"
+                        name="class_id"
+                        value={activeClass.id}
+                      />
+
+                      <div>
+                        <label
+                          htmlFor="student-name"
+                          className="block text-sm font-bold"
                         >
-                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
-                              <div className="text-lg font-black text-slate-950">
-                                {student.name}
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                PIN مخزن بشكل آمن
-                              </div>
-                            </div>
+                          اسم الطالب
+                        </label>
+                        <input
+                          id="student-name"
+                          name="name"
+                          type="text"
+                          maxLength={100}
+                          required
+                          className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                        />
+                      </div>
 
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                              <form
-                                action={resetStudentPin}
-                                className="flex gap-2"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="student_id"
-                                  value={student.id}
-                                />
-                                <input
-                                  type="hidden"
-                                  name="class_id"
-                                  value={activeClass.id}
-                                />
-                                <input
-                                  name="pin"
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]{4,6}"
-                                  minLength={4}
-                                  maxLength={6}
-                                  required
-                                  placeholder="PIN جديد"
-                                  autoComplete="new-password"
-                                  className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-center text-sm tracking-[0.2em]"
-                                />
-                                <button
-                                  type="submit"
-                                  className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-black text-white"
-                                >
-                                  تغيير PIN
-                                </button>
-                              </form>
+                      <div>
+                        <label
+                          htmlFor="student-pin"
+                          className="block text-sm font-bold"
+                        >
+                          PIN الطالب
+                        </label>
+                        <input
+                          id="student-pin"
+                          name="pin"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]{4,6}"
+                          minLength={4}
+                          maxLength={6}
+                          required
+                          autoComplete="new-password"
+                          className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-center tracking-[0.3em] outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                        />
+                      </div>
 
-                              <form action={deleteStudent}>
-                                <input
-                                  type="hidden"
-                                  name="student_id"
-                                  value={student.id}
-                                />
-                                <input
-                                  type="hidden"
-                                  name="class_id"
-                                  value={activeClass.id}
-                                />
-                                <button
-                                  type="submit"
-                                  className="rounded-xl bg-red-100 px-4 py-2 text-xs font-black text-red-700"
+                      <button
+                        type="submit"
+                        className="w-full rounded-2xl bg-gradient-to-l from-indigo-600 to-violet-600 px-5 py-3.5 font-black text-white shadow-lg hover:-translate-y-0.5"
+                      >
+                        إضافة الطالب
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="rounded-[2rem] border border-fuchsia-100 bg-white p-6 shadow-xl">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-bold text-fuchsia-600">
+                          قائمة الطلاب
+                        </p>
+                        <h2 className="mt-1 text-2xl font-black text-slate-950">
+                          {students?.length ?? 0} طالب
+                        </h2>
+                      </div>
+
+                      <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-black text-fuchsia-700">
+                        {activeClass.name}
+                      </span>
+                    </div>
+
+                    {!students?.length ? (
+                      <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                        <div className="text-4xl">👤</div>
+                        <p className="mt-3 font-bold text-slate-700">
+                          لا يوجد طلاب بعد
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-6 space-y-3">
+                        {students.map((student) => (
+                          <div
+                            key={student.id}
+                            className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                          >
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <div className="text-lg font-black text-slate-950">
+                                  {student.name}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  PIN مخزن بشكل آمن
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-3 sm:flex-row">
+                                <form
+                                  action={resetStudentPin}
+                                  className="flex gap-2"
                                 >
-                                  حذف
-                                </button>
-                              </form>
+                                  <input
+                                    type="hidden"
+                                    name="student_id"
+                                    value={student.id}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="class_id"
+                                    value={activeClass.id}
+                                  />
+                                  <input
+                                    name="pin"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]{4,6}"
+                                    minLength={4}
+                                    maxLength={6}
+                                    required
+                                    placeholder="PIN جديد"
+                                    autoComplete="new-password"
+                                    className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-center text-sm tracking-[0.2em]"
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-black text-white"
+                                  >
+                                    تغيير PIN
+                                  </button>
+                                </form>
+
+                                <form action={deleteStudent}>
+                                  <input
+                                    type="hidden"
+                                    name="student_id"
+                                    value={student.id}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="class_id"
+                                    value={activeClass.id}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-xl bg-red-100 px-4 py-2 text-xs font-black text-red-700"
+                                  >
+                                    حذف
+                                  </button>
+                                </form>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-xl">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-600">
+                      استيراد جماعي
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black text-slate-950">
+                      📥 استيراد طلاب من Excel
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-500">
+                      ارفع ملف Excel فيه 3 أعمدة بالترتيب:{" "}
+                      <span dir="ltr" className="font-bold">
+                        No | Nama | PIN
+                      </span>
+                      . سيتم إضافة جميع الطلاب إلى هذا الفصل ({" "}
+                      <span className="font-bold">{activeClass.name}</span>).
+                    </p>
+                  </div>
+
+                  <StudentImportForm classId={activeClass.id} />
+
+                  <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
+                    <summary className="cursor-pointer font-bold text-neutral-800">
+                      ℹ️ كيف أنشئ ملف Excel؟
+                    </summary>
+                    <ol className="mt-3 list-decimal space-y-1.5 pr-5 text-neutral-700">
+                      <li>افتح Excel أو Google Sheets.</li>
+                      <li>
+                        اكتب في الصف الأول ثلاثة عناوين بالضبط:{" "}
+                        <span dir="ltr" className="font-bold">
+                          No, Nama, PIN
+                        </span>
+                      </li>
+                      <li>
+                        ابدأ من الصف الثاني: رقم متسلسل، اسم الطالب، PIN من 4-6
+                        أرقام.
+                      </li>
+                      <li>احفظ الملف بصيغة .xlsx ثم ارفعه هنا.</li>
+                    </ol>
+                    <p className="mt-3 text-xs text-neutral-500">
+                      ملاحظة: PIN يظهر كعمود عادي في Excel، لكنه يُحفظ بشكل
+                      آمن (bcrypt) في قاعدة البيانات.
+                    </p>
+                  </details>
+                </section>
+              </>
             ) : null}
           </>
         )}
