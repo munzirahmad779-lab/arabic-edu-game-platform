@@ -38,6 +38,16 @@ export async function getStudentSession(): Promise<StudentSession | null> {
 }
 
 /**
+ * Baca token mentah dari cookie (untuk RPC yang butuh p_token,
+ * mis. student_list_materials / student_get_material).
+ * Return null kalau tidak ada cookie.
+ */
+export async function getStudentToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(COOKIE_NAME)?.value ?? null;
+}
+
+/**
  * Set cookie session siswa.
  * HANYA bisa dipanggil di Server Action / Route Handler.
  */
