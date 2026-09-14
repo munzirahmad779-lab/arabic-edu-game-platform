@@ -8,7 +8,7 @@ import type { ExplanationTiming } from "@/types/database";
 const MAX_GAME_NAME_LENGTH = 120;
 const MEDIA_BUCKET = "question-media";
 
-type GameMode = "competitive" | "learning";
+type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning";
 type RankingVisibility = "full" | "hidden" | "self_only";
 
 function normalizeName(value: FormDataEntryValue | null) {
@@ -17,6 +17,9 @@ function normalizeName(value: FormDataEntryValue | null) {
 
 function parseGameMode(value: FormDataEntryValue | null): GameMode | null {
   if (value === "competitive") return "competitive";
+  if (value === "cooperative") return "cooperative";
+  if (value === "endless") return "endless";
+  if (value === "practice") return "practice";
   if (value === "learning") return "learning";
   return null;
 }
@@ -54,6 +57,7 @@ export async function createGame(formData: FormData) {
   const rankingVisibility = parseRankingVisibility(
     formData.get("ranking_visibility"),
   );
+  const backsoundTrackIdRaw = normalizeName(formData.get("backsound_track_id"));
 
   const questionIds = formData
     .getAll("question_id")
@@ -104,6 +108,24 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  // Backsound opsional
+  let backsoundTrackId: string | null = null;
+  if (backsoundTrackIdRaw) {
+    if (!/^[0-9a-f-]{36}$/i.test(backsoundTrackIdRaw)) {
+      redirect("/dashboard/games?error=invalid&msg=invalid_backsound");
+    }
+    const { data: track } = await supabase
+      .from("teacher_audio_tracks")
+      .select("id")
+      .eq("id", backsoundTrackIdRaw)
+      .eq("teacher_id", user.id)
+      .maybeSingle();
+    if (!track) {
+      redirect("/dashboard/games?error=invalid&msg=invalid_backsound");
+    }
+    backsoundTrackId = track.id;
+  }
+
   const { data: game, error: gameError } = await supabase
     .from("games")
     .insert({
@@ -114,6 +136,7 @@ export async function createGame(formData: FormData) {
       mode,
       duration_seconds: durationSeconds,
       ranking_visibility: rankingVisibility,
+      backsound_track_id: backsoundTrackId,
     })
     .select("id")
     .single();
@@ -125,8 +148,17 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  // Explanation timing:
+  // - cooperative: after_each_question (santai, guru bisa pilih)
+  // - competitive: never
+  // - endless & practice: after_each_question (untuk belajar)
   const explanationTiming: ExplanationTiming =
-    mode === "learning" ? "after_each_question" : "never";
+    mode === "cooperative" ||
+    mode === "learning" ||
+    mode === "endless" ||
+    mode === "practice"
+      ? "after_each_question"
+      : "never";
 
   const rows = uniqueQuestionIds.map((questionId, index) => ({
     game_id: game.id,
@@ -272,7 +304,7 @@ export async function createRoom(formData: FormData) {
   const { data: game, error: gameError } = await supabase
     .from("games")
     .select(
-      "id, teacher_id, class_id, name, game_type, mode, duration_seconds, ranking_visibility",
+      "id, teacher_id, class_id, name, game_type, mode, duration_seconds, ranking_visibility, backsound_track_id",
     )
     .eq("id", gameId)
     .eq("teacher_id", user.id)
@@ -281,6 +313,13 @@ export async function createRoom(formData: FormData) {
   if (gameError || !game) {
     redirect(
       `/dashboard/games?error=invalid_game&msg=${encodeURIComponent(gameError?.message ?? "game_not_found")}`,
+    );
+  }
+
+  // Endless & Practice hanya untuk portal siswa (self-practice), bukan room.
+  if (game.mode === "endless" || game.mode === "practice") {
+    redirect(
+      `/dashboard/games?error=invalid_game&msg=${encodeURIComponent("هذا الوضع مخصص للتدريب الذاتي في بوابة الطالب، ولا يحتاج غرفة")}`,
     );
   }
 
@@ -448,6 +487,7 @@ export async function createRoom(formData: FormData) {
       duration_seconds: game.duration_seconds,
       ranking_visibility: game.ranking_visibility,
       class_id: game.class_id,
+      backsound_track_id: game.backsound_track_id,
     },
     questions: snapshotQuestions,
   };

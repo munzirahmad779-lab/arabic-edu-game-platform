@@ -11,7 +11,7 @@ export type Json =
   | Json[];
 
 export type ExplanationTiming = "after_each_question" | "after_game_only" | "never";
-export type GameMode = "competitive" | "learning";
+export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning";
 export type GameType = "arabic_chase_race";
 export type QuestionType = "mcq";
 export type RankingVisibility = "full" | "hidden" | "self_only";
@@ -88,12 +88,13 @@ export interface Database {
         ];
       };
       games: {
-        Row: { id: string; teacher_id: string; class_id: string | null; name: string; game_type: GameType; mode: GameMode; duration_seconds: number; ranking_visibility: RankingVisibility; created_at: string; updated_at: string; };
-        Insert: { id?: string; teacher_id: string; class_id?: string | null; name: string; game_type?: GameType; mode: GameMode; duration_seconds: number; ranking_visibility?: RankingVisibility; created_at?: string; updated_at?: string; };
-        Update: { id?: string; teacher_id?: string; class_id?: string | null; name?: string; game_type?: GameType; mode?: GameMode; duration_seconds?: number; ranking_visibility?: RankingVisibility; created_at?: string; updated_at?: string; };
+        Row: { id: string; teacher_id: string; class_id: string | null; name: string; game_type: GameType; mode: GameMode; duration_seconds: number; ranking_visibility: RankingVisibility; backsound_track_id: string | null; created_at: string; updated_at: string; };
+        Insert: { id?: string; teacher_id: string; class_id?: string | null; name: string; game_type?: GameType; mode: GameMode; duration_seconds: number; ranking_visibility?: RankingVisibility; backsound_track_id?: string | null; created_at?: string; updated_at?: string; };
+        Update: { id?: string; teacher_id?: string; class_id?: string | null; name?: string; game_type?: GameType; mode?: GameMode; duration_seconds?: number; ranking_visibility?: RankingVisibility; backsound_track_id?: string | null; created_at?: string; updated_at?: string; };
         Relationships: [
           { foreignKeyName: "games_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; },
-          { foreignKeyName: "games_class_id_fkey"; columns: ["class_id"]; isOneToOne: false; referencedRelation: "classes"; referencedColumns: ["id"]; }
+          { foreignKeyName: "games_class_id_fkey"; columns: ["class_id"]; isOneToOne: false; referencedRelation: "classes"; referencedColumns: ["id"]; },
+          { foreignKeyName: "games_backsound_track_id_fkey"; columns: ["backsound_track_id"]; isOneToOne: false; referencedRelation: "teacher_audio_tracks"; referencedColumns: ["id"]; }
         ];
       };
       game_questions: {

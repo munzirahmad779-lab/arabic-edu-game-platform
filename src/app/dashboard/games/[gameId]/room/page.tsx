@@ -26,6 +26,14 @@ type SessionRow = {
   participant_count: number;
 };
 
+const MODE_AR: Record<string, string> = {
+  competitive: "تنافسي",
+  cooperative: "تعاوني",
+  endless: "بلا نهاية",
+  practice: "تمرين",
+  learning: "تعليمي (قديم)",
+};
+
 export default async function RoomPage({
   params,
   searchParams,
@@ -88,11 +96,31 @@ export default async function RoomPage({
   const sessions = (sessionList ?? []) as SessionRow[];
 
   const snapshot = room.snapshot as {
-    game?: { name?: string; duration_seconds?: number; mode?: string };
+    game?: {
+      name?: string;
+      duration_seconds?: number;
+      mode?: string;
+      backsound_track_id?: string | null;
+    };
     questions?: unknown[];
   };
 
   const gameName = snapshot.game?.name ?? "اللعبة";
+  const gameMode = snapshot.game?.mode ?? "competitive";
+  const modeAr = MODE_AR[gameMode] ?? gameMode;
+  const backsoundId = snapshot.game?.backsound_track_id ?? null;
+
+  // Ambil nama backsound kalau ada
+  let backsoundName: string | null = null;
+  if (backsoundId) {
+    const { data: track } = await supabase
+      .from("teacher_audio_tracks")
+      .select("name")
+      .eq("id", backsoundId)
+      .eq("teacher_id", user.id)
+      .maybeSingle();
+    backsoundName = track?.name ?? null;
+  }
 
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let publicBaseUrl: string;
@@ -123,10 +151,20 @@ export default async function RoomPage({
         <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-2xl">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="text-sm font-semibold text-white/75">
-                غرفة اللعب
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-white/75">
+                  غرفة اللعب
+                </span>
+                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white">
+                  {modeAr}
+                </span>
+                {backsoundName ? (
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white">
+                    🎵 {backsoundName}
+                  </span>
+                ) : null}
               </div>
-              <h1 className="mt-1 text-3xl font-black sm:text-4xl">
+              <h1 className="mt-2 text-3xl font-black sm:text-4xl">
                 {gameName}
               </h1>
               <p className="mt-2 text-sm text-white/80">

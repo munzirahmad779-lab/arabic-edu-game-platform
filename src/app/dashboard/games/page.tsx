@@ -28,6 +28,34 @@ function getErrorMessage(error?: string) {
   }
 }
 
+const MODE_LABEL: Record<string, { ar: string; desc: string; forRoom: boolean }> = {
+  competitive: {
+    ar: "تنافسي",
+    desc: "مؤقت لكل سؤال — سرعة ودقة",
+    forRoom: true,
+  },
+  cooperative: {
+    ar: "تعاوني",
+    desc: "مؤقت إجمالي — أكمل جميع الأسئلة قبل نهاية الوقت",
+    forRoom: true,
+  },
+  endless: {
+    ar: "بلا نهاية",
+    desc: "تدريب ذاتي — بدون وقت، مع تصحيح وتفسير",
+    forRoom: false,
+  },
+  practice: {
+    ar: "تمرين",
+    desc: "تدريب حسب الموضوع — مع تصحيح وتفسير",
+    forRoom: false,
+  },
+  learning: {
+    ar: "تعليمي (قديم)",
+    desc: "وضع قديم — يظهر كـ تعاوني في الواجهة",
+    forRoom: true,
+  },
+};
+
 export default async function GamesPage({
   searchParams,
 }: {
@@ -47,6 +75,7 @@ export default async function GamesPage({
     { data: classes, error: classesError },
     { data: banks, error: banksError },
     { data: games, error: gamesError },
+    { data: audioTracks },
   ] = await Promise.all([
     supabase
       .from("classes")
@@ -63,9 +92,16 @@ export default async function GamesPage({
     supabase
       .from("games")
       .select(
-        "id, name, class_id, game_type, mode, duration_seconds, ranking_visibility, created_at",
+        "id, name, class_id, game_type, mode, duration_seconds, ranking_visibility, backsound_track_id, created_at",
       )
       .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("teacher_audio_tracks")
+      .select("id, name, enabled")
+      .eq("teacher_id", user.id)
+      .eq("enabled", true)
       .order("created_at", { ascending: false }),
   ]);
 
@@ -88,6 +124,7 @@ export default async function GamesPage({
   }
 
   const errorMessage = getErrorMessage(searchParams.error);
+  const tracks = audioTracks ?? [];
 
   return (
     <main className="space-y-8" dir="rtl">
@@ -146,13 +183,15 @@ export default async function GamesPage({
               const className =
                 classes.find((item) => item.id === game.class_id)?.name ??
                 "بدون فصل";
+              const modeInfo = MODE_LABEL[game.mode] ?? MODE_LABEL.competitive;
+              const isRoomMode = modeInfo.forRoom;
+              const hasBacksound = Boolean(game.backsound_track_id);
 
               return (
                 <article
                   key={game.id}
                   className="flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md"
                 >
-                  {/* Header: nama + badge type */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate text-lg font-semibold">
@@ -167,27 +206,42 @@ export default async function GamesPage({
                     </span>
                   </div>
 
-                  {/* Badges info */}
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-md bg-violet-50 px-2 py-1 font-bold text-violet-700">
-                      {game.mode === "competitive" ? "تنافسي" : "تعليمي"}
+                      {modeInfo.ar}
                     </span>
                     <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
                       {game.duration_seconds} ث
                     </span>
+                    {hasBacksound ? (
+                      <span className="rounded-md bg-fuchsia-50 px-2 py-1 font-bold text-fuchsia-700">
+                        🎵
+                      </span>
+                    ) : null}
                   </div>
 
-                  {/* Action buttons */}
+                  {!isRoomMode ? (
+                    <p className="mt-2 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-bold text-blue-800">
+                      📖 تدريب ذاتي — متاح في بوابة الطالب
+                    </p>
+                  ) : null}
+
                   <div className="mt-4 flex gap-2 pt-2">
-                    <form action={createRoom} className="flex-1">
-                      <input type="hidden" name="game_id" value={game.id} />
-                      <button
-                        type="submit"
-                        className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
-                      >
-                        ▶ تشغيل اللعبة
-                      </button>
-                    </form>
+                    {isRoomMode ? (
+                      <form action={createRoom} className="flex-1">
+                        <input type="hidden" name="game_id" value={game.id} />
+                        <button
+                          type="submit"
+                          className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
+                        >
+                          ▶ تشغيل اللعبة
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="flex-1 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2.5 text-center text-xs font-bold text-blue-700">
+                        بدون غرفة
+                      </div>
+                    )}
 
                     <form action={deleteGame}>
                       <input type="hidden" name="game_id" value={game.id} />
@@ -264,7 +318,7 @@ export default async function GamesPage({
                 </select>
               </div>
 
-              <div>
+              <div className="lg:col-span-2">
                 <label htmlFor="mode" className="block text-sm font-medium">
                   وضع اللعبة
                 </label>
@@ -274,9 +328,24 @@ export default async function GamesPage({
                   defaultValue="competitive"
                   className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
                 >
-                  <option value="competitive">تنافسي</option>
-                  <option value="learning">تعليمي</option>
+                  <option value="competitive">
+                    تنافسي — مؤقت لكل سؤال
+                  </option>
+                  <option value="cooperative">
+                    تعاوني — مؤقت إجمالي (أكمل كل الأسئلة في الوقت المحدد)
+                  </option>
+                  <option value="endless">
+                    بلا نهاية — تدريب ذاتي في بوابة الطالب (بدون وقت)
+                  </option>
+                  <option value="practice">
+                    تمرين — تدريب حسب الموضوع في بوابة الطالب
+                  </option>
                 </select>
+                <p className="mt-2 text-xs text-neutral-500">
+                  ملاحظة: وضعا «بلا نهاية» و«تمرين» لا يحتاجان غرفة — يتم
+                  الوصول إليهما من بوابة الطالب مباشرة. سيتم إضافتهما إلى
+                  البوابة في التحديث القادم.
+                </p>
               </div>
 
               <div>
@@ -297,6 +366,9 @@ export default async function GamesPage({
                   required
                   className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm"
                 />
+                <p className="mt-1 text-xs text-neutral-500">
+                  في الوضع التعاوني: هذه هي مدة الإكمال الكلية.
+                </p>
               </div>
 
               <div>
@@ -316,6 +388,41 @@ export default async function GamesPage({
                   <option value="hidden">مخفي</option>
                   <option value="self_only">لللاعب نفسه</option>
                 </select>
+              </div>
+
+              <div className="lg:col-span-2">
+                <label
+                  htmlFor="backsound-track-id"
+                  className="block text-sm font-medium"
+                >
+                  🎵 موسيقى خلفية خاصة بهذه اللعبة (اختياري)
+                </label>
+                <select
+                  id="backsound-track-id"
+                  name="backsound_track_id"
+                  defaultValue=""
+                  className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
+                >
+                  <option value="">— بدون موسيقى خاصة —</option>
+                  {tracks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {tracks.length === 0
+                    ? "لا توجد مقاطع محمّلة. اذهب إلى إعدادات الموسيقى لإضافة مقاطع."
+                    : "سيتم تشغيل هذه الموسيقى أثناء اللعب في هذه اللعبة تحديدًا."}
+                </p>
+                {tracks.length === 0 ? (
+                  <Link
+                    href="/dashboard/settings/audio"
+                    className="mt-2 inline-flex text-xs font-bold text-violet-700 underline"
+                  >
+                    ← إدارة الموسيقى
+                  </Link>
+                ) : null}
               </div>
             </div>
 
