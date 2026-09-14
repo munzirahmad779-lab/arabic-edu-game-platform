@@ -273,8 +273,8 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     }
 
     if (!("ABCD" as string).includes(correct) || correct.length !== 1) fail(errors, excelRow, "Jawaban Benar", "Harus tepat A, B, C, atau D.");
-    if (!topic) fail(errors, excelRow, "Topik", "Tidak boleh kosong.");
-    else if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
+    // Topik boleh kosong (soal tanpa kategori). Kalau diisi, maks 200 karakter.
+    if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
     if (!["easy", "medium", "hard"].includes(difficulty)) fail(errors, excelRow, "Tingkat Kesulitan", "Harus tepat easy, medium, atau hard.");
 
     if (hasMediaValue !== "YA" && hasMediaValue !== "TIDAK") {
@@ -298,7 +298,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
       fail(errors, excelRow, "Media", "Jika Ada Media? = TIDAK, kolom media lain harus kosong.");
     }
 
-    if (no !== null && question && optionA && optionB && optionC && optionD && ["A", "B", "C", "D"].includes(correct) && topic && ["easy", "medium", "hard"].includes(difficulty) && (hasMediaValue === "YA" || hasMediaValue === "TIDAK")) {
+    if (no !== null && question && optionA && optionB && optionC && optionD && ["A", "B", "C", "D"].includes(correct) && ["easy", "medium", "hard"].includes(difficulty) && (hasMediaValue === "YA" || hasMediaValue === "TIDAK")) {
       rows.push({
         no,
         question,
@@ -317,7 +317,3 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
   rows.sort((a, b) => a.no - b.no);
   return { rows, errors };
 }
-
-
-
-
