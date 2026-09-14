@@ -35,14 +35,19 @@ function pageOf(pathname: string): PageKey | null {
 export function GlobalBackgroundAudio() {
   const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [userMuted, setUserMuted] = useState(false);
   const [pausedByEvent, setPausedByEvent] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Fetch tracks
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     let alive = true;
     const supabase = createClient();
     (async () => {
@@ -60,9 +65,8 @@ export function GlobalBackgroundAudio() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [mounted]);
 
-  // Listen event pause/resume dari halaman lain (mis. soal audio)
   useEffect(() => {
     const onPause = () => setPausedByEvent(true);
     const onResume = () => setPausedByEvent(false);
@@ -81,12 +85,11 @@ export function GlobalBackgroundAudio() {
     ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
     : null;
 
-  // Play/pause handler
   useEffect(() => {
+    if (!mounted) return;
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Kalau tidak ada track aktif, atau sedang dipause karena event → stop
     if (!activeTrack || pausedByEvent) {
       audio.pause();
       if (!activeTrack) {
@@ -155,9 +158,9 @@ export function GlobalBackgroundAudio() {
     return () => {
       removeGestureHandlers();
     };
-  }, [activeTrack, userMuted, pausedByEvent]);
+  }, [activeTrack, userMuted, pausedByEvent, mounted]);
 
-  if (!ready || !activeTrack) return null;
+  if (!mounted || !ready || !activeTrack) return null;
 
   const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
 

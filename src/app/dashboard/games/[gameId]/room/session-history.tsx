@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type SessionRow = {
@@ -30,13 +30,16 @@ type RpcClient = {
   }>;
 };
 
-function formatDate(v: string | null) {
+function formatDate(v: string | null): string {
   if (!v) return "—";
   try {
-    return new Intl.DateTimeFormat("ar-EG", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(v));
+    const d = new Date(v);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    const h = String(d.getUTCHours()).padStart(2, "0");
+    const min = String(d.getUTCMinutes()).padStart(2, "0");
+    return `${y}-${m}-${day} ${h}:${min} UTC`;
   } catch {
     return "—";
   }
@@ -47,9 +50,14 @@ export default function SessionHistory({
 }: {
   sessions: SessionRow[];
 }) {
+  const [mounted, setMounted] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, DetailRow[]>>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function toggle(sessionId: string) {
     if (openId === sessionId) {
@@ -119,7 +127,8 @@ export default function SessionHistory({
                     الجلسة #{s.session_number}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    {formatDate(s.started_at)} — {s.participant_count} طالب
+                    {mounted ? formatDate(s.started_at) : "..."} —{" "}
+                    {s.participant_count} طالب
                   </div>
                 </div>
                 <span className="text-2xl text-slate-400">
