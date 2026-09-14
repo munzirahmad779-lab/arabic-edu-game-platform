@@ -32,6 +32,18 @@ function getMaterialMessage(searchParams: SearchParams) {
   if (searchParams.material_error === "invalid_title") {
     return { type: "error", text: "عنوان المادة مطلوب (1-200 حرف)." };
   }
+  if (searchParams.material_error === "image_invalid_type") {
+    return { type: "error", text: "صيغة الصورة غير مدعومة." };
+  }
+  if (searchParams.material_error === "image_too_large") {
+    return { type: "error", text: "حجم الصورة يجب أن يكون أقل من 1MB." };
+  }
+  if (searchParams.material_error === "pdf_invalid_type") {
+    return { type: "error", text: "الملف يجب أن يكون PDF." };
+  }
+  if (searchParams.material_error === "pdf_too_large") {
+    return { type: "error", text: "حجم الملف يجب أن يكون أقل من 1MB." };
+  }
   if (searchParams.material_error) {
     return { type: "error", text: `خطأ: ${searchParams.material_error}` };
   }
@@ -83,7 +95,9 @@ export default async function ClassDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("class_materials")
-      .select("id, title, content_json, youtube_url, position, is_published, created_at")
+      .select(
+        "id, title, content_json, youtube_url, image_path, pdf_path, position, is_published, created_at",
+      )
       .eq("class_id", classRow.id)
       .order("position", { ascending: true }),
   ]);
@@ -218,6 +232,8 @@ export default async function ClassDetailPage({
                         ? JSON.stringify(editing.content_json)
                         : null,
                       youtube_url: editing.youtube_url,
+                      image_path: editing.image_path,
+                      pdf_path: editing.pdf_path,
                     }}
                   />
                 );
@@ -278,6 +294,30 @@ export default async function ClassDetailPage({
                           مسودة
                         </span>
                       )}
+                      {material.youtube_url ? (
+                        <span
+                          className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700"
+                          title="يحتوي فيديو يوتيوب"
+                        >
+                          🎬
+                        </span>
+                      ) : null}
+                      {material.image_path ? (
+                        <span
+                          className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700"
+                          title="يحتوي صورة"
+                        >
+                          🖼️
+                        </span>
+                      ) : null}
+                      {material.pdf_path ? (
+                        <span
+                          className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700"
+                          title="يحتوي ملف PDF"
+                        >
+                          📄
+                        </span>
+                      ) : null}
                     </div>
                     <div className="mt-1 text-xs text-neutral-500">
                       {new Date(material.created_at).toLocaleDateString("ar-EG")}

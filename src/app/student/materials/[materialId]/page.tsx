@@ -3,6 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
 import { hasTiptapContent, renderTiptap } from "@/lib/tiptap-render";
+import {
+  MaterialYouTube,
+  hasYouTube,
+} from "@/components/materials/material-youtube";
+import { MaterialImage } from "@/components/materials/material-image";
+import { MaterialPdf } from "@/components/materials/material-pdf";
 
 const MATERIAL_CSS = `
   .material-content {
@@ -89,6 +95,17 @@ export default async function MaterialReadPage({
 
   const material = data[0];
   const hasContent = hasTiptapContent(material.content_json);
+  const hasVideo = hasYouTube(material.youtube_url);
+
+  // Generate public URL untuk gambar & PDF (bucket question-media = public)
+  const imageUrl = material.image_path
+    ? supabase.storage.from("question-media").getPublicUrl(material.image_path)
+        .data.publicUrl
+    : null;
+  const pdfUrl = material.pdf_path
+    ? supabase.storage.from("question-media").getPublicUrl(material.pdf_path)
+        .data.publicUrl
+    : null;
 
   const formattedDate = new Intl.DateTimeFormat("ar-EG", {
     year: "numeric",
@@ -124,6 +141,22 @@ export default async function MaterialReadPage({
           </p>
         </header>
 
+        {hasVideo && material.youtube_url ? (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-700">🎬 فيديو</h2>
+            <MaterialYouTube url={material.youtube_url} />
+          </section>
+        ) : null}
+
+        {imageUrl ? (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-700">
+              🖼️ صورة توضيحية
+            </h2>
+            <MaterialImage url={imageUrl} alt={material.title} />
+          </section>
+        ) : null}
+
         <article className="material-content rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg sm:p-8">
           <style dangerouslySetInnerHTML={{ __html: MATERIAL_CSS }} />
           {hasContent ? (
@@ -134,6 +167,15 @@ export default async function MaterialReadPage({
             </p>
           )}
         </article>
+
+        {pdfUrl ? (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-neutral-700">
+              📄 ملف PDF مرفق
+            </h2>
+            <MaterialPdf url={pdfUrl} title={material.title} />
+          </section>
+        ) : null}
       </div>
     </main>
   );
