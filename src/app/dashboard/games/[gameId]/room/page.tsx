@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import JoinLinkActions from "./join-link-actions";
 import { createClient } from "@/lib/supabase/server";
 import RoomLobby from "./room-lobby";
-import { startRoom } from "../../actions";
+import StartGameButton from "./start-game-button";
 
 type SearchParams = { roomId?: string };
 
@@ -41,7 +41,9 @@ export default async function RoomPage({
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, code, state, capacity, game_id, snapshot, created_at, started_at")
+    .select(
+      "id, code, state, capacity, game_id, snapshot, created_at, started_at",
+    )
     .eq("id", roomId)
     .eq("teacher_id", user.id)
     .eq("game_id", params.gameId)
@@ -71,7 +73,6 @@ export default async function RoomPage({
   const gameName = snapshot.game?.name ?? "اللعبة";
 
   // Deteksi URL publik otomatis dari header request.
-  // Prioritas: APP_PUBLIC_URL (kalau di-set manual) → host header.
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let publicBaseUrl: string;
 
@@ -155,9 +156,9 @@ export default async function RoomPage({
             </div>
 
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-              💡 شارك الرابط الموجود أعلاه مع الطلاب. افتح هذه الصفحة من نفس
-              العنوان الذي سيفتحه الطلاب (مثلاً عبر Cloudflare أو IP الشبكة
-              المحلية) حتى يكون الرابط صالحًا لهم.
+              💡 شارك الرابط الموجود أعلاه مع الطلاب. إذا فتحت هذه الصفحة من
+              رابط مختلف (مثل Cloudflare أو نطاق Vercel)، سيتبع رابط الانضمام
+              نفس العنوان تلقائيًا.
             </div>
           </section>
 
@@ -183,16 +184,10 @@ export default async function RoomPage({
             />
 
             {room.state === "waiting" ? (
-              <form action={startRoom} className="mt-5">
-                <input type="hidden" name="room_id" value={room.id} />
-                <button
-                  type="submit"
-                  disabled={!participants?.length}
-                  className="w-full rounded-2xl bg-gradient-to-l from-emerald-500 to-cyan-500 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  بدء اللعبة ▶
-                </button>
-              </form>
+              <StartGameButton
+                roomId={room.id}
+                initialCount={participants?.length ?? 0}
+              />
             ) : (
               <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-800">
                 تم تشغيل الغرفة. واجهة سباق الكلمات ستستخدم حالة الغرفة هذه.
