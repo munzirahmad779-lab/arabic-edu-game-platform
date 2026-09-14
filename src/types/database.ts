@@ -880,6 +880,34 @@ export interface Database {
           class_name: string;
         }>;
       };
+      student_list_materials: {
+        Args: {
+          p_token: string;
+          p_class_id: string;
+        };
+        Returns: Array<{
+          id: string;
+          title: string;
+          position: number;
+          updated_at: string;
+        }>;
+      };
+      student_get_material: {
+        Args: {
+          p_token: string;
+          p_material_id: string;
+        };
+        Returns: Array<{
+          id: string;
+          class_id: string;
+          title: string;
+          content_json: Json | null;
+          youtube_url: string | null;
+          image_path: string | null;
+          pdf_path: string | null;
+          updated_at: string;
+        }>;
+      };
       student_logout: {
         Args: {
           p_token: string;
