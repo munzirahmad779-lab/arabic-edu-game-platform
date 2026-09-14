@@ -18,21 +18,12 @@ function getMessage(searchParams: SearchParams) {
       text: "تمت إضافة الطالب. استخدم PIN الذي أدخلته وأعطه للطالب.",
     };
   }
-
   if (searchParams.updated === "1") {
-    return {
-      type: "success",
-      text: "تم تحديث PIN الطالب.",
-    };
+    return { type: "success", text: "تم تحديث PIN الطالب." };
   }
-
   if (searchParams.deleted === "1") {
-    return {
-      type: "success",
-      text: "تم حذف الطالب.",
-    };
+    return { type: "success", text: "تم حذف الطالب." };
   }
-
   switch (searchParams.error) {
     case "invalid":
       return { type: "error", text: "أدخل اسم الطالب وPIN صحيحًا من 4 إلى 6 أرقام." };
@@ -57,7 +48,6 @@ export default async function StudentsPage({
   searchParams: SearchParams;
 }) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -84,7 +74,7 @@ export default async function StudentsPage({
   const { data: students, error: studentsError } = activeClassId
     ? await supabase
         .from("students")
-        .select("id, name, created_at")
+        .select("id, name, pin_plain, created_at")
         .eq("class_id", activeClassId)
         .order("name")
     : { data: [], error: null };
@@ -112,7 +102,6 @@ export default async function StudentsPage({
                 أنشئ هوية الطالب داخل الفصل باستخدام الاسم وPIN.
               </p>
             </div>
-
             <Link
               href="/dashboard/classes"
               className="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur hover:bg-white/20"
@@ -152,7 +141,10 @@ export default async function StudentsPage({
         ) : (
           <>
             <section className="rounded-[2rem] border border-indigo-100 bg-white p-6 shadow-xl">
-              <form method="get" className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+              <form
+                method="get"
+                className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"
+              >
                 <div>
                   <label
                     htmlFor="classId"
@@ -173,7 +165,6 @@ export default async function StudentsPage({
                     ))}
                   </select>
                 </div>
-
                 <button
                   type="submit"
                   className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white hover:bg-indigo-700"
@@ -263,7 +254,6 @@ export default async function StudentsPage({
                           {students?.length ?? 0} طالب
                         </h2>
                       </div>
-
                       <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-black text-fuchsia-700">
                         {activeClass.name}
                       </span>
@@ -288,8 +278,24 @@ export default async function StudentsPage({
                                 <div className="text-lg font-black text-slate-950">
                                   {student.name}
                                 </div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                  PIN مخزن بشكل آمن
+                                <div className="mt-1 flex items-center gap-2 text-xs">
+                                  {student.pin_plain ? (
+                                    <>
+                                      <span className="text-slate-500">
+                                        PIN:
+                                      </span>
+                                      <span
+                                        className="rounded-lg bg-emerald-100 px-2 py-0.5 font-mono font-black tracking-[0.2em] text-emerald-800"
+                                        dir="ltr"
+                                      >
+                                        {student.pin_plain}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="text-slate-400">
+                                      PIN مخزن بشكل آمن (غير قابل للعرض)
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
@@ -316,7 +322,7 @@ export default async function StudentsPage({
                                     minLength={4}
                                     maxLength={6}
                                     required
-                                    placeholder="PIN جديد"
+                                    placeholder="PIN baru"
                                     autoComplete="new-password"
                                     className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-center text-sm tracking-[0.2em]"
                                   />
@@ -358,18 +364,16 @@ export default async function StudentsPage({
                 <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-xl">
                   <div>
                     <p className="text-sm font-bold text-emerald-600">
-                      استيراد جماعي
+                      Import Massal
                     </p>
                     <h2 className="mt-1 text-2xl font-black text-slate-950">
-                      📥 استيراد طلاب من Excel
+                      📥 Tambah Siswa Sekaligus
                     </h2>
                     <p className="mt-2 text-sm text-slate-500">
-                      ارفع ملف Excel فيه 3 أعمدة بالترتيب:{" "}
-                      <span dir="ltr" className="font-bold">
-                        No | Nama | PIN
-                      </span>
-                      . سيتم إضافة جميع الطلاب إلى هذا الفصل ({" "}
-                      <span className="font-bold">{activeClass.name}</span>).
+                      Tempel daftar nama siswa (satu nama per baris) di kotak
+                      bawah. PIN akan otomatis dibuat 4 digit berurutan dan
+                      langsung tersimpan. Kelas tujuan:{" "}
+                      <span className="font-bold">{activeClass.name}</span>.
                     </p>
                   </div>
 
@@ -377,25 +381,32 @@ export default async function StudentsPage({
 
                   <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
                     <summary className="cursor-pointer font-bold text-neutral-800">
-                      ℹ️ كيف أنشئ ملف Excel؟
+                      ℹ️ Cara pakai
                     </summary>
                     <ol className="mt-3 list-decimal space-y-1.5 pr-5 text-neutral-700">
-                      <li>افتح Excel أو Google Sheets.</li>
                       <li>
-                        اكتب في الصف الأول ثلاثة عناوين بالضبط:{" "}
-                        <span dir="ltr" className="font-bold">
-                          No, Nama, PIN
-                        </span>
+                        Salin daftar nama siswa (dari Excel, WhatsApp, Notepad,
+                        dsb).
                       </li>
                       <li>
-                        ابدأ من الصف الثاني: رقم متسلسل، اسم الطالب، PIN من 4-6
-                        أرقام.
+                        Tempel di kotak teks di atas — satu nama per baris.
                       </li>
-                      <li>احفظ الملف بصيغة .xlsx ثم ارفعه هنا.</li>
+                      <li>
+                        Klik <span className="font-bold">Tambahkan N siswa</span>.
+                      </li>
+                      <li>
+                        PIN otomatis dibuat dengan format 4 digit berurutan
+                        (mulai dari angka setelah siswa terakhir di kelas ini).
+                      </li>
+                      <li>
+                        Tabel nama + PIN akan muncul. PIN juga tersimpan dan
+                        bisa dilihat lagi di daftar siswa di atas.
+                      </li>
                     </ol>
                     <p className="mt-3 text-xs text-neutral-500">
-                      ملاحظة: PIN يظهر كعمود عادي في Excel، لكنه يُحفظ بشكل
-                      آمن (bcrypt) في قاعدة البيانات.
+                      Catatan: PIN juga disimpan dalam bentuk aman (bcrypt) di
+                      database untuk login siswa, dan PIN yang bisa dilihat
+                      hanya tersedia untuk guru pemilik kelas.
                     </p>
                   </details>
                 </section>

@@ -98,6 +98,7 @@ export interface Database {
           class_id: string;
           name: string;
           pin_hash: string;
+          pin_plain: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -106,6 +107,7 @@ export interface Database {
           class_id: string;
           name: string;
           pin_hash: string;
+          pin_plain?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -114,6 +116,7 @@ export interface Database {
           class_id?: string;
           name?: string;
           pin_hash?: string;
+          pin_plain?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -818,9 +821,12 @@ export interface Database {
       import_students_to_class: {
         Args: {
           p_class_id: string;
-          p_rows: Json;
+          p_names: Json;
         };
-        Returns: number;
+        Returns: Array<{
+          student_name: string;
+          student_pin: string;
+        }>;
       };
       get_game_session: {
         Args: { p_join_token: string };

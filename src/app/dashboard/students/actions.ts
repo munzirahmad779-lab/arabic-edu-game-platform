@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { StudentImportRow } from "@/lib/student/excel";
 
 function getField(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -90,6 +89,14 @@ export async function resetStudentPin(formData: FormData) {
     );
   }
 
+  // Update pin_plain juga (kalau kolomnya ada)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from("students")
+    .update({ pin_plain: pin })
+    .eq("id", studentId)
+    .eq("class_id", classId);
+
   revalidatePath("/dashboard/students");
   redirect(`/dashboard/students?classId=${encodeURIComponent(classId)}&updated=1`);
 }
@@ -129,8 +136,11 @@ export async function deleteStudent(formData: FormData) {
 
 export async function importStudents(
   classId: string,
-  rows: StudentImportRow[],
-): Promise<{ ok: true; imported: number } | { ok: false; message: string }> {
+  names: string[],
+): Promise<
+  | { ok: true; students: { student_name: string; student_pin: string }[] }
+  | { ok: false; message: string }
+> {
   const supabase = await createClient();
 
   const {
@@ -138,15 +148,15 @@ export async function importStudents(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { ok: false, message: "انتهت الجلسة. سجّل الدخول مرة أخرى." };
+    return { ok: false, message: "Sesi berakhir. Silakan login kembali." };
   }
 
   if (!/^[0-9a-f-]{36}$/i.test(classId)) {
-    return { ok: false, message: "الفصل غير صالح." };
+    return { ok: false, message: "Kelas tidak valid." };
   }
 
-  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 200) {
-    return { ok: false, message: "عدد الطلاب يجب أن يكون بين 1 و200." };
+  if (!Array.isArray(names) || names.length < 1 || names.length > 200) {
+    return { ok: false, message: "Jumlah siswa harus antara 1 dan 200." };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,7 +164,7 @@ export async function importStudents(
     "import_students_to_class",
     {
       p_class_id: classId,
-      p_rows: rows,
+      p_names: names,
     },
   );
 
@@ -163,31 +173,30 @@ export async function importStudents(
     if (msg.includes("DUPLICATE_STUDENT_IN_FILE")) {
       return {
         ok: false,
-        message: "يوجد اسم مكرر داخل الملف. تأكد أن كل اسم فريد.",
+        message: "Ada nama yang sama di dalam daftar. Pastikan setiap nama unik.",
       };
     }
     if (msg.includes("DUPLICATE_STUDENT")) {
       return {
         ok: false,
         message:
-          "يوجد طالب بنفس الاسم في هذا الفصل. احذف الاسم المكرر من الملف أو من الفصل.",
+          "Ada siswa dengan nama yang sama di kelas ini. Hapus nama duplikat dari daftar.",
       };
     }
-    if (msg.includes("INVALID_PIN_FORMAT")) {
-      return { ok: false, message: "يوجد PIN غير صالح في الملف." };
-    }
     if (msg.includes("INVALID_NAME")) {
-      return { ok: false, message: "يوجد اسم غير صالح في الملف." };
+      return { ok: false, message: "Ada nama yang tidak valid di daftar." };
     }
     if (msg.includes("CLASS_NOT_FOUND")) {
-      return { ok: false, message: "الفصل غير موجود." };
+      return { ok: false, message: "Kelas tidak ditemukan." };
     }
     if (msg.includes("FORBIDDEN")) {
-      return { ok: false, message: "لا تملك صلاحية على هذا الفصل." };
+      return { ok: false, message: "Anda tidak punya akses ke kelas ini." };
     }
-    return { ok: false, message: msg || "فشل الاستيراد." };
+    return { ok: false, message: msg || "Import gagal." };
   }
 
   revalidatePath("/dashboard/students");
-  return { ok: true, imported: Number(data) || 0 };
+
+  const list = Array.isArray(data) ? data : [];
+  return { ok: true, students: list };
 }
