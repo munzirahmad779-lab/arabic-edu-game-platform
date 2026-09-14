@@ -122,6 +122,92 @@ export default async function GamesPage({
         </div>
       ) : null}
 
+      {/* ============== ألعابي ============== */}
+      <section>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">ألعابي</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              الألعاب التي أنشأها حسابك الحالي.
+            </p>
+          </div>
+          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+            {games.length}
+          </span>
+        </div>
+
+        {games.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">
+            لا توجد ألعاب بعد.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {games.map((game) => {
+              const className =
+                classes.find((item) => item.id === game.class_id)?.name ??
+                "بدون فصل";
+
+              return (
+                <article
+                  key={game.id}
+                  className="flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md"
+                >
+                  {/* Header: nama + badge type */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-semibold">
+                        {game.name}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-neutral-500">
+                        {className}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
+                      سباق الكلمات
+                    </span>
+                  </div>
+
+                  {/* Badges info */}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-md bg-violet-50 px-2 py-1 font-bold text-violet-700">
+                      {game.mode === "competitive" ? "تنافسي" : "تعليمي"}
+                    </span>
+                    <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
+                      {game.duration_seconds} ث
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="mt-4 flex gap-2 pt-2">
+                    <form action={createRoom} className="flex-1">
+                      <input type="hidden" name="game_id" value={game.id} />
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
+                      >
+                        ▶ تشغيل اللعبة
+                      </button>
+                    </form>
+
+                    <form action={deleteGame}>
+                      <input type="hidden" name="game_id" value={game.id} />
+                      <button
+                        type="submit"
+                        title="حذف اللعبة"
+                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                      >
+                        🗑
+                      </button>
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ============== إنشاء لعبة جديدة ============== */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div>
           <h2 className="text-lg font-semibold">إنشاء لعبة جديدة</h2>
@@ -276,85 +362,6 @@ export default async function GamesPage({
               إنشاء اللعبة
             </button>
           </form>
-        )}
-      </section>
-
-      <section>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">ألعابي</h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            الألعاب التي أنشأها حسابك الحالي.
-          </p>
-        </div>
-
-        {games.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">
-            لا توجد ألعاب بعد.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {games.map((game) => {
-              const className =
-                classes.find((item) => item.id === game.class_id)?.name ??
-                "بدون فصل";
-
-              return (
-                <article
-                  key={game.id}
-                  className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold">{game.name}</h3>
-                      <p className="mt-2 text-sm text-neutral-500">
-                        {className}
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
-                      سباق الكلمات
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="rounded-md bg-violet-50 p-3">
-                      <div className="text-xs text-violet-600">الوضع</div>
-                      <div className="mt-1 font-medium text-violet-950">
-                        {game.mode === "competitive" ? "تنافسي" : "تعليمي"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-md bg-amber-50 p-3">
-                      <div className="text-xs text-amber-700">المدة</div>
-                      <div className="mt-1 font-medium text-amber-950">
-                        {game.duration_seconds} ث
-                      </div>
-                    </div>
-                  </div>
-
-                  <form action={createRoom} className="mt-4">
-                    <input type="hidden" name="game_id" value={game.id} />
-                    <button
-                      type="submit"
-                      className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
-                    >
-                      ▶ تشغيل اللعبة
-                    </button>
-                  </form>
-
-                  <form action={deleteGame} className="mt-2">
-                    <input type="hidden" name="game_id" value={game.id} />
-                    <button
-                      type="submit"
-                      className="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
-                    >
-                      🗑 حذف اللعبة
-                    </button>
-                  </form>
-                </article>
-              );
-            })}
-          </div>
         )}
       </section>
     </main>

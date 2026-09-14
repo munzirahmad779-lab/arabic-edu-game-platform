@@ -10,6 +10,7 @@ import { QuestionBankImportForm } from "./import-form";
 import { QuestionMediaManager } from "./media-manager";
 import { QuestionEditor } from "./question-editor";
 import { DeleteBankForm } from "./delete-bank-form";
+import { BankCard } from "./bank-card";
 
 type SearchParams = {
   error?: string;
@@ -144,21 +145,23 @@ export default async function QuestionBanksPage({
   let options: OptionRow[] = [];
   let media: MediaRow[] = [];
   if (questionIds.length > 0) {
-    const [{ data: optionData, error: optionsError }, { data: mediaData, error: mediaError }] =
-      await Promise.all([
-        supabase
-          .from("question_options")
-          .select("question_id, option_key, option_text")
-          .in("question_id", questionIds)
-          .order("option_key", { ascending: true }),
-        supabase
-          .from("question_media")
-          .select(
-            "id, question_id, media_type, expected_filename, storage_path, original_filename, mime_type, size_bytes, max_play_count, attached_at",
-          )
-          .in("question_id", questionIds)
-          .order("created_at", { ascending: true }),
-      ]);
+    const [
+      { data: optionData, error: optionsError },
+      { data: mediaData, error: mediaError },
+    ] = await Promise.all([
+      supabase
+        .from("question_options")
+        .select("question_id, option_key, option_text")
+        .in("question_id", questionIds)
+        .order("option_key", { ascending: true }),
+      supabase
+        .from("question_media")
+        .select(
+          "id, question_id, media_type, expected_filename, storage_path, original_filename, mime_type, size_bytes, max_play_count, attached_at",
+        )
+        .in("question_id", questionIds)
+        .order("created_at", { ascending: true }),
+    ]);
 
     if (optionsError) {
       throw new Error("Gagal memuat pilihan jawaban.");
@@ -239,131 +242,14 @@ export default async function QuestionBanksPage({
         </div>
       ) : null}
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">موضوعات الأسئلة</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب Excel.
-            </p>
-          </div>
-          <span className="text-sm text-neutral-500">
-            {categories?.length ?? 0} موضوع
+      {/* ============== بنكي (collapsible) ============== */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">بنكي</h2>
+          <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
+            {banks.length} بنك
           </span>
         </div>
-
-        <form action={createQuestionCategory} className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <label htmlFor="category-name" className="sr-only">
-            اسم الموضوع
-          </label>
-          <input
-            id="category-name"
-            name="name"
-            type="text"
-            required
-            maxLength={100}
-            placeholder="مثال: النحو الأساسي"
-            className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-          />
-          <button
-            type="submit"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            إضافة موضوع
-          </button>
-        </form>
-
-        {categories && categories.length > 0 ? (
-          <div className="mt-5 space-y-3">
-            {categories.map((category) => (
-              <div key={category.id} className="rounded-md border border-neutral-200 p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <form action={updateQuestionCategory} className="flex min-w-0 flex-1 gap-2">
-                    <input type="hidden" name="id" value={category.id} />
-                    <label htmlFor={`category-${category.id}`} className="sr-only">
-                      اسم الموضوع
-                    </label>
-                    <input
-                      id={`category-${category.id}`}
-                      name="name"
-                      defaultValue={category.name}
-                      required
-                      maxLength={100}
-                      className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
-                    >
-                      حفظ
-                    </button>
-                  </form>
-                  <form action={deleteQuestionCategory}>
-                    <input type="hidden" name="id" value={category.id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
-                    >
-                      حذف
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-            لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة.
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">قالب Excel الرسمي</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              القالب يحتوي على 40 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة حقيقية.
-            </p>
-          </div>
-          <a
-            href="/templates/question-bank-template.xlsx"
-            download
-            className="w-fit rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50"
-          >
-            تنزيل القالب
-          </a>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">إنشاء بنك جديد</h2>
-        <form action={createQuestionBank} className="mt-4 grid gap-3">
-          <input
-            name="name"
-            required
-            maxLength={100}
-            placeholder="مثال: النحو الأساسي"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <textarea
-            name="description"
-            maxLength={500}
-            placeholder="وصف اختياري"
-            rows={3}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="w-fit rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            إنشاء بنك الأسئلة
-          </button>
-        </form>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">بنكي</h2>
 
         {banks.length === 0 ? (
           <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
@@ -373,7 +259,6 @@ export default async function QuestionBanksPage({
           banks.map((bank) => {
             const bankQuestions = questionsByBank.get(bank.id) ?? [];
 
-            // Filter per bank
             const isFilterActive = searchParams.bank === bank.id;
             const activeCat = (() => {
               if (!isFilterActive) return undefined;
@@ -390,53 +275,65 @@ export default async function QuestionBanksPage({
                 : bankQuestions.filter((q) => q.category_id === activeCat)
               : bankQuestions;
 
-            return (
-              <article
-                key={bank.id}
-                className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h3 className="font-semibold">{bank.name}</h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
-                        {bankQuestions.length} soal tersimpan
-                      </span>
-                      <DeleteBankForm
-                        bankId={bank.id}
-                        bankName={bank.name}
-                        questionCount={bankQuestions.length}
-                      />
-                    </div>
-                  </div>
-
+            const header = (
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-base font-bold text-neutral-900">
+                    {bank.name}
+                  </h3>
                   {bank.description ? (
-                    <p className="mt-1 text-sm text-neutral-600">{bank.description}</p>
+                    <p className="mt-0.5 truncate text-sm text-neutral-500">
+                      {bank.description}
+                    </p>
                   ) : null}
+                </div>
+                <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+                  {bankQuestions.length} سؤال
+                </span>
+              </div>
+            );
 
-                  <p className="mt-2 text-xs text-neutral-500" dir="ltr">
-                    {bank.id}
-                  </p>
+            return (
+              <BankCard
+                key={bank.id}
+                bankId={bank.id}
+                header={header}
+                defaultOpen={isFilterActive}
+              >
+                {/* Delete bank */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50/40 p-3">
+                  <div className="text-xs text-red-700">
+                    ⚠️ حذف البنك سيحذف جميع الأسئلة داخله.
+                  </div>
+                  <DeleteBankForm
+                    bankId={bank.id}
+                    bankName={bank.name}
+                    questionCount={bankQuestions.length}
+                  />
                 </div>
 
-                <div className="mt-5 border-t border-neutral-200 pt-5">
+                {/* Import */}
+                <div className="rounded-xl border border-neutral-200 bg-white p-4">
                   <h4 className="font-semibold">استيراد الأسئلة من Excel</h4>
-                   <p className="mt-1 mb-4 text-sm text-neutral-600">
-                     تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد.
-                   </p>
-                   <p className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-900">
-                     تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط؛ لا تُرفع الملفات الثنائية
-                     مع الاستيراد. يظل السؤال صالحًا، ثم ارفع الملف من بطاقة السؤال لاحقًا بالاسم المطابق
-                     تمامًا لعمود «Nama Media».
-                   </p>
-                   <QuestionBankImportForm questionBankId={bank.id} />
+                  <p className="mt-1 mb-3 text-sm text-neutral-600">
+                    تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ
+                    واحد.
+                  </p>
+                  <p className="mb-3 rounded-md bg-blue-50 p-3 text-xs text-blue-900">
+                    تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط؛ لا
+                    تُرفع الملفات الثنائية مع الاستيراد. ارفع الملف من بطاقة
+                    السؤال لاحقًا بالاسم المطابق تمامًا لعمود «Nama Media».
+                  </p>
+                  <QuestionBankImportForm questionBankId={bank.id} />
                 </div>
 
-                <div className="mt-6 border-t border-neutral-200 pt-5">
+                {/* Filter + List */}
+                <div>
                   <div className="flex items-center justify-between gap-3">
                     <h4 className="font-semibold">الأسئلة المحفوظة</h4>
                     <span className="text-sm text-neutral-500">
-                      {filteredBankQuestions.length} / {bankQuestions.length} سؤال
+                      {filteredBankQuestions.length} / {bankQuestions.length}{" "}
+                      سؤال
                     </span>
                   </div>
 
@@ -479,7 +376,8 @@ export default async function QuestionBanksPage({
                           (q) => !q.category_id,
                         ).length;
                         if (noneCount === 0) return null;
-                        const isActive = isFilterActive && activeCat === "__none__";
+                        const isActive =
+                          isFilterActive && activeCat === "__none__";
                         return (
                           <Link
                             href={`/dashboard/question-banks?bank=${bank.id}&cat=__none__`}
@@ -505,7 +403,8 @@ export default async function QuestionBanksPage({
                   ) : (
                     <div className="mt-4 space-y-4">
                       {filteredBankQuestions.map((question, index) => {
-                        const questionOptions = optionsByQuestion.get(question.id) ?? [];
+                        const questionOptions =
+                          optionsByQuestion.get(question.id) ?? [];
 
                         return (
                           <article
@@ -516,7 +415,8 @@ export default async function QuestionBanksPage({
                               <span>السؤال {index + 1}</span>
                               {question.category_id ? (
                                 <span className="rounded-full bg-neutral-100 px-2 py-1">
-                                  {categoryMap.get(question.category_id) ?? "موضوع غير معروف"}
+                                  {categoryMap.get(question.category_id) ??
+                                    "موضوع غير معروف"}
                                 </span>
                               ) : null}
                               {question.difficulty ? (
@@ -535,7 +435,8 @@ export default async function QuestionBanksPage({
                                 const option = questionOptions.find(
                                   (item) => item.option_key === key,
                                 );
-                                const isCorrect = question.correct_option_key === key;
+                                const isCorrect =
+                                  question.correct_option_key === key;
 
                                 return (
                                   <div
@@ -546,8 +447,11 @@ export default async function QuestionBanksPage({
                                         : "border-neutral-200 bg-white"
                                     }`}
                                   >
-                                    <span className="font-semibold">{key}.</span>{" "}
-                                    {option?.option_text || "الخيار غير موجود"}
+                                    <span className="font-semibold">
+                                      {key}.
+                                    </span>{" "}
+                                    {option?.option_text ||
+                                      "الخيار غير موجود"}
                                     {isCorrect ? (
                                       <span className="mr-2 text-xs font-semibold">
                                         ✓ الإجابة الصحيحة
@@ -557,6 +461,7 @@ export default async function QuestionBanksPage({
                                 );
                               })}
                             </div>
+
                             <QuestionMediaManager
                               questionId={question.id}
                               media={mediaByQuestion.get(question.id) ?? []}
@@ -567,17 +472,24 @@ export default async function QuestionBanksPage({
                                 category_id: question.category_id,
                                 question_text: question.question_text,
                                 difficulty: question.difficulty,
-                                correct_option_key: question.correct_option_key,
+                                correct_option_key:
+                                  question.correct_option_key,
                               }}
                               options={questionOptions.map((option) => ({
                                 option_key: option.option_key,
                                 option_text: option.option_text,
                               }))}
-                              categories={(categories ?? []).map((category) => ({
-                                id: category.id,
-                                name: category.name,
-                              }))}
-                              mediaCount={(mediaByQuestion.get(question.id) ?? []).length}
+                              categories={(categories ?? []).map(
+                                (category) => ({
+                                  id: category.id,
+                                  name: category.name,
+                                }),
+                              )}
+                              mediaCount={
+                                (
+                                  mediaByQuestion.get(question.id) ?? []
+                                ).length
+                              }
                             />
                           </article>
                         );
@@ -585,10 +497,150 @@ export default async function QuestionBanksPage({
                     </div>
                   )}
                 </div>
-              </article>
+              </BankCard>
             );
           })
         )}
+      </section>
+
+      {/* ============== إنشاء بنك جديد ============== */}
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold">إنشاء بنك جديد</h2>
+        <form action={createQuestionBank} className="mt-4 grid gap-3">
+          <input
+            name="name"
+            required
+            maxLength={100}
+            placeholder="مثال: النحو الأساسي"
+            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          />
+          <textarea
+            name="description"
+            maxLength={500}
+            placeholder="وصف اختياري"
+            rows={3}
+            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="w-fit rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          >
+            إنشاء بنك الأسئلة
+          </button>
+        </form>
+      </section>
+
+      {/* ============== موضوعات الأسئلة ============== */}
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">موضوعات الأسئلة</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب
+              Excel.
+            </p>
+          </div>
+          <span className="text-sm text-neutral-500">
+            {categories?.length ?? 0} موضوع
+          </span>
+        </div>
+
+        <form
+          action={createQuestionCategory}
+          className="mt-4 flex flex-col gap-3 sm:flex-row"
+        >
+          <label htmlFor="category-name" className="sr-only">
+            اسم الموضوع
+          </label>
+          <input
+            id="category-name"
+            name="name"
+            type="text"
+            required
+            maxLength={100}
+            placeholder="مثال: النحو الأساسي"
+            className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          >
+            إضافة موضوع
+          </button>
+        </form>
+
+        {categories && categories.length > 0 ? (
+          <div className="mt-5 space-y-3">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="rounded-md border border-neutral-200 p-3"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <form
+                    action={updateQuestionCategory}
+                    className="flex min-w-0 flex-1 gap-2"
+                  >
+                    <input type="hidden" name="id" value={category.id} />
+                    <label
+                      htmlFor={`category-${category.id}`}
+                      className="sr-only"
+                    >
+                      اسم الموضوع
+                    </label>
+                    <input
+                      id={`category-${category.id}`}
+                      name="name"
+                      defaultValue={category.name}
+                      required
+                      maxLength={100}
+                      className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+                    >
+                      حفظ
+                    </button>
+                  </form>
+                  <form action={deleteQuestionCategory}>
+                    <input type="hidden" name="id" value={category.id} />
+                    <button
+                      type="submit"
+                      className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                    >
+                      حذف
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
+            لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة.
+          </div>
+        )}
+      </section>
+
+      {/* ============== قالب Excel ============== */}
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">قالب Excel الرسمي</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              القالب يحتوي على 40 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة
+              حقيقية.
+            </p>
+          </div>
+          <a
+            href="/templates/question-bank-template.xlsx"
+            download
+            className="w-fit rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50"
+          >
+            تنزيل القالب
+          </a>
+        </div>
       </section>
     </div>
   );
