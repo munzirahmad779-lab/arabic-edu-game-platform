@@ -6,6 +6,7 @@ import {
   pauseBackgroundAudio,
   resumeBackgroundAudio,
 } from "@/lib/bg-audio-events";
+import { Confetti } from "@/components/confetti";
 
 type Option = {
   id: string;
@@ -206,15 +207,12 @@ export default function JoinRoomPage({
     setSubmitError("");
   }, [session?.question?.id]);
 
-  // Kalau soal berganti / unmount → resume backsound (jaga-jaga kalau
-  // audio sebelumnya tidak sempat `onEnded`).
   useEffect(() => {
     return () => {
       resumeBackgroundAudio();
     };
   }, [session?.question?.id]);
 
-  // Kalau keluar dari halaman room → resume
   useEffect(() => {
     return () => {
       resumeBackgroundAudio();
@@ -363,13 +361,25 @@ export default function JoinRoomPage({
   if (session.room_state === "ended") {
     const me = leaderboard.find((r) => r.is_self);
     const podium = leaderboard.slice(0, 3);
+    const onPodium = me ? me.rnk <= 3 : false;
+    const highScore = me ? me.final_score >= 60 : false;
+    const showConfetti = onPodium || highScore;
+    const confettiCount = onPodium ? 170 : 90;
+    const confettiOriginY = onPodium ? 0.95 : 1.05;
 
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
         dir="rtl"
       >
-        <div className="mx-auto max-w-3xl space-y-6 py-8">
+        {showConfetti ? (
+          <Confetti
+            particleCount={confettiCount}
+            originY={confettiOriginY}
+          />
+        ) : null}
+
+        <div className="relative mx-auto max-w-3xl space-y-6 py-8">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🏁</div>
             <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
@@ -399,6 +409,16 @@ export default function JoinRoomPage({
                     </div>
                   </div>
                 </div>
+
+                {onPodium ? (
+                  <p className="mt-4 text-sm font-black text-emerald-700">
+                    🎉 مبروك! وصلت إلى منصة التتويج
+                  </p>
+                ) : highScore ? (
+                  <p className="mt-4 text-sm font-black text-violet-700">
+                    ⭐ نتيجة رائعة! واصل التقدم
+                  </p>
+                ) : null}
 
                 <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-xl bg-emerald-50 p-3 text-center">
