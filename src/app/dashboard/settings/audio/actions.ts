@@ -6,84 +6,138 @@ import { createClient } from "@/lib/supabase/server";
 
 const MEDIA_BUCKET = "question-media";
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
+const VALID_PAGES = ["dashboard", "login", "student", "game", "final"] as const;
 
 function readString(fd: FormData, key: string) {
   const v = fd.get(key);
   return typeof v === "string" ? v.trim() : "";
 }
 
-function readBool(fd: FormData, key: string) {
-  return fd.get(key) === "on" || fd.get(key) === "true";
-}
-
 function readInt(fd: FormData, key: string, min: number, max: number) {
-  const raw = readString(fd, key);
-  const n = Number(raw);
+  const n = Number(readString(fd, key));
   if (!Number.isFinite(n)) return null;
-  const rounded = Math.round(n);
-  if (rounded < min || rounded > max) return null;
-  return rounded;
+  const r = Math.round(n);
+  if (r < min || r > max) return null;
+  return r;
 }
 
-export async function saveAudioSettings(formData: FormData) {
+function readPages(fd: FormData): string[] {
+  const all = fd.getAll("pages");
+  return all
+    .filter((v): v is string => typeof v === "string")
+    .filter((v) => (VALID_PAGES as readonly string[]).includes(v));
+}
+
+function errPath(code: string): never {
+  redirect(`/dashboard/settings/audio?error=${code}`);
+}
+
+async function uploadAudio(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  file: File,
+): Promise<{ path: string; url: string } | { error: string }> {
+  if (!file.type.startsWith("audio/")) return { error: "invalid_type" };
+  if (file.size > MAX_AUDIO_BYTES) return { error: "too_large" };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "mp3";
+  const random = Math.random().toString(36).slice(2, 10);
+  const path = `backdrops/${userId}/${Date.now()}-${random}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, {
+      upsert: false,
+      contentType: file.type,
+      cacheControl: "3600",
+    });
+
+  if (error) return { error: `upload_failed:${error.message}` };
+
+  const url = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data
+    .publicUrl;
+  return { path, url };
+}
+
+export async function createAudioTrack(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const enabled = readBool(formData, "enabled");
+  const name = readString(formData, "name");
   const volume = readInt(formData, "volume", 0, 100);
-  const playOnDashboard = readBool(formData, "play_on_dashboard");
-  const playOnLogin = readBool(formData, "play_on_login");
-  const playOnStudent = readBool(formData, "play_on_student");
-  const playOnGame = readBool(formData, "play_on_game");
-  const playOnFinal = readBool(formData, "play_on_final");
+  const pages = readPages(formData);
+  const file = formData.get("audio_file");
 
-  if (volume === null) {
-    redirect("/dashboard/settings/audio?error=invalid_volume");
+  if (!name || name.length > 100) errPath("invalid_name");
+  if (volume === null) errPath("invalid_volume");
+  if (pages.length === 0) errPath("no_pages");
+  if (!(file instanceof File) || file.size === 0) errPath("no_file");
+
+  const upload = await uploadAudio(supabase, user.id, file);
+  if ("error" in upload) errPath(upload.error);
+
+  const { error } = await supabase.from("teacher_audio_tracks").insert({
+    teacher_id: user.id,
+    name,
+    audio_path: upload.path,
+    audio_url: upload.url,
+    volume,
+    pages,
+    enabled: true,
+  });
+
+  if (error) {
+    try {
+      await supabase.storage.from(MEDIA_BUCKET).remove([upload.path]);
+    } catch {
+      // ignore
+    }
+    errPath(`insert_failed:${error.message}`);
   }
 
-  // Handle existing settings
+  revalidatePath("/dashboard/settings/audio");
+  redirect("/dashboard/settings/audio?saved=1");
+}
+
+export async function updateAudioTrack(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = readString(formData, "track_id");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) errPath("invalid_id");
+
+  const name = readString(formData, "name");
+  const volume = readInt(formData, "volume", 0, 100);
+  const pages = readPages(formData);
+  const file = formData.get("audio_file");
+
+  if (!name || name.length > 100) errPath("invalid_name");
+  if (volume === null) errPath("invalid_volume");
+  if (pages.length === 0) errPath("no_pages");
+
   const { data: current } = await supabase
-    .from("teacher_audio_settings")
+    .from("teacher_audio_tracks")
     .select("audio_path, audio_url")
+    .eq("id", id)
     .eq("teacher_id", user.id)
     .maybeSingle();
 
-  let nextPath = current?.audio_path ?? null;
-  let nextUrl = current?.audio_url ?? null;
+  if (!current) errPath("not_found");
 
-  // Handle upload file baru
-  const file = formData.get("audio_file");
+  let nextPath = current.audio_path;
+  let nextUrl = current.audio_url;
+
   if (file instanceof File && file.size > 0) {
-    if (!file.type.startsWith("audio/")) {
-      redirect("/dashboard/settings/audio?error=invalid_type");
-    }
-    if (file.size > MAX_AUDIO_BYTES) {
-      redirect("/dashboard/settings/audio?error=too_large");
-    }
+    const upload = await uploadAudio(supabase, user.id, file);
+    if ("error" in upload) errPath(upload.error);
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "mp3";
-    const random = Math.random().toString(36).slice(2, 10);
-    const path = `backdrops/${user.id}/bg-${Date.now()}-${random}.${ext}`;
-
-    const { error: uploadErr } = await supabase.storage
-      .from(MEDIA_BUCKET)
-      .upload(path, file, {
-        upsert: false,
-        contentType: file.type,
-        cacheControl: "3600",
-      });
-
-    if (uploadErr) {
-      redirect(
-        `/dashboard/settings/audio?error=${encodeURIComponent(uploadErr.message)}`,
-      );
-    }
-
-    // Hapus file lama
-    if (current?.audio_path) {
+    if (current.audio_path) {
       try {
         await supabase.storage.from(MEDIA_BUCKET).remove([current.audio_path]);
       } catch {
@@ -91,48 +145,89 @@ export async function saveAudioSettings(formData: FormData) {
       }
     }
 
-    nextPath = path;
-    nextUrl = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data
-      .publicUrl;
+    nextPath = upload.path;
+    nextUrl = upload.url;
   }
 
-  // Handle hapus audio
-  const remove = readBool(formData, "remove_audio");
-  if (remove && nextPath) {
+  const { error } = await supabase
+    .from("teacher_audio_tracks")
+    .update({
+      name,
+      volume,
+      pages,
+      audio_path: nextPath,
+      audio_url: nextUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("teacher_id", user.id);
+
+  if (error) errPath(`update_failed:${error.message}`);
+
+  revalidatePath("/dashboard/settings/audio");
+  redirect("/dashboard/settings/audio?updated=1");
+}
+
+export async function deleteAudioTrack(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = readString(formData, "track_id");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) errPath("invalid_id");
+
+  const { data: current } = await supabase
+    .from("teacher_audio_tracks")
+    .select("audio_path")
+    .eq("id", id)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("teacher_audio_tracks")
+    .delete()
+    .eq("id", id)
+    .eq("teacher_id", user.id);
+
+  if (error) errPath(`delete_failed:${error.message}`);
+
+  if (current?.audio_path) {
     try {
-      await supabase.storage.from(MEDIA_BUCKET).remove([nextPath]);
+      await supabase.storage.from(MEDIA_BUCKET).remove([current.audio_path]);
     } catch {
       // ignore
     }
-    nextPath = null;
-    nextUrl = null;
-  }
-
-  const payload = {
-    teacher_id: user.id,
-    enabled,
-    audio_path: nextPath,
-    audio_url: nextUrl,
-    volume,
-    play_on_dashboard: playOnDashboard,
-    play_on_login: playOnLogin,
-    play_on_student: playOnStudent,
-    play_on_game: playOnGame,
-    play_on_final: playOnFinal,
-    updated_at: new Date().toISOString(),
-  };
-
-  const { error } = await supabase
-    .from("teacher_audio_settings")
-    .upsert(payload, { onConflict: "teacher_id" });
-
-  if (error) {
-    redirect(
-      `/dashboard/settings/audio?error=${encodeURIComponent(error.message)}`,
-    );
   }
 
   revalidatePath("/dashboard/settings/audio");
-  revalidatePath("/dashboard");
-  redirect("/dashboard/settings/audio?saved=1");
+  redirect("/dashboard/settings/audio?deleted=1");
+}
+
+export async function toggleAudioTrack(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = readString(formData, "track_id");
+  const currentEnabled = readString(formData, "current_enabled") === "true";
+
+  if (!/^[0-9a-f-]{36}$/i.test(id)) errPath("invalid_id");
+
+  const { error } = await supabase
+    .from("teacher_audio_tracks")
+    .update({
+      enabled: !currentEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("teacher_id", user.id);
+
+  if (error) errPath(`toggle_failed:${error.message}`);
+
+  revalidatePath("/dashboard/settings/audio");
+  redirect("/dashboard/settings/audio");
 }

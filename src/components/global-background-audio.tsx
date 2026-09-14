@@ -4,68 +4,48 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type AudioSettings = {
-  enabled: boolean;
-  audio_url: string | null;
+type Track = {
+  id: string;
+  name: string;
+  audio_url: string;
   volume: number;
-  play_on_dashboard: boolean;
-  play_on_login: boolean;
-  play_on_student: boolean;
-  play_on_game: boolean;
-  play_on_final: boolean;
+  pages: string[];
 };
 
-type PageKey =
-  | "play_on_dashboard"
-  | "play_on_login"
-  | "play_on_student"
-  | "play_on_game"
-  | "play_on_final";
+type PageKey = "dashboard" | "login" | "student" | "game" | "final";
 
 function pageOf(pathname: string): PageKey | null {
-  // Halaman yang TIDAK boleh ada suara (fokus belajar)
+  // Excluded pages — no audio (fokus belajar)
   if (pathname.startsWith("/dashboard/question-banks")) return null;
   if (pathname.startsWith("/student/materials/")) return null;
+  if (pathname.startsWith("/dashboard/classes/")) return null;
 
-  // Halaman game (siswa dalam room)
-  if (pathname.startsWith("/join/room")) return "play_on_game";
-
-  // Halaman join form / login siswa
-  if (pathname.startsWith("/student/login")) return "play_on_login";
-  if (pathname.startsWith("/join")) return "play_on_login";
-
-  // Halaman login guru
-  if (pathname === "/login") return "play_on_login";
-
-  // Halaman siswa (portal materi, dsb)
-  if (pathname.startsWith("/student")) return "play_on_student";
-
-  // Semua halaman dashboard guru
-  if (pathname.startsWith("/dashboard")) return "play_on_dashboard";
-
+  if (pathname.startsWith("/join/room")) return "game";
+  if (pathname.startsWith("/student/login")) return "login";
+  if (pathname.startsWith("/join")) return "login";
+  if (pathname === "/login") return "login";
+  if (pathname.startsWith("/student")) return "student";
+  if (pathname.startsWith("/dashboard")) return "dashboard";
   return null;
 }
 
 export function GlobalBackgroundAudio() {
   const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [settings, setSettings] = useState<AudioSettings | null>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [muted, setMuted] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Fetch setting aktif sekali
   useEffect(() => {
     let alive = true;
     const supabase = createClient();
     (async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase as any).rpc("get_active_audio_settings");
+        const { data } = await (supabase as any).rpc("get_active_audio_tracks");
         if (!alive) return;
-        if (Array.isArray(data) && data[0]) {
-          setSettings(data[0] as AudioSettings);
-        }
+        if (Array.isArray(data)) setTracks(data as Track[]);
       } catch {
         // ignore
       } finally {
@@ -78,23 +58,26 @@ export function GlobalBackgroundAudio() {
   }, []);
 
   const pageKey = pageOf(pathname);
-  const shouldPlay = Boolean(
-    settings?.enabled &&
-      settings.audio_url &&
-      pageKey &&
-      settings[pageKey],
-  );
+  const activeTrack = pageKey
+    ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
+    : null;
 
-  // Play / pause sesuai halaman
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume = (settings?.volume ?? 50) / 100;
-
-    if (!shouldPlay) {
+    if (!activeTrack) {
       audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
       return;
+    }
+
+    audio.volume = (activeTrack.volume ?? 50) / 100;
+
+    if (audio.src !== activeTrack.audio_url) {
+      audio.src = activeTrack.audio_url;
+      audio.load();
     }
 
     const tryPlay = async () => {
@@ -111,7 +94,6 @@ export function GlobalBackgroundAudio() {
     const onGesture = () => {
       void tryPlay();
     };
-
     window.addEventListener("click", onGesture, { once: true });
     window.addEventListener("touchstart", onGesture, { once: true });
     window.addEventListener("keydown", onGesture, { once: true });
@@ -121,22 +103,19 @@ export function GlobalBackgroundAudio() {
       window.removeEventListener("touchstart", onGesture);
       window.removeEventListener("keydown", onGesture);
     };
-  }, [shouldPlay, settings?.volume, settings?.audio_url]);
+  }, [activeTrack]);
 
-  // Mute toggle
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.muted = muted;
   }, [muted]);
 
-  if (!ready || !settings?.enabled || !settings.audio_url) {
-    return null;
-  }
+  if (!ready || !activeTrack) return null;
 
   return (
     <>
-      <audio ref={audioRef} src={settings.audio_url} loop preload="auto" />
+      <audio ref={audioRef} loop preload="auto" />
 
       <button
         type="button"

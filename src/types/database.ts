@@ -164,12 +164,12 @@ export interface Database {
         Update: { id?: string; session_id?: string; participant_name?: string; final_score?: number; rank?: number; correct_count?: number; total_questions?: number; avg_response_ms?: number; created_at?: string; };
         Relationships: [{ foreignKeyName: "room_session_participants_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
       };
-      teacher_audio_settings: {
-        Row: { teacher_id: string; enabled: boolean; audio_path: string | null; audio_url: string | null; volume: number; play_on_dashboard: boolean; play_on_login: boolean; play_on_student: boolean; play_on_game: boolean; play_on_final: boolean; updated_at: string; };
-        Insert: { teacher_id: string; enabled?: boolean; audio_path?: string | null; audio_url?: string | null; volume?: number; play_on_dashboard?: boolean; play_on_login?: boolean; play_on_student?: boolean; play_on_game?: boolean; play_on_final?: boolean; updated_at?: string; };
-        Update: { teacher_id?: string; enabled?: boolean; audio_path?: string | null; audio_url?: string | null; volume?: number; play_on_dashboard?: boolean; play_on_login?: boolean; play_on_student?: boolean; play_on_game?: boolean; play_on_final?: boolean; updated_at?: string; };
+      teacher_audio_tracks: {
+        Row: { id: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume: number; enabled: boolean; pages: string[]; created_at: string; updated_at: string; };
+        Insert: { id?: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume?: number; enabled?: boolean; pages?: string[]; created_at?: string; updated_at?: string; };
+        Update: { id?: string; teacher_id?: string; name?: string; audio_path?: string; audio_url?: string; volume?: number; enabled?: boolean; pages?: string[]; created_at?: string; updated_at?: string; };
         Relationships: [
-          { foreignKeyName: "teacher_audio_settings_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"]; }
+          { foreignKeyName: "teacher_audio_tracks_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; }
         ];
       };
     };
@@ -223,14 +223,8 @@ export interface Database {
           avg_response_ms: number; final_score: number; rnk: number;
         }>;
       };
-      heartbeat_room_participant: {
-        Args: { p_join_token: string };
-        Returns: undefined;
-      };
-      archive_room_session: {
-        Args: { p_room_id: string };
-        Returns: string;
-      };
+      heartbeat_room_participant: { Args: { p_join_token: string }; Returns: undefined; };
+      archive_room_session: { Args: { p_room_id: string }; Returns: string; };
       list_room_sessions: {
         Args: { p_room_id: string };
         Returns: Array<{
@@ -250,6 +244,16 @@ export interface Database {
           correct_count: number;
           total_questions: number;
           avg_response_ms: number;
+        }>;
+      };
+      get_active_audio_tracks: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          id: string;
+          name: string;
+          audio_url: string;
+          volume: number;
+          pages: string[];
         }>;
       };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
