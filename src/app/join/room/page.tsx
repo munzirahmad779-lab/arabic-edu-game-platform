@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  pauseBackgroundAudio,
+  resumeBackgroundAudio,
+} from "@/lib/bg-audio-events";
 
 type Option = {
   id: string;
@@ -118,7 +122,6 @@ export default function JoinRoomPage({
       );
 
       if (rpcError) {
-        // Cek apakah room sudah di-arsip / join_token tidak valid lagi
         if (
           rpcError.message === "INVALID_JOIN_TOKEN" ||
           rpcError.message.includes("INVALID")
@@ -202,6 +205,21 @@ export default function JoinRoomPage({
   useEffect(() => {
     setSubmitError("");
   }, [session?.question?.id]);
+
+  // Kalau soal berganti / unmount → resume backsound (jaga-jaga kalau
+  // audio sebelumnya tidak sempat `onEnded`).
+  useEffect(() => {
+    return () => {
+      resumeBackgroundAudio();
+    };
+  }, [session?.question?.id]);
+
+  // Kalau keluar dari halaman room → resume
+  useEffect(() => {
+    return () => {
+      resumeBackgroundAudio();
+    };
+  }, []);
 
   const adjustedNow = now + skewRef.current;
 
@@ -289,7 +307,6 @@ export default function JoinRoomPage({
     );
   }
 
-  // Sesi direset oleh guru — arahkan siswa untuk join ulang
   if (sessionEnded) {
     return (
       <main
@@ -649,32 +666,44 @@ export default function JoinRoomPage({
                   }
                   if (m.media_type === "audio") {
                     return (
-                      <audio
-                        key={m.id}
-                        src={m.public_url}
-                        controls
-                        controlsList={
-                          m.max_play_count === 1
-                            ? "nodownload noplaybackrate"
-                            : undefined
-                        }
-                        className="mx-auto w-full max-w-md"
-                      />
+                      <div key={m.id} className="space-y-2">
+                        <p className="text-center text-xs font-bold text-violet-600">
+                          🎧 استمع للصوت بعناية
+                        </p>
+                        <audio
+                          src={m.public_url}
+                          controls
+                          controlsList={
+                            m.max_play_count === 1
+                              ? "nodownload noplaybackrate"
+                              : undefined
+                          }
+                          onPlay={() => pauseBackgroundAudio()}
+                          onEnded={() => resumeBackgroundAudio()}
+                          className="mx-auto w-full max-w-md"
+                        />
+                      </div>
                     );
                   }
                   if (m.media_type === "video") {
                     return (
-                      <video
-                        key={m.id}
-                        src={m.public_url}
-                        controls
-                        controlsList={
-                          m.max_play_count === 1
-                            ? "nodownload noplaybackrate"
-                            : undefined
-                        }
-                        className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
-                      />
+                      <div key={m.id} className="space-y-2">
+                        <p className="text-center text-xs font-bold text-violet-600">
+                          🎬 شاهد الفيديو بعناية
+                        </p>
+                        <video
+                          src={m.public_url}
+                          controls
+                          controlsList={
+                            m.max_play_count === 1
+                              ? "nodownload noplaybackrate"
+                              : undefined
+                          }
+                          onPlay={() => pauseBackgroundAudio()}
+                          onEnded={() => resumeBackgroundAudio()}
+                          className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
+                        />
+                      </div>
                     );
                   }
                   return null;

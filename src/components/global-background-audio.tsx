@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  BG_AUDIO_PAUSE_EVENT,
+  BG_AUDIO_RESUME_EVENT,
+} from "@/lib/bg-audio-events";
 
 type Track = {
   id: string;
@@ -15,7 +19,6 @@ type Track = {
 type PageKey = "dashboard" | "login" | "student" | "game" | "final";
 
 function pageOf(pathname: string): PageKey | null {
-  // Excluded pages — no audio (fokus belajar)
   if (pathname.startsWith("/dashboard/question-banks")) return null;
   if (pathname.startsWith("/student/materials/")) return null;
   if (pathname.startsWith("/dashboard/classes/")) return null;
@@ -33,10 +36,12 @@ export function GlobalBackgroundAudio() {
   const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
-  const [muted, setMuted] = useState(false);
+  const [userMuted, setUserMuted] = useState(false);
+  const [pausedByEvent, setPausedByEvent] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // Fetch tracks
   useEffect(() => {
     let alive = true;
     const supabase = createClient();
@@ -57,79 +62,141 @@ export function GlobalBackgroundAudio() {
     };
   }, []);
 
+  // Listen event pause/resume dari halaman lain (mis. soal audio)
+  useEffect(() => {
+    const onPause = () => setPausedByEvent(true);
+    const onResume = () => setPausedByEvent(false);
+
+    window.addEventListener(BG_AUDIO_PAUSE_EVENT, onPause);
+    window.addEventListener(BG_AUDIO_RESUME_EVENT, onResume);
+
+    return () => {
+      window.removeEventListener(BG_AUDIO_PAUSE_EVENT, onPause);
+      window.removeEventListener(BG_AUDIO_RESUME_EVENT, onResume);
+    };
+  }, []);
+
   const pageKey = pageOf(pathname);
   const activeTrack = pageKey
     ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
     : null;
 
+  // Play/pause handler
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (!activeTrack) {
+    // Kalau tidak ada track aktif, atau sedang dipause karena event → stop
+    if (!activeTrack || pausedByEvent) {
       audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+      if (!activeTrack) {
+        audio.removeAttribute("src");
+        try {
+          audio.load();
+        } catch {
+          // ignore
+        }
+        setNeedsGesture(false);
+      }
       return;
     }
 
     audio.volume = (activeTrack.volume ?? 50) / 100;
+    audio.muted = userMuted;
 
-    if (audio.src !== activeTrack.audio_url) {
+    if (!audio.src || !audio.src.endsWith(activeTrack.audio_url)) {
       audio.src = activeTrack.audio_url;
       audio.load();
     }
 
-    const tryPlay = async () => {
+    let attached = false;
+
+    const removeGestureHandlers = () => {
+      if (!attached) return;
+      window.removeEventListener("click", onGesture);
+      window.removeEventListener("touchstart", onGesture);
+      window.removeEventListener("keydown", onGesture);
+      window.removeEventListener("scroll", onGesture);
+      window.removeEventListener("pointerdown", onGesture);
+      attached = false;
+    };
+
+    const tryPlay = async (): Promise<boolean> => {
       try {
         await audio.play();
         setNeedsGesture(false);
+        removeGestureHandlers();
+        return true;
       } catch {
         setNeedsGesture(true);
+        return false;
       }
     };
-
-    void tryPlay();
 
     const onGesture = () => {
       void tryPlay();
     };
-    window.addEventListener("click", onGesture, { once: true });
-    window.addEventListener("touchstart", onGesture, { once: true });
-    window.addEventListener("keydown", onGesture, { once: true });
+
+    const attachGestureHandlers = () => {
+      if (attached) return;
+      window.addEventListener("click", onGesture);
+      window.addEventListener("touchstart", onGesture);
+      window.addEventListener("keydown", onGesture);
+      window.addEventListener("scroll", onGesture);
+      window.addEventListener("pointerdown", onGesture);
+      attached = true;
+    };
+
+    (async () => {
+      const ok = await tryPlay();
+      if (!ok) attachGestureHandlers();
+    })();
 
     return () => {
-      window.removeEventListener("click", onGesture);
-      window.removeEventListener("touchstart", onGesture);
-      window.removeEventListener("keydown", onGesture);
+      removeGestureHandlers();
     };
-  }, [activeTrack]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.muted = muted;
-  }, [muted]);
+  }, [activeTrack, userMuted, pausedByEvent]);
 
   if (!ready || !activeTrack) return null;
 
+  const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
+
   return (
     <>
-      <audio ref={audioRef} loop preload="auto" />
+      <audio ref={audioRef} loop preload="auto" playsInline />
 
       <button
         type="button"
-        onClick={() => setMuted((v) => !v)}
+        onClick={async () => {
+          const audio = audioRef.current;
+          if (!audio) return;
+
+          if (audio.paused) {
+            audio.muted = false;
+            setUserMuted(false);
+            try {
+              await audio.play();
+              setNeedsGesture(false);
+            } catch {
+              setNeedsGesture(true);
+            }
+            return;
+          }
+
+          const next = !userMuted;
+          setUserMuted(next);
+          audio.muted = next;
+        }}
         className="fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-xl text-white shadow-lg transition hover:bg-violet-700"
-        title={muted ? "تشغيل الصوت" : "إسكات الصوت"}
-        aria-label={muted ? "تشغيل الصوت" : "إسكات الصوت"}
+        title={userMuted ? "تشغيل الصوت" : "إسكات الصوت"}
+        aria-label={userMuted ? "تشغيل الصوت" : "إسكات الصوت"}
       >
-        {muted ? "🔇" : "🔊"}
+        {userMuted ? "🔇" : "🔊"}
       </button>
 
-      {needsGesture ? (
-        <div className="fixed bottom-4 left-20 z-50 rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
-          انقر في أي مكان لتشغيل الموسيقى 🎵
+      {needsGesture && !audioPlaying && !pausedByEvent ? (
+        <div className="fixed bottom-4 left-20 z-50 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
+          👆 انقر في أي مكان لتشغيل الموسيقى
         </div>
       ) : null}
     </>
