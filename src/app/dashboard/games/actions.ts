@@ -53,7 +53,14 @@ export async function createGame(formData: FormData) {
   const name = normalizeName(formData.get("name"));
   const classId = normalizeName(formData.get("class_id"));
   const mode = parseGameMode(formData.get("mode"));
-  const durationMinutes = Number(formData.get("duration_minutes"));
+  const modeValue = parseGameMode(formData.get("mode"));
+const isTimedMode =
+  modeValue === "competitive" ||
+  modeValue === "cooperative" ||
+  modeValue === "learning";
+const durationMinutes = isTimedMode
+  ? Number(formData.get("duration_minutes"))
+  : 5;
   const rankingVisibility = parseRankingVisibility(
     formData.get("ranking_visibility"),
   );
@@ -68,9 +75,10 @@ export async function createGame(formData: FormData) {
     name.length > MAX_GAME_NAME_LENGTH ||
     !classId ||
     !mode ||
-    !Number.isInteger(durationMinutes) ||
-    durationMinutes < 1 ||
-    durationMinutes > 60 ||
+    (isTimedMode &&
+      (!Number.isInteger(durationMinutes) ||
+        durationMinutes < 1 ||
+        durationMinutes > 60)) ||
     !rankingVisibility ||
     questionIds.length < 1 ||
     questionIds.length > 40

@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createGame, createRoom, deleteGame } from "./actions";
+import { GameModeSelector } from "./game-mode-selector";
 
 type SearchParams = {
   error?: string;
@@ -168,6 +169,10 @@ export default async function GamesPage({
               const modeInfo = MODE_LABEL[game.mode] ?? MODE_LABEL.competitive;
               const isRoomMode = modeInfo.forRoom;
               const hasBacksound = Boolean(game.backsound_track_id);
+              const isTimed =
+                game.mode === "competitive" ||
+                game.mode === "cooperative" ||
+                game.mode === "learning";
               const durationMinutes = Math.round(game.duration_seconds / 60);
 
               return (
@@ -193,9 +198,15 @@ export default async function GamesPage({
                     <span className="rounded-md bg-violet-50 px-2 py-1 font-bold text-violet-700">
                       {modeInfo.ar}
                     </span>
-                    <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
-                      {durationMinutes} د
-                    </span>
+                    {isTimed ? (
+                      <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
+                        {durationMinutes} د
+                      </span>
+                    ) : (
+                      <span className="rounded-md bg-blue-50 px-2 py-1 font-bold text-blue-700">
+                        بلا مؤقت
+                      </span>
+                    )}
                     {hasBacksound ? (
                       <span className="rounded-md bg-fuchsia-50 px-2 py-1 font-bold text-fuchsia-700">
                         🎵
@@ -301,59 +312,6 @@ export default async function GamesPage({
                 </select>
               </div>
 
-              <div className="lg:col-span-2">
-                <label htmlFor="mode" className="block text-sm font-medium">
-                  وضع اللعبة
-                </label>
-                <select
-                  id="mode"
-                  name="mode"
-                  defaultValue="competitive"
-                  className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
-                >
-                  <option value="competitive">
-                    تنافسي — مؤقت لكل سؤال
-                  </option>
-                  <option value="cooperative">
-                    تعاوني — مؤقت إجمالي (أكمل كل الأسئلة في الوقت المحدد)
-                  </option>
-                  <option value="endless">
-                    بلا نهاية — تدريب ذاتي في بوابة الطالب (بدون وقت)
-                  </option>
-                  <option value="practice">
-                    تمرين — تدريب حسب الموضوع في بوابة الطالب
-                  </option>
-                </select>
-                <p className="mt-2 text-xs text-neutral-500">
-                  ملاحظة: وضعا «بلا نهاية» و«تمرين» لا يحتاجان غرفة — يتم
-                  الوصول إليهما من بوابة الطالب مباشرة.
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="duration-minutes"
-                  className="block text-sm font-medium"
-                >
-                  مدة اللعبة بالدقائق
-                </label>
-                <input
-                  id="duration-minutes"
-                  name="duration_minutes"
-                  type="number"
-                  min={1}
-                  max={60}
-                  step={1}
-                  defaultValue={5}
-                  required
-                  className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm"
-                />
-                <p className="mt-1 text-xs text-neutral-500">
-                  في الوضع التعاوني: هذه هي المدة الكلية لإكمال كل الأسئلة.
-                  في الوضع التنافسي: مدة تقريبية للعبة.
-                </p>
-              </div>
-
               <div>
                 <label
                   htmlFor="ranking-visibility"
@@ -373,40 +331,7 @@ export default async function GamesPage({
                 </select>
               </div>
 
-              <div className="lg:col-span-2">
-                <label
-                  htmlFor="backsound-track-id"
-                  className="block text-sm font-medium"
-                >
-                  🎵 موسيقى خلفية خاصة بهذه اللعبة (اختياري)
-                </label>
-                <select
-                  id="backsound-track-id"
-                  name="backsound_track_id"
-                  defaultValue=""
-                  className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
-                >
-                  <option value="">— بدون موسيقى خاصة —</option>
-                  {tracks.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {tracks.length === 0
-                    ? "لا توجد مقاطع محمّلة. اذهب إلى إعدادات الموسيقى لإضافة مقاطع."
-                    : "سيتم تشغيل هذه الموسيقى أثناء اللعب في هذه اللعبة تحديدًا."}
-                </p>
-                {tracks.length === 0 ? (
-                  <Link
-                    href="/dashboard/settings/audio"
-                    className="mt-2 inline-flex text-xs font-bold text-violet-700 underline"
-                  >
-                    ← إدارة الموسيقى
-                  </Link>
-                ) : null}
-              </div>
+              <GameModeSelector tracks={tracks.map((t) => ({ id: t.id, name: t.name }))} />
             </div>
 
             <fieldset>
