@@ -14,6 +14,64 @@ type MaterialEditorProps = {
   placeholder?: string;
 };
 
+const EDITOR_CSS = `
+  .material-editor-content .ProseMirror ul {
+    list-style-type: disc;
+    padding-inline-start: 1.75rem;
+    margin: 0.5rem 0;
+  }
+  .material-editor-content .ProseMirror ul ul {
+    list-style-type: circle;
+  }
+  .material-editor-content .ProseMirror ul ul ul {
+    list-style-type: square;
+  }
+  .material-editor-content .ProseMirror ol {
+    list-style-type: decimal;
+    padding-inline-start: 1.75rem;
+    margin: 0.5rem 0;
+  }
+  .material-editor-content .ProseMirror li {
+    margin: 0.25rem 0;
+  }
+  .material-editor-content .ProseMirror li > p {
+    margin: 0;
+  }
+  .material-editor-content .ProseMirror blockquote {
+    border-inline-start: 3px solid #d4d4d4;
+    padding-inline-start: 0.75rem;
+    margin: 0.5rem 0;
+    color: #525252;
+  }
+  .material-editor-content .ProseMirror h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .material-editor-content .ProseMirror h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .material-editor-content .ProseMirror h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .material-editor-content .ProseMirror hr {
+    border: none;
+    border-top: 1px solid #e5e5e5;
+    margin: 1rem 0;
+  }
+  .material-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: #a3a3a3;
+    float: right;
+    height: 0;
+    pointer-events: none;
+  }
+`;
+
 export default function MaterialEditor({
   value,
   onChange,
@@ -23,6 +81,8 @@ export default function MaterialEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        link: false,
+        underline: false,
       }),
       Underline,
       TextAlign.configure({
@@ -74,8 +134,11 @@ export default function MaterialEditor({
 
   return (
     <div className="rounded-xl border border-neutral-300 bg-white">
+      <style dangerouslySetInnerHTML={{ __html: EDITOR_CSS }} />
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} />
+      <div className="material-editor-content">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
