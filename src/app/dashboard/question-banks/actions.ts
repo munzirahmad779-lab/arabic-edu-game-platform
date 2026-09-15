@@ -189,8 +189,8 @@ export async function importQuestionBankRows(questionBankId: string, rows: Quest
     return { ok: false as const, message: "Buku soal tidak valid." };
   }
 
-  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 40) {
-    return { ok: false as const, message: "Import harus berisi 1–40 soal." };
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 140) {
+    return { ok: false as const, message: "Import harus berisi 1–140 soal." };
   }
 
   const { data, error } = await supabase.rpc("import_question_bank_rows", {

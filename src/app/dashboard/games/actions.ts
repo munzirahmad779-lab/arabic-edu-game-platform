@@ -81,7 +81,7 @@ const durationMinutes = isTimedMode
         durationMinutes > 60)) ||
     !rankingVisibility ||
     questionIds.length < 1 ||
-    questionIds.length > 40
+    questionIds.length > 140
   ) {
     redirect("/dashboard/games?error=invalid");
   }
