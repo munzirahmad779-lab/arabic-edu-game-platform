@@ -68,6 +68,29 @@ function parseInteger(value: unknown): number | null {
   return null;
 }
 
+function normalizeDifficulty(raw: string): "easy" | "medium" | "hard" | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "mudah" || v === "easy" || v === "e") return "easy";
+  if (v === "sedang" || v === "medium" || v === "m") return "medium";
+  if (v === "sulit" || v === "hard" || v === "h") return "hard";
+  return null;
+}
+
+function normalizeYesNo(raw: string): boolean | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "ya" || v === "yes" || v === "y" || v === "true") return true;
+  if (v === "tidak" || v === "no" || v === "n" || v === "false") return false;
+  return null;
+}
+
+function normalizeMediaType(raw: string): "audio" | "image" | "video" | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "audio" || v === "suara") return "audio";
+  if (v === "gambar" || v === "image" || v === "img" || v === "foto") return "image";
+  if (v === "video" || v === "vidio") return "video";
+  return null;
+}
+
 function localElements(parent: ParentNode, name: string): Element[] {
   return Array.from(parent.querySelectorAll("*")).filter(
     (element) => element.localName === name
@@ -246,7 +269,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     const values = Array.from({ length: headerWidth }, (_, c) => matrix[r]?.[c]);
     const hasAnyValue = values.slice(1).some((value, index) => {
       const normalized = normalizeCell(value);
-      return normalized !== "" && !(index === 8 && normalized === "TIDAK");
+      return normalized !== "" && !(index === 9 && normalizeYesNo(normalized) === false);
     });
     if (!hasAnyValue) continue;
 
@@ -256,11 +279,11 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     const optionB = normalizeCell(values[3]);
     const optionC = normalizeCell(values[4]);
     const optionD = normalizeCell(values[5]);
-    const correct = normalizeCell(values[6]);
+    const correct = normalizeCell(values[6]).toUpperCase();
     const topic = normalizeCell(values[7]);
-    const difficulty = normalizeCell(values[8]);
-    const hasMediaValue = normalizeCell(values[9]);
-    const mediaTypeValue = normalizeCell(values[10]);
+    const difficultyRaw = normalizeCell(values[8]);
+    const hasMediaRaw = normalizeCell(values[9]);
+    const mediaTypeRaw = normalizeCell(values[10]);
     const mediaFilename = normalizeCell(values[11]);
     const maxPlayCount = parseInteger(values[12]);
     const explanation = normalizeCell(values[13]);
@@ -277,45 +300,78 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
       else if (value.length > MAX_OPTION_LENGTH) fail(errors, excelRow, label, `Maksimal ${MAX_OPTION_LENGTH} karakter.`);
     }
 
-    if (!("ABCD" as string).includes(correct) || correct.length !== 1) fail(errors, excelRow, "Jawaban Benar", "Harus tepat A, B, C, atau D.");
-    if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
-    if (!["easy", "medium", "hard"].includes(difficulty)) fail(errors, excelRow, "Tingkat Kesulitan", "Harus tepat easy, medium, atau hard.");
-
-    if (explanation.length > MAX_EXPLANATION_LENGTH) fail(errors, excelRow, "Alasan", `Maksimal ${MAX_EXPLANATION_LENGTH} karakter.`);
-
-    if (hasMediaValue !== "YA" && hasMediaValue !== "TIDAK") {
-      fail(errors, excelRow, "Ada Media?", "Harus tepat YA atau TIDAK.");
+    if (!("ABCD" as string).includes(correct) || correct.length !== 1) {
+      fail(errors, excelRow, "Jawaban Benar", "Harus tepat A, B, C, atau D.");
     }
 
-    const hasMedia = hasMediaValue === "YA";
-    const validMediaType = ["audio", "image", "video"].includes(mediaTypeValue);
-    if (hasMedia) {
-      if (!validMediaType) fail(errors, excelRow, "Jenis Media", "Harus tepat audio, image, atau video.");
-      if (!mediaFilename) fail(errors, excelRow, "Nama Media", "Wajib diisi jika Ada Media? = YA.");
+    if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
+
+    const difficulty = normalizeDifficulty(difficultyRaw);
+    if (!difficulty) {
+      fail(errors, excelRow, "Tingkat Kesulitan", "Harus salah satu: Mudah/Sedang/Sulit (atau easy/medium/hard).");
+    }
+
+    if (explanation.length > MAX_EXPLANATION_LENGTH) {
+      fail(errors, excelRow, "Alasan", `Maksimal ${MAX_EXPLANATION_LENGTH} karakter.`);
+    }
+
+    const hasMedia = normalizeYesNo(hasMediaRaw);
+    if (hasMedia === null) {
+      fail(errors, excelRow, "Ada Media?", "Harus Ya atau Tidak.");
+    }
+
+    const realHasMedia = hasMedia === true;
+
+    if (realHasMedia) {
+      const mediaType = normalizeMediaType(mediaTypeRaw);
+      if (!mediaType) {
+        fail(errors, excelRow, "Jenis Media", "Harus Audio, Gambar, atau Video.");
+      }
+      if (!mediaFilename) fail(errors, excelRow, "Nama Media", "Wajib diisi jika Ada Media? = Ya.");
       else if (mediaFilename.length > MAX_FILENAME_LENGTH) fail(errors, excelRow, "Nama Media", `Maksimal ${MAX_FILENAME_LENGTH} karakter.`);
       else if (mediaFilename.includes("/") || mediaFilename.includes("\\")) fail(errors, excelRow, "Nama Media", "Harus nama file saja, tanpa folder atau path.");
 
-      if (mediaTypeValue === "image") {
-        if (maxPlayCount !== null) fail(errors, excelRow, "Maks. Pemutaran", "Untuk image harus kosong.");
-      } else if (mediaTypeValue === "audio" || mediaTypeValue === "video") {
-        if (maxPlayCount === null || maxPlayCount < 1 || maxPlayCount > 20) fail(errors, excelRow, "Maks. Pemutaran", "Untuk audio/video harus bilangan bulat 1–20.");
+      if (mediaType === "image") {
+        if (maxPlayCount !== null) fail(errors, excelRow, "Maks. Pemutaran", "Untuk gambar harus kosong.");
+      } else if (mediaType === "audio" || mediaType === "video") {
+        if (maxPlayCount === null || maxPlayCount < 1 || maxPlayCount > 20) {
+          fail(errors, excelRow, "Maks. Pemutaran", "Untuk audio/video harus bilangan bulat 1–20.");
+        }
       }
-    } else if (mediaTypeValue || mediaFilename || maxPlayCount !== null) {
-      fail(errors, excelRow, "Media", "Jika Ada Media? = TIDAK, kolom media lain harus kosong.");
+    } else if (hasMedia === false) {
+      if (mediaFilename && mediaFilename !== "-") {
+        fail(errors, excelRow, "Nama Media", "Kosongkan jika Ada Media? = Tidak.");
+      }
+      if (maxPlayCount !== null) {
+        fail(errors, excelRow, "Maks. Pemutaran", "Kosongkan jika Ada Media? = Tidak.");
+      }
     }
 
-    if (no !== null && question && optionA && optionB && optionC && optionD && ["A", "B", "C", "D"].includes(correct) && ["easy", "medium", "hard"].includes(difficulty) && (hasMediaValue === "YA" || hasMediaValue === "TIDAK")) {
+    if (
+      no !== null &&
+      no >= 1 &&
+      question &&
+      optionA &&
+      optionB &&
+      optionC &&
+      optionD &&
+      ["A", "B", "C", "D"].includes(correct) &&
+      difficulty &&
+      hasMedia !== null
+    ) {
+      const mediaType = realHasMedia ? normalizeMediaType(mediaTypeRaw) : null;
+
       rows.push({
         no,
         question,
         options: { A: optionA, B: optionB, C: optionC, D: optionD },
         correctOptionKey: correct as QuestionImportRow["correctOptionKey"],
         topic,
-        difficulty: difficulty as QuestionImportRow["difficulty"],
-        hasMedia,
-        mediaType: hasMedia ? (mediaTypeValue as QuestionImportRow["mediaType"]) : null,
-        mediaFilename: hasMedia ? mediaFilename : null,
-        maxPlayCount: hasMedia && (mediaTypeValue === "audio" || mediaTypeValue === "video") ? maxPlayCount : null,
+        difficulty,
+        hasMedia: realHasMedia,
+        mediaType,
+        mediaFilename: realHasMedia ? mediaFilename : null,
+        maxPlayCount: realHasMedia && (mediaType === "audio" || mediaType === "video") ? maxPlayCount : null,
         explanation: explanation || null,
       });
     }
