@@ -1,647 +1,388 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import {
-  createQuestionBank,
-  createQuestionCategory,
-  deleteQuestionCategory,
-  updateQuestionCategory,
-} from "./actions";
-import { QuestionBankImportForm } from "./import-form";
-import { QuestionMediaManager } from "./media-manager";
-import { QuestionEditor } from "./question-editor";
-import { DeleteBankForm } from "./delete-bank-form";
-import { BankCard } from "./bank-card";
+import { unzipSync } from "fflate";
 
-type SearchParams = {
-  error?: string;
-  category_error?: string;
-  deleted?: string;
-  bank?: string;
-  cat?: string;
+export const QUESTION_BANK_HEADERS = [
+  "No",
+  "Pertanyaan",
+  "Pilihan A",
+  "Pilihan B",
+  "Pilihan C",
+  "Pilihan D",
+  "Jawaban Benar",
+  "Topik",
+  "Tingkat Kesulitan",
+  "Ada Media?",
+  "Jenis Media",
+  "Nama Media",
+  "Maks. Pemutaran",
+  "Alasan",
+] as const;
+
+export type QuestionImportRow = {
+  no: number;
+  question: string;
+  options: { A: string; B: string; C: string; D: string };
+  correctOptionKey: "A" | "B" | "C" | "D";
+  topic: string;
+  difficulty: "easy" | "medium" | "hard";
+  hasMedia: boolean;
+  mediaType: "audio" | "image" | "video" | null;
+  mediaFilename: string | null;
+  maxPlayCount: number | null;
+  explanation: string | null;
 };
 
-function errorMessage(error?: string) {
-  switch (error) {
-    case "invalid_bank":
-      return "Nama atau deskripsi buku soal tidak valid.";
-    case "duplicate_bank":
-      return "Buku soal dengan nama tersebut sudah ada.";
-    case "create_bank_failed":
-      return "Buku soal gagal dibuat.";
-    case "invalid_bank_id":
-      return "معرف البنك غير صالح.";
-    default:
-      return error ? `خطأ: ${error}` : null;
-  }
+export type QuestionImportError = {
+  row: number;
+  field: string;
+  message: string;
+};
+
+export type QuestionImportPreview = {
+  rows: QuestionImportRow[];
+  errors: QuestionImportError[];
+};
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_ZIP_ENTRIES = 100;
+const MAX_TOTAL_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
+const MAX_ROWS = 140;
+const MAX_TEXT_LENGTH = 5000;
+const MAX_OPTION_LENGTH = 2000;
+const MAX_TOPIC_LENGTH = 200;
+const MAX_FILENAME_LENGTH = 255;
+const MAX_EXPLANATION_LENGTH = 5000;
+
+function fail(errors: QuestionImportError[], row: number, field: string, message: string) {
+  errors.push({ row, field, message });
 }
 
-function categoryErrorMessage(error?: string) {
-  switch (error) {
-    case "invalid":
-      return "Nama topik tidak valid. Gunakan 1–100 karakter.";
-    case "duplicate":
-      return "Topik dengan nama tersebut sudah ada.";
-    case "create_failed":
-      return "Topik gagal dibuat.";
-    case "update_failed":
-      return "Topik gagal diperbarui.";
-    case "delete_failed":
-      return "Topik gagal dihapus.";
-    case "in_use":
-      return "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal.";
-    default:
-      return null;
-  }
+function normalizeCell(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value).trim();
+  return "";
 }
 
-type QuestionRow = {
-  id: string;
-  question_bank_id: string | null;
-  question_text: string | null;
-  difficulty: "easy" | "medium" | "hard" | null;
-  correct_option_key: "A" | "B" | "C" | "D" | null;
-  category_id: string | null;
-};
-
-type OptionRow = {
-  question_id: string;
-  option_key: "A" | "B" | "C" | "D";
-  option_text: string;
-};
-
-type MediaRow = {
-  id: string;
-  question_id: string;
-  media_type: "audio" | "image" | "video";
-  expected_filename: string;
-  storage_path: string | null;
-  original_filename: string | null;
-  mime_type: string | null;
-  size_bytes: number | null;
-  max_play_count: number | null;
-  attached_at: string | null;
-};
-
-const difficultyLabel: Record<NonNullable<QuestionRow["difficulty"]>, string> = {
-  easy: "Mudah",
-  medium: "Sedang",
-  hard: "Sulit",
-};
-
-function isValidUuid(v: string | undefined): v is string {
-  return typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
+function parseInteger(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) return Number(value.trim());
+  return null;
 }
 
-export default async function QuestionBanksPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+/** Normalisasi tingkat kesulitan: Mudah/easy/e → easy, dst. */
+function normalizeDifficulty(raw: string): "easy" | "medium" | "hard" | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "mudah" || v === "easy" || v === "e") return "easy";
+  if (v === "sedang" || v === "medium" || v === "m") return "medium";
+  if (v === "sulit" || v === "hard" || v === "h") return "hard";
+  return null;
+}
 
-  if (!user) return null;
+/** Normalisasi ada media: Ya/YA/yes/y → true, Tidak/TIDAK/no/n → false. */
+function normalizeYesNo(raw: string): boolean | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "ya" || v === "yes" || v === "y" || v === "true") return true;
+  if (v === "tidak" || v === "no" || v === "n" || v === "false") return false;
+  return null;
+}
 
-  const [
-    { data: banks, error: banksError },
-    { data: categories, error: categoriesError },
-    { data: questions, error: questionsError },
-  ] = await Promise.all([
-    supabase
-      .from("question_banks")
-      .select("id, name, description, created_at, updated_at")
-      .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("question_categories")
-      .select("id, name, created_at, updated_at")
-      .eq("teacher_id", user.id)
-      .order("name", { ascending: true }),
-    supabase
-      .from("questions")
-      .select(
-        "id, question_bank_id, question_text, difficulty, correct_option_key, category_id",
-      )
-      .eq("teacher_id", user.id)
-      .not("question_bank_id", "is", null)
-      .order("created_at", { ascending: true }),
-  ]);
+/** Normalisasi jenis media: Audio/audio → audio, Gambar/gambar/image → image, Video → video. */
+function normalizeMediaType(raw: string): "audio" | "image" | "video" | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "audio" || v === "suara") return "audio";
+  if (v === "gambar" || v === "image" || v === "img" || v === "foto") return "image";
+  if (v === "video" || v === "vidio") return "video";
+  return null;
+}
 
-  if (banksError) {
-    throw new Error("Gagal memuat buku soal.");
+function localElements(parent: ParentNode, name: string): Element[] {
+  return Array.from(parent.querySelectorAll("*")).filter(
+    (element) => element.localName === name
+  );
+}
+
+function firstLocal(parent: ParentNode, name: string): Element | null {
+  return localElements(parent, name)[0] ?? null;
+}
+
+function xmlDocument(bytes: Uint8Array, label: string): Document {
+  const xml = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const document = new DOMParser().parseFromString(xml, "application/xml");
+  if (document.getElementsByTagName("parsererror").length > 0) {
+    throw new Error(`Invalid XML in ${label}`);
   }
-  if (categoriesError) {
-    throw new Error("Gagal memuat topik soal.");
+  return document;
+}
+
+function readSharedStrings(zip: Record<string, Uint8Array>): string[] {
+  const bytes = zip["xl/sharedStrings.xml"];
+  if (!bytes) return [];
+  const document = xmlDocument(bytes, "sharedStrings.xml");
+  return localElements(document, "si").map((item) =>
+    localElements(item, "t").map((text) => text.textContent ?? "").join("")
+  );
+}
+
+function resolveWorksheetPath(zip: Record<string, Uint8Array>): string {
+  const workbookBytes = zip["xl/workbook.xml"];
+  const relBytes = zip["xl/_rels/workbook.xml.rels"];
+  if (!workbookBytes || !relBytes) throw new Error("Workbook structure is incomplete.");
+
+  const workbook = xmlDocument(workbookBytes, "workbook.xml");
+  const rels = xmlDocument(relBytes, "workbook.xml.rels");
+  const sheets = localElements(workbook, "sheet");
+  if (sheets.length !== 1) throw new Error("Workbook must contain exactly one worksheet.");
+
+  const sheet = sheets[0];
+  if (!sheet) throw new Error("Worksheet is missing.");
+
+  if (sheet.getAttribute("state") && sheet.getAttribute("state") !== "visible") {
+    throw new Error("The worksheet must be visible.");
   }
-  if (questionsError) {
-    throw new Error("Gagal memuat soal.");
+
+  const relationshipId =
+    sheet.getAttribute("r:id") ??
+    sheet.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+  if (!relationshipId) throw new Error("Worksheet relationship is missing.");
+
+  const relationship = localElements(rels, "Relationship").find(
+    (item) => item.getAttribute("Id") === relationshipId
+  );
+  const target = relationship?.getAttribute("Target");
+  if (!target) throw new Error("Worksheet target is missing.");
+
+  const path = target.startsWith("/") ? target.slice(1) : `xl/${target.replace(/^\.\//, "")}`;
+  if (!path.startsWith("xl/") || path.includes("..")) throw new Error("Invalid worksheet target.");
+  if (!zip[path]) throw new Error("Worksheet XML is missing.");
+  return path;
+}
+
+function columnIndex(ref: string): number {
+  const letters = ref.match(/^[A-Z]+/i)?.[0]?.toUpperCase();
+  if (!letters) throw new Error("Invalid Excel cell reference.");
+  let result = 0;
+  for (const char of letters) result = result * 26 + char.charCodeAt(0) - 64;
+  return result - 1;
+}
+
+function cellValue(cell: Element, sharedStrings: string[]): unknown {
+  if (firstLocal(cell, "f")) throw new Error("Formula cells are not allowed.");
+  const type = cell.getAttribute("t") ?? "n";
+
+  if (type === "inlineStr") {
+    const inline = firstLocal(cell, "is");
+    return inline ? localElements(inline, "t").map((t) => t.textContent ?? "").join("") : "";
   }
 
-  const questionRows = (questions ?? []) as QuestionRow[];
-  const questionIds = questionRows.map((question) => question.id);
+  const value = firstLocal(cell, "v")?.textContent ?? "";
+  if (type === "s") {
+    const index = Number(value);
+    if (!Number.isInteger(index) || index < 0 || index >= sharedStrings.length) throw new Error("Invalid shared string reference.");
+    return sharedStrings[index];
+  }
+  if (type === "b") return value === "1";
+  if (type === "str") return value;
+  if (type === "e") throw new Error("Excel error cells are not allowed.");
+  if (value === "") return "";
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : value;
+}
 
-  let options: OptionRow[] = [];
-  let media: MediaRow[] = [];
-  if (questionIds.length > 0) {
-    const [
-      { data: optionData, error: optionsError },
-      { data: mediaData, error: mediaError },
-    ] = await Promise.all([
-      supabase
-        .from("question_options")
-        .select("question_id, option_key, option_text")
-        .in("question_id", questionIds)
-        .order("option_key", { ascending: true }),
-      supabase
-        .from("question_media")
-        .select(
-          "id, question_id, media_type, expected_filename, storage_path, original_filename, mime_type, size_bytes, max_play_count, attached_at",
-        )
-        .in("question_id", questionIds)
-        .order("created_at", { ascending: true }),
-    ]);
+function readWorksheet(zip: Record<string, Uint8Array>, worksheetPath: string, sharedStrings: string[]): unknown[][] {
+  const worksheetBytes = zip[worksheetPath];
+  if (!worksheetBytes) throw new Error("Worksheet XML is missing.");
 
-    if (optionsError) {
-      throw new Error("Gagal memuat pilihan jawaban.");
+  const document = xmlDocument(worksheetBytes, worksheetPath);
+  const sheetData = firstLocal(document, "sheetData");
+  if (!sheetData) throw new Error("Worksheet data is missing.");
+
+  const rows = localElements(sheetData, "row");
+  const output: unknown[][] = [];
+  for (const row of rows) {
+    const rowNumber = Number(row.getAttribute("r"));
+    if (!Number.isInteger(rowNumber) || rowNumber < 1) throw new Error("Invalid worksheet row reference.");
+    const values: unknown[] = [];
+    for (const cell of localElements(row, "c")) {
+      const ref = cell.getAttribute("r");
+      if (!ref) throw new Error("Worksheet cell reference is missing.");
+      const index = columnIndex(ref);
+      values[index] = cellValue(cell, sharedStrings);
     }
-    if (mediaError) throw new Error("Gagal memuat media soal.");
-
-    options = (optionData ?? []) as OptionRow[];
-    media = (mediaData ?? []) as MediaRow[];
+    output[rowNumber - 1] = values;
   }
+  return output;
+}
 
-  const categoryMap = new Map(
-    (categories ?? []).map((category) => [category.id, category.name]),
+async function readXlsxRows(file: File): Promise<unknown[][]> {
+  if (!/\.xlsx$/i.test(file.name)) throw new Error("File harus berformat .xlsx.");
+  if (file.size === 0) throw new Error("File Excel kosong.");
+  if (file.size > MAX_FILE_BYTES) throw new Error("Ukuran file Excel melebihi batas 5 MB.");
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const zip = unzipSync(bytes, { filter: (fileEntry) => fileEntry.name.startsWith("xl/") || fileEntry.name.startsWith("[Content_Types].xml") });
+  const names = Object.keys(zip);
+  if (names.length > MAX_ZIP_ENTRIES) throw new Error("Workbook memiliki terlalu banyak entri ZIP.");
+  const totalSize = Object.values(zip).reduce(
+    (sum, entry) => sum + entry.byteLength,
+    0
   );
+  if (totalSize > MAX_TOTAL_UNCOMPRESSED_BYTES) throw new Error("Workbook terlalu besar setelah dekompresi.");
 
-  const optionsByQuestion = new Map<string, OptionRow[]>();
-  for (const option of options) {
-    const current = optionsByQuestion.get(option.question_id) ?? [];
-    current.push(option);
-    optionsByQuestion.set(option.question_id, current);
+  if (!zip["[Content_Types].xml"] || !zip["xl/workbook.xml"] || !zip["xl/_rels/workbook.xml.rels"]) {
+    throw new Error("File bukan workbook XLSX yang lengkap.");
   }
 
-  const mediaByQuestion = new Map<string, MediaRow[]>();
-  for (const item of media) {
-    const current = mediaByQuestion.get(item.question_id) ?? [];
-    current.push(item);
-    mediaByQuestion.set(item.question_id, current);
+  const worksheetPath = resolveWorksheetPath(zip);
+  return readWorksheet(zip, worksheetPath, readSharedStrings(zip));
+}
+
+export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImportPreview> {
+  const errors: QuestionImportError[] = [];
+  let matrix: unknown[][];
+
+  try {
+    matrix = await readXlsxRows(file);
+  } catch (error) {
+    fail(errors, 1, "file", error instanceof Error ? error.message : "File Excel tidak valid.");
+    return { rows: [], errors };
   }
 
-  const questionsByBank = new Map<string, QuestionRow[]>();
-  for (const question of questionRows) {
-    if (!question.question_bank_id) continue;
-    const current = questionsByBank.get(question.question_bank_id) ?? [];
-    current.push(question);
-    questionsByBank.set(question.question_bank_id, current);
+  const headerWidth = QUESTION_BANK_HEADERS.length;
+  const header = matrix[0] ?? [];
+  if (header.length !== headerWidth || header.some((value, index) => normalizeCell(value) !== QUESTION_BANK_HEADERS[index])) {
+    fail(errors, 1, "header", `Header harus sama persis dengan template resmi dan memiliki tepat ${headerWidth} kolom (termasuk kolom "Alasan" di paling akhir).`);
+    return { rows: [], errors };
   }
 
-  return (
-    <div className="space-y-8" dir="rtl">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">بنك الأسئلة</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي.
-          </p>
-        </div>
-        <Link
-          href="/dashboard"
-          className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm hover:bg-neutral-50"
-        >
-          لوحة التحكم
-        </Link>
-      </div>
+  const lastDataIndex = matrix.length - 1;
+  if (lastDataIndex < 1) {
+    fail(errors, 1, "rows", "Workbook harus memiliki minimal satu baris soal.");
+    return { rows: [], errors };
+  }
 
-      {searchParams.deleted === "1" ? (
-        <div
-          role="alert"
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-        >
-          ✓ تم حذف بنك الأسئلة بنجاح.
-        </div>
-      ) : null}
+  if (lastDataIndex > MAX_ROWS) {
+    fail(errors, 2, "rows", `Maksimal ${MAX_ROWS} soal dalam satu import.`);
+    return { rows: [], errors };
+  }
 
-      {errorMessage(searchParams.error) ? (
-        <div
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
-          {errorMessage(searchParams.error)}
-        </div>
-      ) : null}
+  const rows: QuestionImportRow[] = [];
+  const seenNos = new Set<number>();
 
-      {categoryErrorMessage(searchParams.category_error) ? (
-        <div
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
-          {categoryErrorMessage(searchParams.category_error)}
-        </div>
-      ) : null}
+  for (let r = 1; r <= lastDataIndex; r += 1) {
+    const excelRow = r + 1;
+    const values = Array.from({ length: headerWidth }, (_, c) => matrix[r]?.[c]);
+    const hasAnyValue = values.slice(1).some((value, index) => {
+      const normalized = normalizeCell(value);
+      return normalized !== "" && !(index === 9 && normalizeYesNo(normalized) === false);
+    });
+    if (!hasAnyValue) continue;
 
-      {/* ============== بنكي (collapsible) ============== */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">بنكي</h2>
-          <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
-            {banks.length} بنك
-          </span>
-        </div>
+    const no = parseInteger(values[0]);
+    const question = normalizeCell(values[1]);
+    const optionA = normalizeCell(values[2]);
+    const optionB = normalizeCell(values[3]);
+    const optionC = normalizeCell(values[4]);
+    const optionD = normalizeCell(values[5]);
+    const correct = normalizeCell(values[6]).toUpperCase();
+    const topic = normalizeCell(values[7]);
+    const difficultyRaw = normalizeCell(values[8]);
+    const hasMediaRaw = normalizeCell(values[9]);
+    const mediaTypeRaw = normalizeCell(values[10]);
+    const mediaFilename = normalizeCell(values[11]);
+    const maxPlayCount = parseInteger(values[12]);
+    const explanation = normalizeCell(values[13]);
 
-        {banks.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
-            لم تنشئ بنك أسئلة بعد.
-          </div>
-        ) : (
-          banks.map((bank) => {
-            const bankQuestions = questionsByBank.get(bank.id) ?? [];
+    if (no === null || no < 1) fail(errors, excelRow, "No", "Harus berupa bilangan bulat positif.");
+    else if (seenNos.has(no)) fail(errors, excelRow, "No", "Nomor soal harus unik.");
+    else seenNos.add(no);
 
-            const isFilterActive = searchParams.bank === bank.id;
-            const activeCat = (() => {
-              if (!isFilterActive) return undefined;
-              const c = searchParams.cat;
-              if (!c) return undefined;
-              if (c === "__none__") return c;
-              if (isValidUuid(c)) return c;
-              return undefined;
-            })();
+    if (!question) fail(errors, excelRow, "Pertanyaan", "Tidak boleh kosong.");
+    else if (question.length > MAX_TEXT_LENGTH) fail(errors, excelRow, "Pertanyaan", `Maksimal ${MAX_TEXT_LENGTH} karakter.`);
 
-            const filteredBankQuestions = activeCat
-              ? activeCat === "__none__"
-                ? bankQuestions.filter((q) => !q.category_id)
-                : bankQuestions.filter((q) => q.category_id === activeCat)
-              : bankQuestions;
+    for (const [label, value] of [["Pilihan A", optionA], ["Pilihan B", optionB], ["Pilihan C", optionC], ["Pilihan D", optionD]] as const) {
+      if (!value) fail(errors, excelRow, label, "Tidak boleh kosong.");
+      else if (value.length > MAX_OPTION_LENGTH) fail(errors, excelRow, label, `Maksimal ${MAX_OPTION_LENGTH} karakter.`);
+    }
 
-            const header = (
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-base font-bold text-neutral-900">
-                    {bank.name}
-                  </h3>
-                  {bank.description ? (
-                    <p className="mt-0.5 truncate text-sm text-neutral-500">
-                      {bank.description}
-                    </p>
-                  ) : null}
-                </div>
-                <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-                  {bankQuestions.length} سؤال
-                </span>
-              </div>
-            );
+    if (!("ABCD" as string).includes(correct) || correct.length !== 1) {
+      fail(errors, excelRow, "Jawaban Benar", "Harus tepat A, B, C, atau D.");
+    }
 
-            return (
-              <BankCard
-                key={bank.id}
-                bankId={bank.id}
-                header={header}
-                defaultOpen={isFilterActive}
-              >
-                {/* Delete bank */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50/40 p-3">
-                  <div className="text-xs text-red-700">
-                    ⚠️ حذف البنك سيحذف جميع الأسئلة داخله.
-                  </div>
-                  <DeleteBankForm
-                    bankId={bank.id}
-                    bankName={bank.name}
-                    questionCount={bankQuestions.length}
-                  />
-                </div>
+    if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
 
-                {/* Import */}
-                <div className="rounded-xl border border-neutral-200 bg-white p-4">
-                  <h4 className="font-semibold">استيراد الأسئلة من Excel</h4>
-                  <p className="mt-1 mb-3 text-sm text-neutral-600">
-                    تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ
-                    واحد.
-                  </p>
-                  <p className="mb-3 rounded-md bg-blue-50 p-3 text-xs text-blue-900">
-                    تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط؛ لا
-                    تُرفع الملفات الثنائية مع الاستيراد. ارفع الملف من بطاقة
-                    السؤال لاحقًا بالاسم المطابق تمامًا لعمود «Nama Media».
-                  </p>
-                  <QuestionBankImportForm questionBankId={bank.id} />
-                </div>
+    // Normalisasi difficulty
+    const difficulty = normalizeDifficulty(difficultyRaw);
+    if (!difficulty) {
+      fail(errors, excelRow, "Tingkat Kesulitan", 'Harus salah satu: Mudah/Sedang/Sulit (atau easy/medium/hard).');
+    }
 
-                {/* Filter + List */}
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-semibold">الأسئلة المحفوظة</h4>
-                    <span className="text-sm text-neutral-500">
-                      {filteredBankQuestions.length} / {bankQuestions.length}{" "}
-                      سؤال
-                    </span>
-                  </div>
+    if (explanation.length > MAX_EXPLANATION_LENGTH) {
+      fail(errors, excelRow, "Alasan", `Maksimal ${MAX_EXPLANATION_LENGTH} karakter.`);
+    }
 
-                  {bankQuestions.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Link
-                        href={`/dashboard/question-banks?bank=${bank.id}`}
-                        className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
-                          isFilterActive && !activeCat
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-                        }`}
-                      >
-                        الكل ({bankQuestions.length})
-                      </Link>
+    // Normalisasi Ya/Tidak
+    const hasMedia = normalizeYesNo(hasMediaRaw);
+    if (hasMedia === null) {
+      fail(errors, excelRow, "Ada Media?", "Harus Ya atau Tidak.");
+    }
 
-                      {(categories ?? []).map((cat) => {
-                        const count = bankQuestions.filter(
-                          (q) => q.category_id === cat.id,
-                        ).length;
-                        if (count === 0) return null;
-                        const isActive = isFilterActive && activeCat === cat.id;
-                        return (
-                          <Link
-                            key={cat.id}
-                            href={`/dashboard/question-banks?bank=${bank.id}&cat=${cat.id}`}
-                            className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
-                              isActive
-                                ? "border-violet-600 bg-violet-600 text-white"
-                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-                            }`}
-                          >
-                            {cat.name} ({count})
-                          </Link>
-                        );
-                      })}
+    const realHasMedia = hasMedia === true;
 
-                      {(() => {
-                        const noneCount = bankQuestions.filter(
-                          (q) => !q.category_id,
-                        ).length;
-                        if (noneCount === 0) return null;
-                        const isActive =
-                          isFilterActive && activeCat === "__none__";
-                        return (
-                          <Link
-                            href={`/dashboard/question-banks?bank=${bank.id}&cat=__none__`}
-                            className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
-                              isActive
-                                ? "border-amber-600 bg-amber-600 text-white"
-                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-                            }`}
-                          >
-                            بدون موضوع ({noneCount})
-                          </Link>
-                        );
-                      })()}
-                    </div>
-                  ) : null}
+    if (realHasMedia) {
+      const mediaType = normalizeMediaType(mediaTypeRaw);
+      if (!mediaType) {
+        fail(errors, excelRow, "Jenis Media", "Harus Audio, Gambar, atau Video.");
+      }
+      if (!mediaFilename) fail(errors, excelRow, "Nama Media", "Wajib diisi jika Ada Media? = Ya.");
+      else if (mediaFilename.length > MAX_FILENAME_LENGTH) fail(errors, excelRow, "Nama Media", `Maksimal ${MAX_FILENAME_LENGTH} karakter.`);
+      else if (mediaFilename.includes("/") || mediaFilename.includes("\\")) fail(errors, excelRow, "Nama Media", "Harus nama file saja, tanpa folder atau path.");
 
-                  {filteredBankQuestions.length === 0 ? (
-                    <div className="mt-4 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-                      {bankQuestions.length === 0
-                        ? "لا توجد أسئلة محفوظة في هذا البنك."
-                        : "لا توجد أسئلة تطابق الفلتر المحدد."}
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-4">
-                      {filteredBankQuestions.map((question, index) => {
-                        const questionOptions =
-                          optionsByQuestion.get(question.id) ?? [];
+      if (mediaType === "image") {
+        if (maxPlayCount !== null) fail(errors, excelRow, "Maks. Pemutaran", "Untuk gambar harus kosong.");
+      } else if (mediaType === "audio" || mediaType === "video") {
+        if (maxPlayCount === null || maxPlayCount < 1 || maxPlayCount > 20) {
+          fail(errors, excelRow, "Maks. Pemutaran", "Untuk audio/video harus bilangan bulat 1–20.");
+        }
+      }
+    } else if (hasMedia === false) {
+      // Media tidak aktif — kolom L dan M harus kosong
+      if (mediaFilename && mediaFilename !== "-") {
+        fail(errors, excelRow, "Nama Media", "Kosongkan jika Ada Media? = Tidak.");
+      }
+      if (maxPlayCount !== null) {
+        fail(errors, excelRow, "Maks. Pemutaran", "Kosongkan jika Ada Media? = Tidak.");
+      }
+    }
 
-                        return (
-                          <article
-                            key={question.id}
-                            className="rounded-lg border border-neutral-200 p-4"
-                          >
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                              <span>السؤال {index + 1}</span>
-                              {question.category_id ? (
-                                <span className="rounded-full bg-neutral-100 px-2 py-1">
-                                  {categoryMap.get(question.category_id) ??
-                                    "موضوع غير معروف"}
-                                </span>
-                              ) : null}
-                              {question.difficulty ? (
-                                <span className="rounded-full bg-neutral-100 px-2 py-1">
-                                  {difficultyLabel[question.difficulty]}
-                                </span>
-                              ) : null}
-                            </div>
+    if (
+      no !== null &&
+      no >= 1 &&
+      question &&
+      optionA &&
+      optionB &&
+      optionC &&
+      optionD &&
+      ["A", "B", "C", "D"].includes(correct) &&
+      difficulty &&
+      hasMedia !== null
+    ) {
+      const mediaType = realHasMedia ? normalizeMediaType(mediaTypeRaw) : null;
 
-                            <p className="mt-3 text-base font-medium leading-8">
-                              {question.question_text || "سؤال بلا نص"}
-                            </p>
+      rows.push({
+        no,
+        question,
+        options: { A: optionA, B: optionB, C: optionC, D: optionD },
+        correctOptionKey: correct as QuestionImportRow["correctOptionKey"],
+        topic,
+        difficulty,
+        hasMedia: realHasMedia,
+        mediaType,
+        mediaFilename: realHasMedia ? mediaFilename : null,
+        maxPlayCount: realHasMedia && (mediaType === "audio" || mediaType === "video") ? maxPlayCount : null,
+        explanation: explanation || null,
+      });
+    }
+  }
 
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                              {(["A", "B", "C", "D"] as const).map((key) => {
-                                const option = questionOptions.find(
-                                  (item) => item.option_key === key,
-                                );
-                                const isCorrect =
-                                  question.correct_option_key === key;
-
-                                return (
-                                  <div
-                                    key={key}
-                                    className={`rounded-md border p-3 ${
-                                      isCorrect
-                                        ? "border-green-300 bg-green-50 text-green-900"
-                                        : "border-neutral-200 bg-white"
-                                    }`}
-                                  >
-                                    <span className="font-semibold">
-                                      {key}.
-                                    </span>{" "}
-                                    {option?.option_text ||
-                                      "الخيار غير موجود"}
-                                    {isCorrect ? (
-                                      <span className="mr-2 text-xs font-semibold">
-                                        ✓ الإجابة الصحيحة
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            <QuestionMediaManager
-                              questionId={question.id}
-                              media={mediaByQuestion.get(question.id) ?? []}
-                            />
-                            <QuestionEditor
-                              question={{
-                                id: question.id,
-                                category_id: question.category_id,
-                                question_text: question.question_text,
-                                difficulty: question.difficulty,
-                                correct_option_key:
-                                  question.correct_option_key,
-                              }}
-                              options={questionOptions.map((option) => ({
-                                option_key: option.option_key,
-                                option_text: option.option_text,
-                              }))}
-                              categories={(categories ?? []).map(
-                                (category) => ({
-                                  id: category.id,
-                                  name: category.name,
-                                }),
-                              )}
-                              mediaCount={
-                                (
-                                  mediaByQuestion.get(question.id) ?? []
-                                ).length
-                              }
-                            />
-                          </article>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </BankCard>
-            );
-          })
-        )}
-      </section>
-
-      {/* ============== إنشاء بنك جديد ============== */}
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">إنشاء بنك جديد</h2>
-        <form action={createQuestionBank} className="mt-4 grid gap-3">
-          <input
-            name="name"
-            required
-            maxLength={100}
-            placeholder="مثال: النحو الأساسي"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <textarea
-            name="description"
-            maxLength={500}
-            placeholder="وصف اختياري"
-            rows={3}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="w-fit rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            إنشاء بنك الأسئلة
-          </button>
-        </form>
-      </section>
-
-      {/* ============== موضوعات الأسئلة ============== */}
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">موضوعات الأسئلة</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب
-              Excel.
-            </p>
-          </div>
-          <span className="text-sm text-neutral-500">
-            {categories?.length ?? 0} موضوع
-          </span>
-        </div>
-
-        <form
-          action={createQuestionCategory}
-          className="mt-4 flex flex-col gap-3 sm:flex-row"
-        >
-          <label htmlFor="category-name" className="sr-only">
-            اسم الموضوع
-          </label>
-          <input
-            id="category-name"
-            name="name"
-            type="text"
-            required
-            maxLength={100}
-            placeholder="مثال: النحو الأساسي"
-            className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-          />
-          <button
-            type="submit"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            إضافة موضوع
-          </button>
-        </form>
-
-        {categories && categories.length > 0 ? (
-          <div className="mt-5 space-y-3">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="rounded-md border border-neutral-200 p-3"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <form
-                    action={updateQuestionCategory}
-                    className="flex min-w-0 flex-1 gap-2"
-                  >
-                    <input type="hidden" name="id" value={category.id} />
-                    <label
-                      htmlFor={`category-${category.id}`}
-                      className="sr-only"
-                    >
-                      اسم الموضوع
-                    </label>
-                    <input
-                      id={`category-${category.id}`}
-                      name="name"
-                      defaultValue={category.name}
-                      required
-                      maxLength={100}
-                      className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
-                    >
-                      حفظ
-                    </button>
-                  </form>
-                  <form action={deleteQuestionCategory}>
-                    <input type="hidden" name="id" value={category.id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
-                    >
-                      حذف
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-            لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة.
-          </div>
-        )}
-      </section>
-
-      {/* ============== قالب Excel ============== */}
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">قالب Excel الرسمي</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              القالب يحتوي على 40 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة
-              حقيقية.
-            </p>
-          </div>
-          <a
-            href="/templates/question-bank-template.xlsx"
-            download
-            className="w-fit rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50"
-          >
-            تنزيل القالب
-          </a>
-        </div>
-      </section>
-    </div>
-  );
+  rows.sort((a, b) => a.no - b.no);
+  return { rows, errors };
 }

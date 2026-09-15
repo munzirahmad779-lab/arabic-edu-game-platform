@@ -14,6 +14,7 @@ export const QUESTION_BANK_HEADERS = [
   "Jenis Media",
   "Nama Media",
   "Maks. Pemutaran",
+  "Alasan",
 ] as const;
 
 export type QuestionImportRow = {
@@ -27,6 +28,7 @@ export type QuestionImportRow = {
   mediaType: "audio" | "image" | "video" | null;
   mediaFilename: string | null;
   maxPlayCount: number | null;
+  explanation: string | null;
 };
 
 export type QuestionImportError = {
@@ -43,11 +45,12 @@ export type QuestionImportPreview = {
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_ZIP_ENTRIES = 100;
 const MAX_TOTAL_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
-const MAX_ROWS = 40;
+const MAX_ROWS = 140;
 const MAX_TEXT_LENGTH = 5000;
 const MAX_OPTION_LENGTH = 2000;
 const MAX_TOPIC_LENGTH = 200;
 const MAX_FILENAME_LENGTH = 255;
+const MAX_EXPLANATION_LENGTH = 5000;
 
 function fail(errors: QuestionImportError[], row: number, field: string, message: string) {
   errors.push({ row, field, message });
@@ -220,7 +223,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
   const headerWidth = QUESTION_BANK_HEADERS.length;
   const header = matrix[0] ?? [];
   if (header.length !== headerWidth || header.some((value, index) => normalizeCell(value) !== QUESTION_BANK_HEADERS[index])) {
-    fail(errors, 1, "header", "Header harus sama persis dengan template resmi dan memiliki tepat 13 kolom.");
+    fail(errors, 1, "header", `Header harus sama persis dengan template resmi dan memiliki tepat ${headerWidth} kolom (termasuk kolom "Alasan" di paling akhir).`);
     return { rows: [], errors };
   }
 
@@ -241,10 +244,11 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
   for (let r = 1; r <= lastDataIndex; r += 1) {
     const excelRow = r + 1;
     const values = Array.from({ length: headerWidth }, (_, c) => matrix[r]?.[c]);
-    const hasAnyValue = values.slice(1).some((value, index) => { const normalized = normalizeCell(value); return normalized !== "" && !(index === 8 && normalized === "TIDAK"); });
-    if (!hasAnyValue) {
-      continue;
-    }
+    const hasAnyValue = values.slice(1).some((value, index) => {
+      const normalized = normalizeCell(value);
+      return normalized !== "" && !(index === 8 && normalized === "TIDAK");
+    });
+    if (!hasAnyValue) continue;
 
     const no = parseInteger(values[0]);
     const question = normalizeCell(values[1]);
@@ -259,6 +263,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     const mediaTypeValue = normalizeCell(values[10]);
     const mediaFilename = normalizeCell(values[11]);
     const maxPlayCount = parseInteger(values[12]);
+    const explanation = normalizeCell(values[13]);
 
     if (no === null || no < 1) fail(errors, excelRow, "No", "Harus berupa bilangan bulat positif.");
     else if (seenNos.has(no)) fail(errors, excelRow, "No", "Nomor soal harus unik.");
@@ -273,9 +278,10 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     }
 
     if (!("ABCD" as string).includes(correct) || correct.length !== 1) fail(errors, excelRow, "Jawaban Benar", "Harus tepat A, B, C, atau D.");
-    // Topik boleh kosong (soal tanpa kategori). Kalau diisi, maks 200 karakter.
     if (topic.length > MAX_TOPIC_LENGTH) fail(errors, excelRow, "Topik", `Maksimal ${MAX_TOPIC_LENGTH} karakter.`);
     if (!["easy", "medium", "hard"].includes(difficulty)) fail(errors, excelRow, "Tingkat Kesulitan", "Harus tepat easy, medium, atau hard.");
+
+    if (explanation.length > MAX_EXPLANATION_LENGTH) fail(errors, excelRow, "Alasan", `Maksimal ${MAX_EXPLANATION_LENGTH} karakter.`);
 
     if (hasMediaValue !== "YA" && hasMediaValue !== "TIDAK") {
       fail(errors, excelRow, "Ada Media?", "Harus tepat YA atau TIDAK.");
@@ -310,6 +316,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
         mediaType: hasMedia ? (mediaTypeValue as QuestionImportRow["mediaType"]) : null,
         mediaFilename: hasMedia ? mediaFilename : null,
         maxPlayCount: hasMedia && (mediaTypeValue === "audio" || mediaTypeValue === "video") ? maxPlayCount : null,
+        explanation: explanation || null,
       });
     }
   }
