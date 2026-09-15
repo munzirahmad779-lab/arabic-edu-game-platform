@@ -6,12 +6,13 @@ import { ProfileForm } from "./profile-form";
 type SearchParams = { saved?: string; error?: string };
 
 type RoomHistoryRow = {
-  id: string;
+  session_id: string;
   session_number: number;
   started_at: string | null;
   ended_at: string | null;
-  room_code: string;
   room_id: string;
+  room_code: string;
+  game_id: string | null;
   game_name: string;
   game_mode: string;
   participant_count: number;
@@ -69,119 +70,36 @@ export default async function AccountPage({
     .eq("id", user.id)
     .maybeSingle();
 
-  // History: room-based (competitive, cooperative, learning)
-  const { data: roomSessionsData } = await supabase
-    .from("room_sessions")
-    .select(
-      "id, session_number, started_at, ended_at, room_id, rooms!inner(code, game_id, teacher_id, games!inner(name, mode))",
-    )
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  const roomHistory: RoomHistoryRow[] = [];
-  if (roomSessionsData) {
-    for (const rs of roomSessionsData as unknown as Array<{
-      id: string;
-      session_number: number;
-      started_at: string | null;
-      ended_at: string | null;
-      room_id: string;
-      rooms: {
-        code: string;
-        game_id: string | null;
-        teacher_id: string;
-        games: { name: string; mode: string } | null;
-      } | null;
-    }>) {
-      if (!rs.rooms || rs.rooms.teacher_id !== user.id) continue;
-
-      const { count } = await supabase
-        .from("room_session_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("session_id", rs.id);
-
-      roomHistory.push({
-        id: rs.id,
-        session_number: rs.session_number,
-        started_at: rs.started_at,
-        ended_at: rs.ended_at,
-        room_code: rs.rooms.code,
-        room_id: rs.room_id,
-        game_name: rs.rooms.games?.name ?? "—",
-        game_mode: rs.rooms.games?.mode ?? "—",
-        participant_count: count ?? 0,
-      });
+  // RPC room history
+  let roomHistory: RoomHistoryRow[] = [];
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc(
+      "teacher_list_room_history",
+    );
+    if (error) {
+      console.error("[account] room history error:", error);
+    } else if (data) {
+      roomHistory = data as RoomHistoryRow[];
     }
+  } catch (e) {
+    console.error("[account] room history exception:", e);
   }
 
-  // History: practice (endless, practice) — aggregated
-  const { data: practiceRaw } = await supabase
-    .from("student_practice_answers")
-    .select(
-      "student_id, game_id, is_correct, answered_at, students!inner(name, classes!inner(teacher_id)), games!inner(name, mode, teacher_id)",
-    )
-    .order("answered_at", { ascending: false });
-
-  const practiceMap = new Map<string, PracticeHistoryRow>();
-
-  if (practiceRaw) {
-    type Row = {
-      student_id: string;
-      game_id: string;
-      is_correct: boolean;
-      answered_at: string;
-      students: { name: string; classes: { teacher_id: string } | null } | null;
-      games: { name: string; mode: string; teacher_id: string } | null;
-    };
-
-    for (const r of practiceRaw as unknown as Row[]) {
-      if (!r.games || r.games.teacher_id !== user.id) continue;
-      if (!r.students) continue;
-
-      const key = `${r.student_id}|${r.game_id}`;
-      const existing = practiceMap.get(key);
-
-      if (existing) {
-        existing.answered += 1;
-        if (r.is_correct) existing.correct_count += 1;
-        if (r.answered_at > existing.last_activity) {
-          existing.last_activity = r.answered_at;
-        }
-      } else {
-        practiceMap.set(key, {
-          game_id: r.game_id,
-          game_name: r.games.name,
-          mode: r.games.mode,
-          student_id: r.student_id,
-          student_name: r.students.name,
-          answered: 1,
-          correct_count: r.is_correct ? 1 : 0,
-          total_questions: 0,
-          last_activity: r.answered_at,
-        });
-      }
+  // RPC practice history
+  let practiceHistory: PracticeHistoryRow[] = [];
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc(
+      "teacher_list_practice_history",
+    );
+    if (error) {
+      console.error("[account] practice history error:", error);
+    } else if (data) {
+      practiceHistory = data as PracticeHistoryRow[];
     }
-  }
-
-  const practiceHistory = Array.from(practiceMap.values()).sort((a, b) =>
-    b.last_activity.localeCompare(a.last_activity),
-  );
-
-  // Total question count per game
-  const gameIds = [...new Set(practiceHistory.map((p) => p.game_id))];
-  if (gameIds.length > 0) {
-    const { data: gqCount } = await supabase
-      .from("game_questions")
-      .select("game_id")
-      .in("game_id", gameIds);
-
-    const counts = new Map<string, number>();
-    for (const gq of gqCount ?? []) {
-      counts.set(gq.game_id, (counts.get(gq.game_id) ?? 0) + 1);
-    }
-    for (const p of practiceHistory) {
-      p.total_questions = counts.get(p.game_id) ?? 0;
-    }
+  } catch (e) {
+    console.error("[account] practice history exception:", e);
   }
 
   const err = searchParams.error;
@@ -222,12 +140,12 @@ export default async function AccountPage({
         email={profile?.email ?? user.email ?? ""}
       />
 
-      {/* ============== History: Room-based ============== */}
+      {/* Room history */}
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-black text-neutral-900">
-              🏆 سجل الألعاب التنافسية والتعاونية
+              🏆 سجل الألعاب (تنافسي + تعاوني)
             </h2>
             <p className="mt-1 text-xs text-neutral-500">
               الجلسات المؤرشفة في الغرف — بترتيب زمني تنازلي.
@@ -271,16 +189,16 @@ export default async function AccountPage({
                   <th className="px-3 py-2 text-right font-bold text-neutral-600">
                     التاريخ
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600"></th>
+                  <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {roomHistory.map((r) => (
-                  <tr key={r.id} className="border-t border-neutral-100">
+                  <tr key={r.session_id} className="border-t border-neutral-100">
                     <td className="px-3 py-2 font-black">
                       #{r.session_number}
                     </td>
-                    <td className="px-3 py-2 truncate font-bold text-neutral-800">
+                    <td className="truncate px-3 py-2 font-bold text-neutral-800">
                       {r.game_name}
                     </td>
                     <td className="px-3 py-2">
@@ -288,10 +206,7 @@ export default async function AccountPage({
                         {MODE_AR[r.game_mode] ?? r.game_mode}
                       </span>
                     </td>
-                    <td
-                      className="px-3 py-2 font-mono text-xs"
-                      dir="ltr"
-                    >
+                    <td className="px-3 py-2 font-mono text-xs" dir="ltr">
                       {r.room_code}
                     </td>
                     <td className="px-3 py-2 font-bold text-neutral-700">
@@ -301,12 +216,14 @@ export default async function AccountPage({
                       {formatDate(r.started_at)}
                     </td>
                     <td className="px-3 py-2">
-                      <Link
-                        href={`/dashboard/games/${r.room_id}?highlight=${r.id}`}
-                        className="text-xs font-bold text-violet-700 underline"
-                      >
-                        عرض
-                      </Link>
+                      {r.game_id ? (
+                        <Link
+                          href={`/dashboard/games/${r.game_id}/room?roomId=${r.room_id}`}
+                          className="text-xs font-bold text-violet-700 underline"
+                        >
+                          عرض
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -316,7 +233,7 @@ export default async function AccountPage({
         )}
       </section>
 
-      {/* ============== History: Practice ============== */}
+      {/* Practice history */}
       <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -379,7 +296,7 @@ export default async function AccountPage({
                       <td className="px-3 py-2 font-bold text-neutral-800">
                         {p.student_name}
                       </td>
-                      <td className="px-3 py-2 truncate text-neutral-700">
+                      <td className="truncate px-3 py-2 text-neutral-700">
                         {p.game_name}
                       </td>
                       <td className="px-3 py-2">
@@ -411,7 +328,7 @@ export default async function AccountPage({
         <p className="font-black">💡 ملاحظة</p>
         <p className="mt-1">
           سيتم إضافة رابط مباشر للملخص الكامل لكل فصل (سجل تفصيلي لكل طالب) في
-          التحديث القادم. حاليًا يمكنك مشاهدة الملخص العام هنا.
+          التحديث القادم.
         </p>
       </section>
     </main>

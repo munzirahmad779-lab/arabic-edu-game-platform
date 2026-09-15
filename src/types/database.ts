@@ -282,6 +282,35 @@ export interface Database {
       };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
       verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };
+      teacher_list_room_history: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          session_id: string;
+          session_number: number;
+          started_at: string | null;
+          ended_at: string | null;
+          room_id: string;
+          room_code: string;
+          game_id: string | null;
+          game_name: string;
+          game_mode: string;
+          participant_count: number;
+        }>;
+      };
+      teacher_list_practice_history: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          game_id: string;
+          game_name: string;
+          mode: string;
+          student_id: string;
+          student_name: string;
+          answered: number;
+          correct_count: number;
+          total_questions: number;
+          last_activity: string;
+        }>;
+      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
