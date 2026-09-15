@@ -35,6 +35,8 @@ function pageOf(pathname: string): PageKey | null {
   if (pathname.startsWith("/dashboard/question-banks")) return null;
   if (pathname.startsWith("/student/materials/")) return null;
   if (pathname.startsWith("/dashboard/classes/")) return null;
+    // Homepage
+  if (pathname === "/") return "login";
 
   if (pathname.startsWith("/join/room")) return "game";
   if (pathname.startsWith("/student/login")) return "login";
