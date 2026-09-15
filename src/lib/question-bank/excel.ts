@@ -267,14 +267,13 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
   for (let r = 1; r <= lastDataIndex; r += 1) {
     const excelRow = r + 1;
     const values = Array.from({ length: headerWidth }, (_, c) => matrix[r]?.[c]);
-    const hasAnyValue = values.slice(1).some((value, index) => {
-      const normalized = normalizeCell(value);
-      return normalized !== "" && !(index === 9 && normalizeYesNo(normalized) === false);
-    });
-    if (!hasAnyValue) continue;
+
+    // Baris dianggap "berisi soal" hanya kalau kolom Pertanyaan (index 1)
+    // terisi. Baris yang cuma punya No / default "Tidak" → skip tanpa error.
+    const question = normalizeCell(values[1]);
+    if (!question) continue;
 
     const no = parseInteger(values[0]);
-    const question = normalizeCell(values[1]);
     const optionA = normalizeCell(values[2]);
     const optionB = normalizeCell(values[3]);
     const optionC = normalizeCell(values[4]);
@@ -292,8 +291,7 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     else if (seenNos.has(no)) fail(errors, excelRow, "No", "Nomor soal harus unik.");
     else seenNos.add(no);
 
-    if (!question) fail(errors, excelRow, "Pertanyaan", "Tidak boleh kosong.");
-    else if (question.length > MAX_TEXT_LENGTH) fail(errors, excelRow, "Pertanyaan", `Maksimal ${MAX_TEXT_LENGTH} karakter.`);
+    if (question.length > MAX_TEXT_LENGTH) fail(errors, excelRow, "Pertanyaan", `Maksimal ${MAX_TEXT_LENGTH} karakter.`);
 
     for (const [label, value] of [["Pilihan A", optionA], ["Pilihan B", optionB], ["Pilihan C", optionC], ["Pilihan D", optionD]] as const) {
       if (!value) fail(errors, excelRow, label, "Tidak boleh kosong.");
@@ -350,7 +348,6 @@ export async function parseQuestionBankWorkbook(file: File): Promise<QuestionImp
     if (
       no !== null &&
       no >= 1 &&
-      question &&
       optionA &&
       optionB &&
       optionC &&
