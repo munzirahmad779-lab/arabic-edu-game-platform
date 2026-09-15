@@ -7,6 +7,7 @@ import {
   resumeBackgroundAudio,
 } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
+import { RoomReview } from "./room-review";
 
 type Option = {
   id: string;
@@ -554,6 +555,7 @@ export default function JoinRoomPage({
             </div>
           </div>
 
+          <RoomReview token={token} />
           <div className="text-center">
             <a
               href="/join"

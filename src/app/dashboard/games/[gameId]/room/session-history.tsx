@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { SessionQuestionAnalysis } from "./session-question-analysis";
 
 type SessionRow = {
   session_id: string;
@@ -189,6 +190,13 @@ export default function SessionHistory({
                       </table>
                     </div>
                   )}
+
+                  <div className="mt-4 border-t border-slate-200 pt-4">
+                    <h4 className="mb-2 text-xs font-black text-slate-700">
+                      📊 تحليل الأسئلة
+                    </h4>
+                    <SessionQuestionAnalysis sessionId={s.session_id} />
+                  </div>
                 </div>
               ) : null}
             </div>

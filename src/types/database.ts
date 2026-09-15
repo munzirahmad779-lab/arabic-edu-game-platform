@@ -390,6 +390,34 @@ export interface Database {
           recorded_at: string;
         }>;
       };
+            get_session_question_stats: {
+        Args: { p_session_id: string };
+        Returns: Array<{
+          question_id: string;
+          question_text: string | null;
+          correct_option_key: string | null;
+          explanation: string | null;
+          options: Json;
+          total_answered: number;
+          total_correct: number;
+          selected_a_count: number;
+          selected_b_count: number;
+          selected_c_count: number;
+          selected_d_count: number;
+        }>;
+      };
+      student_get_my_room_answers: {
+        Args: { p_join_token: string };
+        Returns: Array<{
+          question_position: number;
+          question_text: string | null;
+          correct_option_key: string | null;
+          explanation: string | null;
+          options: Json;
+          selected_option_key: string | null;
+          is_correct: boolean;
+        }>;
+      };
       teacher_delete_student_history: {
         Args: { p_student_id: string };
         Returns: number;
