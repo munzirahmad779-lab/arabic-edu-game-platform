@@ -45,6 +45,32 @@ export default async function StudentDashboardPage() {
           </form>
         </header>
 
+        {/* Kartu pintasan latihan */}
+        <section className="rounded-[2rem] border border-emerald-100 bg-gradient-to-l from-emerald-50 to-white p-6 shadow-lg">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-3xl text-white shadow-md">
+                🎯
+              </span>
+              <div>
+                <h2 className="text-xl font-black text-emerald-900">
+                  التدريب الذاتي
+                </h2>
+                <p className="mt-1 text-sm text-emerald-800">
+                  تدرب على أسئلة معلمك بحرية — بدون وقت، مع إمكانية مراجعة كل
+                  إجابة وسببها.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/student/practice"
+              className="shrink-0 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
+            >
+              ابدأ التدريب →
+            </Link>
+          </div>
+        </section>
+
         <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg sm:p-8">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-black text-neutral-900">
@@ -83,11 +109,7 @@ export default async function StudentDashboardPage() {
                         </p>
                         <p className="text-xs text-neutral-500">
                           آخر تحديث:{" "}
-                          {new Intl.DateTimeFormat("ar-EG", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }).format(new Date(m.updated_at))}
+                          {new Date(m.updated_at).toISOString().slice(0, 10)}
                         </p>
                       </div>
                     </div>
