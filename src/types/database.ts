@@ -325,6 +325,24 @@ export interface Database {
           last_activity: string | null;
         }>;
       };
+      cleanup_old_history: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      teacher_daily_report: {
+        Args: { p_date: string };
+        Returns: Array<{
+          source: string;
+          game_name: string;
+          game_mode: string;
+          student_name: string;
+          final_score: number | null;
+          rank_position: number | null;
+          correct_count: number;
+          total_questions: number;
+          recorded_at: string;
+        }>;
+      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
