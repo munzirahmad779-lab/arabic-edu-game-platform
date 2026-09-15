@@ -347,6 +347,10 @@ export interface Database {
         Args: { p_student_id: string };
         Returns: number;
       };
+            teacher_delete_student_history_by_mode: {
+        Args: { p_student_id: string; p_mode: string };
+        Returns: number;
+      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
