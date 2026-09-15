@@ -58,6 +58,7 @@ export function GlobalBackgroundAudio() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>("violet");
   const [themeLoading, setThemeLoading] = useState(false);
+  const [portalCopied, setPortalCopied] = useState(false);
 
   const isDashboard = pathname.startsWith("/dashboard");
 
@@ -71,7 +72,6 @@ export function GlobalBackgroundAudio() {
     }
   }, []);
 
-  // Fetch tracks
   useEffect(() => {
     if (!mounted) return;
     let alive = true;
@@ -91,7 +91,6 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted]);
 
-  // Fetch theme (hanya di dashboard, hanya kalau drawer dibuka)
   useEffect(() => {
     if (!mounted || !isDashboard || !settingsOpen) return;
     let alive = true;
@@ -118,7 +117,6 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted, isDashboard, settingsOpen]);
 
-  // Simpan preferensi mute
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -131,7 +129,6 @@ export function GlobalBackgroundAudio() {
     }
   }, [userMuted, mounted]);
 
-  // Listen pause/resume
   useEffect(() => {
     const onPause = () => setPausedByEvent(true);
     const onResume = () => setPausedByEvent(false);
@@ -143,7 +140,6 @@ export function GlobalBackgroundAudio() {
     };
   }, []);
 
-  // Tutup drawer kalau klik di luar
   useEffect(() => {
     if (!settingsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -161,7 +157,6 @@ export function GlobalBackgroundAudio() {
     ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
     : null;
 
-  // Play/pause
   useEffect(() => {
     if (!mounted) return;
     const audio = audioRef.current;
@@ -241,12 +236,10 @@ export function GlobalBackgroundAudio() {
     if (themeLoading) return;
     setThemeLoading(true);
 
-    // Update UI langsung
     setCurrentTheme(themeKey);
     const root = document.querySelector("[data-theme]");
     if (root) root.setAttribute("data-theme", themeKey);
 
-    // Simpan ke server
     const fd = new FormData();
     fd.set("theme", themeKey);
     try {
@@ -258,6 +251,17 @@ export function GlobalBackgroundAudio() {
     }
   }
 
+  async function copyPortalLink() {
+    try {
+      const url = `${window.location.origin}/student/login`;
+      await navigator.clipboard.writeText(url);
+      setPortalCopied(true);
+      window.setTimeout(() => setPortalCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
+
   if (!mounted) return null;
 
   const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
@@ -266,11 +270,10 @@ export function GlobalBackgroundAudio() {
     <>
       <audio ref={audioRef} loop preload="auto" playsInline />
 
-      {/* Drawer */}
       {settingsOpen ? (
         <div
           ref={drawerRef}
-          className="fixed bottom-20 left-4 z-50 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+          className="fixed bottom-20 left-4 z-50 max-h-[75vh] w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
           dir="rtl"
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
@@ -309,7 +312,7 @@ export function GlobalBackgroundAudio() {
               </span>
             </button>
 
-            {/* Theme picker (dashboard only) */}
+            {/* Theme picker */}
             {isDashboard ? (
               <div className="rounded-xl border border-neutral-200 bg-white p-3">
                 <p className="mb-3 text-xs font-black text-neutral-700">
@@ -342,27 +345,47 @@ export function GlobalBackgroundAudio() {
                     );
                   })}
                 </div>
-                <p className="mt-2 text-[10px] text-neutral-400">
-                  ملاحظة: الثيم يطبّق على لوحة التحكم فقط، ولا يؤثر على صفحات
-                  الطلاب.
-                </p>
               </div>
             ) : null}
 
-            {/* Dashboard-only links */}
+            {/* Dashboard shortcuts */}
             {isDashboard ? (
               <>
-                <Link
-                  href="/dashboard/settings/audio"
-                  onClick={() => setSettingsOpen(false)}
-                  className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-sm font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/dashboard/settings/audio"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                  >
+                    <span className="text-lg">🎵</span>
+                    <span>الموسيقى</span>
+                  </Link>
+                  <Link
+                    href="/dashboard/students"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                  >
+                    <span className="text-lg">👥</span>
+                    <span>الطلاب</span>
+                  </Link>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void copyPortalLink()}
+                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100"
                 >
-                  <span className="text-lg">🎵</span>
-                  <span>إدارة الموسيقى الخلفية</span>
-                </Link>
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg">🔗</span>
+                    <span>نسخ رابط بوابة الطالب</span>
+                  </span>
+                  <span className="text-xs">
+                    {portalCopied ? "✓" : "📋"}
+                  </span>
+                </button>
 
                 <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
-                  🔜 قريبًا: رابط بوابة الطالب، إدارة الحساب، والسجل
+                  🔜 قريبًا: إدارة الحساب، والسجل الكامل
                 </div>
               </>
             ) : null}
@@ -370,7 +393,6 @@ export function GlobalBackgroundAudio() {
         </div>
       ) : null}
 
-      {/* Floating gear button */}
       <button
         type="button"
         onClick={() => setSettingsOpen((v) => !v)}
@@ -381,7 +403,6 @@ export function GlobalBackgroundAudio() {
         ⚙️
       </button>
 
-      {/* Hint gesture */}
       {needsGesture && !audioPlaying && !pausedByEvent && activeTrack ? (
         <div className="fixed bottom-4 left-20 z-40 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
           👆 انقر في أي مكان لتشغيل الموسيقى
