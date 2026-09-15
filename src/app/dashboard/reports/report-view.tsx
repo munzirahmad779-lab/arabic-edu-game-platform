@@ -107,14 +107,16 @@ function buildMarkdown(
   return lines.join("\n");
 }
 
-function todayUTC(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+function todayWIB(): string {
+  const now = new Date();
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
 }
 
-function yesterdayUTC(): string {
-  const d = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+function yesterdayWIB(): string {
+  const now = new Date();
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
+  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
 }
 
 export function ReportView({
@@ -186,8 +188,8 @@ export function ReportView({
     window.location.href = `/dashboard/reports?date=${newDate}`;
   }
 
-  const today = todayUTC();
-  const yesterday = yesterdayUTC();
+  const today = todayWIB();
+  const yesterday = yesterdayWIB();
 
   return (
     <div className="space-y-5">

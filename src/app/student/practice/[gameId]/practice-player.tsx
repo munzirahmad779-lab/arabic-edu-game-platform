@@ -42,6 +42,8 @@ type ProgressRow = {
   selected_option_key: string;
   is_correct: boolean;
   answered_at: string;
+  correct_option_key: string;
+  explanation: string | null;
 };
 
 type AnswerState = {
@@ -104,8 +106,8 @@ export function PracticePlayer({
       map[p.question_id] = {
         selected: p.selected_option_key,
         isCorrect: p.is_correct,
-        correct: "",
-        explanation: null,
+        correct: p.correct_option_key,
+        explanation: p.explanation,
       };
     }
     return map;

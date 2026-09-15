@@ -37,6 +37,8 @@ type ProgressRow = {
   selected_option_key: string;
   is_correct: boolean;
   answered_at: string;
+  correct_option_key: string;
+  explanation: string | null;
 };
 
 export default async function PracticeGamePage({

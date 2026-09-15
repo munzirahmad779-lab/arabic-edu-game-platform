@@ -278,7 +278,14 @@ export interface Database {
       student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };
       student_get_practice_progress: {
         Args: { p_token: string; p_game_id: string };
-        Returns: Array<{ question_id: string; selected_option_key: string; is_correct: boolean; answered_at: string; }>;
+        Returns: Array<{
+          question_id: string;
+          selected_option_key: string;
+          is_correct: boolean;
+          answered_at: string;
+          correct_option_key: string;
+          explanation: string | null;
+        }>;
       };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
       verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };

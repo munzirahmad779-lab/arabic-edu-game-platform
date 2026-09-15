@@ -5,9 +5,11 @@ import { ReportView } from "./report-view";
 
 type SearchParams = { date?: string };
 
-function todayUTC(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+function todayWIB(): string {
+  // WIB = UTC+7
+  const now = new Date();
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
 }
 
 function isValidDate(v: string | undefined): v is string {
@@ -25,7 +27,7 @@ export default async function ReportsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const date = isValidDate(searchParams.date) ? searchParams.date : todayUTC();
+  const date = isValidDate(searchParams.date) ? searchParams.date : todayWIB();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc("teacher_daily_report", {
