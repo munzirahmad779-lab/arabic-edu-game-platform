@@ -351,11 +351,11 @@ export function GlobalBackgroundAudio() {
             {/* Dashboard shortcuts */}
             {isDashboard ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Link
                     href="/dashboard/settings/audio"
                     onClick={() => setSettingsOpen(false)}
-                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">🎵</span>
                     <span>الموسيقى</span>
@@ -363,10 +363,18 @@ export function GlobalBackgroundAudio() {
                   <Link
                     href="/dashboard/students"
                     onClick={() => setSettingsOpen(false)}
-                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">👥</span>
                     <span>الطلاب</span>
+                  </Link>
+                  <Link
+                    href="/dashboard/account"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                  >
+                    <span className="text-lg">⚙️</span>
+                    <span>الحساب</span>
                   </Link>
                 </div>
 
@@ -379,13 +387,11 @@ export function GlobalBackgroundAudio() {
                     <span className="text-lg">🔗</span>
                     <span>نسخ رابط بوابة الطالب</span>
                   </span>
-                  <span className="text-xs">
-                    {portalCopied ? "✓" : "📋"}
-                  </span>
+                  <span className="text-xs">{portalCopied ? "✓" : "📋"}</span>
                 </button>
 
                 <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
-                  🔜 قريبًا: إدارة الحساب، والسجل الكامل
+                  🔜 قريبًا: سجل الفصول التفصيلي
                 </div>
               </>
             ) : null}
