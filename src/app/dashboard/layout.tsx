@@ -25,17 +25,9 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-neutral-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-4 sm:px-6">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="font-semibold">
-            لوحة تحكم المعلم
-          </Link>
-          <Link
-            href="/dashboard/settings/audio"
-            className="rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-          >
-            🎵 إعدادات الموسيقى
-          </Link>
-        </div>
+        <Link href="/dashboard" className="font-semibold">
+          لوحة تحكم المعلم
+        </Link>
         <div className="flex items-center gap-4">
           <span className="hidden text-sm text-neutral-600 sm:inline" dir="ltr">
             {profile?.full_name || profile?.email || user.email}

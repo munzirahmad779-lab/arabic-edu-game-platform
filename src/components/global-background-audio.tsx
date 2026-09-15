@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -35,17 +36,26 @@ function pageOf(pathname: string): PageKey | null {
 export function GlobalBackgroundAudio() {
   const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+
   const [mounted, setMounted] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [userMuted, setUserMuted] = useState(false);
   const [pausedByEvent, setPausedByEvent] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const saved = window.localStorage.getItem("bg-audio-muted");
+      if (saved === "true") setUserMuted(true);
+    } catch {
+      // ignore
+    }
   }, []);
 
+  // Fetch tracks
   useEffect(() => {
     if (!mounted) return;
     let alive = true;
@@ -58,8 +68,6 @@ export function GlobalBackgroundAudio() {
         if (Array.isArray(data)) setTracks(data as Track[]);
       } catch {
         // ignore
-      } finally {
-        if (alive) setReady(true);
       }
     })();
     return () => {
@@ -67,24 +75,50 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted]);
 
+  // Simpan preferensi mute
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      window.localStorage.setItem(
+        "bg-audio-muted",
+        userMuted ? "true" : "false",
+      );
+    } catch {
+      // ignore
+    }
+  }, [userMuted, mounted]);
+
+  // Listen pause/resume
   useEffect(() => {
     const onPause = () => setPausedByEvent(true);
     const onResume = () => setPausedByEvent(false);
-
     window.addEventListener(BG_AUDIO_PAUSE_EVENT, onPause);
     window.addEventListener(BG_AUDIO_RESUME_EVENT, onResume);
-
     return () => {
       window.removeEventListener(BG_AUDIO_PAUSE_EVENT, onPause);
       window.removeEventListener(BG_AUDIO_RESUME_EVENT, onResume);
     };
   }, []);
 
+  // Tutup drawer kalau klik di luar
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (drawerRef.current && !drawerRef.current.contains(target)) {
+        setSettingsOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [settingsOpen]);
+
   const pageKey = pageOf(pathname);
   const activeTrack = pageKey
     ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
     : null;
 
+  // Play/pause
   useEffect(() => {
     if (!mounted) return;
     const audio = audioRef.current;
@@ -160,45 +194,93 @@ export function GlobalBackgroundAudio() {
     };
   }, [activeTrack, userMuted, pausedByEvent, mounted]);
 
-  if (!mounted || !ready || !activeTrack) return null;
+  if (!mounted) return null;
 
+  const isDashboard = pathname.startsWith("/dashboard");
   const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
 
   return (
     <>
       <audio ref={audioRef} loop preload="auto" playsInline />
 
+      {/* Drawer */}
+      {settingsOpen ? (
+        <div
+          ref={drawerRef}
+          className="fixed bottom-20 left-4 z-50 w-72 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+          dir="rtl"
+        >
+          <div className="flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
+            <span className="text-sm font-black">⚙️ الإعدادات السريعة</span>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(false)}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-sm font-black transition hover:bg-white/30"
+              aria-label="إغلاق"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-2 p-3">
+            {/* Mute toggle */}
+            <button
+              type="button"
+              onClick={() => setUserMuted((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 transition hover:bg-neutral-100"
+            >
+              <span className="flex items-center gap-2 text-sm font-bold text-neutral-800">
+                <span className="text-lg">{userMuted ? "🔇" : "🔊"}</span>
+                <span>{userMuted ? "الصوت مكتوم" : "الصوت مفعّل"}</span>
+              </span>
+              <span
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                  userMuted ? "bg-neutral-300" : "bg-emerald-500"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition ${
+                    userMuted ? "translate-x-1" : "-translate-x-5"
+                  }`}
+                />
+              </span>
+            </button>
+
+            {/* Dashboard-only links */}
+            {isDashboard ? (
+              <>
+                <Link
+                  href="/dashboard/settings/audio"
+                  onClick={() => setSettingsOpen(false)}
+                  className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-sm font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                >
+                  <span className="text-lg">🎵</span>
+                  <span>إدارة الموسيقى الخلفية</span>
+                </Link>
+
+                <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
+                  🔜 قريبًا: الثيمات، إدارة الحساب، والسجل
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Floating gear button */}
       <button
         type="button"
-        onClick={async () => {
-          const audio = audioRef.current;
-          if (!audio) return;
-
-          if (audio.paused) {
-            audio.muted = false;
-            setUserMuted(false);
-            try {
-              await audio.play();
-              setNeedsGesture(false);
-            } catch {
-              setNeedsGesture(true);
-            }
-            return;
-          }
-
-          const next = !userMuted;
-          setUserMuted(next);
-          audio.muted = next;
-        }}
+        onClick={() => setSettingsOpen((v) => !v)}
         className="fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-xl text-white shadow-lg transition hover:bg-violet-700"
-        title={userMuted ? "تشغيل الصوت" : "إسكات الصوت"}
-        aria-label={userMuted ? "تشغيل الصوت" : "إسكات الصوت"}
+        title="الإعدادات السريعة"
+        aria-label="الإعدادات السريعة"
       >
-        {userMuted ? "🔇" : "🔊"}
+        ⚙️
       </button>
 
-      {needsGesture && !audioPlaying && !pausedByEvent ? (
-        <div className="fixed bottom-4 left-20 z-50 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
+      {/* Hint gesture */}
+      {needsGesture && !audioPlaying && !pausedByEvent && activeTrack ? (
+        <div className="fixed bottom-4 left-20 z-40 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
           👆 انقر في أي مكان لتشغيل الموسيقى
         </div>
       ) : null}
