@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createStudent, deleteStudent, resetStudentPin } from "./actions";
 import { StudentImportForm } from "./import-form";
 import { ClassCard } from "./class-card";
+import { ClassTabs } from "./class-tabs";
 import { PortalLinkBox } from "./portal-link-box";
 
 type SearchParams = {
@@ -16,10 +17,7 @@ type SearchParams = {
 
 function getMessage(searchParams: SearchParams) {
   if (searchParams.created === "1") {
-    return {
-      type: "success" as const,
-      text: "✓ تمت إضافة الطالب.",
-    };
+    return { type: "success" as const, text: "✓ تمت إضافة الطالب." };
   }
   if (searchParams.updated === "1") {
     return { type: "success" as const, text: "✓ تم تحديث PIN الطالب." };
@@ -36,10 +34,7 @@ function getMessage(searchParams: SearchParams) {
     case "invalid_name":
       return { type: "error" as const, text: "اسم الطالب غير صحيح." };
     case "invalid_pin":
-      return {
-        type: "error" as const,
-        text: "يجب أن يكون PIN من 4 إلى 6 أرقام.",
-      };
+      return { type: "error" as const, text: "يجب أن يكون PIN من 4 إلى 6 أرقام." };
     case "duplicate":
       return {
         type: "error" as const,
@@ -112,7 +107,6 @@ export default async function StudentsPage({
     studentsByClass.get(s.class_id)!.push(s);
   }
 
-  // Build portal URL
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let portalUrl: string;
 
@@ -192,22 +186,18 @@ export default async function StudentsPage({
         ) : (
           <>
             {/* Portal Link Banner */}
-            <section className="rounded-[2rem] border border-emerald-100 bg-gradient-to-l from-emerald-50 to-white p-5 shadow-lg sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <section className="rounded-2xl border border-emerald-100 bg-gradient-to-l from-emerald-50 to-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-emerald-700">
-                    بوابة الطالب
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-emerald-950">
                     👥 رابط دخول الطلاب
-                  </h2>
-                  <p className="mt-1 text-sm text-emerald-800">
-                    شارك هذا الرابط مع طلابك — يدخلون بأسمائهم وأرقام PIN
-                    الخاصة بهم.
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-800">
+                    شارك هذا الرابط — يدخل الطلاب بأسمائهم وأرقام PIN.
                   </p>
                   <code
                     dir="ltr"
-                    className="mt-3 block truncate rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900"
+                    className="mt-2 block truncate rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900"
                   >
                     {portalUrl}
                   </code>
@@ -250,24 +240,17 @@ export default async function StudentsPage({
                   </div>
                 );
 
-                return (
-                  <ClassCard
-                    key={`${c.id}-${refreshKey}`}
-                    classId={c.id}
-                    header={header}
-                    defaultOpen={activeClassId === c.id}
-                  >
+                // Tab: Students list
+                const studentsTab = (
+                  <div className="space-y-4">
                     {/* Add student */}
-                    <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-5">
+                    <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
                       <h4 className="text-sm font-bold text-violet-700">
                         ➕ إضافة طالب
                       </h4>
-                      <p className="mt-1 text-xs text-violet-600">
-                        اختر PIN من 4 إلى 6 أرقام، ثم أعطه للطالب.
-                      </p>
                       <form
                         action={createStudent}
-                        className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+                        className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
                       >
                         <input type="hidden" name="class_id" value={c.id} />
                         <div>
@@ -283,7 +266,7 @@ export default async function StudentsPage({
                             type="text"
                             maxLength={100}
                             required
-                            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                           />
                         </div>
                         <div>
@@ -302,12 +285,12 @@ export default async function StudentsPage({
                             minLength={4}
                             maxLength={6}
                             required
-                            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-sm tracking-[0.3em] outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-center text-sm tracking-[0.3em] outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                           />
                         </div>
                         <button
                           type="submit"
-                          className="h-fit self-end rounded-xl bg-gradient-to-l from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white shadow transition hover:-translate-y-0.5"
+                          className="h-fit self-end rounded-xl bg-gradient-to-l from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-black text-white shadow transition hover:-translate-y-0.5"
                         >
                           إضافة
                         </button>
@@ -315,29 +298,29 @@ export default async function StudentsPage({
                     </div>
 
                     {/* Students list */}
-                    <div className="rounded-2xl border border-fuchsia-100 bg-white p-5">
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-fuchsia-700">
+                        <h4 className="text-sm font-bold text-neutral-800">
                           قائمة الطلاب
                         </h4>
-                        <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-bold text-fuchsia-700">
+                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
                           {students.length} طالب
                         </span>
                       </div>
 
                       {students.length === 0 ? (
-                        <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                        <div className="mt-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
                           <div className="text-4xl">👤</div>
-                          <p className="mt-2 text-sm font-bold text-slate-700">
+                          <p className="mt-2 text-sm font-bold text-neutral-700">
                             لا يوجد طلاب بعد
                           </p>
                         </div>
                       ) : (
-                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
                           {students.map((s) => (
                             <div
                               key={s.id}
-                              className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                              className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
@@ -419,18 +402,66 @@ export default async function StudentsPage({
                         </div>
                       )}
                     </div>
+                  </div>
+                );
 
-                    {/* Import massal */}
-                    <div className="rounded-2xl border border-emerald-100 bg-white p-5">
-                      <h4 className="text-sm font-bold text-emerald-700">
-                        📥 إضافة جماعية (Import)
-                      </h4>
-                      <p className="mt-1 text-xs text-emerald-600">
-                        الصق أسماء الطلاب (اسم واحد لكل سطر)، وسيُنشئ النظام
-                        PIN تلقائيًا لكل طالب.
-                      </p>
-                      <StudentImportForm classId={c.id} />
-                    </div>
+                // Tab: Import
+                const importTab = (
+                  <div className="rounded-2xl border border-emerald-100 bg-white p-4">
+                    <h4 className="text-sm font-bold text-emerald-700">
+                      📥 إضافة جماعية
+                    </h4>
+                    <p className="mt-1 text-xs text-emerald-600">
+                      الصق أسماء الطلاب (اسم واحد لكل سطر)، وسيُنشئ النظام PIN
+                      تلقائيًا لكل طالب.
+                    </p>
+                    <StudentImportForm classId={c.id} />
+                  </div>
+                );
+
+                // Tab: History (placeholder)
+                const historyTab = (
+                  <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
+                    <div className="text-4xl">📊</div>
+                    <p className="mt-3 text-sm font-black text-neutral-700">
+                      سجل نتائج الطلاب
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      قريبًا: عرض نتائج الطلاب في هذا الفصل لكل وضع لعبة (تنافسي،
+                      تعاوني، بلا نهاية، تمرين).
+                    </p>
+                  </div>
+                );
+
+                return (
+                  <ClassCard
+                    key={`${c.id}-${refreshKey}`}
+                    classId={c.id}
+                    header={header}
+                    defaultOpen={activeClassId === c.id}
+                  >
+                    <ClassTabs
+                      tabs={[
+                        {
+                          key: "students",
+                          label: "الطلاب",
+                          icon: "👥",
+                          content: studentsTab,
+                        },
+                        {
+                          key: "import",
+                          label: "استيراد",
+                          icon: "📥",
+                          content: importTab,
+                        },
+                        {
+                          key: "history",
+                          label: "السجل",
+                          icon: "📊",
+                          content: historyTab,
+                        },
+                      ]}
+                    />
                   </ClassCard>
                 );
               })}
