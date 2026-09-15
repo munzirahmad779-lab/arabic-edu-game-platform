@@ -173,6 +173,16 @@ export interface Database {
           { foreignKeyName: "teacher_audio_tracks_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; }
         ];
       };
+      student_practice_answers: {
+        Row: { id: string; student_id: string; game_id: string; question_id: string; selected_option_key: QuestionOptionKey; is_correct: boolean; answered_at: string; };
+        Insert: { id?: string; student_id: string; game_id: string; question_id: string; selected_option_key: QuestionOptionKey; is_correct: boolean; answered_at?: string; };
+        Update: { id?: string; student_id?: string; game_id?: string; question_id?: string; selected_option_key?: QuestionOptionKey; is_correct?: boolean; answered_at?: string; };
+        Relationships: [
+          { foreignKeyName: "student_practice_answers_student_id_fkey"; columns: ["student_id"]; isOneToOne: false; referencedRelation: "students"; referencedColumns: ["id"]; },
+          { foreignKeyName: "student_practice_answers_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games"; referencedColumns: ["id"]; },
+          { foreignKeyName: "student_practice_answers_question_id_fkey"; columns: ["question_id"]; isOneToOne: false; referencedRelation: "questions"; referencedColumns: ["id"]; }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -191,9 +201,10 @@ export interface Database {
       get_game_session: {
         Args: { p_join_token: string };
         Returns: Array<{
-          room_id: string; room_code: string; game_name: string; room_state: string;
+          room_id: string; room_code: string; game_name: string; game_mode: string;
+          game_duration_seconds: number; started_at: string | null; room_state: string;
           participant_id: string; participant_name: string | null;
-          participant_count: number; capacity: number; duration_seconds: number;
+          participant_count: number; capacity: number;
           question_index: number; question_count: number;
           question_started_at: string | null; question: Json | null;
           answer_submitted: boolean; server_time: string;
@@ -229,41 +240,70 @@ export interface Database {
       list_room_sessions: {
         Args: { p_room_id: string };
         Returns: Array<{
-          session_id: string;
-          session_number: number;
-          started_at: string | null;
-          ended_at: string | null;
+          session_id: string; session_number: number;
+          started_at: string | null; ended_at: string | null;
           participant_count: number;
         }>;
       };
       get_room_session_detail: {
         Args: { p_session_id: string };
         Returns: Array<{
-          participant_name: string;
-          final_score: number;
-          rank: number;
-          correct_count: number;
-          total_questions: number;
-          avg_response_ms: number;
+          participant_name: string; final_score: number; rank: number;
+          correct_count: number; total_questions: number; avg_response_ms: number;
         }>;
       };
       get_active_audio_tracks: {
         Args: Record<string, never>;
         Returns: Array<{
-          id: string;
-          name: string;
-          audio_url: string;
-          volume: number;
-          pages: string[];
+          id: string; name: string; audio_url: string; volume: number; pages: string[];
         }>;
       };
-      student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
-      verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };
       student_list_materials: { Args: { p_token: string; p_class_id: string; }; Returns: Array<{ id: string; title: string; position: number; updated_at: string; }>; };
       student_get_material: {
         Args: { p_token: string; p_material_id: string; };
         Returns: Array<{ id: string; class_id: string; title: string; content_json: Json | null; youtube_url: string | null; image_path: string | null; pdf_path: string | null; updated_at: string; }>;
       };
+      student_list_practice_games: {
+        Args: { p_token: string };
+        Returns: Array<{
+          id: string; name: string; mode: string; question_count: number;
+        }>;
+      };
+      student_get_practice_game: {
+        Args: { p_token: string; p_game_id: string };
+        Returns: Array<{
+          game_id: string; game_name: string; game_mode: string; questions: Json;
+        }>;
+      };
+      student_submit_practice_answer: {
+        Args: {
+          p_token: string;
+          p_game_id: string;
+          p_question_id: string;
+          p_selected_option_key: string;
+        };
+        Returns: Array<{
+          accepted: boolean;
+          is_correct: boolean;
+          correct_option_key: string;
+          explanation: string | null;
+        }>;
+      };
+      student_reset_practice: {
+        Args: { p_token: string; p_game_id: string };
+        Returns: undefined;
+      };
+      student_get_practice_progress: {
+        Args: { p_token: string; p_game_id: string };
+        Returns: Array<{
+          question_id: string;
+          selected_option_key: string;
+          is_correct: boolean;
+          answered_at: string;
+        }>;
+      };
+      student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
+      verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
