@@ -45,32 +45,84 @@ export default async function StudentDashboardPage() {
           </form>
         </header>
 
-        {/* Kartu pintasan latihan */}
-        <section className="rounded-[2rem] border border-emerald-100 bg-gradient-to-l from-emerald-50 to-white p-6 shadow-lg">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-3xl text-white shadow-md">
-                🎯
-              </span>
-              <div>
-                <h2 className="text-xl font-black text-emerald-900">
-                  التدريب الذاتي
-                </h2>
-                <p className="mt-1 text-sm text-emerald-800">
-                  تدرب على أسئلة معلمك بحرية — بدون وقت، مع إمكانية مراجعة كل
-                  إجابة وسببها.
-                </p>
-              </div>
+        {/* Mode Pembelajaran — 2 Kartu */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          {/* تدريب ذاتي */}
+          <Link
+            href="/student/practice"
+            className="group flex flex-col gap-4 rounded-[2rem] border-2 border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-lg transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-xl"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-3xl text-white shadow-md transition group-hover:scale-110">
+              🎯
+            </span>
+            <div>
+              <h2 className="text-xl font-black text-emerald-900">
+                تدريب ذاتي
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-emerald-800">
+                تدرّب بحرية على أسئلة معلمك — بدون وقت، مع تصحيح وشرح لكل
+                سؤال.
+              </p>
             </div>
-            <Link
-              href="/student/practice"
-              className="shrink-0 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
-            >
-              ابدأ التدريب →
-            </Link>
-          </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5">
+                بدون كود
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5">
+                بلا نهاية + تمرين
+              </span>
+            </div>
+            <span className="mt-auto text-sm font-black text-emerald-700 transition group-hover:translate-x-[-4px]">
+              ابدأ التدريب ←
+            </span>
+          </Link>
+
+          {/* تدريب موجّه */}
+          <Link
+            href="/join"
+            className="group flex flex-col gap-4 rounded-[2rem] border-2 border-violet-100 bg-gradient-to-br from-violet-50 to-white p-6 shadow-lg transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-3xl text-white shadow-md transition group-hover:scale-110">
+              🏆
+            </span>
+            <div>
+              <h2 className="text-xl font-black text-violet-900">
+                تدريب موجّه
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-violet-800">
+                انضم إلى غرفة المعلم ونافس زملاءك في الألعاب الجماعية.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-violet-700">
+              <span className="rounded-full bg-violet-100 px-2 py-0.5">
+                يحتاج كود الغرفة
+              </span>
+              <span className="rounded-full bg-violet-100 px-2 py-0.5">
+                تنافسي + تعاوني
+              </span>
+            </div>
+            <span className="mt-auto text-sm font-black text-violet-700 transition group-hover:translate-x-[-4px]">
+              ادخل الغرفة ←
+            </span>
+          </Link>
         </section>
 
+        {/* Hint */}
+        <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
+          <p className="font-black">💡 كيف أبدأ؟</p>
+          <ul className="mt-2 list-disc space-y-1 pr-5">
+            <li>
+              <b>تدريب ذاتي:</b> ابدأ مباشرة بالضغط على البطاقة الأولى — لا
+              يحتاج كودًا.
+            </li>
+            <li>
+              <b>تدريب موجّه:</b> اطلب كود الغرفة من معلمك، ثم اضغط البطاقة
+              الثانية وأدخل الكود مع اسمك.
+            </li>
+          </ul>
+        </section>
+
+        {/* المواد الدراسية */}
         <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg sm:p-8">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-black text-neutral-900">
