@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { DeleteHistoryButton } from "./delete-history-button";
 
 type HistoryRow = {
   student_id: string;
@@ -70,7 +71,6 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
     );
   }
 
-  // Group by student
   const byStudent = new Map<string, { name: string; rows: HistoryRow[] }>();
   for (const r of rows) {
     if (!byStudent.has(r.student_id)) {
@@ -85,7 +85,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
     <div className="space-y-4">
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
         💡 اضغط على اسم الطالب لعرض تفاصيل كل وضع (تنافسي، تعاوني، بلا نهاية،
-        تمرين).
+        تمرين). يمكنك حذف سجل الطالب بالكامل من زر 🗑.
       </div>
 
       <div className="space-y-3">
@@ -102,11 +102,11 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
             totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
 
           return (
-            <details
+            <div
               key={studentId}
               className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
             >
-              <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 p-4 transition hover:bg-neutral-50">
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-lg font-black text-white">
                     {info.name.trim().charAt(0) || "ط"}
@@ -121,10 +121,14 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                     </p>
                   </div>
                 </div>
-                <span className="text-2xl text-neutral-400">▾</span>
-              </summary>
 
-              <div className="border-t border-neutral-100 p-4">
+                <DeleteHistoryButton
+                  studentId={studentId}
+                  studentName={info.name}
+                />
+              </div>
+
+              <div className="space-y-3 border-t border-neutral-100 bg-neutral-50/40 p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {info.rows.map((r) => {
                     const pct =
@@ -137,7 +141,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                     return (
                       <div
                         key={r.mode}
-                        className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
+                        className="rounded-2xl border border-neutral-200 bg-white p-3"
                       >
                         <div className="flex items-center justify-between">
                           <span
@@ -155,7 +159,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
 
                         <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                           {r.best_score !== null ? (
-                            <div className="rounded-xl bg-white p-2">
+                            <div className="rounded-xl bg-neutral-50 p-2">
                               <div className="text-[10px] font-bold text-neutral-500">
                                 أفضل نتيجة
                               </div>
@@ -165,7 +169,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                             </div>
                           ) : null}
                           {r.avg_score !== null ? (
-                            <div className="rounded-xl bg-white p-2">
+                            <div className="rounded-xl bg-neutral-50 p-2">
                               <div className="text-[10px] font-bold text-neutral-500">
                                 المتوسط
                               </div>
@@ -174,7 +178,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                               </div>
                             </div>
                           ) : null}
-                          <div className="rounded-xl bg-white p-2">
+                          <div className="rounded-xl bg-neutral-50 p-2">
                             <div className="text-[10px] font-bold text-neutral-500">
                               صحيح
                             </div>
@@ -182,7 +186,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                               {r.correct_count}/{r.total_questions}
                             </div>
                           </div>
-                          <div className="rounded-xl bg-white p-2">
+                          <div className="rounded-xl bg-neutral-50 p-2">
                             <div className="text-[10px] font-bold text-neutral-500">
                               النسبة
                             </div>
@@ -200,7 +204,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                   })}
                 </div>
               </div>
-            </details>
+            </div>
           );
         })}
       </div>

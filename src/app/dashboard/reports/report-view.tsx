@@ -107,6 +107,16 @@ function buildMarkdown(
   return lines.join("\n");
 }
 
+function todayUTC(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function yesterdayUTC(): string {
+  const d = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 export function ReportView({
   date,
   roomRows,
@@ -120,6 +130,7 @@ export function ReportView({
   const [copiedAi, setCopiedAi] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(date);
 
   const mdText = buildMarkdown(date, roomRows, practiceRows);
 
@@ -147,9 +158,7 @@ export function ReportView({
   async function cleanup() {
     if (cleaning) return;
     if (
-      !window.confirm(
-        "سيتم حذف جميع السجلات الأقدم من 7 أيام. متابعة؟",
-      )
+      !window.confirm("سيتم حذف جميع السجلات الأقدم من 7 أيام. متابعة؟")
     ) {
       return;
     }
@@ -172,8 +181,42 @@ export function ReportView({
     }
   }
 
+  function applyQuickDate(newDate: string) {
+    setSelectedDate(newDate);
+    window.location.href = `/dashboard/reports?date=${newDate}`;
+  }
+
+  const today = todayUTC();
+  const yesterday = yesterdayUTC();
+
   return (
     <div className="space-y-5">
+      {/* Quick date buttons */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => applyQuickDate(today)}
+          className={`rounded-xl border-2 px-4 py-2 text-xs font-black transition ${
+            date === today
+              ? "border-violet-600 bg-violet-600 text-white"
+              : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          📅 اليوم
+        </button>
+        <button
+          type="button"
+          onClick={() => applyQuickDate(yesterday)}
+          className={`rounded-xl border-2 px-4 py-2 text-xs font-black transition ${
+            date === yesterday
+              ? "border-violet-600 bg-violet-600 text-white"
+              : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          ⏪ أمس
+        </button>
+      </div>
+
       {/* Date picker */}
       <form
         method="get"
@@ -190,7 +233,8 @@ export function ReportView({
             id="date"
             type="date"
             name="date"
-            defaultValue={date}
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
             className="mt-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm"
           />
         </div>
@@ -224,8 +268,7 @@ export function ReportView({
         <p className="font-black">💡 كيف تستخدم التقرير؟</p>
         <ul className="mt-2 list-disc space-y-1 pr-5">
           <li>
-            <b>نسخ MD فقط</b> — إذا أردت حفظ التقرير في مستند (Notion /
-            Obsidian / Word).
+            <b>نسخ MD فقط</b> — إذا أردت حفظ التقرير في مستند.
           </li>
           <li>
             <b>نسخ MD + Prompt AI</b> — الصق النتيجة في ChatGPT / Meta AI،
@@ -378,7 +421,7 @@ export function ReportView({
         )}
       </section>
 
-      {/* Cleanup section */}
+      {/* Cleanup */}
       <section className="rounded-2xl border border-red-200 bg-red-50/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

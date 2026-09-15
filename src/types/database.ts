@@ -343,6 +343,10 @@ export interface Database {
           recorded_at: string;
         }>;
       };
+      teacher_delete_student_history: {
+        Args: { p_student_id: string };
+        Returns: number;
+      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
