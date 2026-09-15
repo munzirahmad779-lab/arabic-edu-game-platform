@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createGame, createRoom, deleteGame } from "./actions";
 import { GameModeSelector } from "./game-mode-selector";
+import { QuestionsPicker } from "./questions-picker";
 
 type SearchParams = {
   error?: string;
@@ -39,6 +40,14 @@ const MODE_LABEL: Record<string, { ar: string; forRoom: boolean }> = {
   learning: { ar: "تعليمي (قديم)", forRoom: true },
 };
 
+type QuestionRow = {
+  id: string;
+  question_bank_id: string | null;
+  question_text: string | null;
+  difficulty: "easy" | "medium" | "hard" | null;
+  category_id: string | null;
+};
+
 export default async function GamesPage({
   searchParams,
 }: {
@@ -59,6 +68,8 @@ export default async function GamesPage({
     { data: banks, error: banksError },
     { data: games, error: gamesError },
     { data: audioTracks },
+    { data: categories },
+    { data: questions },
   ] = await Promise.all([
     supabase
       .from("classes")
@@ -86,6 +97,19 @@ export default async function GamesPage({
       .eq("teacher_id", user.id)
       .eq("enabled", true)
       .order("created_at", { ascending: false }),
+
+    supabase
+      .from("question_categories")
+      .select("id, name")
+      .eq("teacher_id", user.id)
+      .order("name", { ascending: true }),
+
+    supabase
+      .from("questions")
+      .select("id, question_bank_id, question_text, difficulty, category_id")
+      .eq("teacher_id", user.id)
+      .not("question_bank_id", "is", null)
+      .order("created_at", { ascending: true }),
   ]);
 
   if (classesError || banksError || gamesError) {
@@ -108,6 +132,22 @@ export default async function GamesPage({
 
   const errorMessage = getErrorMessage(searchParams.error);
   const tracks = audioTracks ?? [];
+  const categoriesList = categories ?? [];
+
+  const questionsByBank: Record<string, QuestionRow[]> = {};
+  for (const q of (questions ?? []) as QuestionRow[]) {
+    if (!q.question_bank_id) continue;
+    if (!questionsByBank[q.question_bank_id]) {
+      questionsByBank[q.question_bank_id] = [];
+    }
+    questionsByBank[q.question_bank_id].push(q);
+  }
+
+  const banksForPicker = (banks ?? []).map((b) => ({
+    id: b.id,
+    name: b.name,
+    description: b.description,
+  }));
 
   return (
     <main className="space-y-8" dir="rtl">
@@ -152,19 +192,19 @@ export default async function GamesPage({
             </p>
           </div>
           <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-            {games.length}
+            {games?.length ?? 0}
           </span>
         </div>
 
-        {games.length === 0 ? (
+        {(games?.length ?? 0) === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">
             لا توجد ألعاب بعد.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {games.map((game) => {
+            {(games ?? []).map((game) => {
               const className =
-                classes.find((item) => item.id === game.class_id)?.name ??
+                classes?.find((item) => item.id === game.class_id)?.name ??
                 "بدون فصل";
               const modeInfo = MODE_LABEL[game.mode] ?? MODE_LABEL.competitive;
               const isRoomMode = modeInfo.forRoom;
@@ -264,11 +304,11 @@ export default async function GamesPage({
           </p>
         </div>
 
-        {classes.length === 0 ? (
+        {(classes?.length ?? 0) === 0 ? (
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             أنشئ فصلًا دراسيًا أولًا قبل إنشاء اللعبة.
           </div>
-        ) : banks.length === 0 ? (
+        ) : (banks?.length ?? 0) === 0 ? (
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             أنشئ بنك أسئلة أولًا قبل إنشاء اللعبة.
           </div>
@@ -304,7 +344,7 @@ export default async function GamesPage({
                   <option value="" disabled>
                     اختر الفصل
                   </option>
-                  {classes.map((item) => (
+                  {(classes ?? []).map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
                     </option>
@@ -331,44 +371,16 @@ export default async function GamesPage({
                 </select>
               </div>
 
-              <GameModeSelector tracks={tracks.map((t) => ({ id: t.id, name: t.name }))} />
+              <GameModeSelector
+                tracks={tracks.map((t) => ({ id: t.id, name: t.name }))}
+              />
             </div>
 
-            <fieldset>
-              <legend className="text-sm font-medium">اختر الأسئلة</legend>
-
-              <div className="mt-4 space-y-5">
-                {banks.map((bank) => (
-                  <div
-                    key={bank.id}
-                    className="rounded-lg border border-neutral-200 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold">{bank.name}</h3>
-                        {bank.description ? (
-                          <p className="mt-1 text-sm text-neutral-500">
-                            {bank.description}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <Link
-                        href={`/dashboard/question-banks?bankId=${bank.id}`}
-                        className="text-sm text-neutral-600 underline"
-                      >
-                        فتح البنك
-                      </Link>
-                    </div>
-
-                    <QuestionsForBank
-                      bankId={bank.id}
-                      teacherId={user.id}
-                    />
-                  </div>
-                ))}
-              </div>
-            </fieldset>
+            <QuestionsPicker
+              banks={banksForPicker}
+              categories={categoriesList}
+              questionsByBank={questionsByBank}
+            />
 
             <button
               type="submit"
@@ -380,70 +392,5 @@ export default async function GamesPage({
         )}
       </section>
     </main>
-  );
-}
-
-async function QuestionsForBank({
-  bankId,
-  teacherId,
-}: {
-  bankId: string;
-  teacherId: string;
-}) {
-  const supabase = await createClient();
-
-  const { data: questions, error } = await supabase
-    .from("questions")
-    .select("id, question_text, difficulty, correct_option_key")
-    .eq("question_bank_id", bankId)
-    .eq("teacher_id", teacherId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    return (
-      <p className="mt-3 text-sm text-red-700">
-        تعذر تحميل أسئلة هذا البنك.
-      </p>
-    );
-  }
-
-  if (!questions?.length) {
-    return (
-      <p className="mt-3 text-sm text-neutral-500">
-        لا توجد أسئلة في هذا البنك.
-      </p>
-    );
-  }
-
-  return (
-    <div className="mt-4 space-y-2">
-      {questions.map((question, index) => (
-        <label
-          key={question.id}
-          className="flex cursor-pointer items-start gap-3 rounded-md border border-neutral-200 p-3 transition hover:bg-neutral-50"
-        >
-          <input
-            type="checkbox"
-            name="question_id"
-            value={question.id}
-            className="mt-1 h-4 w-4"
-          />
-
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium">
-              {index + 1}. {question.question_text}
-            </span>
-
-            <span className="mt-1 block text-xs text-neutral-500">
-              {question.difficulty === "easy"
-                ? "سهل"
-                : question.difficulty === "medium"
-                  ? "متوسط"
-                  : "صعب"}
-            </span>
-          </span>
-        </label>
-      ))}
-    </div>
   );
 }
