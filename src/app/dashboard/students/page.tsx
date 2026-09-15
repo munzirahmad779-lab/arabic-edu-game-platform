@@ -5,6 +5,7 @@ import { createStudent, deleteStudent, resetStudentPin } from "./actions";
 import { StudentImportForm } from "./import-form";
 import { ClassCard } from "./class-card";
 import { ClassTabs } from "./class-tabs";
+import { ClassHistoryTab } from "./class-history-tab";
 import { PortalLinkBox } from "./portal-link-box";
 
 type SearchParams = {
@@ -419,19 +420,8 @@ export default async function StudentsPage({
                   </div>
                 );
 
-                // Tab: History (placeholder)
-                const historyTab = (
-                  <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
-                    <div className="text-4xl">📊</div>
-                    <p className="mt-3 text-sm font-black text-neutral-700">
-                      سجل نتائج الطلاب
-                    </p>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      قريبًا: عرض نتائج الطلاب في هذا الفصل لكل وضع لعبة (تنافسي،
-                      تعاوني، بلا نهاية، تمرين).
-                    </p>
-                  </div>
-                );
+                // Tab: History
+                const historyTab = <ClassHistoryTab classId={c.id} />;
 
                 return (
                   <ClassCard

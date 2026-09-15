@@ -311,6 +311,20 @@ export interface Database {
           last_activity: string;
         }>;
       };
+      teacher_class_history: {
+        Args: { p_class_id: string };
+        Returns: Array<{
+          student_id: string;
+          student_name: string;
+          mode: string;
+          sessions_count: number;
+          best_score: number | null;
+          avg_score: number | null;
+          correct_count: number;
+          total_questions: number;
+          last_activity: string | null;
+        }>;
+      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;
