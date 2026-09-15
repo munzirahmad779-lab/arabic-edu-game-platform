@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import "./dashboard-themes.css";
 
 export default async function DashboardLayout({
   children,
@@ -18,12 +19,14 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, theme")
     .eq("id", user.id)
     .single();
 
+  const theme = profile?.theme ?? "violet";
+
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div data-theme={theme} className="min-h-screen bg-neutral-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-4 sm:px-6">
         <Link href="/dashboard" className="font-semibold">
           لوحة تحكم المعلم

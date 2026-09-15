@@ -8,6 +8,7 @@ import {
   BG_AUDIO_PAUSE_EVENT,
   BG_AUDIO_RESUME_EVENT,
 } from "@/lib/bg-audio-events";
+import { updateTeacherTheme } from "@/app/dashboard/actions";
 
 type Track = {
   id: string;
@@ -18,6 +19,17 @@ type Track = {
 };
 
 type PageKey = "dashboard" | "login" | "student" | "game" | "final";
+
+const THEMES: { key: string; label: string; color: string }[] = [
+  { key: "violet", label: "بنفسجي", color: "#7c3aed" },
+  { key: "rose", label: "وردي", color: "#e11d48" },
+  { key: "emerald", label: "زمردي", color: "#059669" },
+  { key: "sky", label: "سماوي", color: "#0284c7" },
+  { key: "amber", label: "عسلي", color: "#d97706" },
+  { key: "indigo", label: "نيلي", color: "#4f46e5" },
+  { key: "slate", label: "رمادي", color: "#334155" },
+  { key: "teal", label: "أزرق مخضر", color: "#0d9488" },
+];
 
 function pageOf(pathname: string): PageKey | null {
   if (pathname.startsWith("/dashboard/question-banks")) return null;
@@ -44,6 +56,10 @@ export function GlobalBackgroundAudio() {
   const [pausedByEvent, setPausedByEvent] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<string>("violet");
+  const [themeLoading, setThemeLoading] = useState(false);
+
+  const isDashboard = pathname.startsWith("/dashboard");
 
   useEffect(() => {
     setMounted(true);
@@ -74,6 +90,33 @@ export function GlobalBackgroundAudio() {
       alive = false;
     };
   }, [mounted]);
+
+  // Fetch theme (hanya di dashboard, hanya kalau drawer dibuka)
+  useEffect(() => {
+    if (!mounted || !isDashboard || !settingsOpen) return;
+    let alive = true;
+    const supabase = createClient();
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user || !alive) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("theme")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (!alive) return;
+        if (data?.theme) setCurrentTheme(data.theme);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mounted, isDashboard, settingsOpen]);
 
   // Simpan preferensi mute
   useEffect(() => {
@@ -194,9 +237,29 @@ export function GlobalBackgroundAudio() {
     };
   }, [activeTrack, userMuted, pausedByEvent, mounted]);
 
+  async function selectTheme(themeKey: string) {
+    if (themeLoading) return;
+    setThemeLoading(true);
+
+    // Update UI langsung
+    setCurrentTheme(themeKey);
+    const root = document.querySelector("[data-theme]");
+    if (root) root.setAttribute("data-theme", themeKey);
+
+    // Simpan ke server
+    const fd = new FormData();
+    fd.set("theme", themeKey);
+    try {
+      await updateTeacherTheme(fd);
+    } catch {
+      // ignore
+    } finally {
+      setThemeLoading(false);
+    }
+  }
+
   if (!mounted) return null;
 
-  const isDashboard = pathname.startsWith("/dashboard");
   const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
 
   return (
@@ -207,10 +270,10 @@ export function GlobalBackgroundAudio() {
       {settingsOpen ? (
         <div
           ref={drawerRef}
-          className="fixed bottom-20 left-4 z-50 w-72 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+          className="fixed bottom-20 left-4 z-50 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
           dir="rtl"
         >
-          <div className="flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
             <span className="text-sm font-black">⚙️ الإعدادات السريعة</span>
             <button
               type="button"
@@ -246,6 +309,46 @@ export function GlobalBackgroundAudio() {
               </span>
             </button>
 
+            {/* Theme picker (dashboard only) */}
+            {isDashboard ? (
+              <div className="rounded-xl border border-neutral-200 bg-white p-3">
+                <p className="mb-3 text-xs font-black text-neutral-700">
+                  🎨 ثيم لوحة التحكم
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {THEMES.map((t) => {
+                    const active = currentTheme === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => void selectTheme(t.key)}
+                        disabled={themeLoading}
+                        title={t.label}
+                        className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-60 ${
+                          active
+                            ? "border-neutral-900 bg-neutral-50"
+                            : "border-transparent hover:border-neutral-200"
+                        }`}
+                      >
+                        <span
+                          className="block h-8 w-8 rounded-full shadow-md ring-2 ring-white"
+                          style={{ backgroundColor: t.color }}
+                        />
+                        <span className="text-[10px] font-bold text-neutral-600">
+                          {t.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[10px] text-neutral-400">
+                  ملاحظة: الثيم يطبّق على لوحة التحكم فقط، ولا يؤثر على صفحات
+                  الطلاب.
+                </p>
+              </div>
+            ) : null}
+
             {/* Dashboard-only links */}
             {isDashboard ? (
               <>
@@ -259,7 +362,7 @@ export function GlobalBackgroundAudio() {
                 </Link>
 
                 <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
-                  🔜 قريبًا: الثيمات، إدارة الحساب، والسجل
+                  🔜 قريبًا: رابط بوابة الطالب، إدارة الحساب، والسجل
                 </div>
               </>
             ) : null}

@@ -26,9 +26,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; email: string; full_name: string | null; role: ProfileRole; created_at: string; updated_at: string; };
-        Insert: { id: string; email: string; full_name?: string | null; created_at?: string; updated_at?: string; };
-        Update: { id?: string; email?: string; full_name?: string | null; created_at?: string; updated_at?: string; };
+        Row: { id: string; email: string; full_name: string | null; role: ProfileRole; theme: string; created_at: string; updated_at: string; };
+        Insert: { id: string; email: string; full_name?: string | null; theme?: string; created_at?: string; updated_at?: string; };
+        Update: { id?: string; email?: string; full_name?: string | null; theme?: string; created_at?: string; updated_at?: string; };
         Relationships: [];
       };
       classes: {
@@ -265,42 +265,20 @@ export interface Database {
       };
       student_list_practice_games: {
         Args: { p_token: string };
-        Returns: Array<{
-          id: string; name: string; mode: string; question_count: number;
-        }>;
+        Returns: Array<{ id: string; name: string; mode: string; question_count: number; }>;
       };
       student_get_practice_game: {
         Args: { p_token: string; p_game_id: string };
-        Returns: Array<{
-          game_id: string; game_name: string; game_mode: string; questions: Json;
-        }>;
+        Returns: Array<{ game_id: string; game_name: string; game_mode: string; questions: Json; }>;
       };
       student_submit_practice_answer: {
-        Args: {
-          p_token: string;
-          p_game_id: string;
-          p_question_id: string;
-          p_selected_option_key: string;
-        };
-        Returns: Array<{
-          accepted: boolean;
-          is_correct: boolean;
-          correct_option_key: string;
-          explanation: string | null;
-        }>;
+        Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string; };
+        Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null; }>;
       };
-      student_reset_practice: {
-        Args: { p_token: string; p_game_id: string };
-        Returns: undefined;
-      };
+      student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };
       student_get_practice_progress: {
         Args: { p_token: string; p_game_id: string };
-        Returns: Array<{
-          question_id: string;
-          selected_option_key: string;
-          is_correct: boolean;
-          answered_at: string;
-        }>;
+        Returns: Array<{ question_id: string; selected_option_key: string; is_correct: boolean; answered_at: string; }>;
       };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
       verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };

@@ -1,0 +1,223 @@
+/* ============================================================
+   Dashboard Theme Override
+   Semua override hanya berlaku jika [data-theme] !== "violet".
+   Default "violet" tidak diubah — pakai Tailwind asli.
+   ============================================================ */
+
+[data-theme="rose"] {
+  --t-primary-50: #fff1f2;
+  --t-primary-100: #ffe4e6;
+  --t-primary-200: #fecdd3;
+  --t-primary-500: #f43f5e;
+  --t-primary-600: #e11d48;
+  --t-primary-700: #be123c;
+  --t-primary-800: #9f1239;
+  --t-primary-950: #4c0519;
+  --t-primary-from: #9f1239;
+  --t-primary-via: #e11d48;
+  --t-primary-to: #fb7185;
+}
+
+[data-theme="emerald"] {
+  --t-primary-50: #ecfdf5;
+  --t-primary-100: #d1fae5;
+  --t-primary-200: #a7f3d0;
+  --t-primary-500: #10b981;
+  --t-primary-600: #059669;
+  --t-primary-700: #047857;
+  --t-primary-800: #065f46;
+  --t-primary-950: #022c22;
+  --t-primary-from: #065f46;
+  --t-primary-via: #059669;
+  --t-primary-to: #34d399;
+}
+
+[data-theme="sky"] {
+  --t-primary-50: #f0f9ff;
+  --t-primary-100: #e0f2fe;
+  --t-primary-200: #bae6fd;
+  --t-primary-500: #0ea5e9;
+  --t-primary-600: #0284c7;
+  --t-primary-700: #0369a1;
+  --t-primary-800: #075985;
+  --t-primary-950: #082f49;
+  --t-primary-from: #075985;
+  --t-primary-via: #0284c7;
+  --t-primary-to: #38bdf8;
+}
+
+[data-theme="amber"] {
+  --t-primary-50: #fffbeb;
+  --t-primary-100: #fef3c7;
+  --t-primary-200: #fde68a;
+  --t-primary-500: #f59e0b;
+  --t-primary-600: #d97706;
+  --t-primary-700: #b45309;
+  --t-primary-800: #92400e;
+  --t-primary-950: #451a03;
+  --t-primary-from: #92400e;
+  --t-primary-via: #d97706;
+  --t-primary-to: #fbbf24;
+}
+
+[data-theme="indigo"] {
+  --t-primary-50: #eef2ff;
+  --t-primary-100: #e0e7ff;
+  --t-primary-200: #c7d2fe;
+  --t-primary-500: #6366f1;
+  --t-primary-600: #4f46e5;
+  --t-primary-700: #4338ca;
+  --t-primary-800: #3730a3;
+  --t-primary-950: #1e1b4b;
+  --t-primary-from: #1e1b4b;
+  --t-primary-via: #4f46e5;
+  --t-primary-to: #818cf8;
+}
+
+[data-theme="slate"] {
+  --t-primary-50: #f8fafc;
+  --t-primary-100: #f1f5f9;
+  --t-primary-200: #e2e8f0;
+  --t-primary-500: #64748b;
+  --t-primary-600: #475569;
+  --t-primary-700: #334155;
+  --t-primary-800: #1e293b;
+  --t-primary-950: #020617;
+  --t-primary-from: #020617;
+  --t-primary-via: #334155;
+  --t-primary-to: #64748b;
+}
+
+[data-theme="teal"] {
+  --t-primary-50: #f0fdfa;
+  --t-primary-100: #ccfbf1;
+  --t-primary-200: #99f6e4;
+  --t-primary-500: #14b8a6;
+  --t-primary-600: #0d9488;
+  --t-primary-700: #0f766e;
+  --t-primary-800: #115e59;
+  --t-primary-950: #042f2e;
+  --t-primary-from: #115e59;
+  --t-primary-via: #0d9488;
+  --t-primary-to: #2dd4bf;
+}
+
+/* Gradients */
+[data-theme]:not([data-theme="violet"]) .bg-gradient-to-l.from-indigo-700.via-violet-700.to-fuchsia-600,
+[data-theme]:not([data-theme="violet"]) .bg-gradient-to-l.from-violet-700.via-fuchsia-700.to-pink-600,
+[data-theme]:not([data-theme="violet"]) .bg-gradient-to-l.from-violet-700.via-violet-700.to-fuchsia-600 {
+  background-image: linear-gradient(
+    to left,
+    var(--t-primary-from),
+    var(--t-primary-via),
+    var(--t-primary-to)
+  );
+}
+
+[data-theme]:not([data-theme="violet"]) .bg-gradient-to-br.from-violet-500.to-fuchsia-500,
+[data-theme]:not([data-theme="violet"]) .bg-gradient-to-br.from-indigo-500.to-fuchsia-500 {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--t-primary-via),
+    var(--t-primary-to)
+  );
+}
+
+/* Tombol utama */
+[data-theme]:not([data-theme="violet"]) .bg-violet-600 {
+  background-color: var(--t-primary-600);
+}
+[data-theme]:not([data-theme="violet"]) .bg-violet-700 {
+  background-color: var(--t-primary-700);
+}
+[data-theme]:not([data-theme="violet"]) .hover\:bg-violet-700:hover {
+  background-color: var(--t-primary-800);
+}
+
+/* Background subtle */
+[data-theme]:not([data-theme="violet"]) .bg-violet-50 {
+  background-color: var(--t-primary-50);
+}
+[data-theme]:not([data-theme="violet"]) .bg-violet-100 {
+  background-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .hover\:bg-violet-50:hover {
+  background-color: var(--t-primary-50);
+}
+[data-theme]:not([data-theme="violet"]) .hover\:bg-violet-100:hover {
+  background-color: var(--t-primary-100);
+}
+
+/* Text accent */
+[data-theme]:not([data-theme="violet"]) .text-violet-600 {
+  color: var(--t-primary-600);
+}
+[data-theme]:not([data-theme="violet"]) .text-violet-700 {
+  color: var(--t-primary-700);
+}
+[data-theme]:not([data-theme="violet"]) .text-violet-800 {
+  color: var(--t-primary-800);
+}
+[data-theme]:not([data-theme="violet"]) .text-violet-900 {
+  color: var(--t-primary-800);
+}
+[data-theme]:not([data-theme="violet"]) .text-violet-950 {
+  color: var(--t-primary-950);
+}
+
+/* Border accent */
+[data-theme]:not([data-theme="violet"]) .border-violet-100 {
+  border-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .border-violet-200 {
+  border-color: var(--t-primary-200);
+}
+[data-theme]:not([data-theme="violet"]) .border-violet-300 {
+  border-color: var(--t-primary-500);
+}
+
+/* Fuchsia → secondary accent */
+[data-theme]:not([data-theme="violet"]) .bg-fuchsia-50 {
+  background-color: var(--t-primary-50);
+}
+[data-theme]:not([data-theme="violet"]) .bg-fuchsia-100 {
+  background-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .text-fuchsia-600 {
+  color: var(--t-primary-600);
+}
+[data-theme]:not([data-theme="violet"]) .text-fuchsia-700 {
+  color: var(--t-primary-700);
+}
+[data-theme]:not([data-theme="violet"]) .text-fuchsia-950 {
+  color: var(--t-primary-950);
+}
+[data-theme]:not([data-theme="violet"]) .border-fuchsia-100 {
+  border-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .border-fuchsia-200 {
+  border-color: var(--t-primary-200);
+}
+
+/* Indigo → primary */
+[data-theme]:not([data-theme="violet"]) .bg-indigo-50 {
+  background-color: var(--t-primary-50);
+}
+[data-theme]:not([data-theme="violet"]) .bg-indigo-100 {
+  background-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .text-indigo-600 {
+  color: var(--t-primary-600);
+}
+[data-theme]:not([data-theme="violet"]) .text-indigo-700 {
+  color: var(--t-primary-700);
+}
+[data-theme]:not([data-theme="violet"]) .text-indigo-950 {
+  color: var(--t-primary-950);
+}
+[data-theme]:not([data-theme="violet"]) .border-indigo-100 {
+  border-color: var(--t-primary-100);
+}
+[data-theme]:not([data-theme="violet"]) .border-indigo-200 {
+  border-color: var(--t-primary-200);
+}
