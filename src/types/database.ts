@@ -26,9 +26,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; email: string; full_name: string | null; role: ProfileRole; theme: string; created_at: string; updated_at: string; };
-        Insert: { id: string; email: string; full_name?: string | null; theme?: string; created_at?: string; updated_at?: string; };
-        Update: { id?: string; email?: string; full_name?: string | null; theme?: string; created_at?: string; updated_at?: string; };
+        Row: { id: string; email: string; full_name: string | null; role: ProfileRole; is_active: boolean; theme: string; created_at: string; updated_at: string; };
+        Insert: { id: string; email: string; full_name?: string | null; role?: ProfileRole; is_active?: boolean; theme?: string; created_at?: string; updated_at?: string; };
+        Update: { id?: string; email?: string; full_name?: string | null; role?: ProfileRole; is_active?: boolean; theme?: string; created_at?: string; updated_at?: string; };
         Relationships: [];
       };
       classes: {
@@ -324,6 +324,46 @@ export interface Database {
           total_questions: number;
           last_activity: string | null;
         }>;
+      };
+            admin_list_teachers: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          id: string;
+          email: string;
+          full_name: string | null;
+          is_active: boolean;
+          created_at: string;
+          class_count: number;
+          student_count: number;
+        }>;
+      };
+      admin_deactivate_teacher: {
+        Args: { p_teacher_id: string };
+        Returns: undefined;
+      };
+      admin_activate_teacher: {
+        Args: { p_teacher_id: string };
+        Returns: undefined;
+      };
+      admin_list_student_sessions: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          session_id: string;
+          student_id: string;
+          student_name: string;
+          class_name: string;
+          expires_at: string;
+          last_seen_at: string;
+          created_at: string;
+        }>;
+      };
+      admin_force_logout_student: {
+        Args: { p_session_id: string };
+        Returns: undefined;
+      };
+      admin_force_logout_all_students: {
+        Args: Record<string, never>;
+        Returns: number;
       };
       cleanup_old_history: {
         Args: Record<string, never>;

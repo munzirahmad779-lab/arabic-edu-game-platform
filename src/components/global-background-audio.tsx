@@ -20,6 +20,8 @@ type Track = {
 
 type PageKey = "dashboard" | "login" | "student" | "game" | "final";
 
+const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
+
 const THEMES: { key: string; label: string; color: string }[] = [
   { key: "violet", label: "بنفسجي", color: "#7c3aed" },
   { key: "rose", label: "وردي", color: "#e11d48" },
@@ -35,9 +37,8 @@ function pageOf(pathname: string): PageKey | null {
   if (pathname.startsWith("/dashboard/question-banks")) return null;
   if (pathname.startsWith("/student/materials/")) return null;
   if (pathname.startsWith("/dashboard/classes/")) return null;
-    // Homepage
-  if (pathname === "/") return "login";
 
+  if (pathname === "/") return "login";
   if (pathname.startsWith("/join/room")) return "game";
   if (pathname.startsWith("/student/login")) return "login";
   if (pathname.startsWith("/join")) return "login";
@@ -61,8 +62,10 @@ export function GlobalBackgroundAudio() {
   const [currentTheme, setCurrentTheme] = useState<string>("violet");
   const [themeLoading, setThemeLoading] = useState(false);
   const [portalCopied, setPortalCopied] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const isDashboard = pathname.startsWith("/dashboard");
+  const isSuperAdmin = userEmail === SUPER_ADMIN_EMAIL;
 
   useEffect(() => {
     setMounted(true);
@@ -74,6 +77,7 @@ export function GlobalBackgroundAudio() {
     }
   }, []);
 
+  // Fetch tracks
   useEffect(() => {
     if (!mounted) return;
     let alive = true;
@@ -93,6 +97,28 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted]);
 
+  // Fetch user email (sekali saja saat mount)
+  useEffect(() => {
+    if (!mounted) return;
+    let alive = true;
+    const supabase = createClient();
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!alive) return;
+        setUserEmail(user?.email ?? null);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mounted]);
+
+  // Fetch theme saat drawer dibuka (khusus dashboard)
   useEffect(() => {
     if (!mounted || !isDashboard || !settingsOpen) return;
     let alive = true;
@@ -119,6 +145,7 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted, isDashboard, settingsOpen]);
 
+  // Simpan preferensi mute
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -131,6 +158,7 @@ export function GlobalBackgroundAudio() {
     }
   }, [userMuted, mounted]);
 
+  // Listen pause/resume
   useEffect(() => {
     const onPause = () => setPausedByEvent(true);
     const onResume = () => setPausedByEvent(false);
@@ -142,6 +170,7 @@ export function GlobalBackgroundAudio() {
     };
   }, []);
 
+  // Tutup drawer kalau klik di luar
   useEffect(() => {
     if (!settingsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -159,6 +188,7 @@ export function GlobalBackgroundAudio() {
     ? tracks.find((t) => t.pages.includes(pageKey)) ?? null
     : null;
 
+  // Play/pause
   useEffect(() => {
     if (!mounted) return;
     const audio = audioRef.current;
@@ -388,6 +418,17 @@ export function GlobalBackgroundAudio() {
                   </Link>
                 </div>
 
+                {isSuperAdmin ? (
+                  <Link
+                    href="/dashboard/admin"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm font-black text-slate-800 transition hover:border-slate-500 hover:bg-slate-200"
+                  >
+                    <span className="text-lg">🛡️</span>
+                    <span>لوحة الإدارة</span>
+                  </Link>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={() => void copyPortalLink()}
@@ -399,7 +440,6 @@ export function GlobalBackgroundAudio() {
                   </span>
                   <span className="text-xs">{portalCopied ? "✓" : "📋"}</span>
                 </button>
-
               </>
             ) : null}
           </div>

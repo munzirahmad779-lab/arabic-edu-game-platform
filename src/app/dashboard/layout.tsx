@@ -19,9 +19,38 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, theme")
+    .select("full_name, email, theme, is_active")
     .eq("id", user.id)
     .single();
+
+  if (profile && profile.is_active === false) {
+    // Akun dinonaktifkan — logout paksa
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-rose-50 p-6"
+        dir="rtl"
+      >
+        <div className="max-w-md rounded-[2rem] bg-white p-8 text-center shadow-2xl">
+          <div className="text-6xl">🚫</div>
+          <h1 className="mt-4 text-2xl font-black text-red-700">
+            تم إيقاف حسابك
+          </h1>
+          <p className="mt-3 text-sm text-neutral-600">
+            تم إيقاف حساب المعلم الخاص بك من قبل مسؤول المنصة. للاستفسار،
+            تواصل مع الدعم.
+          </p>
+          <form action="/auth/logout" method="post" className="mt-6">
+            <button
+              type="submit"
+              className="w-full rounded-2xl bg-red-600 px-6 py-3 text-base font-black text-white transition hover:bg-red-700"
+            >
+              تسجيل الخروج
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const theme = profile?.theme ?? "violet";
 
