@@ -156,7 +156,7 @@ export function EssayPlayer({
 
       if (!json.ok) {
         setError(
-          `تم التسليم، لكن فشل التقييم التلقائي: ${json.message ?? "خطأ"}. سيقوم المعلم بتقييمها يدويًا.`,
+          `تم التسليم، لكن فشل التقييم التلقائي. سيقوم المعلم بتقييمها يدويًا.`,
         );
         setPhase("result");
         setResult({
@@ -209,34 +209,20 @@ export function EssayPlayer({
 
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg sm:p-8">
             {essay.theme ? (
-              <>
-                <h2 className="text-sm font-black text-violet-700">الموضوع</h2>
-                <p className="mt-3 text-base font-bold leading-8 text-neutral-800">
-                  {essay.theme}
-                </p>
-              </>
-            ) : (
-              <p className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-900">
-                سيظهر السؤال الكامل بمجرد أن تبدأ الكتابة.
+              <p className="text-base font-bold leading-8 text-neutral-800">
+                {essay.theme}
               </p>
-            )}
+            ) : null}
+            <p className="mt-3 text-sm leading-7 text-neutral-500">
+              سيظهر السؤال الكامل بمجرد أن تبدأ الكتابة.
+            </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-amber-50 p-4 text-center">
-                <div className="text-xs font-bold text-amber-700">
-                  المدة المخصصة
-                </div>
-                <div className="mt-1 text-2xl font-black text-amber-900">
-                  {essay.duration_minutes} دقيقة
-                </div>
+            <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-center">
+              <div className="text-xs font-bold text-amber-700">
+                المدة المخصصة
               </div>
-              <div className="rounded-2xl bg-emerald-50 p-4 text-center">
-                <div className="text-xs font-bold text-emerald-700">
-                  التقييم
-                </div>
-                <div className="mt-1 text-sm font-black text-emerald-900">
-                  تلقائي بالذكاء الاصطناعي
-                </div>
+              <div className="mt-1 text-2xl font-black text-amber-900">
+                {essay.duration_minutes} دقيقة
               </div>
             </div>
 
@@ -363,12 +349,12 @@ export function EssayPlayer({
         dir="rtl"
       >
         <div className="w-full max-w-md rounded-[2rem] bg-white p-10 text-center shadow-2xl">
-          <div className="text-6xl">🤖</div>
+          <div className="text-6xl">📝</div>
           <h1 className="mt-5 text-2xl font-black text-neutral-900">
             جاري التقييم...
           </h1>
           <p className="mt-3 text-sm text-neutral-600">
-            يقوم الذكاء الاصطناعي بتقييم إجابتك. قد يستغرق 5-15 ثانية.
+            يتم تقييم إجابتك. قد يستغرق هذا 5-15 ثانية.
           </p>
           <div className="mt-6 flex justify-center">
             <div className="h-2 w-48 overflow-hidden rounded-full bg-neutral-100">
@@ -455,7 +441,7 @@ export function EssayPlayer({
             {result.feedback ? (
               <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50/60 p-4 text-right">
                 <p className="text-xs font-black text-violet-800">
-                  🤖 ملاحظات المصحح الآلي
+                  📝 ملاحظات
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-violet-950">
                   {result.feedback}
@@ -464,10 +450,6 @@ export function EssayPlayer({
             ) : null}
           </section>
         ) : null}
-
-        <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
-          💡 يمكن لمعلمك تعديل الدرجة يدويًا إذا رغب.
-        </section>
       </div>
     </main>
   );

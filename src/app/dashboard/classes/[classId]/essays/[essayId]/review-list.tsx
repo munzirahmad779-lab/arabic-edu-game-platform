@@ -116,7 +116,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
               {current.student_name}
             </p>
             <p className="mt-0.5 text-xs text-neutral-500">
-              {hasOverride ? "✏️ معلم" : "🤖 AI"} —{" "}
+              {hasOverride ? "✏️ تم التعديل" : "التقييم الأولي"} —{" "}
               <span className="font-black">{finalScore}/100</span>
             </p>
           </div>
@@ -128,27 +128,34 @@ function SubmissionCard({ sub }: { sub: Submission }) {
         <div className="space-y-4 border-t border-neutral-100 p-4">
           {/* Jawaban siswa */}
           <div>
-            <h4 className="text-xs font-black text-neutral-700">إجابة الطالب</h4>
+            <h4 className="text-xs font-black text-neutral-700">
+              إجابة الطالب
+            </h4>
             <div className="mt-2 whitespace-pre-wrap rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm leading-7 text-neutral-800">
               {current.answer_text}
             </div>
             {current.duration_seconds !== null ? (
               <p className="mt-1 text-xs text-neutral-500">
-                ⏱ وقت الكتابة: {Math.floor(current.duration_seconds / 60)} دقيقة
+                ⏱ وقت الكتابة: {Math.floor(current.duration_seconds / 60)}{" "}
+                دقيقة
               </p>
             ) : null}
           </div>
 
-          {/* Sub-skor AI */}
+          {/* Sub-skor */}
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-violet-50 p-2 text-center">
-              <div className="text-[10px] font-bold text-violet-700">المحتوى</div>
+              <div className="text-[10px] font-bold text-violet-700">
+                المحتوى
+              </div>
               <div className="text-lg font-black text-violet-900">
                 {subscores.content}
               </div>
             </div>
             <div className="rounded-xl bg-amber-50 p-2 text-center">
-              <div className="text-[10px] font-bold text-amber-700">القواعد</div>
+              <div className="text-[10px] font-bold text-amber-700">
+                القواعد
+              </div>
               <div className="text-lg font-black text-amber-900">
                 {subscores.grammar}
               </div>
@@ -163,11 +170,11 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
           </div>
 
-          {/* AI feedback */}
+          {/* Feedback awal */}
           {current.ai_feedback ? (
             <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
               <p className="text-xs font-black text-violet-800">
-                🤖 ملاحظات AI
+                📝 ملاحظات
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-violet-950">
                 {current.ai_feedback}

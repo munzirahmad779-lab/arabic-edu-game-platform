@@ -32,7 +32,6 @@ export default async function EssayReviewPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Cek essay milik guru
   const { data: essay } = await supabase
     .from("essay_assignments")
     .select("id, title, question_text, duration_minutes, is_published")
