@@ -241,6 +241,7 @@ export interface Database {
       admin_list_student_sessions: { Args: Record<string, never>; Returns: Array<{ session_id: string; student_id: string; student_name: string; class_name: string; expires_at: string; last_seen_at: string; created_at: string; }>; };
       admin_force_logout_student: { Args: { p_session_id: string }; Returns: undefined; };
       admin_force_logout_all_students: { Args: Record<string, never>; Returns: number; };
+      admin_cleanup_expired_sessions: { Args: Record<string, never>; Returns: number; };
       student_list_materials: { Args: { p_token: string; p_class_id: string; }; Returns: Array<{ id: string; title: string; position: number; updated_at: string; }>; };
       student_get_material: { Args: { p_token: string; p_material_id: string; }; Returns: Array<{ id: string; class_id: string; title: string; content_json: Json | null; youtube_url: string | null; image_path: string | null; pdf_path: string | null; updated_at: string; }>; };
       student_list_practice_games: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; mode: string; question_count: number; }>; };

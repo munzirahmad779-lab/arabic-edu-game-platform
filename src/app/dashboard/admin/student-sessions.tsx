@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { toWibDateTime } from "@/lib/format-wib";
 
 type Session = {
   session_id: string;
@@ -13,18 +14,11 @@ type Session = {
   created_at: string;
 };
 
-function formatDateTime(v: string): string {
-  try {
-    const d = new Date(v);
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
-  } catch {
-    return "—";
-  }
-}
-
 export function StudentSessions({ sessions }: { sessions: Session[] }) {
   const [processing, setProcessing] = useState<string | null>(null);
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanMsg, setCleanMsg] = useState<string | null>(null);
 
   async function logoutOne(s: Session) {
     if (processing) return;
@@ -76,13 +70,38 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
       if (error) {
         alert(`خطأ: ${error.message}`);
       } else {
-        alert(`✓ تم إنهاء ${data ?? 0} جلسة.`);
+        alert(`تم إنهاء ${data ?? 0} جلسة.`);
         window.location.reload();
       }
     } catch {
       alert("تعذر الاتصال بالخادم.");
     } finally {
       setBulkProcessing(false);
+    }
+  }
+
+  async function cleanupExpired() {
+    if (cleaning) return;
+    if (!window.confirm("حذف جميع الجلسات المنتهية الصلاحية؟")) return;
+
+    setCleaning(true);
+    setCleanMsg(null);
+    try {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc(
+        "admin_cleanup_expired_sessions",
+      );
+      if (error) {
+        setCleanMsg(`خطأ: ${error.message}`);
+      } else {
+        setCleanMsg(`تم حذف ${data ?? 0} جلسة منتهية.`);
+        window.setTimeout(() => window.location.reload(), 1200);
+      }
+    } catch {
+      setCleanMsg("تعذر الاتصال بالخادم.");
+    } finally {
+      setCleaning(false);
     }
   }
 
@@ -94,26 +113,41 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             📱 جلسات الطلاب النشطة
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            كل جهاز يسجّل دخول طالب يظهر هنا. يمكنك إنهاء أي جلسة فردية أو
-            الجميع.
+            كل جهاز يسجّل دخول طالب يظهر هنا. عند تسجيل الطالب من جهاز جديد،
+            يتم إنهاء جلسته السابقة تلقائيًا.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-            {sessions.length} نشط
-          </span>
-          {sessions.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => void logoutAll()}
-              disabled={bulkProcessing}
-              className="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
-            >
-              {bulkProcessing ? "..." : "🚫 إنهاء الجميع"}
-            </button>
-          ) : null}
-        </div>
+        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+          {sessions.length} نشط
+        </span>
       </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {sessions.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => void logoutAll()}
+            disabled={bulkProcessing}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+          >
+            {bulkProcessing ? "..." : "🚫 إنهاء جميع الجلسات"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void cleanupExpired()}
+          disabled={cleaning}
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+        >
+          {cleaning ? "..." : "🗑️ حذف الجلسات المنتهية"}
+        </button>
+      </div>
+
+      {cleanMsg ? (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+          {cleanMsg}
+        </p>
+      ) : null}
 
       {sessions.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
@@ -155,10 +189,10 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
                     {s.class_name}
                   </td>
                   <td className="px-3 py-2 text-xs text-neutral-500">
-                    {formatDateTime(s.last_seen_at)}
+                    {toWibDateTime(s.last_seen_at)}
                   </td>
                   <td className="px-3 py-2 text-xs text-neutral-400">
-                    {formatDateTime(s.expires_at)}
+                    {toWibDateTime(s.expires_at)}
                   </td>
                   <td className="px-3 py-2">
                     <button
