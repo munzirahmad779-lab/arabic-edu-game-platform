@@ -2,15 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReportView } from "./report-view";
+import { todayWib } from "@/lib/format-wib";
 
 type SearchParams = { date?: string };
-
-function todayWIB(): string {
-  // WIB = UTC+7
-  const now = new Date();
-  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
-}
 
 function isValidDate(v: string | undefined): v is string {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -27,7 +21,7 @@ export default async function ReportsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const date = isValidDate(searchParams.date) ? searchParams.date : todayWIB();
+  const date = isValidDate(searchParams.date) ? searchParams.date : todayWib();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc("teacher_daily_report", {

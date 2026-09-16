@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { todayWib, yesterdayWib, toWibTime } from "@/lib/format-wib";
 
 type Row = {
   source: string;
@@ -41,12 +42,6 @@ const AI_PROMPT = `أنت مساعد تعليمي متخصص في تحليل أ�
 ---
 `;
 
-function formatTime(v: string): string {
-  const d = new Date(v);
-  const wib = new Date(d.getTime() + 7 * 60 * 60 * 1000);
-  return `${String(wib.getUTCHours()).padStart(2, "0")}:${String(wib.getUTCMinutes()).padStart(2, "0")}`;
-}
-
 function buildMarkdown(
   date: string,
   roomRows: Row[],
@@ -71,7 +66,7 @@ function buildMarkdown(
     );
     for (const r of roomRows) {
       lines.push(
-        `| ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${formatTime(r.recorded_at)} |`,
+        `| ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${toWibTime(r.recorded_at)} |`,
       );
     }
     lines.push("");
@@ -88,7 +83,7 @@ function buildMarkdown(
           ? Math.round((r.correct_count / r.total_questions) * 100)
           : 0;
       lines.push(
-        `| ${r.student_name} | ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${formatTime(r.recorded_at)} |`,
+        `| ${r.student_name} | ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${toWibTime(r.recorded_at)} |`,
       );
     }
     lines.push("");
@@ -102,18 +97,6 @@ function buildMarkdown(
   lines.push("---");
   lines.push("_تقرير آلي من منصة التعليم العربية_");
   return lines.join("\n");
-}
-
-function todayWIB(): string {
-  const now = new Date();
-  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
-}
-
-function yesterdayWIB(): string {
-  const now = new Date();
-  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
-  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
 }
 
 export function ReportView({
@@ -156,9 +139,7 @@ export function ReportView({
 
   async function cleanup() {
     if (cleaning) return;
-    if (
-      !window.confirm("سيتم حذف جميع السجلات الأقدم من 7 أيام. متابعة؟")
-    ) {
+    if (!window.confirm("سيتم حذف جميع السجلات الأقدم من 7 أيام. متابعة؟")) {
       return;
     }
 
@@ -185,8 +166,8 @@ export function ReportView({
     window.location.href = `/dashboard/reports?date=${newDate}`;
   }
 
-  const today = todayWIB();
-  const yesterday = yesterdayWIB();
+  const today = todayWib();
+  const yesterday = yesterdayWib();
 
   return (
     <div className="space-y-5">
@@ -337,7 +318,7 @@ export function ReportView({
                       #{r.rank_position ?? "—"}
                     </td>
                     <td className="px-3 py-2 text-xs text-neutral-500">
-                      {formatTime(r.recorded_at)}
+                      {toWibTime(r.recorded_at)}
                     </td>
                   </tr>
                 ))}
