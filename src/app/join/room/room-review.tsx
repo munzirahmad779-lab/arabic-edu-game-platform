@@ -27,7 +27,7 @@ export function RoomReview({ token }: { token: string }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [revealed, setRevealed] = useState<Record<number, boolean>>({});
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let alive = true;
@@ -80,11 +80,12 @@ export function RoomReview({ token }: { token: string }) {
         <div className="mt-4 space-y-3">
           {rows.map((r, idx) => {
             const isWrong = !r.is_correct;
-            const explanationShown = revealed[idx];
+            const key = `${r.question_position}-${idx}`;
+            const explanationShown = revealed[key];
 
             return (
               <article
-                key={idx}
+                key={key}
                 className={`rounded-2xl border-2 bg-white p-4 ${
                   isWrong ? "border-rose-300" : "border-emerald-200"
                 }`}
@@ -146,30 +147,29 @@ export function RoomReview({ token }: { token: string }) {
                   })}
                 </div>
 
-                {isWrong ? (
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRevealed((prev) => ({
-                          ...prev,
-                          [idx]: !prev[idx],
-                        }))
-                      }
-                      className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-800 transition hover:bg-violet-100"
-                    >
-                      {explanationShown ? "إخفاء السبب" : "لماذا؟ 🤔"}
-                    </button>
+                {/* Tombol لماذا untuk SEMUA soal */}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRevealed((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }))
+                    }
+                    className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-800 transition hover:bg-violet-100"
+                  >
+                    {explanationShown ? "إخفاء السبب" : "لماذا؟ 🤔"}
+                  </button>
 
-                    {explanationShown ? (
-                      <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3 text-sm leading-7 text-violet-950">
-                        {r.explanation && r.explanation.trim().length > 0
-                          ? r.explanation
-                          : "لا يوجد شرح متاح لهذا السؤال."}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                  {explanationShown ? (
+                    <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3 text-sm leading-7 text-violet-950">
+                      {r.explanation && r.explanation.trim().length > 0
+                        ? r.explanation
+                        : "لا يوجد شرح متاح لهذا السؤال."}
+                    </div>
+                  ) : null}
+                </div>
               </article>
             );
           })}
