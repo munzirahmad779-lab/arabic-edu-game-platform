@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  createMaterial,
-  deleteMaterial,
-  moveMaterial,
-  togglePublish,
-  updateMaterial,
-} from "./actions";
+import { createMaterial, updateMaterial } from "./actions";
 import MaterialForm from "./material-form";
 import { EssayForm } from "./essay-form";
 import { EssayList } from "./essay-list";
+import { MaterialSortableList } from "./material-sortable-list";
 
 type SearchParams = {
   material_error?: string;
@@ -24,6 +19,7 @@ type SearchParams = {
   essay_deleted?: string;
   essay_error?: string;
 };
+
 type EssayRow = {
   id: string;
   title: string;
@@ -121,12 +117,16 @@ export default async function ClassDetailPage({
   if (gamesError) throw new Error("تعذر تحميل الألعاب.");
   if (materialsError) throw new Error("تعذر تحميل المواد.");
 
-  // Fetch essay assignments
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: essaysData } = await (supabase as any).rpc("teacher_list_essays", {
     p_class_id: classRow.id,
   });
   const essays = (essaysData ?? []) as EssayRow[];
+
+  const materialMessage = getMaterialMessage(searchParams);
+  const showForm =
+    searchParams.add_material === "1" ||
+    Boolean(searchParams.edit_material);
 
   const essayMessage = (() => {
     if (searchParams.essay_created === "1")
@@ -151,10 +151,6 @@ export default async function ClassDetailPage({
       };
     return null;
   })();
-  const materialMessage = getMaterialMessage(searchParams);
-  const showForm =
-    searchParams.add_material === "1" ||
-    Boolean(searchParams.edit_material);
 
   return (
     <main className="space-y-8" dir="rtl">
@@ -202,18 +198,6 @@ export default async function ClassDetailPage({
         </div>
       </header>
 
-      {essayMessage ? (
-        <div
-          role="alert"
-          className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
-            essayMessage.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
-        >
-          {essayMessage.text}
-        </div>
-      ) : null}
       {materialMessage ? (
         <div
           role="alert"
@@ -224,6 +208,19 @@ export default async function ClassDetailPage({
           }`}
         >
           {materialMessage.text}
+        </div>
+      ) : null}
+
+      {essayMessage ? (
+        <div
+          role="alert"
+          className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+            essayMessage.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {essayMessage.text}
         </div>
       ) : null}
 
@@ -254,7 +251,7 @@ export default async function ClassDetailPage({
           <div>
             <h2 className="text-lg font-semibold">✍️ مهام الكتابة</h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {essays.length} مهمة · يتم تصحيحها تلقائيًا بالذكاء الاصطناعي.
+              {essays.length} مهمة · يتم تصحيحها تلقائيًا.
             </p>
           </div>
           {searchParams.add_essay !== "1" ? (
@@ -287,6 +284,7 @@ export default async function ClassDetailPage({
         <EssayList essays={essays} classId={classRow.id} />
       </section>
 
+      {/* ============== المواد الدراسية ============== */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -352,172 +350,22 @@ export default async function ClassDetailPage({
           </div>
         ) : null}
 
-        {!materials || materials.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
-            <div className="text-4xl">📖</div>
-            <p className="mt-3 font-bold text-neutral-700">
-              لا توجد مواد دراسية بعد
-            </p>
-            <Link
-              href={`/dashboard/classes/${classRow.id}?add_material=1`}
-              className="mt-4 inline-flex rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
-            >
-              إضافة أول مادة
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {materials.map((material, index) => (
-              <div
-                key={material.id}
-                className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-black text-violet-700">
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="truncate font-bold text-neutral-900">
-                        {material.title}
-                      </div>
-                      {material.is_published ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                          منشورة
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                          مسودة
-                        </span>
-                      )}
-                      {material.youtube_url ? (
-                        <span
-                          className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700"
-                          title="يحتوي فيديو يوتيوب"
-                        >
-                          🎬
-                        </span>
-                      ) : null}
-                      {material.image_path ? (
-                        <span
-                          className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700"
-                          title="يحتوي صورة"
-                        >
-                          🖼️
-                        </span>
-                      ) : null}
-                      {material.pdf_path ? (
-                        <span
-                          className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700"
-                          title="يحتوي ملف PDF"
-                        >
-                          📄
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-1 text-xs text-neutral-500">
-                      {new Date(material.created_at).toLocaleDateString("ar-EG")}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <form action={moveMaterial}>
-                    <input
-                      type="hidden"
-                      name="material_id"
-                      value={material.id}
-                    />
-                    <input type="hidden" name="class_id" value={classRow.id} />
-                    <input type="hidden" name="direction" value="up" />
-                    <button
-                      type="submit"
-                      disabled={index === 0}
-                      className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-40"
-                      title="أعلى"
-                    >
-                      ▲
-                    </button>
-                  </form>
-                  <form action={moveMaterial}>
-                    <input
-                      type="hidden"
-                      name="material_id"
-                      value={material.id}
-                    />
-                    <input type="hidden" name="class_id" value={classRow.id} />
-                    <input type="hidden" name="direction" value="down" />
-                    <button
-                      type="submit"
-                      disabled={index === materials.length - 1}
-                      className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-40"
-                      title="أسفل"
-                    >
-                      ▼
-                    </button>
-                  </form>
-
-                  <form action={togglePublish}>
-                    <input
-                      type="hidden"
-                      name="material_id"
-                      value={material.id}
-                    />
-                    <input type="hidden" name="class_id" value={classRow.id} />
-                    <input
-                      type="hidden"
-                      name="current_published"
-                      value={material.is_published ? "true" : "false"}
-                    />
-                    <button
-                      type="submit"
-                      className={`rounded-md px-3 py-1.5 text-xs font-bold ${
-                        material.is_published
-                          ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                          : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                      }`}
-                    >
-                      {material.is_published ? "إلغاء النشر" : "نشر"}
-                    </button>
-                  </form>
-
-                  <Link
-                    href={`/dashboard/classes/${classRow.id}/preview/${material.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
-                    title="معاينة كطالب"
-                  >
-                    👁️ معاينة
-                  </Link>
-                  <Link
-                    href={`/dashboard/classes/${classRow.id}?edit_material=${material.id}`}
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-bold hover:bg-neutral-50"
-                  >
-                    تعديل
-                  </Link>
-
-                  <form action={deleteMaterial}>
-                    <input
-                      type="hidden"
-                      name="material_id"
-                      value={material.id}
-                    />
-                    <input type="hidden" name="class_id" value={classRow.id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
-                    >
-                      حذف
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <MaterialSortableList
+          materials={(materials ?? []).map((m) => ({
+            id: m.id,
+            title: m.title,
+            is_published: m.is_published,
+            position: m.position,
+            created_at: m.created_at,
+            has_youtube: Boolean(m.youtube_url),
+            has_image: Boolean(m.image_path),
+            has_pdf: Boolean(m.pdf_path),
+          }))}
+          classId={classRow.id}
+        />
       </section>
 
+      {/* ============== الطلاب ============== */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
@@ -571,6 +419,7 @@ export default async function ClassDetailPage({
         )}
       </section>
 
+      {/* ============== الألعاب ============== */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
