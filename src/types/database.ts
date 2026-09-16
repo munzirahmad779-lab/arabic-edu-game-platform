@@ -160,18 +160,22 @@ export interface Database {
         Relationships: [{ foreignKeyName: "room_sessions_room_id_fkey"; columns: ["room_id"]; isOneToOne: false; referencedRelation: "rooms"; referencedColumns: ["id"]; }];
       };
       room_session_participants: {
-        Row: { id: string; session_id: string; participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms: number; created_at: string; };
-        Insert: { id?: string; session_id: string; participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms?: number; created_at?: string; };
-        Update: { id?: string; session_id?: string; participant_name?: string; final_score?: number; rank?: number; correct_count?: number; total_questions?: number; avg_response_ms?: number; created_at?: string; };
+        Row: { id: string; session_id: string; participant_name: string; student_id: string | null; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms: number; created_at: string; };
+        Insert: { id?: string; session_id: string; participant_name: string; student_id?: string | null; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms?: number; created_at?: string; };
+        Update: { id?: string; session_id?: string; participant_name?: string; student_id?: string | null; final_score?: number; rank?: number; correct_count?: number; total_questions?: number; avg_response_ms?: number; created_at?: string; };
         Relationships: [{ foreignKeyName: "room_session_participants_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
+      };
+      room_session_question_stats: {
+        Row: { id: string; session_id: string; question_id: string; question_text: string | null; correct_option_key: string | null; explanation: string | null; options: Json; total_answered: number; total_correct: number; selected_a_count: number; selected_b_count: number; selected_c_count: number; selected_d_count: number; created_at: string; };
+        Insert: { id?: string; session_id: string; question_id: string; question_text?: string | null; correct_option_key?: string | null; explanation?: string | null; options?: Json; total_answered?: number; total_correct?: number; selected_a_count?: number; selected_b_count?: number; selected_c_count?: number; selected_d_count?: number; created_at?: string; };
+        Update: { id?: string; session_id?: string; question_id?: string; question_text?: string | null; correct_option_key?: string | null; explanation?: string | null; options?: Json; total_answered?: number; total_correct?: number; selected_a_count?: number; selected_b_count?: number; selected_c_count?: number; selected_d_count?: number; created_at?: string; };
+        Relationships: [{ foreignKeyName: "room_session_question_stats_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
       };
       teacher_audio_tracks: {
         Row: { id: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume: number; enabled: boolean; pages: string[]; created_at: string; updated_at: string; };
         Insert: { id?: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume?: number; enabled?: boolean; pages?: string[]; created_at?: string; updated_at?: string; };
         Update: { id?: string; teacher_id?: string; name?: string; audio_path?: string; audio_url?: string; volume?: number; enabled?: boolean; pages?: string[]; created_at?: string; updated_at?: string; };
-        Relationships: [
-          { foreignKeyName: "teacher_audio_tracks_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; }
-        ];
+        Relationships: [{ foreignKeyName: "teacher_audio_tracks_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; }];
       };
       student_practice_answers: {
         Row: { id: string; student_id: string; game_id: string; question_id: string; selected_option_key: QuestionOptionKey; is_correct: boolean; answered_at: string; };
@@ -181,6 +185,24 @@ export interface Database {
           { foreignKeyName: "student_practice_answers_student_id_fkey"; columns: ["student_id"]; isOneToOne: false; referencedRelation: "students"; referencedColumns: ["id"]; },
           { foreignKeyName: "student_practice_answers_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games"; referencedColumns: ["id"]; },
           { foreignKeyName: "student_practice_answers_question_id_fkey"; columns: ["question_id"]; isOneToOne: false; referencedRelation: "questions"; referencedColumns: ["id"]; }
+        ];
+      };
+      essay_assignments: {
+        Row: { id: string; teacher_id: string; class_id: string; title: string; question_text: string; ideal_answer: string | null; duration_minutes: number; is_published: boolean; rubric_content: number; rubric_grammar: number; rubric_vocabulary: number; created_at: string; updated_at: string; };
+        Insert: { id?: string; teacher_id: string; class_id: string; title: string; question_text: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
+        Update: { id?: string; teacher_id?: string; class_id?: string; title?: string; question_text?: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
+        Relationships: [
+          { foreignKeyName: "essay_assignments_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; },
+          { foreignKeyName: "essay_assignments_class_id_fkey"; columns: ["class_id"]; isOneToOne: false; referencedRelation: "classes"; referencedColumns: ["id"]; }
+        ];
+      };
+      essay_submissions: {
+        Row: { id: string; assignment_id: string; student_id: string; answer_text: string; duration_seconds: number | null; ai_score: number | null; ai_feedback: string | null; ai_scores_json: Json | null; ai_model: string | null; graded_at: string | null; teacher_override_score: number | null; teacher_override_feedback: string | null; teacher_graded_at: string | null; created_at: string; updated_at: string; };
+        Insert: { id?: string; assignment_id: string; student_id: string; answer_text: string; duration_seconds?: number | null; ai_score?: number | null; ai_feedback?: string | null; ai_scores_json?: Json | null; ai_model?: string | null; graded_at?: string | null; teacher_override_score?: number | null; teacher_override_feedback?: string | null; teacher_graded_at?: string | null; created_at?: string; updated_at?: string; };
+        Update: { id?: string; assignment_id?: string; student_id?: string; answer_text?: string; duration_seconds?: number | null; ai_score?: number | null; ai_feedback?: string | null; ai_scores_json?: Json | null; ai_model?: string | null; graded_at?: string | null; teacher_override_score?: number | null; teacher_override_feedback?: string | null; teacher_graded_at?: string | null; created_at?: string; updated_at?: string; };
+        Relationships: [
+          { foreignKeyName: "essay_submissions_assignment_id_fkey"; columns: ["assignment_id"]; isOneToOne: false; referencedRelation: "essay_assignments"; referencedColumns: ["id"]; },
+          { foreignKeyName: "essay_submissions_student_id_fkey"; columns: ["student_id"]; isOneToOne: false; referencedRelation: "students"; referencedColumns: ["id"]; }
         ];
       };
     };
@@ -194,238 +216,46 @@ export interface Database {
       update_question_bank_question: { Args: { p_question_id: string; p_category_id: string; p_question_text: string; p_difficulty: string; p_correct_option_key: string; p_options: Json; }; Returns: boolean; };
       delete_question_bank_question: { Args: { p_question_id: string; }; Returns: boolean; };
       delete_question_bank: { Args: { p_bank_id: string; }; Returns: undefined; };
-      import_students_to_class: {
-        Args: { p_class_id: string; p_names: Json; };
-        Returns: Array<{ student_name: string; student_pin: string; }>;
-      };
-      get_game_session: {
-        Args: { p_join_token: string };
-        Returns: Array<{
-          room_id: string; room_code: string; game_name: string; game_mode: string;
-          game_duration_seconds: number; started_at: string | null; room_state: string;
-          participant_id: string; participant_name: string | null;
-          participant_count: number; capacity: number;
-          question_index: number; question_count: number;
-          question_started_at: string | null; question: Json | null;
-          answer_submitted: boolean; server_time: string;
-        }>;
-      };
-      submit_game_answer: {
-        Args: { p_join_token: string; p_question_id: string; p_selected_option_id: string; };
-        Returns: Array<{
-          accepted: boolean; is_correct: boolean; score_awarded: number;
-          response_time_ms: number; room_state: string; next_question_index: number;
-        }>;
-      };
-      get_room_leaderboard_student: {
-        Args: { p_join_token: string };
-        Returns: Array<{
-          participant_id: string; participant_name: string; is_self: boolean;
-          answered_count: number; correct_count: number;
-          weighted_correct: number; weighted_total: number;
-          avg_response_ms: number; final_score: number; rnk: number;
-        }>;
-      };
-      get_room_leaderboard_teacher: {
-        Args: { p_room_id: string };
-        Returns: Array<{
-          participant_id: string; participant_name: string; is_self: boolean;
-          answered_count: number; correct_count: number;
-          weighted_correct: number; weighted_total: number;
-          avg_response_ms: number; final_score: number; rnk: number;
-        }>;
-      };
+      import_students_to_class: { Args: { p_class_id: string; p_names: Json; }; Returns: Array<{ student_name: string; student_pin: string; }>; };
+      get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string; }>; };
+      submit_game_answer: { Args: { p_join_token: string; p_question_id: string; p_selected_option_id: string; }; Returns: Array<{ accepted: boolean; is_correct: boolean; score_awarded: number; response_time_ms: number; room_state: string; next_question_index: number; }>; };
+      get_room_leaderboard_student: { Args: { p_join_token: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number; }>; };
+      get_room_leaderboard_teacher: { Args: { p_room_id: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number; }>; };
       heartbeat_room_participant: { Args: { p_join_token: string }; Returns: undefined; };
       archive_room_session: { Args: { p_room_id: string }; Returns: string; };
-      list_room_sessions: {
-        Args: { p_room_id: string };
-        Returns: Array<{
-          session_id: string; session_number: number;
-          started_at: string | null; ended_at: string | null;
-          participant_count: number;
-        }>;
-      };
-      get_room_session_detail: {
-        Args: { p_session_id: string };
-        Returns: Array<{
-          participant_name: string; final_score: number; rank: number;
-          correct_count: number; total_questions: number; avg_response_ms: number;
-        }>;
-      };
-      get_active_audio_tracks: {
-        Args: Record<string, never>;
-        Returns: Array<{
-          id: string; name: string; audio_url: string; volume: number; pages: string[];
-        }>;
-      };
+      list_room_sessions: { Args: { p_room_id: string }; Returns: Array<{ session_id: string; session_number: number; started_at: string | null; ended_at: string | null; participant_count: number; }>; };
+      get_room_session_detail: { Args: { p_session_id: string }; Returns: Array<{ participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms: number; }>; };
+      get_session_question_stats: { Args: { p_session_id: string }; Returns: Array<{ question_id: string; question_text: string | null; correct_option_key: string | null; explanation: string | null; options: Json; total_answered: number; total_correct: number; selected_a_count: number; selected_b_count: number; selected_c_count: number; selected_d_count: number; }>; };
+      student_get_my_room_answers: { Args: { p_join_token: string }; Returns: Array<{ question_position: number; question_text: string | null; correct_option_key: string | null; explanation: string | null; options: Json; selected_option_key: string | null; is_correct: boolean; }>; };
+      get_active_audio_tracks: { Args: Record<string, never>; Returns: Array<{ id: string; name: string; audio_url: string; volume: number; pages: string[]; }>; };
+      cleanup_old_history: { Args: Record<string, never>; Returns: number; };
+      teacher_daily_report: { Args: { p_date: string }; Returns: Array<{ source: string; game_name: string; game_mode: string; student_name: string; final_score: number | null; rank_position: number | null; correct_count: number; total_questions: number; recorded_at: string; }>; };
+      teacher_list_room_history: { Args: Record<string, never>; Returns: Array<{ session_id: string; session_number: number; started_at: string | null; ended_at: string | null; room_id: string; room_code: string; game_id: string | null; game_name: string; game_mode: string; participant_count: number; }>; };
+      teacher_list_practice_history: { Args: Record<string, never>; Returns: Array<{ game_id: string; game_name: string; mode: string; student_id: string; student_name: string; answered: number; correct_count: number; total_questions: number; last_activity: string; }>; };
+      teacher_class_history: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; mode: string; sessions_count: number; best_score: number | null; avg_score: number | null; correct_count: number; total_questions: number; last_activity: string | null; }>; };
+      teacher_delete_student_history: { Args: { p_student_id: string }; Returns: number; };
+      teacher_delete_student_history_by_mode: { Args: { p_student_id: string; p_mode: string }; Returns: number; };
+      admin_list_teachers: { Args: Record<string, never>; Returns: Array<{ id: string; email: string; full_name: string | null; is_active: boolean; created_at: string; class_count: number; student_count: number; }>; };
+      admin_deactivate_teacher: { Args: { p_teacher_id: string }; Returns: undefined; };
+      admin_activate_teacher: { Args: { p_teacher_id: string }; Returns: undefined; };
+      admin_list_student_sessions: { Args: Record<string, never>; Returns: Array<{ session_id: string; student_id: string; student_name: string; class_name: string; expires_at: string; last_seen_at: string; created_at: string; }>; };
+      admin_force_logout_student: { Args: { p_session_id: string }; Returns: undefined; };
+      admin_force_logout_all_students: { Args: Record<string, never>; Returns: number; };
       student_list_materials: { Args: { p_token: string; p_class_id: string; }; Returns: Array<{ id: string; title: string; position: number; updated_at: string; }>; };
-      student_get_material: {
-        Args: { p_token: string; p_material_id: string; };
-        Returns: Array<{ id: string; class_id: string; title: string; content_json: Json | null; youtube_url: string | null; image_path: string | null; pdf_path: string | null; updated_at: string; }>;
-      };
-      student_list_practice_games: {
-        Args: { p_token: string };
-        Returns: Array<{ id: string; name: string; mode: string; question_count: number; }>;
-      };
-      student_get_practice_game: {
-        Args: { p_token: string; p_game_id: string };
-        Returns: Array<{ game_id: string; game_name: string; game_mode: string; questions: Json; }>;
-      };
-      student_submit_practice_answer: {
-        Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string; };
-        Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null; }>;
-      };
+      student_get_material: { Args: { p_token: string; p_material_id: string; }; Returns: Array<{ id: string; class_id: string; title: string; content_json: Json | null; youtube_url: string | null; image_path: string | null; pdf_path: string | null; updated_at: string; }>; };
+      student_list_practice_games: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; mode: string; question_count: number; }>; };
+      student_get_practice_game: { Args: { p_token: string; p_game_id: string }; Returns: Array<{ game_id: string; game_name: string; game_mode: string; questions: Json; }>; };
+      student_submit_practice_answer: { Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string; }; Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null; }>; };
       student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };
-      student_get_practice_progress: {
-        Args: { p_token: string; p_game_id: string };
-        Returns: Array<{
-          question_id: string;
-          selected_option_key: string;
-          is_correct: boolean;
-          answered_at: string;
-          correct_option_key: string;
-          explanation: string | null;
-        }>;
-      };
+      student_get_practice_progress: { Args: { p_token: string; p_game_id: string }; Returns: Array<{ question_id: string; selected_option_key: string; is_correct: boolean; answered_at: string; correct_option_key: string; explanation: string | null; }>; };
+      student_list_essays: { Args: { p_token: string }; Returns: Array<{ id: string; title: string; duration_minutes: number; has_submission: boolean; ai_score: number | null; submitted_at: string | null; }>; };
+      student_get_essay: { Args: { p_token: string; p_essay_id: string }; Returns: Array<{ id: string; title: string; question_text: string; duration_minutes: number; my_answer: string | null; my_score: number | null; my_feedback: string | null; my_scores_json: Json | null; submitted_at: string | null; }>; };
+      student_submit_essay: { Args: { p_token: string; p_essay_id: string; p_answer_text: string; p_duration_seconds: number; }; Returns: string; };
+      student_set_ai_grade: { Args: { p_token: string; p_submission_id: string; p_ai_score: number; p_ai_feedback: string; p_ai_scores_json: Json; p_ai_model: string; }; Returns: undefined; };
+      teacher_list_essays: { Args: { p_class_id: string }; Returns: Array<{ id: string; title: string; duration_minutes: number; is_published: boolean; submission_count: number; avg_score: number | null; created_at: string; }>; };
+      teacher_essay_submissions: { Args: { p_essay_id: string }; Returns: Array<{ submission_id: string; student_id: string; student_name: string; answer_text: string; duration_seconds: number | null; ai_score: number | null; ai_feedback: string | null; ai_scores_json: Json | null; teacher_override_score: number | null; teacher_override_feedback: string | null; submitted_at: string; }>; };
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string; }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string; }>; };
       verify_student_session: { Args: { p_token: string; }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string; }>; };
-      teacher_list_room_history: {
-        Args: Record<string, never>;
-        Returns: Array<{
-          session_id: string;
-          session_number: number;
-          started_at: string | null;
-          ended_at: string | null;
-          room_id: string;
-          room_code: string;
-          game_id: string | null;
-          game_name: string;
-          game_mode: string;
-          participant_count: number;
-        }>;
-      };
-      teacher_list_practice_history: {
-        Args: Record<string, never>;
-        Returns: Array<{
-          game_id: string;
-          game_name: string;
-          mode: string;
-          student_id: string;
-          student_name: string;
-          answered: number;
-          correct_count: number;
-          total_questions: number;
-          last_activity: string;
-        }>;
-      };
-      teacher_class_history: {
-        Args: { p_class_id: string };
-        Returns: Array<{
-          student_id: string;
-          student_name: string;
-          mode: string;
-          sessions_count: number;
-          best_score: number | null;
-          avg_score: number | null;
-          correct_count: number;
-          total_questions: number;
-          last_activity: string | null;
-        }>;
-      };
-            admin_list_teachers: {
-        Args: Record<string, never>;
-        Returns: Array<{
-          id: string;
-          email: string;
-          full_name: string | null;
-          is_active: boolean;
-          created_at: string;
-          class_count: number;
-          student_count: number;
-        }>;
-      };
-      admin_deactivate_teacher: {
-        Args: { p_teacher_id: string };
-        Returns: undefined;
-      };
-      admin_activate_teacher: {
-        Args: { p_teacher_id: string };
-        Returns: undefined;
-      };
-      admin_list_student_sessions: {
-        Args: Record<string, never>;
-        Returns: Array<{
-          session_id: string;
-          student_id: string;
-          student_name: string;
-          class_name: string;
-          expires_at: string;
-          last_seen_at: string;
-          created_at: string;
-        }>;
-      };
-      admin_force_logout_student: {
-        Args: { p_session_id: string };
-        Returns: undefined;
-      };
-      admin_force_logout_all_students: {
-        Args: Record<string, never>;
-        Returns: number;
-      };
-      cleanup_old_history: {
-        Args: Record<string, never>;
-        Returns: number;
-      };
-      teacher_daily_report: {
-        Args: { p_date: string };
-        Returns: Array<{
-          source: string;
-          game_name: string;
-          game_mode: string;
-          student_name: string;
-          final_score: number | null;
-          rank_position: number | null;
-          correct_count: number;
-          total_questions: number;
-          recorded_at: string;
-        }>;
-      };
-            get_session_question_stats: {
-        Args: { p_session_id: string };
-        Returns: Array<{
-          question_id: string;
-          question_text: string | null;
-          correct_option_key: string | null;
-          explanation: string | null;
-          options: Json;
-          total_answered: number;
-          total_correct: number;
-          selected_a_count: number;
-          selected_b_count: number;
-          selected_c_count: number;
-          selected_d_count: number;
-        }>;
-      };
-      student_get_my_room_answers: {
-        Args: { p_join_token: string };
-        Returns: Array<{
-          question_position: number;
-          question_text: string | null;
-          correct_option_key: string | null;
-          explanation: string | null;
-          options: Json;
-          selected_option_key: string | null;
-          is_correct: boolean;
-        }>;
-      };
-      teacher_delete_student_history: {
-        Args: { p_student_id: string };
-        Returns: number;
-      };
-            teacher_delete_student_history_by_mode: {
-        Args: { p_student_id: string; p_mode: string };
-        Returns: number;
-      };
       student_logout: { Args: { p_token: string; }; Returns: undefined; };
     };
     Enums: Record<string, never>;

@@ -9,6 +9,8 @@ import {
   updateMaterial,
 } from "./actions";
 import MaterialForm from "./material-form";
+import { EssayForm } from "./essay-form";
+import { EssayList } from "./essay-list";
 
 type SearchParams = {
   material_error?: string;
@@ -17,6 +19,19 @@ type SearchParams = {
   material_deleted?: string;
   edit_material?: string;
   add_material?: string;
+  add_essay?: string;
+  essay_created?: string;
+  essay_deleted?: string;
+  essay_error?: string;
+};
+type EssayRow = {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  is_published: boolean;
+  submission_count: number;
+  avg_score: number | null;
+  created_at: string;
 };
 
 function getMaterialMessage(searchParams: SearchParams) {
@@ -106,6 +121,36 @@ export default async function ClassDetailPage({
   if (gamesError) throw new Error("تعذر تحميل الألعاب.");
   if (materialsError) throw new Error("تعذر تحميل المواد.");
 
+  // Fetch essay assignments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: essaysData } = await (supabase as any).rpc("teacher_list_essays", {
+    p_class_id: classRow.id,
+  });
+  const essays = (essaysData ?? []) as EssayRow[];
+
+  const essayMessage = (() => {
+    if (searchParams.essay_created === "1")
+      return { type: "success" as const, text: "✓ تم إنشاء مهمة الكتابة." };
+    if (searchParams.essay_deleted === "1")
+      return { type: "success" as const, text: "✓ تم حذف المهمة." };
+    if (searchParams.essay_error === "invalid_title")
+      return { type: "error" as const, text: "عنوان المهمة غير صالح." };
+    if (searchParams.essay_error === "invalid_question")
+      return { type: "error" as const, text: "نص السؤال غير صالح." };
+    if (searchParams.essay_error === "invalid_duration")
+      return { type: "error" as const, text: "المدة غير صالحة (5-180 دقيقة)." };
+    if (searchParams.essay_error === "rubric_sum")
+      return {
+        type: "error" as const,
+        text: "مجموع معايير التقييم يجب أن يكون 100.",
+      };
+    if (searchParams.essay_error)
+      return {
+        type: "error" as const,
+        text: `خطأ: ${searchParams.essay_error}`,
+      };
+    return null;
+  })();
   const materialMessage = getMaterialMessage(searchParams);
   const showForm =
     searchParams.add_material === "1" ||
@@ -157,6 +202,18 @@ export default async function ClassDetailPage({
         </div>
       </header>
 
+      {essayMessage ? (
+        <div
+          role="alert"
+          className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+            essayMessage.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {essayMessage.text}
+        </div>
+      ) : null}
       {materialMessage ? (
         <div
           role="alert"
@@ -189,6 +246,45 @@ export default async function ClassDetailPage({
             {materials?.length ?? 0}
           </div>
         </div>
+      </section>
+
+      {/* ============== مهام الكتابة (Essay) ============== */}
+      <section className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">✍️ مهام الكتابة</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              {essays.length} مهمة · يتم تصحيحها تلقائيًا بالذكاء الاصطناعي.
+            </p>
+          </div>
+          {searchParams.add_essay !== "1" ? (
+            <Link
+              href={`/dashboard/classes/${classRow.id}?add_essay=1`}
+              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
+            >
+              + إضافة مهمة
+            </Link>
+          ) : null}
+        </div>
+
+        {searchParams.add_essay === "1" ? (
+          <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
+            <h3 className="mb-4 text-base font-bold text-violet-900">
+              إنشاء مهمة كتابة جديدة
+            </h3>
+            <EssayForm classId={classRow.id} />
+            <div className="mt-3">
+              <Link
+                href={`/dashboard/classes/${classRow.id}`}
+                className="text-sm text-neutral-600 underline"
+              >
+                إلغاء والعودة
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        <EssayList essays={essays} classId={classRow.id} />
       </section>
 
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
