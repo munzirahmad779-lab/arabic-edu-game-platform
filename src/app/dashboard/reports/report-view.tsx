@@ -42,12 +42,9 @@ const AI_PROMPT = `أنت مساعد تعليمي متخصص في تحليل أ�
 `;
 
 function formatTime(v: string): string {
-  try {
-    const d = new Date(v);
-    return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
-  } catch {
-    return "—";
-  }
+  const d = new Date(v);
+  const wib = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return `${String(wib.getUTCHours()).padStart(2, "0")}:${String(wib.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 function buildMarkdown(

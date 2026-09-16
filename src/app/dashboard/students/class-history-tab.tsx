@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeleteHistoryButton } from "./delete-history-button";
+import { toWibDate } from "@/lib/format-wib";
 
 type HistoryRow = {
   student_id: string;
@@ -28,16 +29,6 @@ const MODE_COLOR: Record<string, string> = {
   practice: "bg-sky-100 text-sky-800",
   learning: "bg-neutral-100 text-neutral-700",
 };
-
-function formatDate(v: string | null): string {
-  if (!v) return "—";
-  try {
-    const d = new Date(v);
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  } catch {
-    return "—";
-  }
-}
 
 export async function ClassHistoryTab({ classId }: { classId: string }) {
   const supabase = await createClient();
@@ -84,8 +75,8 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-        💡 اضغط على اسم الطالب لعرض تفاصيل كل وضع (تنافسي، تعاوني، بلا نهاية،
-        تمرين). يمكنك حذف سجل الطالب بالكامل من زر 🗑.
+        💡 اضغط على اسم الطالب لعرض تفاصيل كل وضع. يمكنك حذف سجل وضع معيّن
+        بزر 🗑 بجانب اسم الوضع، أو حذف كل السجلات من الزر الأحمر.
       </div>
 
       <div className="space-y-3">
@@ -143,7 +134,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                         key={r.mode}
                         className="rounded-2xl border border-neutral-200 bg-white p-3"
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                               MODE_COLOR[r.mode] ??
@@ -152,9 +143,16 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                           >
                             {MODE_AR[r.mode] ?? r.mode}
                           </span>
-                          <span className="text-xs text-neutral-500">
-                            {r.sessions_count} جلسة
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-neutral-500">
+                              {r.sessions_count} جلسة
+                            </span>
+                            <DeleteHistoryButton
+                              studentId={studentId}
+                              studentName={info.name}
+                              mode={r.mode}
+                            />
+                          </div>
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-2 text-center">
@@ -197,7 +195,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                         </div>
 
                         <p className="mt-2 text-center text-[10px] text-neutral-400">
-                          آخر نشاط: {formatDate(r.last_activity)}
+                          آخر نشاط: {toWibDate(r.last_activity)} WIB
                         </p>
                       </div>
                     );
