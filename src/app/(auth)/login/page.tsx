@@ -7,6 +7,20 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "sign_in" | "forgot";
 
+const WA_NUMBER = "6281354229189";
+
+const WA_MESSAGE = `Halo Admin Arabic Edu Game,
+
+Saya ingin mendaftar sebagai guru di platform.
+
+Nama:
+Email:
+Password (opsional — kosongkan jika ingin admin yang buatkan):
+
+Terima kasih.`;
+
+const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,7 +71,7 @@ export default function LoginPage() {
           return;
         }
         setInfoMessage(
-          "✓ تم إرسال رابط إعادة التعيين إلى بريدك. تحقق من صندوق الوارد.",
+          "Link reset password sudah dikirim ke email Anda. Cek inbox atau folder spam.",
         );
       }
     } finally {
@@ -76,15 +90,15 @@ export default function LoginPage() {
             href="/"
             className="text-xs font-bold text-violet-600 hover:underline"
           >
-            ← العودة إلى الصفحة الرئيسية
+            ← Kembali ke Halaman Utama
           </Link>
           <h1 className="mt-4 text-2xl font-black text-neutral-900">
-            {mode === "sign_in" ? "🎓 دخول المعلم" : "🔑 نسيت كلمة المرور"}
+            {mode === "sign_in" ? "🎓 Login Guru" : "🔑 Lupa Password"}
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
             {mode === "sign_in"
-              ? "أدخل بريدك وكلمة المرور للوصول إلى لوحة التحكم."
-              : "أدخل بريدك الإلكتروني، وسنرسل لك رابط إعادة التعيين."}
+              ? "Masukkan email dan password untuk masuk ke dashboard."
+              : "Masukkan email Anda, kami akan kirim link reset password."}
           </p>
         </div>
 
@@ -98,7 +112,7 @@ export default function LoginPage() {
               htmlFor="email"
               className="block text-sm font-bold text-neutral-700"
             >
-              البريد الإلكتروني
+              Email
             </label>
             <input
               id="email"
@@ -118,7 +132,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="block text-sm font-bold text-neutral-700"
               >
-                كلمة المرور
+                Password
               </label>
               <input
                 id="password"
@@ -160,8 +174,8 @@ export default function LoginPage() {
             {isSubmitting
               ? "..."
               : mode === "sign_in"
-                ? "تسجيل الدخول"
-                : "إرسال رابط إعادة التعيين"}
+                ? "Login"
+                : "Kirim Link Reset Password"}
           </button>
         </form>
 
@@ -174,13 +188,34 @@ export default function LoginPage() {
           }}
           className="w-full text-center text-sm font-bold text-violet-700 underline"
         >
-          {mode === "sign_in"
-            ? "نسيت كلمة المرور؟"
-            : "← العودة إلى تسجيل الدخول"}
+          {mode === "sign_in" ? "Lupa Password?" : "← Kembali ke Login"}
         </button>
 
+        {/* Daftar via WhatsApp */}
+        <div className="rounded-3xl border-2 border-dashed border-emerald-200 bg-emerald-50/40 p-5 text-center">
+          <p className="text-sm font-black text-emerald-900">
+            Belum punya akun guru?
+          </p>
+          <p className="mt-1 text-xs text-emerald-700">
+            Klik tombol di bawah untuk menghubungi admin via WhatsApp.
+          </p>
+          <a
+            href={WA_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+          >
+            <span className="text-xl">📱</span>
+            <span>Daftar via WhatsApp</span>
+          </a>
+          <p className="mt-3 text-[10px] text-emerald-600">
+            Pesan otomatis akan terbuka — isi nama, email, dan (opsional)
+            password yang Anda inginkan.
+          </p>
+        </div>
+
         <p className="text-center text-xs text-neutral-400">
-          التسجيل مغلق. للاستفسار تواصل مع مسؤول المنصة.
+          Pendaftaran mandiri dinonaktifkan. Semua akun dibuat oleh admin.
         </p>
       </div>
     </main>
