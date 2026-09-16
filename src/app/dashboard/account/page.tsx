@@ -37,7 +37,7 @@ export default async function AccountPage({
         <p className="text-sm font-semibold text-white/75">إدارة الحساب</p>
         <h1 className="mt-1 text-3xl font-black">⚙️ الحساب</h1>
         <p className="mt-2 text-sm text-white/85">
-          عدّل اسمك، وانتقل بسرعة إلى سجل الطلاب أو التقارير.
+          عدّل اسمك، وانتقل بسرعة إلى صفحات السجل والتقارير.
         </p>
       </header>
 
@@ -58,11 +58,30 @@ export default async function AccountPage({
         email={profile?.email ?? user.email ?? ""}
       />
 
-      {/* Quick links */}
+      {/* Info ubah password */}
+      <div className="rounded-[2rem] border border-amber-100 bg-amber-50/60 p-5">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">🔒</span>
+          <div className="flex-1">
+            <p className="font-black text-amber-900">
+              تغيير كلمة المرور
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              لتغيير كلمة المرور، استخدم زر «نسيت كلمة المرور» في صفحة تسجيل
+              الدخول — ستصلك رسالة على بريدك الإلكتروني تحتوي على رابط آمن.
+            </p>
+            <Link
+              href="/login"
+              className="mt-3 inline-flex rounded-xl bg-amber-600 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-700"
+            >
+              الذهاب إلى صفحة تسجيل الدخول
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-black text-neutral-900">
-          🔗 روابط سريعة
-        </h2>
+        <h2 className="text-lg font-black text-neutral-900">🔗 روابط سريعة</h2>
         <p className="mt-1 text-xs text-neutral-500">
           للوصول السريع إلى صفحات السجل والتقارير.
         </p>

@@ -7,6 +7,7 @@ import {
   pauseBackgroundAudio,
   resumeBackgroundAudio,
 } from "@/lib/bg-audio-events";
+import { Confetti } from "@/components/confetti";
 
 type MediaItem = {
   id: string;
@@ -249,6 +250,11 @@ export function PracticePlayer({
 
   // ============ SCORE VIEW ============
   if (showScore) {
+        const pctForConfetti =
+      totalQuestions > 0
+        ? Math.round((correctCount / totalQuestions) * 100)
+        : 0;
+    const showConfetti = pctForConfetti >= 70;
     const percent =
       totalQuestions > 0
         ? Math.round((correctCount / totalQuestions) * 100)
@@ -269,7 +275,10 @@ export function PracticePlayer({
         className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-violet-50 p-4 sm:p-6"
         dir="rtl"
       >
-        <div className="mx-auto max-w-3xl space-y-6">
+        {showConfetti ? (
+          <Confetti particleCount={140} originY={0.9} />
+        ) : null}
+        <div className="relative mx-auto max-w-3xl space-y-6">
           <nav>
             <Link
               href="/student/practice"

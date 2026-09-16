@@ -1,24 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type Mode = "sign_in" | "sign_up";
+type Mode = "sign_in" | "forgot";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRedirect = searchParams.get("redirectTo");
   const redirectTo =
-    requestedRedirect && requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+    requestedRedirect &&
+    requestedRedirect.startsWith("/") &&
+    !requestedRedirect.startsWith("//")
       ? requestedRedirect
       : "/dashboard";
 
   const [mode, setMode] = useState<Mode>("sign_in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -44,19 +46,18 @@ export default function LoginPage() {
         router.replace(redirectTo);
         router.refresh();
       } else {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
           email,
-          password,
-          options: {
-            data: { full_name: fullName || null },
+          {
+            redirectTo: `${window.location.origin}/reset-password`,
           },
-        });
-        if (signUpError) {
-          setError(signUpError.message);
+        );
+        if (resetError) {
+          setError(resetError.message);
           return;
         }
         setInfoMessage(
-          "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد التسجيل قبل تسجيل الدخول."
+          "✓ تم إرسال رابط إعادة التعيين إلى بريدك. تحقق من صندوق الوارد.",
         );
       }
     } finally {
@@ -65,33 +66,38 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-6">
+    <main
+      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6"
+      dir="rtl"
+    >
+      <div className="w-full max-w-sm space-y-5">
         <div className="text-center">
-          <h1 className="text-xl font-semibold">
-            {mode === "sign_in" ? "تسجيل دخول المعلم" : "إنشاء حساب معلم"}
+          <Link
+            href="/"
+            className="text-xs font-bold text-violet-600 hover:underline"
+          >
+            ← العودة إلى الصفحة الرئيسية
+          </Link>
+          <h1 className="mt-4 text-2xl font-black text-neutral-900">
+            {mode === "sign_in" ? "🎓 دخول المعلم" : "🔑 نسيت كلمة المرور"}
           </h1>
+          <p className="mt-2 text-sm text-neutral-500">
+            {mode === "sign_in"
+              ? "أدخل بريدك وكلمة المرور للوصول إلى لوحة التحكم."
+              : "أدخل بريدك الإلكتروني، وسنرسل لك رابط إعادة التعيين."}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {mode === "sign_up" && (
-            <div className="space-y-1">
-              <label htmlFor="fullName" className="block text-sm font-medium">
-                الاسم الكامل
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                autoComplete="name"
-              />
-            </div>
-          )}
-
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 rounded-3xl border border-violet-100 bg-white p-6 shadow-xl"
+          noValidate
+        >
           <div className="space-y-1">
-            <label htmlFor="email" className="block text-sm font-medium">
+            <label
+              htmlFor="email"
+              className="block text-sm font-bold text-neutral-700"
+            >
               البريد الإلكتروني
             </label>
             <input
@@ -100,63 +106,82 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
               autoComplete="email"
               dir="ltr"
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="block text-sm font-medium">
-              كلمة المرور
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-              autoComplete={mode === "sign_in" ? "current-password" : "new-password"}
-              dir="ltr"
-            />
-          </div>
+          {mode === "sign_in" ? (
+            <div className="space-y-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-bold text-neutral-700"
+              >
+                كلمة المرور
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                autoComplete="current-password"
+                dir="ltr"
+              />
+            </div>
+          ) : null}
 
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
+          {error ? (
+            <p
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700"
+            >
               {error}
             </p>
-          )}
+          ) : null}
 
-          {infoMessage && (
-            <p role="status" className="text-sm text-green-700">
+          {infoMessage ? (
+            <p
+              role="status"
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700"
+            >
               {infoMessage}
             </p>
-          )}
+          ) : null}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 disabled:opacity-50"
           >
-            {mode === "sign_in" ? "تسجيل الدخول" : "إنشاء الحساب"}
+            {isSubmitting
+              ? "..."
+              : mode === "sign_in"
+                ? "تسجيل الدخول"
+                : "إرسال رابط إعادة التعيين"}
           </button>
         </form>
 
         <button
           type="button"
           onClick={() => {
-            setMode(mode === "sign_in" ? "sign_up" : "sign_in");
+            setMode(mode === "sign_in" ? "forgot" : "sign_in");
             setError(null);
             setInfoMessage(null);
           }}
-          className="w-full text-center text-sm text-neutral-600 underline"
+          className="w-full text-center text-sm font-bold text-violet-700 underline"
         >
           {mode === "sign_in"
-            ? "ليس لديك حساب؟ إنشاء حساب جديد"
-            : "لديك حساب بالفعل؟ تسجيل الدخول"}
+            ? "نسيت كلمة المرور؟"
+            : "← العودة إلى تسجيل الدخول"}
         </button>
+
+        <p className="text-center text-xs text-neutral-400">
+          التسجيل مغلق. للاستفسار تواصل مع مسؤول المنصة.
+        </p>
       </div>
     </main>
   );
