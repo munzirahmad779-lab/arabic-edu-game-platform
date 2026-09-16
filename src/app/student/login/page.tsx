@@ -1,18 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Hero3D } from "@/components/three/hero-3d";
 import { loginStudent } from "../actions";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  type Locale,
+  isLocale,
+} from "@/lib/i18n/dictionaries";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DICT_CACHE: Record<string, any> = {};
+
+async function loadDict(locale: Locale) {
+  if (DICT_CACHE[locale]) return DICT_CACHE[locale];
+  const mod = await import(`@/lib/i18n/${locale}.json`);
+  DICT_CACHE[locale] = mod.default;
+  return mod.default;
+}
 
 export default function StudentLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dict, setDict] = useState<any>(null);
+
+  useEffect(() => {
+    const cookieLocale = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(`${LOCALE_COOKIE}=`))
+      ?.split("=")[1];
+    const loc: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+    setLocale(loc);
+    void loadDict(loc).then(setDict);
+  }, []);
+
+  if (!dict) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6">
+        <p className="text-sm text-neutral-500">...</p>
+      </main>
+    );
+  }
+
+  const t = dict.login_student;
+  const c = dict.common;
+  const isRtl = locale === "ar";
+
   return (
     <main
       className="relative min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-teal-50"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
@@ -20,39 +63,43 @@ export default function StudentLoginPage() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/"
             className="flex items-center gap-2 text-sm font-bold text-emerald-700 transition hover:text-emerald-800"
           >
             <span className="text-lg">←</span>
-            <span>الصفحة الرئيسية</span>
+            <span>{c.back_home}</span>
           </Link>
-          <Link
-            href="/login"
-            className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-50"
-          >
-            🎓 دخول المعلم
-          </Link>
+
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher current={locale} />
+            <Link
+              href="/login"
+              className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-50"
+            >
+              🎓 {t.nav_teacher}
+            </Link>
+          </div>
         </header>
 
-        <section className="mt-8 grid items-center gap-8 lg:grid-cols-2 lg:mt-12">
+        <section className="mt-8 grid items-center gap-8 lg:mt-12 lg:grid-cols-2">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-1.5 text-xs font-bold text-emerald-700 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              بوابة الطالب
+              {t.portal_title}
             </div>
 
             <h1 className="mt-5 text-3xl font-black leading-tight text-neutral-900 sm:text-4xl">
-              مرحبًا بك في
+              {t.hero_line1}
               <br />
               <span className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                بوابة الطالب
+                {t.hero_line2}
               </span>
             </h1>
 
             <p className="mt-4 text-sm leading-8 text-neutral-600 sm:text-base">
-              سجّل دخولك بالاسم ورقم PIN الخاص بك، ثم اختر التدريب الذي تريده.
+              {t.hero_desc}
             </p>
 
             {error ? (
@@ -75,7 +122,7 @@ export default function StudentLoginPage() {
                   htmlFor="name"
                   className="block text-sm font-bold text-neutral-700"
                 >
-                  الاسم
+                  {t.label_name}
                 </label>
                 <input
                   id="name"
@@ -93,7 +140,7 @@ export default function StudentLoginPage() {
                   htmlFor="pin"
                   className="block text-sm font-bold text-neutral-700"
                 >
-                  PIN
+                  {t.label_pin}
                 </label>
                 <input
                   id="pin"
@@ -115,7 +162,7 @@ export default function StudentLoginPage() {
                 disabled={submitting}
                 className="w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60"
               >
-                {submitting ? "..." : "دخول ←"}
+                {submitting ? "..." : `${t.btn_login} ←`}
               </button>
             </form>
           </div>
