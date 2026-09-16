@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ResetPasswordButton } from "./reset-password-button";
 
 type Teacher = {
   id: string;
@@ -71,8 +72,7 @@ export function TeacherList({ teachers }: { teachers: Teacher[] }) {
             👥 حسابات المعلمين
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            يمكنك إيقاف أي حساب (ما عدا حسابك) لمنع الدخول. البيانات تبقى
-            محفوظة.
+            يمكنك إيقاف أي حساب، أو إرسال رابط إعادة تعيين كلمة المرور له.
           </p>
         </div>
         <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-black text-neutral-700">
@@ -136,22 +136,26 @@ export function TeacherList({ teachers }: { teachers: Teacher[] }) {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => void toggleActive(t)}
-                disabled={processing === t.id}
-                className={`shrink-0 rounded-xl px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                  t.is_active
-                    ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                    : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                }`}
-              >
-                {processing === t.id
-                  ? "..."
-                  : t.is_active
-                    ? "🚫 إيقاف"
-                    : "✓ تفعيل"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <ResetPasswordButton email={t.email} name={t.full_name || ""} />
+
+                <button
+                  type="button"
+                  onClick={() => void toggleActive(t)}
+                  disabled={processing === t.id}
+                  className={`shrink-0 rounded-xl px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                    t.is_active
+                      ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                      : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  {processing === t.id
+                    ? "..."
+                    : t.is_active
+                      ? "🚫 إيقاف"
+                      : "✓ تفعيل"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

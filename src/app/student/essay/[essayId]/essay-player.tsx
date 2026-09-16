@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Confetti } from "@/components/confetti";
 
 type EssayData = {
   id: string;
@@ -375,12 +376,18 @@ export function EssayPlayer({
         ? "text-amber-700"
         : "text-rose-700";
 
+  const showConfetti = (result?.score ?? 0) >= 70;
+
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-4 py-8 sm:p-6"
       dir="rtl"
     >
-      <div className="mx-auto max-w-3xl space-y-5">
+      {showConfetti ? (
+        <Confetti particleCount={140} originY={0.9} />
+      ) : null}
+
+      <div className="relative mx-auto max-w-3xl space-y-5">
         <nav>
           <Link
             href="/student/essay"

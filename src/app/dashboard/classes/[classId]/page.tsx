@@ -482,6 +482,15 @@ export default async function ClassDetailPage({
                   </form>
 
                   <Link
+                    href={`/dashboard/classes/${classRow.id}/preview/${material.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
+                    title="معاينة كطالب"
+                  >
+                    👁️ معاينة
+                  </Link>
+                  <Link
                     href={`/dashboard/classes/${classRow.id}?edit_material=${material.id}`}
                     className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-bold hover:bg-neutral-50"
                   >
