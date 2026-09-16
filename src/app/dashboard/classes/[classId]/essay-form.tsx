@@ -37,10 +37,31 @@ export function EssayForm({ classId }: { classId: string }) {
 
       <div>
         <label
+          htmlFor="essay-theme"
+          className="block text-sm font-bold text-neutral-800"
+        >
+          الموضوع / تلميح للطالب (اختياري)
+        </label>
+        <input
+          id="essay-theme"
+          name="theme"
+          type="text"
+          maxLength={300}
+          placeholder="مثال: الجملة الاسمية والفعلية"
+          className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+        />
+        <p className="mt-1 text-xs text-neutral-500">
+          يظهر هذا التلميح للطالب في صفحة البداية. السؤال الكامل لا يظهر حتى
+          يبدأ الطالب الكتابة.
+        </p>
+      </div>
+
+      <div>
+        <label
           htmlFor="essay-question"
           className="block text-sm font-bold text-neutral-800"
         >
-          السؤال / المطلوب
+          السؤال الكامل (لن يظهر للطالب إلا بعد بدء الكتابة)
         </label>
         <textarea
           id="essay-question"
@@ -68,9 +89,6 @@ export function EssayForm({ classId }: { classId: string }) {
           placeholder="اكتب نموذج الإجابة المثالية لمساعدة AI في التقييم"
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
-        <p className="mt-1 text-xs text-neutral-500">
-          كلما كانت الإجابة المرجعية أدق، كان تقييم AI أفضل.
-        </p>
       </div>
 
       <div>
@@ -93,21 +111,16 @@ export function EssayForm({ classId }: { classId: string }) {
         />
       </div>
 
-      {/* Rubric */}
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
         <p className="text-sm font-bold text-neutral-800">
           معايير التقييم (يجب أن يكون المجموع 100)
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div>
-            <label
-              htmlFor="rubric-content"
-              className="block text-xs font-bold text-neutral-600"
-            >
+            <label className="block text-xs font-bold text-neutral-600">
               المحتوى والأفكار
             </label>
             <input
-              id="rubric-content"
               name="rubric_content"
               type="number"
               min={0}
@@ -118,14 +131,10 @@ export function EssayForm({ classId }: { classId: string }) {
             />
           </div>
           <div>
-            <label
-              htmlFor="rubric-grammar"
-              className="block text-xs font-bold text-neutral-600"
-            >
+            <label className="block text-xs font-bold text-neutral-600">
               القواعد النحوية
             </label>
             <input
-              id="rubric-grammar"
               name="rubric_grammar"
               type="number"
               min={0}
@@ -136,14 +145,10 @@ export function EssayForm({ classId }: { classId: string }) {
             />
           </div>
           <div>
-            <label
-              htmlFor="rubric-vocab"
-              className="block text-xs font-bold text-neutral-600"
-            >
+            <label className="block text-xs font-bold text-neutral-600">
               المفردات والأسلوب
             </label>
             <input
-              id="rubric-vocab"
               name="rubric_vocabulary"
               type="number"
               min={0}

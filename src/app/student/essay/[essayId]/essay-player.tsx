@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 type EssayData = {
   id: string;
   title: string;
+  theme: string | null;
   question_text: string;
   duration_minutes: number;
   my_answer: string | null;
@@ -77,20 +78,16 @@ export function EssayPlayer({
   const [submitting, setSubmitting] = useState(false);
   const autoSubmittedRef = useRef(false);
 
-  // Timer
   useEffect(() => {
     if (phase !== "writing" || startedAt === null) return;
-
     const timer = window.setInterval(() => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
       const left = essay.duration_minutes * 60 - elapsed;
       setSecondsLeft(Math.max(0, left));
     }, 1000);
-
     return () => window.clearInterval(timer);
   }, [phase, startedAt, essay.duration_minutes]);
 
-  // Auto submit waktu habis
   useEffect(() => {
     if (
       phase === "writing" &&
@@ -106,13 +103,11 @@ export function EssayPlayer({
 
   async function handleSubmit(auto = false) {
     if (submitting) return;
-
     const cleanAnswer = answer.trim();
     if (!auto && cleanAnswer.length < 10) {
       setError("الإجابة قصيرة جدًا (10 أحرف على الأقل).");
       return;
     }
-
     if (cleanAnswer.length < 10 && auto) {
       setError("انتهى الوقت — لم يتم تسليم أي إجابة.");
       setPhase("intro");
@@ -143,8 +138,6 @@ export function EssayPlayer({
       }
 
       const submissionId = data[0];
-
-      // Panggil AI grading
       setPhase("grading");
 
       const res = await fetch("/api/grade-essay", {
@@ -166,7 +159,11 @@ export function EssayPlayer({
           `تم التسليم، لكن فشل التقييم التلقائي: ${json.message ?? "خطأ"}. سيقوم المعلم بتقييمها يدويًا.`,
         );
         setPhase("result");
-        setResult({ score: 0, feedback: "لم يتم التقييم بعد.", subscores: { content: 0, grammar: 0, vocabulary: 0 } });
+        setResult({
+          score: 0,
+          feedback: "لم يتم التقييم بعد.",
+          subscores: { content: 0, grammar: 0, vocabulary: 0 },
+        });
         return;
       }
 
@@ -211,10 +208,18 @@ export function EssayPlayer({
           </header>
 
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg sm:p-8">
-            <h2 className="text-sm font-black text-violet-700">السؤال</h2>
-            <p className="mt-3 whitespace-pre-wrap text-base leading-8 text-neutral-800">
-              {essay.question_text}
-            </p>
+            {essay.theme ? (
+              <>
+                <h2 className="text-sm font-black text-violet-700">الموضوع</h2>
+                <p className="mt-3 text-base font-bold leading-8 text-neutral-800">
+                  {essay.theme}
+                </p>
+              </>
+            ) : (
+              <p className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-900">
+                سيظهر السؤال الكامل بمجرد أن تبدأ الكتابة.
+              </p>
+            )}
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-amber-50 p-4 text-center">
@@ -236,9 +241,12 @@ export function EssayPlayer({
             </div>
 
             <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
-              <p className="font-black">⚠️ تنبيهات</p>
+              <p className="font-black">⚠️ تنبيهات مهمة</p>
               <ul className="mt-2 list-disc space-y-1 pr-5">
-                <li>سيبدأ العد عند الضغط على «ابدأ الكتابة».</li>
+                <li>
+                  <b>السؤال الكامل لن يظهر</b> إلا بعد الضغط على «ابدأ الكتابة».
+                </li>
+                <li>سيبدأ العد التنازلي بمجرد بدء الكتابة.</li>
                 <li>سيتم التسليم تلقائيًا عند انتهاء الوقت.</li>
                 <li>لديك تسليم واحد فقط — لا يمكن التعديل بعد التسليم.</li>
               </ul>
@@ -253,7 +261,7 @@ export function EssayPlayer({
               }}
               className="mt-6 w-full rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
             >
-              ✏️ ابدأ الكتابة
+              ✏️ ابدأ الكتابة وعرض السؤال
             </button>
           </section>
         </div>
@@ -289,6 +297,15 @@ export function EssayPlayer({
               </div>
             </div>
           </header>
+
+          {essay.theme ? (
+            <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+              <p className="text-xs font-black text-violet-700">الموضوع</p>
+              <p className="mt-1 text-sm font-bold text-violet-900">
+                {essay.theme}
+              </p>
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
             <h2 className="text-xs font-black text-violet-700">السؤال</h2>
@@ -401,7 +418,9 @@ export function EssayPlayer({
         {result ? (
           <section className="rounded-[2rem] bg-white p-8 text-center shadow-lg">
             <p className="text-xs font-bold text-neutral-500">نتيجتك</p>
-            <div className={`mt-2 text-6xl font-black tabular-nums ${scoreColor}`}>
+            <div
+              className={`mt-2 text-6xl font-black tabular-nums ${scoreColor}`}
+            >
               {result.score}
             </div>
             <p className="mt-1 text-xs font-bold text-neutral-500">من 100</p>

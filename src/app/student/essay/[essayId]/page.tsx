@@ -6,6 +6,7 @@ import { EssayPlayer } from "./essay-player";
 type EssayData = {
   id: string;
   title: string;
+  theme: string | null;
   question_text: string;
   duration_minutes: number;
   my_answer: string | null;

@@ -26,6 +26,7 @@ export async function createEssay(formData: FormData) {
 
   const classId = readString(formData, "class_id");
   const title = readString(formData, "title");
+  const theme = readString(formData, "theme");
   const questionText = readString(formData, "question_text");
   const idealAnswer = readString(formData, "ideal_answer");
   const durationMinutes = readInt(formData, "duration_minutes", 5, 180);
@@ -57,7 +58,6 @@ export async function createEssay(formData: FormData) {
     redirect(`/dashboard/classes/${classId}?essay_error=rubric_sum`);
   }
 
-  // Cek kelas milik guru
   const { data: classRow } = await supabase
     .from("classes")
     .select("id")
@@ -73,6 +73,7 @@ export async function createEssay(formData: FormData) {
     teacher_id: user.id,
     class_id: classId,
     title,
+    theme: theme || null,
     question_text: questionText,
     ideal_answer: idealAnswer || null,
     duration_minutes: durationMinutes,

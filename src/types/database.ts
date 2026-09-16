@@ -188,9 +188,9 @@ export interface Database {
         ];
       };
       essay_assignments: {
-        Row: { id: string; teacher_id: string; class_id: string; title: string; question_text: string; ideal_answer: string | null; duration_minutes: number; is_published: boolean; rubric_content: number; rubric_grammar: number; rubric_vocabulary: number; created_at: string; updated_at: string; };
-        Insert: { id?: string; teacher_id: string; class_id: string; title: string; question_text: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
-        Update: { id?: string; teacher_id?: string; class_id?: string; title?: string; question_text?: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
+        Row: { id: string; teacher_id: string; class_id: string; title: string; theme: string | null; question_text: string; ideal_answer: string | null; duration_minutes: number; is_published: boolean; rubric_content: number; rubric_grammar: number; rubric_vocabulary: number; created_at: string; updated_at: string; };
+        Insert: { id?: string; teacher_id: string; class_id: string; title: string; theme?: string | null; question_text: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
+        Update: { id?: string; teacher_id?: string; class_id?: string; title?: string; theme?: string | null; question_text?: string; ideal_answer?: string | null; duration_minutes?: number; is_published?: boolean; rubric_content?: number; rubric_grammar?: number; rubric_vocabulary?: number; created_at?: string; updated_at?: string; };
         Relationships: [
           { foreignKeyName: "essay_assignments_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; },
           { foreignKeyName: "essay_assignments_class_id_fkey"; columns: ["class_id"]; isOneToOne: false; referencedRelation: "classes"; referencedColumns: ["id"]; }
@@ -248,8 +248,8 @@ export interface Database {
       student_submit_practice_answer: { Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string; }; Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null; }>; };
       student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };
       student_get_practice_progress: { Args: { p_token: string; p_game_id: string }; Returns: Array<{ question_id: string; selected_option_key: string; is_correct: boolean; answered_at: string; correct_option_key: string; explanation: string | null; }>; };
-      student_list_essays: { Args: { p_token: string }; Returns: Array<{ id: string; title: string; duration_minutes: number; has_submission: boolean; ai_score: number | null; submitted_at: string | null; }>; };
-      student_get_essay: { Args: { p_token: string; p_essay_id: string }; Returns: Array<{ id: string; title: string; question_text: string; duration_minutes: number; my_answer: string | null; my_score: number | null; my_feedback: string | null; my_scores_json: Json | null; submitted_at: string | null; }>; };
+      student_list_essays: { Args: { p_token: string }; Returns: Array<{ id: string; title: string; theme: string | null; duration_minutes: number; has_submission: boolean; ai_score: number | null; submitted_at: string | null; }>; };
+      student_get_essay: { Args: { p_token: string; p_essay_id: string }; Returns: Array<{ id: string; title: string; theme: string | null; question_text: string; duration_minutes: number; my_answer: string | null; my_score: number | null; my_feedback: string | null; my_scores_json: Json | null; submitted_at: string | null; }>; };
       student_submit_essay: { Args: { p_token: string; p_essay_id: string; p_answer_text: string; p_duration_seconds: number; }; Returns: string; };
       student_set_ai_grade: { Args: { p_token: string; p_submission_id: string; p_ai_score: number; p_ai_feedback: string; p_ai_scores_json: Json; p_ai_model: string; }; Returns: undefined; };
       teacher_list_essays: { Args: { p_class_id: string }; Returns: Array<{ id: string; title: string; duration_minutes: number; is_published: boolean; submission_count: number; avg_score: number | null; created_at: string; }>; };
