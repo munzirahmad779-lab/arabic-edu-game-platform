@@ -13,9 +13,13 @@ type Session = {
   created_at: string;
 };
 
+function forceReload() {
+  if (typeof window === "undefined") return;
+  window.location.href = window.location.pathname + "?t=" + Date.now();
+}
+
 export function StudentSessions({ sessions }: { sessions: Session[] }) {
   const [processing, setProcessing] = useState<string | null>(null);
-  const [bulkProcessing, setBulkProcessing] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
 
@@ -23,7 +27,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     if (processing) return;
     if (
       !window.confirm(
-        `إنهاء جميع جلسات الطالب "${s.student_name}"؟ سيحتاج إلى تسجيل الدخول من جديد.`,
+        `إنهاء جميع جلسات الطالب "${s.student_name}"؟ سيحتاج إلى تسجيل الدخول من جديد على جميع أجهزته.`,
       )
     ) {
       return;
@@ -39,43 +43,13 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
       );
       if (error) {
         alert(`خطأ: ${error.message}`);
+        setProcessing(null);
       } else {
-        window.location.reload();
+        forceReload();
       }
     } catch {
       alert("تعذر الاتصال بالخادم.");
-    } finally {
       setProcessing(null);
-    }
-  }
-
-  async function logoutAll() {
-    if (bulkProcessing) return;
-    if (
-      !window.confirm(
-        `سيتم إنهاء جميع جلسات ${sessions.length} طالب. متابعة؟`,
-      )
-    ) {
-      return;
-    }
-
-    setBulkProcessing(true);
-    try {
-      const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc(
-        "admin_force_logout_all_students",
-      );
-      if (error) {
-        alert(`خطأ: ${error.message}`);
-      } else {
-        alert(`تم إنهاء ${data ?? 0} جلسة.`);
-        window.location.reload();
-      }
-    } catch {
-      alert("تعذر الاتصال بالخادم.");
-    } finally {
-      setBulkProcessing(false);
     }
   }
 
@@ -93,13 +67,13 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
       );
       if (error) {
         setCleanMsg(`خطأ: ${error.message}`);
+        setCleaning(false);
       } else {
-        setCleanMsg(`تم حذف ${data ?? 0} جلسة منتهية.`);
-        window.setTimeout(() => window.location.reload(), 1200);
+        setCleanMsg(`✓ تم حذف ${data ?? 0} جلسة منتهية.`);
+        window.setTimeout(() => forceReload(), 1200);
       }
     } catch {
       setCleanMsg("تعذر الاتصال بالخادم.");
-    } finally {
       setCleaning(false);
     }
   }
@@ -112,8 +86,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             📱 جلسات الطلاب النشطة
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            كل طالب يظهر مرة واحدة فقط. عند تسجيله من جهاز جديد، تُنهى جلسته
-            السابقة تلقائيًا.
+            كل طالب يظهر مرة واحدة. اضغط إنهاء لإخراج الطالب من جميع أجهزته.
           </p>
         </div>
         <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
@@ -122,16 +95,6 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {sessions.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => void logoutAll()}
-            disabled={bulkProcessing}
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
-          >
-            {bulkProcessing ? "..." : "🚫 إنهاء جلسات الجميع"}
-          </button>
-        ) : null}
         <button
           type="button"
           onClick={() => void cleanupExpired()}
