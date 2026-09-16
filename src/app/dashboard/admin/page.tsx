@@ -22,9 +22,6 @@ export default async function AdminPage() {
           <h1 className="mt-3 text-2xl font-black text-red-800">
             غير مصرح لك بالوصول
           </h1>
-          <p className="mt-2 text-sm text-red-700">
-            هذه الصفحة مخصصة لمسؤول المنصة فقط.
-          </p>
           <Link
             href="/dashboard"
             className="mt-5 inline-flex rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"
@@ -57,7 +54,6 @@ export default async function AdminPage() {
   }>;
 
   const sessions = (sessionsData ?? []) as Array<{
-    session_id: string;
     student_id: string;
     student_name: string;
     class_name: string;

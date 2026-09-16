@@ -32,11 +32,7 @@ export function TeacherList({ teachers }: { teachers: Teacher[] }) {
     const action = t.is_active ? "إيقاف" : "تفعيل";
     if (
       !window.confirm(
-        `${action} حساب "${t.full_name || t.email}"؟ ${
-          t.is_active
-            ? "لن يتمكن من الدخول إلى لوحة التحكم بعد ذلك."
-            : "سيتمكن من الدخول مجددًا."
-        }`,
+        `${action} حساب "${t.full_name || t.email}"؟`,
       )
     ) {
       return;
@@ -85,9 +81,6 @@ export function TeacherList({ teachers }: { teachers: Teacher[] }) {
           <div className="text-4xl">👤</div>
           <p className="mt-3 text-sm font-bold text-neutral-700">
             لا يوجد معلمون آخرون
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
-            هذا الحساب هو الحساب الوحيد المسجّل.
           </p>
         </div>
       ) : (

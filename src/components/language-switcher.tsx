@@ -1,32 +1,30 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { setLocale } from "@/lib/i18n/actions";
 
 const LABELS: Record<Locale, string> = {
   id: "Indonesia",
-  ar: "العربية",
   en: "English",
+  ar: "العربية",
 };
 
 const FLAGS: Record<Locale, string> = {
   id: "🇮🇩",
-  ar: "🇸🇦",
   en: "🇬🇧",
+  ar: "🇸🇦",
 };
 
 export function LanguageSwitcher({ current }: { current: Locale }) {
   const [pending, start] = useTransition();
-  const router = useRouter();
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const fd = new FormData();
     fd.set("locale", e.target.value);
     start(async () => {
       await setLocale(fd);
-      router.refresh();
+      window.location.reload();
     });
   }
 

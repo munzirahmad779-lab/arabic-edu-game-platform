@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { toWibDateTime } from "@/lib/format-wib";
 
 type Session = {
-  session_id: string;
   student_id: string;
   student_name: string;
   class_name: string;
@@ -24,19 +23,19 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     if (processing) return;
     if (
       !window.confirm(
-        `إنهاء جلسة الطالب "${s.student_name}"؟ سيحتاج إلى تسجيل الدخول من جديد.`,
+        `إنهاء جميع جلسات الطالب "${s.student_name}"؟ سيحتاج إلى تسجيل الدخول من جديد.`,
       )
     ) {
       return;
     }
 
-    setProcessing(s.session_id);
+    setProcessing(s.student_id);
     try {
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).rpc(
         "admin_force_logout_student",
-        { p_session_id: s.session_id },
+        { p_student_id: s.student_id },
       );
       if (error) {
         alert(`خطأ: ${error.message}`);
@@ -54,7 +53,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     if (bulkProcessing) return;
     if (
       !window.confirm(
-        `سيتم إنهاء ${sessions.length} جلسة نشطة. جميع الطلاب سيُطلب منهم تسجيل الدخول مجددًا. متابعة؟`,
+        `سيتم إنهاء جميع جلسات ${sessions.length} طالب. متابعة؟`,
       )
     ) {
       return;
@@ -113,12 +112,12 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             📱 جلسات الطلاب النشطة
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            كل جهاز يسجّل دخول طالب يظهر هنا. عند تسجيل الطالب من جهاز جديد،
-            يتم إنهاء جلسته السابقة تلقائيًا.
+            كل طالب يظهر مرة واحدة فقط. عند تسجيله من جهاز جديد، تُنهى جلسته
+            السابقة تلقائيًا.
           </p>
         </div>
         <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-          {sessions.length} نشط
+          {sessions.length} طالب نشط
         </span>
       </div>
 
@@ -130,7 +129,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             disabled={bulkProcessing}
             className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
           >
-            {bulkProcessing ? "..." : "🚫 إنهاء جميع الجلسات"}
+            {bulkProcessing ? "..." : "🚫 إنهاء جلسات الجميع"}
           </button>
         ) : null}
         <button
@@ -156,7 +155,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             لا توجد جلسات نشطة
           </p>
           <p className="mt-1 text-xs text-neutral-500">
-            عندما يسجل الطلاب الدخول، ستظهر أجهزتهم هنا.
+            عندما يسجل الطلاب الدخول، سيظهرون هنا.
           </p>
         </div>
       ) : (
@@ -181,7 +180,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
             </thead>
             <tbody>
               {sessions.map((s) => (
-                <tr key={s.session_id} className="border-t border-neutral-100">
+                <tr key={s.student_id} className="border-t border-neutral-100">
                   <td className="px-3 py-2 font-bold text-neutral-800">
                     {s.student_name}
                   </td>
@@ -198,10 +197,10 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
                     <button
                       type="button"
                       onClick={() => void logoutOne(s)}
-                      disabled={processing === s.session_id}
+                      disabled={processing === s.student_id}
                       className="rounded-lg border border-red-200 bg-white px-3 py-1 text-xs font-black text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                     >
-                      {processing === s.session_id ? "..." : "🚫 إنهاء"}
+                      {processing === s.student_id ? "..." : "🚫 إنهاء"}
                     </button>
                   </td>
                 </tr>
