@@ -179,5 +179,11 @@
     "error_essay_question": "نص السؤال غير صالح.",
     "error_essay_duration": "المدة غير صالحة (5-180 دقيقة).",
     "error_essay_rubric": "مجموع معايير التقييم يجب أن يكون 100."
+  },
+  "reports": {
+    "back_dashboard": "العودة إلى لوحة التحكم",
+    "header_label": "التقارير",
+    "header_title": "📄 التقرير اليومي",
+    "header_desc": "لخّص نتائج اليوم، وانسخ التقرير إلى ChatGPT / Meta AI لتحليل أعمق."
   }
 }

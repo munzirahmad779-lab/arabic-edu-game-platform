@@ -179,5 +179,11 @@
     "error_essay_question": "Question text is invalid.",
     "error_essay_duration": "Duration is invalid (5-180 minutes).",
     "error_essay_rubric": "Total rubric must equal 100."
+  },
+  "reports": {
+    "back_dashboard": "Back to Dashboard",
+    "header_label": "Reports",
+    "header_title": "📄 Daily Report",
+    "header_desc": "Summarize today's results, then copy the report to ChatGPT / Meta AI for deeper analysis."
   }
 }

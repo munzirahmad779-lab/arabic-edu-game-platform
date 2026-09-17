@@ -179,5 +179,11 @@
     "error_essay_question": "Teks soal tidak valid.",
     "error_essay_duration": "Durasi tidak valid (5-180 menit).",
     "error_essay_rubric": "Total kriteria penilaian harus 100."
+  },
+  "reports": {
+    "back_dashboard": "Kembali ke Dashboard",
+    "header_label": "Laporan",
+    "header_title": "📄 Laporan Harian",
+    "header_desc": "Ringkas hasil hari ini, lalu salin laporan ke ChatGPT / Meta AI untuk analisis lebih dalam."
   }
 }
