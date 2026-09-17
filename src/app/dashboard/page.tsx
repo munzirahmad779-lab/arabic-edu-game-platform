@@ -161,11 +161,8 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        <Link
-          href="/dashboard/classes"
-          className="group aesthetic-card"
-        >
+      <section className="grid gap-5 md:grid-cols-4">
+        <Link href="/dashboard/classes" className="group aesthetic-card">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">🏫</p>
@@ -214,6 +211,26 @@ export default async function DashboardPage() {
               </p>
             </div>
             <span className="rounded-full bg-terracotta-500 px-3 py-1 text-xs font-bold text-white">
+              →
+            </span>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/assessments"
+          className="group rounded-3xl border-2 border-terracotta-500/40 bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-6 text-white shadow-md transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-3xl">🎓</p>
+              <h2 className="font-display mt-4 font-black">
+                Ujian TOEFL / TOAFL
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/85">
+                Buat simulasi TOEFL ITP atau TOAFL resmi.
+              </p>
+            </div>
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">
               →
             </span>
           </div>
