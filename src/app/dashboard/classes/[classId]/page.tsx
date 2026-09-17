@@ -6,6 +6,8 @@ import MaterialForm from "./material-form";
 import { EssayForm } from "./essay-form";
 import { EssayList } from "./essay-list";
 import { MaterialSortableList } from "./material-sortable-list";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = {
   material_error?: string;
@@ -30,37 +32,6 @@ type EssayRow = {
   created_at: string;
 };
 
-function getMaterialMessage(searchParams: SearchParams) {
-  if (searchParams.material_created === "1") {
-    return { type: "success", text: "تمت إضافة المادة." };
-  }
-  if (searchParams.material_updated === "1") {
-    return { type: "success", text: "تم تحديث المادة." };
-  }
-  if (searchParams.material_deleted === "1") {
-    return { type: "success", text: "تم حذف المادة." };
-  }
-  if (searchParams.material_error === "invalid_title") {
-    return { type: "error", text: "عنوان المادة مطلوب (1-200 حرف)." };
-  }
-  if (searchParams.material_error === "image_invalid_type") {
-    return { type: "error", text: "صيغة الصورة غير مدعومة." };
-  }
-  if (searchParams.material_error === "image_too_large") {
-    return { type: "error", text: "حجم الصورة يجب أن يكون أقل من 1MB." };
-  }
-  if (searchParams.material_error === "pdf_invalid_type") {
-    return { type: "error", text: "الملف يجب أن يكون PDF." };
-  }
-  if (searchParams.material_error === "pdf_too_large") {
-    return { type: "error", text: "حجم الملف يجب أن يكون أقل من 1MB." };
-  }
-  if (searchParams.material_error) {
-    return { type: "error", text: `خطأ: ${searchParams.material_error}` };
-  }
-  return null;
-}
-
 export default async function ClassDetailPage({
   params,
   searchParams,
@@ -73,9 +44,13 @@ export default async function ClassDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const t = dict.class_detail;
+  const c = dict.common;
+  const isRtl = locale === "ar";
 
   const { data: classRow, error: classError } = await supabase
     .from("classes")
@@ -89,9 +64,9 @@ export default async function ClassDetailPage({
   }
 
   const [
-    { data: students, error: studentsError },
-    { data: games, error: gamesError },
-    { data: materials, error: materialsError },
+    { data: students },
+    { data: games },
+    { data: materials },
   ] = await Promise.all([
     supabase
       .from("students")
@@ -113,72 +88,95 @@ export default async function ClassDetailPage({
       .order("position", { ascending: true }),
   ]);
 
-  if (studentsError) throw new Error("تعذر تحميل الطلاب.");
-  if (gamesError) throw new Error("تعذر تحميل الألعاب.");
-  if (materialsError) throw new Error("تعذر تحميل المواد.");
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: essaysData } = await (supabase as any).rpc("teacher_list_essays", {
-    p_class_id: classRow.id,
-  });
+  const { data: essaysData } = await (supabase as any).rpc(
+    "teacher_list_essays",
+    { p_class_id: classRow.id },
+  );
   const essays = (essaysData ?? []) as EssayRow[];
 
-  const materialMessage = getMaterialMessage(searchParams);
-  const showForm =
-    searchParams.add_material === "1" ||
-    Boolean(searchParams.edit_material);
-
-  const essayMessage = (() => {
-    if (searchParams.essay_created === "1")
-      return { type: "success" as const, text: "✓ تم إنشاء مهمة الكتابة." };
-    if (searchParams.essay_deleted === "1")
-      return { type: "success" as const, text: "✓ تم حذف المهمة." };
-    if (searchParams.essay_error === "invalid_title")
-      return { type: "error" as const, text: "عنوان المهمة غير صالح." };
-    if (searchParams.essay_error === "invalid_question")
-      return { type: "error" as const, text: "نص السؤال غير صالح." };
-    if (searchParams.essay_error === "invalid_duration")
-      return { type: "error" as const, text: "المدة غير صالحة (5-180 دقيقة)." };
-    if (searchParams.essay_error === "rubric_sum")
+  const getMaterialMessage = () => {
+    if (searchParams.material_created === "1")
+      return { type: "success" as const, text: t.success_material_created };
+    if (searchParams.material_updated === "1")
+      return { type: "success" as const, text: t.success_material_updated };
+    if (searchParams.material_deleted === "1")
+      return { type: "success" as const, text: t.success_material_deleted };
+    if (searchParams.material_error === "invalid_title")
+      return { type: "error" as const, text: t.error_material_invalid_title };
+    if (searchParams.material_error === "image_invalid_type")
+      return { type: "error" as const, text: t.error_material_image_type };
+    if (searchParams.material_error === "image_too_large")
+      return { type: "error" as const, text: t.error_material_image_size };
+    if (searchParams.material_error === "pdf_invalid_type")
+      return { type: "error" as const, text: t.error_material_pdf_type };
+    if (searchParams.material_error === "pdf_too_large")
+      return { type: "error" as const, text: t.error_material_pdf_size };
+    if (searchParams.material_error)
       return {
         type: "error" as const,
-        text: "مجموع معايير التقييم يجب أن يكون 100.",
+        text: `${c.error}: ${searchParams.material_error}`,
       };
+    return null;
+  };
+
+  const getEssayMessage = () => {
+    if (searchParams.essay_created === "1")
+      return { type: "success" as const, text: t.success_essay_created };
+    if (searchParams.essay_deleted === "1")
+      return { type: "success" as const, text: t.success_essay_deleted };
+    if (searchParams.essay_error === "invalid_title")
+      return { type: "error" as const, text: t.error_essay_title };
+    if (searchParams.essay_error === "invalid_question")
+      return { type: "error" as const, text: t.error_essay_question };
+    if (searchParams.essay_error === "invalid_duration")
+      return { type: "error" as const, text: t.error_essay_duration };
+    if (searchParams.essay_error === "rubric_sum")
+      return { type: "error" as const, text: t.error_essay_rubric };
     if (searchParams.essay_error)
       return {
         type: "error" as const,
-        text: `خطأ: ${searchParams.essay_error}`,
+        text: `${c.error}: ${searchParams.essay_error}`,
       };
     return null;
-  })();
+  };
+
+  const materialMessage = getMaterialMessage();
+  const essayMessage = getEssayMessage();
+  const showForm =
+    searchParams.add_material === "1" || Boolean(searchParams.edit_material);
 
   return (
-    <main className="space-y-8" dir="rtl">
+    <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href="/dashboard/classes"
           className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
         >
-          ← العودة إلى الفصول
+          ← {t.back_classes}
         </Link>
       </div>
 
       <header className="rounded-2xl bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-xl">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-semibold text-white/75">الفصل الدراسي</p>
+            <p className="text-sm font-semibold text-white/75">
+              {t.header_label}
+            </p>
             <h1 className="mt-1 text-3xl font-black sm:text-4xl">
               {classRow.name}
             </h1>
             <p className="mt-2 text-sm text-white/85">
-              المادة:{" "}
+              {t.subject_label}:{" "}
               <span className="font-bold">
-                {classRow.subject ?? "بدون مادة"}
+                {classRow.subject ?? t.no_subject}
               </span>
             </p>
             <p className="mt-1 text-xs text-white/70">
-              تم الإنشاء:{" "}
-              {new Date(classRow.created_at).toLocaleDateString("ar-EG")}
+              {t.created_at}:{" "}
+              {new Date(classRow.created_at).toLocaleDateString(
+                isRtl ? "ar-EG" : locale,
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -186,13 +184,13 @@ export default async function ClassDetailPage({
               href={`/dashboard/students?classId=${classRow.id}`}
               className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
             >
-              إدارة الطلاب
+              {t.btn_students}
             </Link>
             <Link
               href={`/dashboard/classes?edit=${classRow.id}`}
               className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
             >
-              تعديل الفصل
+              {t.btn_edit_class}
             </Link>
           </div>
         </div>
@@ -226,32 +224,40 @@ export default async function ClassDetailPage({
 
       <section className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-sky-100 bg-sky-50 p-5 text-center">
-          <div className="text-xs font-bold text-sky-700">الطلاب</div>
+          <div className="text-xs font-bold text-sky-700">
+            {t.stat_students}
+          </div>
           <div className="mt-2 text-3xl font-black text-sky-950">
             {students?.length ?? 0}
           </div>
         </div>
         <div className="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-center">
-          <div className="text-xs font-bold text-violet-700">الألعاب</div>
+          <div className="text-xs font-bold text-violet-700">
+            {t.stat_games}
+          </div>
           <div className="mt-2 text-3xl font-black text-violet-950">
             {games?.length ?? 0}
           </div>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-center">
-          <div className="text-xs font-bold text-amber-700">المواد الدراسية</div>
+          <div className="text-xs font-bold text-amber-700">
+            {t.stat_materials}
+          </div>
           <div className="mt-2 text-3xl font-black text-amber-950">
             {materials?.length ?? 0}
           </div>
         </div>
       </section>
 
-      {/* ============== مهام الكتابة (Essay) ============== */}
+      {/* Essay */}
       <section className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">✍️ مهام الكتابة</h2>
+            <h2 className="text-lg font-semibold">
+              ✍️ {t.essay_section_title}
+            </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {essays.length} مهمة · يتم تصحيحها تلقائيًا.
+              {essays.length} {t.essay_section_desc}
             </p>
           </div>
           {searchParams.add_essay !== "1" ? (
@@ -259,7 +265,7 @@ export default async function ClassDetailPage({
               href={`/dashboard/classes/${classRow.id}?add_essay=1`}
               className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
             >
-              + إضافة مهمة
+              {t.btn_add_essay}
             </Link>
           ) : null}
         </div>
@@ -267,7 +273,7 @@ export default async function ClassDetailPage({
         {searchParams.add_essay === "1" ? (
           <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
             <h3 className="mb-4 text-base font-bold text-violet-900">
-              إنشاء مهمة كتابة جديدة
+              {t.essay_create_title}
             </h3>
             <EssayForm classId={classRow.id} />
             <div className="mt-3">
@@ -275,7 +281,7 @@ export default async function ClassDetailPage({
                 href={`/dashboard/classes/${classRow.id}`}
                 className="text-sm text-neutral-600 underline"
               >
-                إلغاء والعودة
+                {t.essay_cancel}
               </Link>
             </div>
           </div>
@@ -284,13 +290,15 @@ export default async function ClassDetailPage({
         <EssayList essays={essays} classId={classRow.id} />
       </section>
 
-      {/* ============== المواد الدراسية ============== */}
+      {/* Materials */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">المواد الدراسية</h2>
+            <h2 className="text-lg font-semibold">
+              {t.materials_section_title}
+            </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {materials?.length ?? 0} مادة.
+              {materials?.length ?? 0} {t.materials_count}
             </p>
           </div>
           {!showForm ? (
@@ -298,7 +306,7 @@ export default async function ClassDetailPage({
               href={`/dashboard/classes/${classRow.id}?add_material=1`}
               className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
             >
-              + إضافة مادة
+              {t.btn_add_material}
             </Link>
           ) : null}
         </div>
@@ -306,7 +314,9 @@ export default async function ClassDetailPage({
         {showForm ? (
           <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
             <h3 className="mb-4 text-base font-bold text-violet-900">
-              {searchParams.edit_material ? "تعديل المادة" : "إضافة مادة جديدة"}
+              {searchParams.edit_material
+                ? t.material_edit_title
+                : t.material_create_title}
             </h3>
             {searchParams.edit_material ? (
               (() => {
@@ -344,7 +354,7 @@ export default async function ClassDetailPage({
                 href={`/dashboard/classes/${classRow.id}`}
                 className="text-sm text-neutral-600 underline"
               >
-                إلغاء والعودة
+                {t.material_cancel}
               </Link>
             </div>
           </div>
@@ -365,20 +375,22 @@ export default async function ClassDetailPage({
         />
       </section>
 
-      {/* ============== الطلاب ============== */}
+      {/* Students */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">الطلاب في هذا الفصل</h2>
+            <h2 className="text-lg font-semibold">
+              {t.students_section_title}
+            </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {students?.length ?? 0} طالب مسجل.
+              {students?.length ?? 0} {t.students_count}
             </p>
           </div>
           <Link
             href={`/dashboard/students?classId=${classRow.id}`}
             className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
           >
-            إدارة الطلاب
+            {t.students_manage}
           </Link>
         </div>
 
@@ -386,13 +398,13 @@ export default async function ClassDetailPage({
           <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
             <div className="text-4xl">👥</div>
             <p className="mt-3 font-bold text-neutral-700">
-              لا يوجد طلاب في هذا الفصل بعد
+              {t.students_empty}
             </p>
             <Link
               href={`/dashboard/students?classId=${classRow.id}`}
               className="mt-4 inline-flex rounded-2xl bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
             >
-              إضافة طلاب
+              {t.students_add}
             </Link>
           </div>
         ) : (
@@ -410,7 +422,9 @@ export default async function ClassDetailPage({
                     {student.name}
                   </div>
                   <div className="text-xs text-neutral-500">
-                    {new Date(student.created_at).toLocaleDateString("ar-EG")}
+                    {new Date(student.created_at).toLocaleDateString(
+                      isRtl ? "ar-EG" : locale,
+                    )}
                   </div>
                 </div>
               </div>
@@ -419,36 +433,34 @@ export default async function ClassDetailPage({
         )}
       </section>
 
-      {/* ============== الألعاب ============== */}
+      {/* Games */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
-              الألعاب المرتبطة بهذا الفصل
+              {t.games_section_title}
             </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {games?.length ?? 0} لعبة.
+              {games?.length ?? 0} {t.games_count}
             </p>
           </div>
           <Link
             href="/dashboard/games"
             className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
           >
-            إدارة الألعاب
+            {t.games_manage}
           </Link>
         </div>
 
         {!games || games.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
             <div className="text-4xl">🎮</div>
-            <p className="mt-3 font-bold text-neutral-700">
-              لا توجد ألعاب لهذا الفصل بعد
-            </p>
+            <p className="mt-3 font-bold text-neutral-700">{t.games_empty}</p>
             <Link
               href="/dashboard/games"
               className="mt-4 inline-flex rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
             >
-              إنشاء لعبة
+              {t.games_create}
             </Link>
           </div>
         ) : (
@@ -461,15 +473,25 @@ export default async function ClassDetailPage({
                 <div>
                   <div className="font-bold text-neutral-900">{game.name}</div>
                   <div className="mt-1 text-xs text-neutral-500">
-                    {game.mode === "competitive" ? "تنافسي" : "تعليمي"} ·{" "}
-                    {game.duration_seconds} ثانية
+                    {game.mode === "competitive"
+                      ? isRtl
+                        ? "تنافسي"
+                        : locale === "en"
+                          ? "Competitive"
+                          : "Kompetitif"
+                      : isRtl
+                        ? "تعليمي"
+                        : locale === "en"
+                          ? "Learning"
+                          : "Pembelajaran"}{" "}
+                    · {game.duration_seconds}s
                   </div>
                 </div>
                 <Link
                   href="/dashboard/games"
                   className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-700 hover:bg-violet-100"
                 >
-                  فتح في الألعاب
+                  {t.games_open}
                 </Link>
               </div>
             ))}

@@ -3,49 +3,23 @@ import { createClient } from "@/lib/supabase/server";
 import { createGame, createRoom, deleteGame } from "./actions";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = {
   error?: string;
   msg?: string;
 };
 
-function getErrorMessage(error?: string) {
-  switch (error) {
-    case "invalid":
-      return "بيانات اللعبة غير صحيحة.";
-    case "invalid_class":
-      return "الفصل غير موجود أو لا تملك صلاحية الوصول إليه.";
-    case "invalid_questions":
-      return "توجد أسئلة غير صالحة أو غير متاحة لحسابك.";
-    case "create_failed":
-      return "تعذر إنشاء اللعبة. حاول مرة أخرى.";
-    case "game_not_found":
-      return "اللعبة غير موجودة أو لا تملك صلاحية حذفها.";
-    case "room_not_found":
-      return "الغرفة غير موجودة أو لا تملك صلاحية حذفها.";
-    case "invalid_mode":
-      return "هذا الوضع مخصص للتدريب الذاتي في بوابة الطالب، ولا يحتاج غرفة.";
-    case "delete_failed":
-      return "تعذر الحذف. حاول مرة أخرى.";
-    default:
-      return null;
-  }
-}
-
-const MODE_LABEL: Record<string, { ar: string; forRoom: boolean }> = {
-  competitive: { ar: "تنافسي", forRoom: true },
-  cooperative: { ar: "تعاوني", forRoom: true },
-  endless: { ar: "بلا نهاية", forRoom: false },
-  practice: { ar: "تمرين", forRoom: false },
-  learning: { ar: "تعليمي (قديم)", forRoom: true },
-};
-
-type QuestionRow = {
-  id: string;
-  question_bank_id: string | null;
-  question_text: string | null;
-  difficulty: "easy" | "medium" | "hard" | null;
-  category_id: string | null;
+const MODE_LABEL_KEY: Record<
+  string,
+  { ar: string; en: string; id: string; forRoom: boolean }
+> = {
+  competitive: { ar: "تنافسي", en: "Competitive", id: "Kompetitif", forRoom: true },
+  cooperative: { ar: "تعاوني", en: "Cooperative", id: "Kooperatif", forRoom: true },
+  endless: { ar: "بلا نهاية", en: "Endless", id: "Tanpa Batas", forRoom: false },
+  practice: { ar: "تمرين", en: "Practice", id: "Latihan", forRoom: false },
+  learning: { ar: "تعليمي (قديم)", en: "Learning (old)", id: "Pembelajaran (lama)", forRoom: true },
 };
 
 export default async function GamesPage({
@@ -54,19 +28,20 @@ export default async function GamesPage({
   searchParams: SearchParams;
 }) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
 
   const [
-    { data: classes, error: classesError },
-    { data: banks, error: banksError },
-    { data: games, error: gamesError },
+    { data: classes },
+    { data: banks },
+    { data: games },
     { data: audioTracks },
     { data: categories },
     { data: questions },
@@ -76,13 +51,11 @@ export default async function GamesPage({
       .select("id, name")
       .eq("teacher_id", user.id)
       .order("name"),
-
     supabase
       .from("question_banks")
       .select("id, name, description, created_at")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false }),
-
     supabase
       .from("games")
       .select(
@@ -90,20 +63,17 @@ export default async function GamesPage({
       )
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false }),
-
     supabase
       .from("teacher_audio_tracks")
       .select("id, name, enabled")
       .eq("teacher_id", user.id)
       .eq("enabled", true)
       .order("created_at", { ascending: false }),
-
     supabase
       .from("question_categories")
       .select("id, name")
       .eq("teacher_id", user.id)
       .order("name", { ascending: true }),
-
     supabase
       .from("questions")
       .select("id, question_bank_id, question_text, difficulty, category_id")
@@ -112,102 +82,150 @@ export default async function GamesPage({
       .order("created_at", { ascending: true }),
   ]);
 
-  if (classesError || banksError || gamesError) {
-    console.error("Games page query errors:", {
-      classesError,
-      banksError,
-      gamesError,
-    });
-
-    throw new Error(
-      [
-        classesError ? `classes: ${classesError.message}` : "",
-        banksError ? `question_banks: ${banksError.message}` : "",
-        gamesError ? `games: ${gamesError.message}` : "",
-      ]
-        .filter(Boolean)
-        .join(" | ") || "تعذر تحميل بيانات الألعاب.",
-    );
-  }
-
-  const errorMessage = getErrorMessage(searchParams.error);
   const tracks = audioTracks ?? [];
   const categoriesList = categories ?? [];
+  const classList = classes ?? [];
+  const bankList = banks ?? [];
+  const gameList = games ?? [];
 
-  const questionsByBank: Record<string, QuestionRow[]> = {};
-  for (const q of (questions ?? []) as QuestionRow[]) {
+  const questionsByBank: Record<
+    string,
+    Array<{
+      id: string;
+      question_text: string | null;
+      difficulty: "easy" | "medium" | "hard" | null;
+      category_id: string | null;
+    }>
+  > = {};
+  for (const q of questions ?? []) {
     if (!q.question_bank_id) continue;
     if (!questionsByBank[q.question_bank_id]) {
       questionsByBank[q.question_bank_id] = [];
     }
-    questionsByBank[q.question_bank_id].push(q);
+    questionsByBank[q.question_bank_id].push({
+      id: q.id,
+      question_text: q.question_text,
+      difficulty: q.difficulty,
+      category_id: q.category_id,
+    });
   }
 
-  const banksForPicker = (banks ?? []).map((b) => ({
-    id: b.id,
-    name: b.name,
-    description: b.description,
-  }));
+  const getModeLabel = (mode: string) => {
+    const key = MODE_LABEL_KEY[mode] ?? MODE_LABEL_KEY.competitive;
+    if (locale === "ar") return key.ar;
+    if (locale === "en") return key.en;
+    return key.id;
+  };
+
+  const isForRoom = (mode: string) =>
+    (MODE_LABEL_KEY[mode] ?? MODE_LABEL_KEY.competitive).forRoom;
+
+  const labels = {
+    title: isRtl ? "الألعاب" : locale === "en" ? "Games" : "Permainan",
+    subtitle: isRtl
+      ? "أنشئ لعبة واستخدم أسئلتك الحالية في تجربة تعليمية تفاعلية."
+      : locale === "en"
+        ? "Create a game and use your existing questions in an interactive learning experience."
+        : "Buat permainan dan gunakan soal yang sudah ada untuk pengalaman belajar interaktif.",
+    back: isRtl ? "لوحة التحكم" : locale === "en" ? "Dashboard" : "Dashboard",
+    my_games: isRtl ? "ألعابي" : locale === "en" ? "My Games" : "Permainan Saya",
+    my_games_desc: isRtl
+      ? "الألعاب التي أنشأها حسابك الحالي."
+      : locale === "en"
+        ? "Games created by your current account."
+        : "Permainan yang dibuat oleh akun Anda.",
+    no_games: isRtl
+      ? "لا توجد ألعاب بعد."
+      : locale === "en"
+        ? "No games yet."
+        : "Belum ada permainan.",
+    play: isRtl ? "▶ تشغيل اللعبة" : locale === "en" ? "▶ Play Game" : "▶ Mainkan",
+    no_room: isRtl ? "بدون غرفة" : locale === "en" ? "No room" : "Tanpa Room",
+    self_practice: isRtl
+      ? "📖 تدريب ذاتي — متاح في بوابة الطالب"
+      : locale === "en"
+        ? "📖 Self-practice — available in Student Portal"
+        : "📖 Latihan mandiri — tersedia di Portal Siswa",
+    create_title: isRtl
+      ? "إنشاء لعبة جديدة"
+      : locale === "en"
+        ? "Create New Game"
+        : "Buat Permainan Baru",
+    create_desc: isRtl
+      ? "اختر الفصل والأسئلة ثم اضبط طريقة اللعب."
+      : locale === "en"
+        ? "Choose class and questions, then set the game mode."
+        : "Pilih kelas dan soal, lalu atur mode permainan.",
+    label_name: isRtl ? "اسم اللعبة" : locale === "en" ? "Game Name" : "Nama Permainan",
+    label_class: isRtl ? "الفصل الدراسي" : locale === "en" ? "Class" : "Kelas",
+    choose_class: isRtl ? "اختر الفصل" : locale === "en" ? "Choose class" : "Pilih kelas",
+    label_ranking: isRtl ? "إظهار الترتيب" : locale === "en" ? "Show ranking" : "Tampilkan peringkat",
+    ranking_full: isRtl ? "للجميع" : locale === "en" ? "Everyone" : "Semua",
+    ranking_hidden: isRtl ? "مخفي" : locale === "en" ? "Hidden" : "Disembunyikan",
+    ranking_self: isRtl ? "لللاعب نفسه" : locale === "en" ? "Only player" : "Hanya pemain",
+    btn_create: isRtl ? "إنشاء اللعبة" : locale === "en" ? "Create Game" : "Buat Permainan",
+    no_class_warn: isRtl
+      ? "أنشئ فصلًا دراسيًا أولًا قبل إنشاء اللعبة."
+      : locale === "en"
+        ? "Create a class first before creating a game."
+        : "Buat kelas dulu sebelum membuat permainan.",
+    no_bank_warn: isRtl
+      ? "أنشئ بنك أسئلة أولًا قبل إنشاء اللعبة."
+      : locale === "en"
+        ? "Create a question bank first before creating a game."
+        : "Buat bank soal dulu sebelum membuat permainan.",
+    delete_title: isRtl ? "حذف اللعبة" : locale === "en" ? "Delete game" : "Hapus permainan",
+  };
 
   return (
-    <main className="space-y-8" dir="rtl">
+    <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-neutral-500">
-            منصة التعليم العربية
+            {dict.common.brand_top}
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">الألعاب</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            أنشئ لعبة واستخدم أسئلتك الحالية في تجربة تعليمية تفاعلية.
-          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">{labels.title}</h1>
+          <p className="mt-2 text-sm text-neutral-600">{labels.subtitle}</p>
         </div>
-
         <Link
           href="/dashboard"
           className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-50"
         >
-          لوحة التحكم
+          {labels.back}
         </Link>
       </header>
 
-      {errorMessage ? (
-        <div
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
-          {errorMessage}
+      {searchParams.error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {searchParams.error}
           {searchParams.msg ? (
             <div className="mt-1 text-xs opacity-80">{searchParams.msg}</div>
           ) : null}
         </div>
       ) : null}
 
-      {/* ============== ألعابي ============== */}
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">ألعابي</h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              الألعاب التي أنشأها حسابك الحالي.
-            </p>
+            <h2 className="text-lg font-semibold">{labels.my_games}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{labels.my_games_desc}</p>
           </div>
           <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-            {games?.length ?? 0}
+            {gameList.length}
           </span>
         </div>
 
-        {(games?.length ?? 0) === 0 ? (
+        {gameList.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">
-            لا توجد ألعاب بعد.
+            {labels.no_games}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(games ?? []).map((game) => {
+            {gameList.map((game) => {
               const className =
-                classes?.find((item) => item.id === game.class_id)?.name ??
-                "بدون فصل";
-              const modeInfo = MODE_LABEL[game.mode] ?? MODE_LABEL.competitive;
-              const isRoomMode = modeInfo.forRoom;
+                classList.find((item) => item.id === game.class_id)?.name ??
+                "—";
+              const isRoom = isForRoom(game.mode);
               const hasBacksound = Boolean(game.backsound_track_id);
               const isTimed =
                 game.mode === "competitive" ||
@@ -229,22 +247,19 @@ export default async function GamesPage({
                         {className}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
-                      سباق الكلمات
-                    </span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-md bg-violet-50 px-2 py-1 font-bold text-violet-700">
-                      {modeInfo.ar}
+                      {getModeLabel(game.mode)}
                     </span>
                     {isTimed ? (
                       <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
-                        {durationMinutes} د
+                        {durationMinutes} {isRtl ? "د" : "min"}
                       </span>
                     ) : (
                       <span className="rounded-md bg-blue-50 px-2 py-1 font-bold text-blue-700">
-                        بلا مؤقت
+                        ∞
                       </span>
                     )}
                     {hasBacksound ? (
@@ -254,26 +269,26 @@ export default async function GamesPage({
                     ) : null}
                   </div>
 
-                  {!isRoomMode ? (
+                  {!isRoom ? (
                     <p className="mt-2 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-bold text-blue-800">
-                      📖 تدريب ذاتي — متاح في بوابة الطالب
+                      {labels.self_practice}
                     </p>
                   ) : null}
 
                   <div className="mt-4 flex gap-2 pt-2">
-                    {isRoomMode ? (
+                    {isRoom ? (
                       <form action={createRoom} className="flex-1">
                         <input type="hidden" name="game_id" value={game.id} />
                         <button
                           type="submit"
                           className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
                         >
-                          ▶ تشغيل اللعبة
+                          {labels.play}
                         </button>
                       </form>
                     ) : (
                       <div className="flex-1 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2.5 text-center text-xs font-bold text-blue-700">
-                        بدون غرفة
+                        {labels.no_room}
                       </div>
                     )}
 
@@ -281,7 +296,7 @@ export default async function GamesPage({
                       <input type="hidden" name="game_id" value={game.id} />
                       <button
                         type="submit"
-                        title="حذف اللعبة"
+                        title={labels.delete_title}
                         className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
                       >
                         🗑
@@ -295,29 +310,26 @@ export default async function GamesPage({
         )}
       </section>
 
-      {/* ============== إنشاء لعبة جديدة ============== */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div>
-          <h2 className="text-lg font-semibold">إنشاء لعبة جديدة</h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            اختر الفصل والأسئلة ثم اضبط طريقة اللعب.
-          </p>
+          <h2 className="text-lg font-semibold">{labels.create_title}</h2>
+          <p className="mt-1 text-sm text-neutral-500">{labels.create_desc}</p>
         </div>
 
-        {(classes?.length ?? 0) === 0 ? (
+        {classList.length === 0 ? (
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            أنشئ فصلًا دراسيًا أولًا قبل إنشاء اللعبة.
+            {labels.no_class_warn}
           </div>
-        ) : (banks?.length ?? 0) === 0 ? (
+        ) : bankList.length === 0 ? (
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            أنشئ بنك أسئلة أولًا قبل إنشاء اللعبة.
+            {labels.no_bank_warn}
           </div>
         ) : (
           <form action={createGame} className="mt-6 space-y-6">
             <div className="grid gap-5 lg:grid-cols-2">
               <div>
                 <label htmlFor="game-name" className="block text-sm font-medium">
-                  اسم اللعبة
+                  {labels.label_name}
                 </label>
                 <input
                   id="game-name"
@@ -325,14 +337,13 @@ export default async function GamesPage({
                   type="text"
                   required
                   maxLength={120}
-                  placeholder="مثال: مراجعة المفردات"
                   className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
                 />
               </div>
 
               <div>
                 <label htmlFor="class-id" className="block text-sm font-medium">
-                  الفصل الدراسي
+                  {labels.label_class}
                 </label>
                 <select
                   id="class-id"
@@ -342,9 +353,9 @@ export default async function GamesPage({
                   className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
                 >
                   <option value="" disabled>
-                    اختر الفصل
+                    {labels.choose_class}
                   </option>
-                  {(classes ?? []).map((item) => (
+                  {classList.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
                     </option>
@@ -357,7 +368,7 @@ export default async function GamesPage({
                   htmlFor="ranking-visibility"
                   className="block text-sm font-medium"
                 >
-                  إظهار الترتيب
+                  {labels.label_ranking}
                 </label>
                 <select
                   id="ranking-visibility"
@@ -365,9 +376,9 @@ export default async function GamesPage({
                   defaultValue="full"
                   className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
                 >
-                  <option value="full">للجميع</option>
-                  <option value="hidden">مخفي</option>
-                  <option value="self_only">لللاعب نفسه</option>
+                  <option value="full">{labels.ranking_full}</option>
+                  <option value="hidden">{labels.ranking_hidden}</option>
+                  <option value="self_only">{labels.ranking_self}</option>
                 </select>
               </div>
 
@@ -377,7 +388,11 @@ export default async function GamesPage({
             </div>
 
             <QuestionsPicker
-              banks={banksForPicker}
+              banks={bankList.map((b) => ({
+                id: b.id,
+                name: b.name,
+                description: b.description,
+              }))}
               categories={categoriesList}
               questionsByBank={questionsByBank}
             />
@@ -386,7 +401,7 @@ export default async function GamesPage({
               type="submit"
               className="w-full rounded-lg bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
             >
-              إنشاء اللعبة
+              {labels.btn_create}
             </button>
           </form>
         )}

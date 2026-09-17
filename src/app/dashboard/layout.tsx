@@ -2,6 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import "./dashboard-themes.css";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default async function DashboardLayout({
   children,
@@ -24,7 +27,6 @@ export default async function DashboardLayout({
     .single();
 
   if (profile && profile.is_active === false) {
-    // Akun dinonaktifkan — logout paksa
     return (
       <div
         className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-rose-50 p-6"
@@ -33,18 +35,17 @@ export default async function DashboardLayout({
         <div className="max-w-md rounded-[2rem] bg-white p-8 text-center shadow-2xl">
           <div className="text-6xl">🚫</div>
           <h1 className="mt-4 text-2xl font-black text-red-700">
-            تم إيقاف حسابك
+            Akun Anda dinonaktifkan
           </h1>
           <p className="mt-3 text-sm text-neutral-600">
-            تم إيقاف حساب المعلم الخاص بك من قبل مسؤول المنصة. للاستفسار،
-            تواصل مع الدعم.
+            Hubungi administrator untuk informasi lebih lanjut.
           </p>
           <form action="/auth/logout" method="post" className="mt-6">
             <button
               type="submit"
               className="w-full rounded-2xl bg-red-600 px-6 py-3 text-base font-black text-white transition hover:bg-red-700"
             >
-              تسجيل الخروج
+              Logout
             </button>
           </form>
         </div>
@@ -52,15 +53,23 @@ export default async function DashboardLayout({
     );
   }
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
   const theme = profile?.theme ?? "violet";
 
   return (
-    <div data-theme={theme} className="min-h-screen bg-neutral-50">
+    <div
+      data-theme={theme}
+      className="min-h-screen bg-neutral-50"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-4 sm:px-6">
         <Link href="/dashboard" className="font-semibold">
-          لوحة تحكم المعلم
+          {dict.common.brand_main}
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher current={locale} />
           <span className="hidden text-sm text-neutral-600 sm:inline" dir="ltr">
             {profile?.full_name || profile?.email || user.email}
           </span>
@@ -69,7 +78,7 @@ export default async function DashboardLayout({
               type="submit"
               className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
             >
-              تسجيل الخروج
+              {dict.dashboard.logout}
             </button>
           </form>
         </div>

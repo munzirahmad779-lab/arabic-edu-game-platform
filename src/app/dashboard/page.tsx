@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type StatCard = {
   label: string;
@@ -21,7 +23,11 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
-  // Kelas guru (dipakai juga untuk daftar terbaru)
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const t = dict.dashboard;
+  const cd = dict.class_detail;
+
   const { data: classes } = await supabase
     .from("classes")
     .select("id, name, subject, created_at")
@@ -30,7 +36,6 @@ export default async function DashboardPage() {
 
   const classIds = classes?.map((c) => c.id) ?? [];
 
-  // Siswa + materi hanya dihitung kalau guru punya kelas
   let studentCount = 0;
   let materialCount = 0;
 
@@ -62,7 +67,7 @@ export default async function DashboardPage() {
 
   const stats: StatCard[] = [
     {
-      label: "الفصول",
+      label: t.stat_classes,
       value: classes?.length ?? 0,
       emoji: "🏫",
       href: "/dashboard/classes",
@@ -72,7 +77,7 @@ export default async function DashboardPage() {
       badge: "bg-sky-600",
     },
     {
-      label: "الطلاب",
+      label: t.stat_students,
       value: studentCount,
       emoji: "👥",
       href: "/dashboard/students",
@@ -82,7 +87,7 @@ export default async function DashboardPage() {
       badge: "bg-emerald-600",
     },
     {
-      label: "المواد",
+      label: t.stat_materials,
       value: materialCount,
       emoji: "📖",
       href: "/dashboard/classes",
@@ -92,7 +97,7 @@ export default async function DashboardPage() {
       badge: "bg-amber-600",
     },
     {
-      label: "الأسئلة",
+      label: t.stat_questions,
       value: questionsRes.count ?? 0,
       emoji: "❓",
       href: "/dashboard/question-banks",
@@ -102,7 +107,7 @@ export default async function DashboardPage() {
       badge: "bg-fuchsia-600",
     },
     {
-      label: "الألعاب",
+      label: t.stat_games,
       value: gamesRes.count ?? 0,
       emoji: "🎮",
       href: "/dashboard/games",
@@ -114,22 +119,20 @@ export default async function DashboardPage() {
   ];
 
   const recentClasses = classes?.slice(0, 4) ?? [];
+  const isRtl = locale === "ar";
 
   return (
-    <main className="space-y-8" dir="rtl">
+    <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-xl sm:p-8">
         <p className="text-sm font-semibold text-white/75">
-          منصة التعليم العربية
+          {dict.common.brand_top}
         </p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-          مرحبًا بك 👋
+          👋 {t.welcome}
         </h1>
-        <p className="mt-2 text-sm text-white/85">
-          إدارة الفصول الدراسية وبنك الأسئلة وبناء الألعاب، كل شيء في مكان واحد.
-        </p>
+        <p className="mt-2 text-sm text-white/85">{t.welcome_desc}</p>
       </header>
 
-      {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <Link
@@ -142,11 +145,11 @@ export default async function DashboardPage() {
               <span
                 className={`rounded-full ${s.badge} px-2 py-0.5 text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100`}
               >
-                فتح
+                →
               </span>
             </div>
             <p className={`mt-4 text-3xl font-black ${s.text}`}>
-              {s.value.toLocaleString("ar-EG")}
+              {s.value.toLocaleString(locale === "ar" ? "ar-EG" : locale)}
             </p>
             <p className={`mt-1 text-xs font-bold ${s.text} opacity-80`}>
               {s.label}
@@ -155,7 +158,6 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      {/* Quick actions */}
       <section className="grid gap-5 md:grid-cols-3">
         <Link
           href="/dashboard/classes"
@@ -164,13 +166,15 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">🏫</p>
-              <h2 className="mt-4 font-bold text-sky-950">الفصول الدراسية</h2>
+              <h2 className="mt-4 font-bold text-sky-950">
+                {t.stat_classes}
+              </h2>
               <p className="mt-2 text-sm leading-6 text-sky-800">
-                إنشاء الفصول الدراسية وإدارتها.
+                {t.welcome_desc}
               </p>
             </div>
             <span className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white">
-              فتح
+              →
             </span>
           </div>
         </Link>
@@ -182,13 +186,15 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">📚</p>
-              <h2 className="mt-4 font-bold text-emerald-950">بنك الأسئلة</h2>
+              <h2 className="mt-4 font-bold text-emerald-950">
+                {dict.home.feat_bank_title}
+              </h2>
               <p className="mt-2 text-sm leading-6 text-emerald-800">
-                إنشاء بنوك الأسئلة واستيرادها من Excel.
+                {dict.home.feat_bank_desc}
               </p>
             </div>
             <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white">
-              فتح
+              →
             </span>
           </div>
         </Link>
@@ -200,35 +206,36 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">🎮</p>
-              <h2 className="mt-4 font-bold text-violet-950">بناء الألعاب</h2>
+              <h2 className="mt-4 font-bold text-violet-950">
+                {t.stat_games}
+              </h2>
               <p className="mt-2 text-sm leading-6 text-violet-800">
-                إنشاء الألعاب التعليمية وإدارتها وتشغيلها.
+                {dict.home.feat_modes_desc}
               </p>
             </div>
             <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white">
-              فتح
+              →
             </span>
           </div>
         </Link>
       </section>
 
-      {/* Recent classes */}
       {recentClasses.length > 0 ? (
         <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl sm:p-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-black text-neutral-900">
-                🕒 أحدث الفصول
+                🕒 {t.recent_classes}
               </h2>
               <p className="mt-1 text-xs text-neutral-500">
-                آخر 4 فصول قمت بإنشائها.
+                {t.recent_classes_desc}
               </p>
             </div>
             <Link
               href="/dashboard/classes"
               className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100"
             >
-              عرض الكل
+              {t.view_all}
             </Link>
           </div>
 
@@ -244,12 +251,14 @@ export default async function DashboardPage() {
                       {c.name}
                     </p>
                     <p className="mt-0.5 text-xs text-neutral-500">
-                      {c.subject ?? "بدون مادة"} ·{" "}
-                      {new Date(c.created_at).toLocaleDateString("ar-EG")}
+                      {c.subject ?? cd.no_subject} ·{" "}
+                      {new Date(c.created_at).toLocaleDateString(
+                        locale === "ar" ? "ar-EG" : locale,
+                      )}
                     </p>
                   </div>
                   <span className="text-2xl text-neutral-300 transition group-hover:text-violet-600">
-                    ←
+                    {isRtl ? "←" : "→"}
                   </span>
                 </Link>
               </li>
@@ -258,23 +267,24 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {/* Students management */}
       <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-bold text-emerald-600">الطلاب</p>
+            <p className="text-sm font-bold text-emerald-600">
+              {t.stat_students}
+            </p>
             <h2 className="mt-1 text-2xl font-black text-slate-950">
-              إدارة الطلاب
+              {t.students_mgmt}
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              أضف الطلاب إلى فصولك وأنشئ PIN لكل طالب.
+              {t.students_mgmt_desc}
             </p>
           </div>
           <Link
             href="/dashboard/students"
             className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-600"
           >
-            فتح إدارة الطلاب
+            {t.open_students}
           </Link>
         </div>
       </section>

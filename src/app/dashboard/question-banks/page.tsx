@@ -12,6 +12,8 @@ import { QuestionEditor } from "./question-editor";
 import { DeleteBankForm } from "./delete-bank-form";
 import { BankCard } from "./bank-card";
 import { AiPromptSection } from "./ai-prompt-section";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = {
   error?: string;
@@ -20,40 +22,6 @@ type SearchParams = {
   bank?: string;
   cat?: string;
 };
-
-function errorMessage(error?: string) {
-  switch (error) {
-    case "invalid_bank":
-      return "Nama atau deskripsi buku soal tidak valid.";
-    case "duplicate_bank":
-      return "Buku soal dengan nama tersebut sudah ada.";
-    case "create_bank_failed":
-      return "Buku soal gagal dibuat.";
-    case "invalid_bank_id":
-      return "معرف البنك غير صالح.";
-    default:
-      return error ? `خطأ: ${error}` : null;
-  }
-}
-
-function categoryErrorMessage(error?: string) {
-  switch (error) {
-    case "invalid":
-      return "Nama topik tidak valid. Gunakan 1–100 karakter.";
-    case "duplicate":
-      return "Topik dengan nama tersebut sudah ada.";
-    case "create_failed":
-      return "Topik gagal dibuat.";
-    case "update_failed":
-      return "Topik gagal diperbarui.";
-    case "delete_failed":
-      return "Topik gagal dihapus.";
-    case "in_use":
-      return "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal.";
-    default:
-      return null;
-  }
-}
 
 type QuestionRow = {
   id: string;
@@ -83,12 +51,6 @@ type MediaRow = {
   attached_at: string | null;
 };
 
-const difficultyLabel: Record<NonNullable<QuestionRow["difficulty"]>, string> = {
-  easy: "Mudah",
-  medium: "Sedang",
-  hard: "Sulit",
-};
-
 function isValidUuid(v: string | undefined): v is string {
   return typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
 }
@@ -104,6 +66,227 @@ export default async function QuestionBanksPage({
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+
+  const L = {
+    page_title: isRtl
+      ? "بنك الأسئلة"
+      : locale === "en"
+        ? "Question Banks"
+        : "Bank Soal",
+    page_sub: isRtl
+      ? "إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي."
+      : locale === "en"
+        ? "Create question banks and import MCQ questions from the official Excel template."
+        : "Buat bank soal dan impor soal MCQ dari template Excel resmi.",
+    dashboard: isRtl ? "لوحة التحكم" : "Dashboard",
+    deleted_ok: isRtl
+      ? "✓ تم حذف بنك الأسئلة بنجاح."
+      : locale === "en"
+        ? "✓ Question bank deleted."
+        : "✓ Bank soal berhasil dihapus.",
+    err_invalid_bank: isRtl
+      ? "Nama atau deskripsi buku soal tidak valid."
+      : locale === "en"
+        ? "Question bank name or description is invalid."
+        : "Nama atau deskripsi bank soal tidak valid.",
+    err_dup_bank: isRtl
+      ? "Buku soal dengan nama tersebut sudah ada."
+      : locale === "en"
+        ? "A question bank with that name already exists."
+        : "Bank soal dengan nama itu sudah ada.",
+    err_create_bank: isRtl
+      ? "Buku soal gagal dibuat."
+      : locale === "en"
+        ? "Failed to create question bank."
+        : "Gagal membuat bank soal.",
+    err_invalid_bank_id: isRtl
+      ? "معرف البنك غير صالح."
+      : locale === "en"
+        ? "Invalid bank ID."
+        : "ID bank tidak valid.",
+    cat_invalid: isRtl
+      ? "Nama topik tidak valid. Gunakan 1–100 karakter."
+      : locale === "en"
+        ? "Invalid topic name. Use 1–100 characters."
+        : "Nama topik tidak valid. Gunakan 1–100 karakter.",
+    cat_dup: isRtl
+      ? "Topik dengan nama tersebut sudah ada."
+      : locale === "en"
+        ? "A topic with that name already exists."
+        : "Topik dengan nama itu sudah ada.",
+    cat_create_failed: isRtl
+      ? "Topik gagal dibuat."
+      : locale === "en"
+        ? "Failed to create topic."
+        : "Gagal membuat topik.",
+    cat_update_failed: isRtl
+      ? "Topik gagal diperbarui."
+      : locale === "en"
+        ? "Failed to update topic."
+        : "Gagal memperbarui topik.",
+    cat_delete_failed: isRtl
+      ? "Topik gagal dihapus."
+      : locale === "en"
+        ? "Failed to delete topic."
+        : "Gagal menghapus topik.",
+    cat_in_use: isRtl
+      ? "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal."
+      : locale === "en"
+        ? "Topic cannot be deleted while still used by questions in the bank."
+        : "Topik tidak bisa dihapus selama masih dipakai oleh soal di bank.",
+    topics_title: isRtl
+      ? "موضوعات الأسئلة"
+      : locale === "en"
+        ? "Question Topics"
+        : "Topik Soal",
+    topics_desc: isRtl
+      ? "أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب Excel."
+      : locale === "en"
+        ? "Create topics whose names you will use in the «Topik» column inside the Excel template."
+        : "Buat topik yang namanya akan kamu pakai di kolom «Topik» dalam template Excel.",
+    topics_count: isRtl
+      ? "موضوع"
+      : locale === "en"
+        ? "topics"
+        : "topik",
+    add_topic: isRtl ? "إضافة موضوع" : locale === "en" ? "Add Topic" : "Tambah Topik",
+    save: isRtl ? "حفظ" : locale === "en" ? "Save" : "Simpan",
+    delete: isRtl ? "حذف" : locale === "en" ? "Delete" : "Hapus",
+    no_topics: isRtl
+      ? "لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة."
+      : locale === "en"
+        ? "No topics yet. Create a topic before importing questions."
+        : "Belum ada topik. Buat topik dulu sebelum impor soal.",
+    excel_title: isRtl
+      ? "قالب Excel الرسمي"
+      : locale === "en"
+        ? "Official Excel Template"
+        : "Template Excel Resmi",
+    excel_desc: isRtl
+      ? "القالب يحتوي على 140 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة حقيقية."
+      : locale === "en"
+        ? "The template contains 140 ready rows and no real questions."
+        : "Template berisi 140 baris siap isi dan tidak ada soal asli.",
+    excel_download: isRtl
+      ? "تنزيل القالب"
+      : locale === "en"
+        ? "Download Template"
+        : "Unduh Template",
+    create_bank_title: isRtl
+      ? "إنشاء بنك جديد"
+      : locale === "en"
+        ? "Create New Bank"
+        : "Buat Bank Baru",
+    name_placeholder: isRtl
+      ? "مثال: النحو الأساسي"
+      : locale === "en"
+        ? "Example: Basic Grammar"
+        : "Contoh: Nahwu Dasar",
+    desc_placeholder: isRtl
+      ? "وصف اختياري"
+      : locale === "en"
+        ? "Optional description"
+        : "Deskripsi opsional",
+    create_bank_btn: isRtl
+      ? "إنشاء بنك الأسئلة"
+      : locale === "en"
+        ? "Create Question Bank"
+        : "Buat Bank Soal",
+    my_banks: isRtl ? "بنكي" : locale === "en" ? "My Banks" : "Bank Saya",
+    banks_count: isRtl ? "بنك" : locale === "en" ? "banks" : "bank",
+    no_banks: isRtl
+      ? "لم تنشئ بنك أسئلة بعد."
+      : locale === "en"
+        ? "You haven't created any question banks yet."
+        : "Kamu belum membuat bank soal.",
+    all: isRtl ? "الكل" : locale === "en" ? "All" : "Semua",
+    no_topic: isRtl ? "بدون موضوع" : locale === "en" ? "No topic" : "Tanpa topik",
+    questions_saved: isRtl
+      ? "الأسئلة المحفوظة"
+      : locale === "en"
+        ? "Saved Questions"
+        : "Soal Tersimpan",
+    questions_unit: isRtl ? "سؤال" : locale === "en" ? "questions" : "soal",
+    no_q_in_bank: isRtl
+      ? "لا توجد أسئلة محفوظة في هذا البنك."
+      : locale === "en"
+        ? "No saved questions in this bank."
+        : "Belum ada soal di bank ini.",
+    no_q_filter: isRtl
+      ? "لا توجد أسئلة تطابق الفلتر المحدد."
+      : locale === "en"
+        ? "No questions match the selected filter."
+        : "Tidak ada soal yang cocok dengan filter.",
+    correct: isRtl
+      ? "الإجابة الصحيحة"
+      : locale === "en"
+        ? "Correct Answer"
+        : "Jawaban Benar",
+    option_missing: isRtl
+      ? "الخيار غير موجود"
+      : locale === "en"
+        ? "Option not found"
+        : "Opsi tidak ditemukan",
+    import_title: isRtl
+      ? "استيراد الأسئلة من Excel"
+      : locale === "en"
+        ? "Import Questions from Excel"
+        : "Impor Soal dari Excel",
+    import_desc: isRtl
+      ? "تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد."
+      : locale === "en"
+        ? "The file is reviewed first. No questions saved if any error found."
+        : "File direview dulu. Tidak ada soal tersimpan jika ada 1 error.",
+    import_note: isRtl
+      ? "تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط."
+      : locale === "en"
+        ? "The «YA» value in Excel creates an expected media record only."
+        : "Nilai «YA» di Excel hanya membuat catatan media yang diharapkan.",
+    delete_bank_warn: isRtl
+      ? "⚠️ حذف البنك سيحذف جميع الأسئلة داخله."
+      : locale === "en"
+        ? "⚠️ Deleting the bank will delete all questions inside."
+        : "⚠️ Menghapus bank akan menghapus semua soal di dalamnya.",
+    difficulty_easy: isRtl ? "Mudah" : locale === "en" ? "Easy" : "Mudah",
+    difficulty_medium: isRtl ? "Sedang" : locale === "en" ? "Medium" : "Sedang",
+    difficulty_hard: isRtl ? "Sulit" : locale === "en" ? "Hard" : "Sulit",
+  };
+
+  const errorMessage = (() => {
+    switch (searchParams.error) {
+      case "invalid_bank": return L.err_invalid_bank;
+      case "duplicate_bank": return L.err_dup_bank;
+      case "create_bank_failed": return L.err_create_bank;
+      case "invalid_bank_id": return L.err_invalid_bank_id;
+      default:
+        return searchParams.error ? `${dict.common.error}: ${searchParams.error}` : null;
+    }
+  })();
+
+  const categoryErrorMessage = (() => {
+    switch (searchParams.category_error) {
+      case "invalid": return L.cat_invalid;
+      case "duplicate": return L.cat_dup;
+      case "create_failed": return L.cat_create_failed;
+      case "update_failed": return L.cat_update_failed;
+      case "delete_failed": return L.cat_delete_failed;
+      case "in_use": return L.cat_in_use;
+      default: return null;
+    }
+  })();
+
+  const difficultyLabel: Record<
+    NonNullable<QuestionRow["difficulty"]>,
+    string
+  > = {
+    easy: L.difficulty_easy,
+    medium: L.difficulty_medium,
+    hard: L.difficulty_hard,
+  };
 
   const [
     { data: banks, error: banksError },
@@ -130,18 +313,12 @@ export default async function QuestionBanksPage({
       .order("created_at", { ascending: true }),
   ]);
 
-  if (banksError) {
-    throw new Error("Gagal memuat buku soal.");
-  }
-  if (categoriesError) {
-    throw new Error("Gagal memuat topik soal.");
-  }
-  if (questionsError) {
-    throw new Error("Gagal memuat soal.");
-  }
+  if (banksError) throw new Error("Gagal memuat bank soal.");
+  if (categoriesError) throw new Error("Gagal memuat topik soal.");
+  if (questionsError) throw new Error("Gagal memuat soal.");
 
   const questionRows = (questions ?? []) as QuestionRow[];
-  const questionIds = questionRows.map((question) => question.id);
+  const questionIds = questionRows.map((q) => q.id);
 
   let options: OptionRow[] = [];
   let media: MediaRow[] = [];
@@ -163,18 +340,14 @@ export default async function QuestionBanksPage({
         .in("question_id", questionIds)
         .order("created_at", { ascending: true }),
     ]);
-
-    if (optionsError) {
-      throw new Error("Gagal memuat pilihan jawaban.");
-    }
+    if (optionsError) throw new Error("Gagal memuat pilihan jawaban.");
     if (mediaError) throw new Error("Gagal memuat media soal.");
-
     options = (optionData ?? []) as OptionRow[];
     media = (mediaData ?? []) as MediaRow[];
   }
 
   const categoryMap = new Map(
-    (categories ?? []).map((category) => [category.id, category.name]),
+    (categories ?? []).map((c) => [c.id, c.name]),
   );
 
   const optionsByQuestion = new Map<string, OptionRow[]>();
@@ -200,19 +373,17 @@ export default async function QuestionBanksPage({
   }
 
   return (
-    <div className="space-y-8" dir="rtl">
+    <div className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">بنك الأسئلة</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي.
-          </p>
+          <h1 className="text-2xl font-bold">{L.page_title}</h1>
+          <p className="mt-1 text-sm text-neutral-600">{L.page_sub}</p>
         </div>
         <Link
           href="/dashboard"
           className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm hover:bg-neutral-50"
         >
-          لوحة التحكم
+          {L.dashboard}
         </Link>
       </div>
 
@@ -221,45 +392,43 @@ export default async function QuestionBanksPage({
           role="alert"
           className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
         >
-          ✓ تم حذف بنك الأسئلة بنجاح.
+          {L.deleted_ok}
         </div>
       ) : null}
 
-      {errorMessage(searchParams.error) ? (
+      {errorMessage ? (
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
-          {errorMessage(searchParams.error)}
+          {errorMessage}
         </div>
       ) : null}
 
-      {categoryErrorMessage(searchParams.category_error) ? (
+      {categoryErrorMessage ? (
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
-          {categoryErrorMessage(searchParams.category_error)}
+          {categoryErrorMessage}
         </div>
       ) : null}
 
-      {/* ============== بنكي (collapsible) ============== */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">بنكي</h2>
+          <h2 className="text-lg font-semibold">{L.my_banks}</h2>
           <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
-            {banks.length} بنك
+            {banks?.length ?? 0} {L.banks_count}
           </span>
         </div>
 
-        {banks.length === 0 ? (
+        {!banks || banks.length === 0 ? (
           <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
-            لم تنشئ بنك أسئلة بعد.
+            {L.no_banks}
           </div>
         ) : (
           banks.map((bank) => {
             const bankQuestions = questionsByBank.get(bank.id) ?? [];
-
             const isFilterActive = searchParams.bank === bank.id;
             const activeCat = (() => {
               if (!isFilterActive) return undefined;
@@ -289,7 +458,7 @@ export default async function QuestionBanksPage({
                   ) : null}
                 </div>
                 <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-                  {bankQuestions.length} سؤال
+                  {bankQuestions.length} {L.questions_unit}
                 </span>
               </div>
             );
@@ -302,9 +471,7 @@ export default async function QuestionBanksPage({
                 defaultOpen={isFilterActive}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50/40 p-3">
-                  <div className="text-xs text-red-700">
-                    ⚠️ حذف البنك سيحذف جميع الأسئلة داخله.
-                  </div>
+                  <div className="text-xs text-red-700">{L.delete_bank_warn}</div>
                   <DeleteBankForm
                     bankId={bank.id}
                     bankName={bank.name}
@@ -313,25 +480,22 @@ export default async function QuestionBanksPage({
                 </div>
 
                 <div className="rounded-xl border border-neutral-200 bg-white p-4">
-                  <h4 className="font-semibold">استيراد الأسئلة من Excel</h4>
+                  <h4 className="font-semibold">{L.import_title}</h4>
                   <p className="mt-1 mb-3 text-sm text-neutral-600">
-                    تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ
-                    واحد.
+                    {L.import_desc}
                   </p>
                   <p className="mb-3 rounded-md bg-blue-50 p-3 text-xs text-blue-900">
-                    تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط؛ لا
-                    تُرفع الملفات الثنائية مع الاستيراد. ارفع الملف من بطاقة
-                    السؤال لاحقًا بالاسم المطابق تمامًا لعمود «Nama Media».
+                    {L.import_note}
                   </p>
                   <QuestionBankImportForm questionBankId={bank.id} />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-semibold">الأسئلة المحفوظة</h4>
+                    <h4 className="font-semibold">{L.questions_saved}</h4>
                     <span className="text-sm text-neutral-500">
                       {filteredBankQuestions.length} / {bankQuestions.length}{" "}
-                      سؤال
+                      {L.questions_unit}
                     </span>
                   </div>
 
@@ -345,7 +509,7 @@ export default async function QuestionBanksPage({
                             : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
                         }`}
                       >
-                        الكل ({bankQuestions.length})
+                        {L.all} ({bankQuestions.length})
                       </Link>
 
                       {(categories ?? []).map((cat) => {
@@ -385,7 +549,7 @@ export default async function QuestionBanksPage({
                                 : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
                             }`}
                           >
-                            بدون موضوع ({noneCount})
+                            {L.no_topic} ({noneCount})
                           </Link>
                         );
                       })()}
@@ -394,9 +558,7 @@ export default async function QuestionBanksPage({
 
                   {filteredBankQuestions.length === 0 ? (
                     <div className="mt-4 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-                      {bankQuestions.length === 0
-                        ? "لا توجد أسئلة محفوظة في هذا البنك."
-                        : "لا توجد أسئلة تطابق الفلتر المحدد."}
+                      {bankQuestions.length === 0 ? L.no_q_in_bank : L.no_q_filter}
                     </div>
                   ) : (
                     <div className="mt-4 space-y-4">
@@ -410,11 +572,13 @@ export default async function QuestionBanksPage({
                             className="rounded-lg border border-neutral-200 p-4"
                           >
                             <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                              <span>السؤال {index + 1}</span>
+                              <span>
+                                {locale === "ar" ? "السؤال" : "Soal"} {index + 1}
+                              </span>
                               {question.category_id ? (
                                 <span className="rounded-full bg-neutral-100 px-2 py-1">
                                   {categoryMap.get(question.category_id) ??
-                                    "موضوع غير معروف"}
+                                    "—"}
                                 </span>
                               ) : null}
                               {question.difficulty ? (
@@ -425,7 +589,7 @@ export default async function QuestionBanksPage({
                             </div>
 
                             <p className="mt-3 text-base font-medium leading-8">
-                              {question.question_text || "سؤال بلا نص"}
+                              {question.question_text ?? "—"}
                             </p>
 
                             <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -448,11 +612,10 @@ export default async function QuestionBanksPage({
                                     <span className="font-semibold">
                                       {key}.
                                     </span>{" "}
-                                    {option?.option_text ||
-                                      "الخيار غير موجود"}
+                                    {option?.option_text ?? L.option_missing}
                                     {isCorrect ? (
                                       <span className="mr-2 text-xs font-semibold">
-                                        ✓ الإجابة الصحيحة
+                                        ✓ {L.correct}
                                       </span>
                                     ) : null}
                                   </div>
@@ -477,16 +640,12 @@ export default async function QuestionBanksPage({
                                 option_key: option.option_key,
                                 option_text: option.option_text,
                               }))}
-                              categories={(categories ?? []).map(
-                                (category) => ({
-                                  id: category.id,
-                                  name: category.name,
-                                }),
-                              )}
+                              categories={(categories ?? []).map((category) => ({
+                                id: category.id,
+                                name: category.name,
+                              }))}
                               mediaCount={
-                                (
-                                  mediaByQuestion.get(question.id) ?? []
-                                ).length
+                                (mediaByQuestion.get(question.id) ?? []).length
                               }
                             />
                           </article>
@@ -501,21 +660,20 @@ export default async function QuestionBanksPage({
         )}
       </section>
 
-      {/* ============== إنشاء بنك جديد ============== */}
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">إنشاء بنك جديد</h2>
+        <h2 className="text-lg font-semibold">{L.create_bank_title}</h2>
         <form action={createQuestionBank} className="mt-4 grid gap-3">
           <input
             name="name"
             required
             maxLength={100}
-            placeholder="مثال: النحو الأساسي"
+            placeholder={L.name_placeholder}
             className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
           <textarea
             name="description"
             maxLength={500}
-            placeholder="وصف اختياري"
+            placeholder={L.desc_placeholder}
             rows={3}
             className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
@@ -523,23 +681,19 @@ export default async function QuestionBanksPage({
             type="submit"
             className="w-fit rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
           >
-            إنشاء بنك الأسئلة
+            {L.create_bank_btn}
           </button>
         </form>
       </section>
 
-      {/* ============== موضوعات الأسئلة ============== */}
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">موضوعات الأسئلة</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب
-              Excel.
-            </p>
+            <h2 className="text-lg font-semibold">{L.topics_title}</h2>
+            <p className="mt-1 text-sm text-neutral-600">{L.topics_desc}</p>
           </div>
           <span className="text-sm text-neutral-500">
-            {categories?.length ?? 0} موضوع
+            {categories?.length ?? 0} {L.topics_count}
           </span>
         </div>
 
@@ -548,7 +702,7 @@ export default async function QuestionBanksPage({
           className="mt-4 flex flex-col gap-3 sm:flex-row"
         >
           <label htmlFor="category-name" className="sr-only">
-            اسم الموضوع
+            {L.topics_title}
           </label>
           <input
             id="category-name"
@@ -556,14 +710,14 @@ export default async function QuestionBanksPage({
             type="text"
             required
             maxLength={100}
-            placeholder="مثال: النحو الأساسي"
+            placeholder={L.name_placeholder}
             className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
           />
           <button
             type="submit"
             className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
           >
-            إضافة موضوع
+            {L.add_topic}
           </button>
         </form>
 
@@ -584,7 +738,7 @@ export default async function QuestionBanksPage({
                       htmlFor={`category-${category.id}`}
                       className="sr-only"
                     >
-                      اسم الموضوع
+                      {L.topics_title}
                     </label>
                     <input
                       id={`category-${category.id}`}
@@ -598,7 +752,7 @@ export default async function QuestionBanksPage({
                       type="submit"
                       className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
                     >
-                      حفظ
+                      {L.save}
                     </button>
                   </form>
                   <form action={deleteQuestionCategory}>
@@ -607,7 +761,7 @@ export default async function QuestionBanksPage({
                       type="submit"
                       className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
                     >
-                      حذف
+                      {L.delete}
                     </button>
                   </form>
                 </div>
@@ -616,29 +770,25 @@ export default async function QuestionBanksPage({
           </div>
         ) : (
           <div className="mt-5 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-            لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة.
+            {L.no_topics}
           </div>
         )}
       </section>
 
       <AiPromptSection />
 
-      {/* ============== قالب Excel ============== */}
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">قالب Excel الرسمي</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              القالب يحتوي على 140 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة
-              حقيقية.
-            </p>
+            <h2 className="text-lg font-semibold">{L.excel_title}</h2>
+            <p className="mt-1 text-sm text-neutral-600">{L.excel_desc}</p>
           </div>
           <a
             href="/templates/question-bank-template.xlsx"
             download
             className="w-fit rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50"
           >
-            تنزيل القالب
+            {L.excel_download}
           </a>
         </div>
       </section>

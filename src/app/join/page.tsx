@@ -15,7 +15,7 @@ export default function JoinPage({
       <div className="mx-auto max-w-md">
         <div className="mb-6 text-center">
           <p className="text-sm font-bold text-violet-600">
-            منصة التعليم العربية
+            Magguru
           </p>
           <h1 className="mt-2 text-3xl font-black text-neutral-900">
             دخول غرفة اللعب

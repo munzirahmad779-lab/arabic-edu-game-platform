@@ -1,7 +1,7 @@
 -- 0038_import_explanation.sql
 -- Update RPC import_question_bank_rows supaya:
 --   1. Terima field `explanation` (opsional) per baris.
---   2. Naikkan batas max soal per bank dari 40 → 140 (standar TOAFL).
+--   2. Naikkan batas max soal per bank dari 40 → 140 (standar ).
 --   3. Simpan `explanation` ke kolom `questions.explanation`.
 
 drop function if exists public.import_question_bank_rows(uuid, jsonb);

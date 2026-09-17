@@ -16,88 +16,23 @@ type Row = {
   recorded_at: string;
 };
 
-const MODE_AR: Record<string, string> = {
-  competitive: "تنافسي",
-  cooperative: "تعاوني",
-  endless: "بلا نهاية",
-  practice: "تمرين",
-  learning: "تعليمي",
-};
+const AI_PROMPT = `Kamu adalah asisten pendidikan yang ahli menganalisis performa siswa.
 
-const AI_PROMPT = `أنت مساعد تعليمي متخصص في تحليل أداء الطلاب في اللغة العربية.
+Saya akan melampirkan laporan harian dari platform pembelajaran, yang berisi:
+- Hasil permainan kompetitif dan kooperatif (dengan timer)
+- Hasil latihan mandiri (tanpa timer)
 
-سأرفق أدناه تقريرًا يوميًا من منصة تعليمية، يحتوي على:
-- نتائج الألعاب التنافسية والتعاونية (بمؤقت)
-- نتائج التدريب الذاتي (بلا وقت)
+Yang dibutuhkan:
+1. Ringkasan umum: jumlah sesi, jumlah siswa, rata-rata performa.
+2. Siswa berprestasi: 3 teratas dengan persentasenya.
+3. Siswa yang butuh dukungan: yang di bawah 60% dengan rekomendasi.
+4. Pola yang terlihat: apakah ada kesulitan di mode tertentu atau topik tertentu?
+5. Rekomendasi praktis untuk guru: 3-5 tindakan untuk besok.
 
-المطلوب:
-1. ملخص عام: عدد الجلسات، عدد الطلاب، متوسط الأداء.
-2. الطلاب المتميزون: أعلى 3 أداءً مع نسبهم.
-3. الطلاب المحتاجون للدعم: من هم أقل من 60% مع توصيات.
-4. أنماط ملحوظة: هل هناك صعوبة في وضع معين أو موضوع معين؟
-5. توصيات عملية للمعلم: 3-5 إجراءات للغد.
-
-أعد النتيجة بالعربية الفصحى المبسطة، بفقرات وعناوين واضحة ونقاط مرقّمة.
+Kembalikan hasil dalam bahasa Indonesia yang jelas, dengan paragraf, judul, dan poin-poin bernomor.
 
 ---
 `;
-
-function buildMarkdown(
-  date: string,
-  roomRows: Row[],
-  practiceRows: Row[],
-): string {
-  const lines: string[] = [];
-  lines.push(`# 📊 التقرير اليومي — ${date}`);
-  lines.push("");
-  lines.push(`**إجمالي الجلسات:** ${roomRows.length + practiceRows.length}`);
-  lines.push(`**الألعاب بمؤقت:** ${roomRows.length}`);
-  lines.push(`**التدريب الذاتي:** ${practiceRows.length}`);
-  lines.push("");
-
-  if (roomRows.length > 0) {
-    lines.push("## 🏆 الألعاب التنافسية والتعاونية");
-    lines.push("");
-    lines.push(
-      "| اللعبة | الوضع | الطالب | النقاط | الترتيب | الصحيح | المجموع | الوقت |",
-    );
-    lines.push(
-      "|--------|-------|--------|--------|---------|--------|---------|-------|",
-    );
-    for (const r of roomRows) {
-      lines.push(
-        `| ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${toWibTime(r.recorded_at)} |`,
-      );
-    }
-    lines.push("");
-  }
-
-  if (practiceRows.length > 0) {
-    lines.push("## 📖 التدريب الذاتي");
-    lines.push("");
-    lines.push("| الطالب | اللعبة | الوضع | الصحيح | المجموع | النسبة | الوقت |");
-    lines.push("|--------|--------|-------|--------|---------|--------|-------|");
-    for (const r of practiceRows) {
-      const pct =
-        r.total_questions > 0
-          ? Math.round((r.correct_count / r.total_questions) * 100)
-          : 0;
-      lines.push(
-        `| ${r.student_name} | ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${toWibTime(r.recorded_at)} |`,
-      );
-    }
-    lines.push("");
-  }
-
-  if (roomRows.length === 0 && practiceRows.length === 0) {
-    lines.push("_لا توجد بيانات لهذا اليوم._");
-    lines.push("");
-  }
-
-  lines.push("---");
-  lines.push("_تقرير آلي من منصة التعليم العربية_");
-  return lines.join("\n");
-}
 
 export function ReportView({
   date,
@@ -113,6 +48,71 @@ export function ReportView({
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(date);
+
+  const MODE_AR: Record<string, string> = {
+    competitive: "Kompetitif",
+    cooperative: "Kooperatif",
+    endless: "Tanpa Batas",
+    practice: "Latihan",
+    learning: "Pembelajaran",
+  };
+
+  function buildMarkdown(
+    dateStr: string,
+    room: Row[],
+    practice: Row[],
+  ): string {
+    const lines: string[] = [];
+    lines.push(`# 📊 Laporan Harian — ${dateStr}`);
+    lines.push("");
+    lines.push(`**Total Sesi:** ${room.length + practice.length}`);
+    lines.push(`**Permainan dengan Timer:** ${room.length}`);
+    lines.push(`**Latihan Mandiri:** ${practice.length}`);
+    lines.push("");
+
+    if (room.length > 0) {
+      lines.push("## 🏆 Permainan Kompetitif & Kooperatif");
+      lines.push("");
+      lines.push(
+        "| Permainan | Mode | Siswa | Skor | Peringkat | Benar | Total | Waktu |",
+      );
+      lines.push(
+        "|-----------|------|-------|------|-----------|-------|-------|-------|",
+      );
+      for (const r of room) {
+        lines.push(
+          `| ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${toWibTime(r.recorded_at)} |`,
+        );
+      }
+      lines.push("");
+    }
+
+    if (practice.length > 0) {
+      lines.push("## 📖 Latihan Mandiri");
+      lines.push("");
+      lines.push("| Siswa | Permainan | Mode | Benar | Total | Persen | Waktu |");
+      lines.push("|-------|-----------|------|-------|-------|--------|-------|");
+      for (const r of practice) {
+        const pct =
+          r.total_questions > 0
+            ? Math.round((r.correct_count / r.total_questions) * 100)
+            : 0;
+        lines.push(
+          `| ${r.student_name} | ${r.game_name} | ${MODE_AR[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${toWibTime(r.recorded_at)} |`,
+        );
+      }
+      lines.push("");
+    }
+
+    if (room.length === 0 && practice.length === 0) {
+      lines.push("_Tidak ada data untuk hari ini._");
+      lines.push("");
+    }
+
+    lines.push("---");
+    lines.push("_Laporan otomatis dari Magguru_");
+    return lines.join("\n");
+  }
 
   const mdText = buildMarkdown(date, roomRows, practiceRows);
 
@@ -139,7 +139,7 @@ export function ReportView({
 
   async function cleanup() {
     if (cleaning) return;
-    if (!window.confirm("سيتم حذف جميع السجلات الأقدم من 7 أيام. متابعة؟")) {
+    if (!window.confirm("Hapus semua catatan yang lebih lama dari 7 hari?")) {
       return;
     }
 
@@ -150,12 +150,12 @@ export function ReportView({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc("cleanup_old_history");
       if (error) {
-        setCleanMsg(`خطأ: ${error.message}`);
+        setCleanMsg(`Kesalahan: ${error.message}`);
       } else {
-        setCleanMsg(`✓ تم حذف ${data ?? 0} سجل قديم.`);
+        setCleanMsg(`✓ ${data ?? 0} catatan lama dihapus.`);
       }
     } catch {
-      setCleanMsg("تعذر الاتصال بالخادم.");
+      setCleanMsg("Gagal terhubung ke server.");
     } finally {
       setCleaning(false);
     }
@@ -170,8 +170,7 @@ export function ReportView({
   const yesterday = yesterdayWib();
 
   return (
-    <div className="space-y-5">
-      {/* Quick date buttons */}
+    <div className="space-y-5" dir="ltr">
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -182,7 +181,7 @@ export function ReportView({
               : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
           }`}
         >
-          📅 اليوم
+          📅 Hari Ini
         </button>
         <button
           type="button"
@@ -193,11 +192,10 @@ export function ReportView({
               : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
           }`}
         >
-          ⏪ أمس
+          ⏪ Kemarin
         </button>
       </div>
 
-      {/* Date picker */}
       <form
         method="get"
         className="flex flex-wrap items-end gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm"
@@ -207,7 +205,7 @@ export function ReportView({
             htmlFor="date"
             className="block text-xs font-bold text-neutral-700"
           >
-            التاريخ
+            Tanggal
           </label>
           <input
             id="date"
@@ -222,78 +220,77 @@ export function ReportView({
           type="submit"
           className="rounded-xl bg-violet-600 px-5 py-2 text-sm font-black text-white transition hover:bg-violet-700"
         >
-          عرض
+          Tampilkan
         </button>
       </form>
 
-      {/* Copy buttons */}
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => void copyMd()}
           className="rounded-2xl bg-gradient-to-l from-slate-700 to-slate-900 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
         >
-          {copiedMd ? "✓ تم النسخ" : "📋 نسخ MD فقط"}
+          {copiedMd ? "✓ Tersalin" : "📋 Copy MD"}
         </button>
         <button
           type="button"
           onClick={() => void copyAi()}
           className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
         >
-          {copiedAi ? "✓ تم النسخ" : "🤖 نسخ MD + Prompt AI"}
+          {copiedAi ? "✓ Tersalin" : "🤖 Copy MD + Prompt AI"}
         </button>
       </div>
 
       <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-xs text-emerald-900">
-        <p className="font-black">💡 كيف تستخدم التقرير؟</p>
-        <ul className="mt-2 list-disc space-y-1 pr-5">
+        <p className="font-black">💡 Cara pakai laporan</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
-            <b>نسخ MD فقط</b> — إذا أردت حفظ التقرير في مستند.
+            <b>Copy MD</b> — kalau mau simpan laporan di dokumen (Notion /
+            Obsidian / Word).
           </li>
           <li>
-            <b>نسخ MD + Prompt AI</b> — الصق النتيجة في ChatGPT / Meta AI،
-            وسيقوم تلقائيًا بتحليل أداء الطلاب واقتراح توصيات.
+            <b>Copy MD + Prompt AI</b> — paste ke ChatGPT / Meta AI, dan
+            otomatis menganalisis performa siswa + memberi rekomendasi.
           </li>
         </ul>
       </section>
 
-      {/* Room table */}
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-black text-neutral-900">
-            🏆 الألعاب بمؤقت
+            🏆 Permainan dengan Timer
           </h2>
           <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
-            {roomRows.length} جلسة
+            {roomRows.length} sesi
           </span>
         </div>
 
         {roomRows.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
-            لا توجد نتائج لهذا اليوم.
+            Tidak ada hasil untuk hari ini.
           </div>
         ) : (
           <div className="mt-4 max-h-96 overflow-auto rounded-2xl border border-neutral-200">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-neutral-100">
                 <tr>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    اللعبة
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Permainan
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الوضع
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Mode
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الطالب
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Siswa
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    النقاط
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Skor
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الترتيب
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Rank
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الوقت
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Waktu
                   </th>
                 </tr>
               </thead>
@@ -328,40 +325,39 @@ export function ReportView({
         )}
       </section>
 
-      {/* Practice table */}
       <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-black text-neutral-900">
-            📖 التدريب الذاتي
+            📖 Latihan Mandiri
           </h2>
           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-            {practiceRows.length} سجل
+            {practiceRows.length} catatan
           </span>
         </div>
 
         {practiceRows.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
-            لا توجد نتائج لهذا اليوم.
+            Tidak ada hasil untuk hari ini.
           </div>
         ) : (
           <div className="mt-4 max-h-96 overflow-auto rounded-2xl border border-neutral-200">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-neutral-100">
                 <tr>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الطالب
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Siswa
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    اللعبة
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Permainan
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    الوضع
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Mode
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    صحيح
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Benar
                   </th>
-                  <th className="px-3 py-2 text-right font-bold text-neutral-600">
-                    النسبة
+                  <th className="px-3 py-2 text-left font-bold text-neutral-600">
+                    Persen
                   </th>
                 </tr>
               </thead>
@@ -401,15 +397,15 @@ export function ReportView({
         )}
       </section>
 
-      {/* Cleanup */}
       <section className="rounded-2xl border border-red-200 bg-red-50/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-black text-red-800">
-              🗑️ مسح السجل القديم
+              🗑️ Hapus Catatan Lama
             </p>
             <p className="mt-0.5 text-xs text-red-700">
-              حذف جميع السجلات الأقدم من 7 أيام (تلقائيًا أيضًا كل يوم).
+              Hapus semua catatan yang lebih lama dari 7 hari (otomatis juga
+              setiap hari).
             </p>
           </div>
           <button
@@ -418,7 +414,7 @@ export function ReportView({
             disabled={cleaning}
             className="rounded-xl border border-red-300 bg-white px-4 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
           >
-            {cleaning ? "..." : "🗑️ مسح الآن"}
+            {cleaning ? "..." : "🗑️ Hapus Sekarang"}
           </button>
         </div>
         {cleanMsg ? (
@@ -426,16 +422,15 @@ export function ReportView({
         ) : null}
       </section>
 
-      {/* Preview */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-4">
         <p className="mb-2 text-xs font-black text-neutral-700">
-          معاينة التقرير (Markdown)
+          Pratinjau Laporan (Markdown)
         </p>
         <pre
           className="max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-6 text-slate-800"
-          dir="rtl"
+          dir="ltr"
         >
-{mdText}
+          {mdText}
         </pre>
       </section>
     </div>
