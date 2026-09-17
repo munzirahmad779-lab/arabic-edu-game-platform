@@ -151,19 +151,20 @@ export default async function ClassDetailPage({
       <div>
         <Link
           href="/dashboard/classes"
-          className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
+          className="text-sm font-bold text-teal-700 underline-offset-4 hover:underline"
         >
           ← {t.back_classes}
         </Link>
       </div>
 
-      <header className="rounded-2xl bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-xl">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-teal-500 to-teal-700 p-6 text-white shadow-xl">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-terracotta-500/30 blur-3xl" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-semibold text-white/75">
               {t.header_label}
             </p>
-            <h1 className="mt-1 text-3xl font-black sm:text-4xl">
+            <h1 className="font-display mt-1 text-3xl font-black sm:text-4xl">
               {classRow.name}
             </h1>
             <p className="mt-2 text-sm text-white/85">
@@ -182,13 +183,13 @@ export default async function ClassDetailPage({
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/dashboard/students?classId=${classRow.id}`}
-              className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
+              className="rounded-full bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
             >
               {t.btn_students}
             </Link>
             <Link
               href={`/dashboard/classes?edit=${classRow.id}`}
-              className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
+              className="rounded-full bg-white/15 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/25"
             >
               {t.btn_edit_class}
             </Link>
@@ -201,7 +202,7 @@ export default async function ClassDetailPage({
           role="alert"
           className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
             materialMessage.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              ? "border-sage-200 bg-sage-50 text-sage-600"
               : "border-red-200 bg-red-50 text-red-800"
           }`}
         >
@@ -214,7 +215,7 @@ export default async function ClassDetailPage({
           role="alert"
           className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
             essayMessage.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              ? "border-sage-200 bg-sage-50 text-sage-600"
               : "border-red-200 bg-red-50 text-red-800"
           }`}
         >
@@ -223,47 +224,47 @@ export default async function ClassDetailPage({
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-sky-100 bg-sky-50 p-5 text-center">
-          <div className="text-xs font-bold text-sky-700">
+        <div className="rounded-2xl border border-teal-500/20 bg-teal-50 p-5 text-center">
+          <div className="text-xs font-bold text-teal-700">
             {t.stat_students}
           </div>
-          <div className="mt-2 text-3xl font-black text-sky-950">
+          <div className="mt-2 text-3xl font-black text-teal-700">
             {students?.length ?? 0}
           </div>
         </div>
-        <div className="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-center">
-          <div className="text-xs font-bold text-violet-700">
+        <div className="rounded-2xl border border-terracotta-500/25 bg-terracotta-50 p-5 text-center">
+          <div className="text-xs font-bold text-terracotta-600">
             {t.stat_games}
           </div>
-          <div className="mt-2 text-3xl font-black text-violet-950">
+          <div className="mt-2 text-3xl font-black text-terracotta-600">
             {games?.length ?? 0}
           </div>
         </div>
-        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-center">
-          <div className="text-xs font-bold text-amber-700">
+        <div className="rounded-2xl border border-sage-500/30 bg-sage-50 p-5 text-center">
+          <div className="text-xs font-bold text-sage-600">
             {t.stat_materials}
           </div>
-          <div className="mt-2 text-3xl font-black text-amber-950">
+          <div className="mt-2 text-3xl font-black text-sage-600">
             {materials?.length ?? 0}
           </div>
         </div>
       </section>
 
       {/* Essay */}
-      <section className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="font-display text-lg font-black text-teal-700">
               ✍️ {t.essay_section_title}
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-softslate/70">
               {essays.length} {t.essay_section_desc}
             </p>
           </div>
           {searchParams.add_essay !== "1" ? (
             <Link
               href={`/dashboard/classes/${classRow.id}?add_essay=1`}
-              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
+              className="btn-primary"
             >
               {t.btn_add_essay}
             </Link>
@@ -271,15 +272,15 @@ export default async function ClassDetailPage({
         </div>
 
         {searchParams.add_essay === "1" ? (
-          <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
-            <h3 className="mb-4 text-base font-bold text-violet-900">
+          <div className="mb-6 rounded-2xl border border-terracotta-500/25 bg-terracotta-50/40 p-5">
+            <h3 className="mb-4 text-base font-black text-terracotta-600">
               {t.essay_create_title}
             </h3>
             <EssayForm classId={classRow.id} />
             <div className="mt-3">
               <Link
                 href={`/dashboard/classes/${classRow.id}`}
-                className="text-sm text-neutral-600 underline"
+                className="text-sm text-teal-700 underline"
               >
                 {t.essay_cancel}
               </Link>
@@ -291,20 +292,20 @@ export default async function ClassDetailPage({
       </section>
 
       {/* Materials */}
-      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="font-display text-lg font-black text-teal-700">
               {t.materials_section_title}
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-softslate/70">
               {materials?.length ?? 0} {t.materials_count}
             </p>
           </div>
           {!showForm ? (
             <Link
               href={`/dashboard/classes/${classRow.id}?add_material=1`}
-              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
+              className="btn-primary"
             >
               {t.btn_add_material}
             </Link>
@@ -312,8 +313,8 @@ export default async function ClassDetailPage({
         </div>
 
         {showForm ? (
-          <div className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
-            <h3 className="mb-4 text-base font-bold text-violet-900">
+          <div className="mb-6 rounded-2xl border border-terracotta-500/25 bg-terracotta-50/40 p-5">
+            <h3 className="mb-4 text-base font-black text-terracotta-600">
               {searchParams.edit_material
                 ? t.material_edit_title
                 : t.material_create_title}
@@ -352,7 +353,7 @@ export default async function ClassDetailPage({
             <div className="mt-3">
               <Link
                 href={`/dashboard/classes/${classRow.id}`}
-                className="text-sm text-neutral-600 underline"
+                className="text-sm text-teal-700 underline"
               >
                 {t.material_cancel}
               </Link>
@@ -376,33 +377,33 @@ export default async function ClassDetailPage({
       </section>
 
       {/* Students */}
-      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="font-display text-lg font-black text-teal-700">
               {t.students_section_title}
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-softslate/70">
               {students?.length ?? 0} {t.students_count}
             </p>
           </div>
           <Link
             href={`/dashboard/students?classId=${classRow.id}`}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
+            className="rounded-full border border-sage-200 bg-white px-3 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
           >
             {t.students_manage}
           </Link>
         </div>
 
         {!students || students.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-sage-200 bg-sage-50/40 p-8 text-center">
             <div className="text-4xl">👥</div>
-            <p className="mt-3 font-bold text-neutral-700">
+            <p className="mt-3 font-bold text-teal-700">
               {t.students_empty}
             </p>
             <Link
               href={`/dashboard/students?classId=${classRow.id}`}
-              className="mt-4 inline-flex rounded-2xl bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+              className="mt-4 inline-flex rounded-full bg-terracotta-500 px-5 py-2.5 text-sm font-black text-white transition hover:bg-terracotta-600"
             >
               {t.students_add}
             </Link>
@@ -412,16 +413,16 @@ export default async function ClassDetailPage({
             {students.map((student, index) => (
               <div
                 key={student.id}
-                className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+                className="flex items-center gap-3 rounded-2xl border border-sage-200/60 bg-white p-4"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-black text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-terracotta-500 to-terracotta-600 text-sm font-black text-white">
                   {index + 1}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate font-bold text-neutral-900">
+                  <div className="truncate font-bold text-teal-700">
                     {student.name}
                   </div>
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-softslate/70">
                     {new Date(student.created_at).toLocaleDateString(
                       isRtl ? "ar-EG" : locale,
                     )}
@@ -434,31 +435,31 @@ export default async function ClassDetailPage({
       </section>
 
       {/* Games */}
-      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="font-display text-lg font-black text-teal-700">
               {t.games_section_title}
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-softslate/70">
               {games?.length ?? 0} {t.games_count}
             </p>
           </div>
           <Link
             href="/dashboard/games"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
+            className="rounded-full border border-sage-200 bg-white px-3 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
           >
             {t.games_manage}
           </Link>
         </div>
 
         {!games || games.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-sage-200 bg-sage-50/40 p-8 text-center">
             <div className="text-4xl">🎮</div>
-            <p className="mt-3 font-bold text-neutral-700">{t.games_empty}</p>
+            <p className="mt-3 font-bold text-teal-700">{t.games_empty}</p>
             <Link
               href="/dashboard/games"
-              className="mt-4 inline-flex rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
+              className="mt-4 inline-flex rounded-full bg-terracotta-500 px-5 py-2.5 text-sm font-black text-white transition hover:bg-terracotta-600"
             >
               {t.games_create}
             </Link>
@@ -468,11 +469,11 @@ export default async function ClassDetailPage({
             {games.map((game) => (
               <div
                 key={game.id}
-                className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-2xl border border-sage-200/60 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <div className="font-bold text-neutral-900">{game.name}</div>
-                  <div className="mt-1 text-xs text-neutral-500">
+                  <div className="font-bold text-teal-700">{game.name}</div>
+                  <div className="mt-1 text-xs text-softslate/70">
                     {game.mode === "competitive"
                       ? isRtl
                         ? "تنافسي"
@@ -489,7 +490,7 @@ export default async function ClassDetailPage({
                 </div>
                 <Link
                   href="/dashboard/games"
-                  className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-700 hover:bg-violet-100"
+                  className="rounded-full border border-sage-200 bg-sage-50 px-3 py-2 text-sm font-bold text-sage-600 transition hover:bg-sage-100"
                 >
                   {t.games_open}
                 </Link>

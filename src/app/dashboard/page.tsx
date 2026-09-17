@@ -71,50 +71,50 @@ export default async function DashboardPage() {
       value: classes?.length ?? 0,
       emoji: "🏫",
       href: "/dashboard/classes",
-      ring: "border-sky-200",
-      bg: "bg-sky-50",
-      text: "text-sky-950",
-      badge: "bg-sky-600",
+      ring: "border-teal-500/20",
+      bg: "bg-teal-50",
+      text: "text-teal-700",
+      badge: "bg-teal-500",
     },
     {
       label: t.stat_students,
       value: studentCount,
       emoji: "👥",
       href: "/dashboard/students",
-      ring: "border-emerald-200",
-      bg: "bg-emerald-50",
-      text: "text-emerald-950",
-      badge: "bg-emerald-600",
+      ring: "border-sage-500/30",
+      bg: "bg-sage-50",
+      text: "text-sage-600",
+      badge: "bg-sage-500",
     },
     {
       label: t.stat_materials,
       value: materialCount,
       emoji: "📖",
       href: "/dashboard/classes",
-      ring: "border-amber-200",
-      bg: "bg-amber-50",
-      text: "text-amber-950",
-      badge: "bg-amber-600",
+      ring: "border-terracotta-500/25",
+      bg: "bg-terracotta-50",
+      text: "text-terracotta-600",
+      badge: "bg-terracotta-500",
     },
     {
       label: t.stat_questions,
       value: questionsRes.count ?? 0,
       emoji: "❓",
       href: "/dashboard/question-banks",
-      ring: "border-fuchsia-200",
-      bg: "bg-fuchsia-50",
-      text: "text-fuchsia-950",
-      badge: "bg-fuchsia-600",
+      ring: "border-teal-500/20",
+      bg: "bg-teal-50",
+      text: "text-teal-700",
+      badge: "bg-teal-500",
     },
     {
       label: t.stat_games,
       value: gamesRes.count ?? 0,
       emoji: "🎮",
       href: "/dashboard/games",
-      ring: "border-violet-200",
-      bg: "bg-violet-50",
-      text: "text-violet-950",
-      badge: "bg-violet-600",
+      ring: "border-terracotta-500/25",
+      bg: "bg-terracotta-50",
+      text: "text-terracotta-600",
+      badge: "bg-terracotta-500",
     },
   ];
 
@@ -123,14 +123,17 @@ export default async function DashboardPage() {
 
   return (
     <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
-      <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-xl sm:p-8">
-        <p className="text-sm font-semibold text-white/75">
-          {dict.common.brand_top}
-        </p>
-        <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-          👋 {t.welcome}
-        </h1>
-        <p className="mt-2 text-sm text-white/85">{t.welcome_desc}</p>
+      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-teal-500 to-teal-700 p-6 text-white shadow-xl sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-terracotta-500/30 blur-3xl" />
+        <div className="relative">
+          <p className="text-sm font-semibold text-white/75">
+            {dict.common.brand_top}
+          </p>
+          <h1 className="font-display mt-2 text-3xl font-black sm:text-4xl">
+            👋 {t.welcome}
+          </h1>
+          <p className="mt-2 text-sm text-white/85">{t.welcome_desc}</p>
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -161,19 +164,19 @@ export default async function DashboardPage() {
       <section className="grid gap-5 md:grid-cols-3">
         <Link
           href="/dashboard/classes"
-          className="group rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-sky-400 hover:shadow-md"
+          className="group aesthetic-card"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">🏫</p>
-              <h2 className="mt-4 font-bold text-sky-950">
+              <h2 className="font-display mt-4 font-black text-teal-700">
                 {t.stat_classes}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-sky-800">
+              <p className="mt-2 text-sm leading-6 text-softslate/80">
                 {t.welcome_desc}
               </p>
             </div>
-            <span className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white">
+            <span className="rounded-full bg-teal-500 px-3 py-1 text-xs font-bold text-white">
               →
             </span>
           </div>
@@ -181,39 +184,36 @@ export default async function DashboardPage() {
 
         <Link
           href="/dashboard/question-banks"
-          className="group rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-400 hover:shadow-md"
+          className="group aesthetic-card"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">📚</p>
-              <h2 className="mt-4 font-bold text-emerald-950">
+              <h2 className="font-display mt-4 font-black text-teal-700">
                 {dict.home.feat_bank_title}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-emerald-800">
+              <p className="mt-2 text-sm leading-6 text-softslate/80">
                 {dict.home.feat_bank_desc}
               </p>
             </div>
-            <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white">
+            <span className="rounded-full bg-sage-500 px-3 py-1 text-xs font-bold text-white">
               →
             </span>
           </div>
         </Link>
 
-        <Link
-          href="/dashboard/games"
-          className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-violet-400 hover:shadow-md"
-        >
+        <Link href="/dashboard/games" className="group aesthetic-card">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-3xl">🎮</p>
-              <h2 className="mt-4 font-bold text-violet-950">
+              <h2 className="font-display mt-4 font-black text-teal-700">
                 {t.stat_games}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-violet-800">
+              <p className="mt-2 text-sm leading-6 text-softslate/80">
                 {dict.home.feat_modes_desc}
               </p>
             </div>
-            <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white">
+            <span className="rounded-full bg-terracotta-500 px-3 py-1 text-xs font-bold text-white">
               →
             </span>
           </div>
@@ -221,19 +221,19 @@ export default async function DashboardPage() {
       </section>
 
       {recentClasses.length > 0 ? (
-        <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl sm:p-8">
+        <section className="aesthetic-card">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-black text-neutral-900">
+              <h2 className="font-display text-lg font-black text-teal-700">
                 🕒 {t.recent_classes}
               </h2>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-softslate/70">
                 {t.recent_classes_desc}
               </p>
             </div>
             <Link
               href="/dashboard/classes"
-              className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100"
+              className="rounded-full border border-sage-200 bg-sage-50 px-4 py-2 text-xs font-bold text-sage-600 transition hover:bg-sage-100"
             >
               {t.view_all}
             </Link>
@@ -244,20 +244,20 @@ export default async function DashboardPage() {
               <li key={c.id}>
                 <Link
                   href={`/dashboard/classes/${c.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4 transition hover:border-violet-300 hover:bg-violet-50"
+                  className="group flex items-center justify-between gap-3 rounded-2xl border border-sage-200/60 bg-white p-4 transition hover:border-terracotta-500/50 hover:bg-terracotta-50"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-bold text-neutral-900 group-hover:text-violet-700">
+                    <p className="truncate font-bold text-teal-700 group-hover:text-terracotta-600">
                       {c.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-neutral-500">
+                    <p className="mt-0.5 text-xs text-softslate/70">
                       {c.subject ?? cd.no_subject} ·{" "}
                       {new Date(c.created_at).toLocaleDateString(
                         locale === "ar" ? "ar-EG" : locale,
                       )}
                     </p>
                   </div>
-                  <span className="text-2xl text-neutral-300 transition group-hover:text-violet-600">
+                  <span className="text-2xl text-sage-500 transition group-hover:text-terracotta-500">
                     {isRtl ? "←" : "→"}
                   </span>
                 </Link>
@@ -267,23 +267,20 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      <section className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-xl">
+      <section className="aesthetic-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-bold text-emerald-600">
+            <p className="text-sm font-bold text-sage-600">
               {t.stat_students}
             </p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">
+            <h2 className="font-display mt-1 text-2xl font-black text-teal-700">
               {t.students_mgmt}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-softslate/80">
               {t.students_mgmt_desc}
             </p>
           </div>
-          <Link
-            href="/dashboard/students"
-            className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-600"
-          >
+          <Link href="/dashboard/students" className="btn-primary">
             {t.open_students}
           </Link>
         </div>

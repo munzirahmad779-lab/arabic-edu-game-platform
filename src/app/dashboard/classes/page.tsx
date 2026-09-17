@@ -41,26 +41,28 @@ export default async function ClassesPage({
     <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-neutral-500">
+          <p className="text-sm font-bold text-terracotta-500">
             {c.brand_top}
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">{t.title}</h1>
-          <p className="mt-2 text-sm text-neutral-600">{t.subtitle}</p>
+          <h1 className="font-display mt-1 text-3xl font-black tracking-tight text-teal-700">
+            {t.title}
+          </h1>
+          <p className="mt-2 text-sm text-softslate/80">{t.subtitle}</p>
         </div>
         <Link
           href="/dashboard"
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+          className="rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
         >
           {t.back_dashboard}
         </Link>
       </header>
 
-      <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div>
-          <h2 className="text-lg font-semibold">
+          <h2 className="font-display text-lg font-black text-teal-700">
             {editing ? t.edit_title : t.create_title}
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">{t.create_desc}</p>
+          <p className="mt-1 text-sm text-softslate/70">{t.create_desc}</p>
         </div>
 
         <form
@@ -79,7 +81,7 @@ export default async function ClassesPage({
           <div>
             <label
               htmlFor="class-name"
-              className="block text-sm font-medium"
+              className="block text-sm font-bold text-teal-700"
             >
               {t.label_name}
             </label>
@@ -91,14 +93,14 @@ export default async function ClassesPage({
               maxLength={120}
               defaultValue={editing?.name ?? ""}
               placeholder={t.label_name_placeholder}
-              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+              className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
           </div>
 
           <div>
             <label
               htmlFor="class-subject"
-              className="block text-sm font-medium"
+              className="block text-sm font-bold text-teal-700"
             >
               {t.label_subject}
             </label>
@@ -109,21 +111,18 @@ export default async function ClassesPage({
               maxLength={120}
               defaultValue={editing?.subject ?? ""}
               placeholder={t.label_subject_placeholder}
-              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+              className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
           </div>
 
-          <div className="sm:col-span-2 flex flex-wrap gap-2">
-            <button
-              type="submit"
-              className="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
-            >
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
+            <button type="submit" className="btn-primary">
               {editing ? t.btn_save : t.btn_create}
             </button>
             {editing ? (
               <Link
                 href="/dashboard/classes"
-                className="rounded-lg border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+                className="rounded-full border border-sage-200 bg-white px-5 py-3 text-sm font-black text-teal-700 transition hover:bg-sage-50"
               >
                 {t.cancel_edit}
               </Link>
@@ -134,40 +133,42 @@ export default async function ClassesPage({
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t.my_classes}</h2>
-          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+          <h2 className="font-display text-lg font-black text-teal-700">
+            {t.my_classes}
+          </h2>
+          <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-600">
             {classes?.length ?? 0} {t.my_classes_count}
           </span>
         </div>
 
         {!classes || classes.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
+          <div className="aesthetic-card text-center">
             <div className="text-4xl">🏫</div>
-            <p className="mt-3 font-bold text-neutral-700">{t.empty_title}</p>
-            <p className="mt-1 text-sm text-neutral-500">{t.empty_desc}</p>
+            <p className="mt-3 font-bold text-teal-700">{t.empty_title}</p>
+            <p className="mt-1 text-sm text-softslate/70">{t.empty_desc}</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {classes.map((cls) => (
               <article
                 key={cls.id}
-                className="flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md"
+                className="aesthetic-card flex flex-col"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-semibold">
+                    <h3 className="font-display truncate text-lg font-black text-teal-700">
                       {cls.name}
                     </h3>
-                    <p className="mt-1 truncate text-sm text-neutral-500">
+                    <p className="mt-1 truncate text-sm text-softslate/70">
                       {cls.subject ?? dict.class_detail.no_subject}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
+                  <span className="shrink-0 rounded-full bg-terracotta-50 px-2.5 py-1 text-xs text-terracotta-600">
                     🏫
                   </span>
                 </div>
 
-                <p className="mt-3 text-xs text-neutral-400">
+                <p className="mt-3 text-xs text-softslate/60">
                   {t.created_at}:{" "}
                   {new Date(cls.created_at).toLocaleDateString(
                     locale === "ar" ? "ar-EG" : locale,
@@ -177,13 +178,13 @@ export default async function ClassesPage({
                 <div className="mt-4 flex gap-2 pt-2">
                   <Link
                     href={`/dashboard/classes/${cls.id}`}
-                    className="flex-1 rounded-lg bg-violet-600 px-4 py-2.5 text-center text-sm font-bold text-white transition hover:bg-violet-700"
+                    className="flex-1 rounded-full bg-terracotta-500 px-4 py-2.5 text-center text-sm font-black text-white transition hover:bg-terracotta-600"
                   >
                     {t.open_class}
                   </Link>
                   <Link
                     href={`/dashboard/classes?edit=${cls.id}`}
-                    className="rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+                    className="rounded-full border border-sage-200 bg-white px-3 py-2.5 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
                   >
                     ✏️
                   </Link>

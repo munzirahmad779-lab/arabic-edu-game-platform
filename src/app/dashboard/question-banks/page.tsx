@@ -148,12 +148,12 @@ export default async function QuestionBanksPage({
       : locale === "en"
         ? "Create topics whose names you will use in the «Topik» column inside the Excel template."
         : "Buat topik yang namanya akan kamu pakai di kolom «Topik» dalam template Excel.",
-    topics_count: isRtl
-      ? "موضوع"
+    topics_count: isRtl ? "موضوع" : locale === "en" ? "topics" : "topik",
+    add_topic: isRtl
+      ? "إضافة موضوع"
       : locale === "en"
-        ? "topics"
-        : "topik",
-    add_topic: isRtl ? "إضافة موضوع" : locale === "en" ? "Add Topic" : "Tambah Topik",
+        ? "Add Topic"
+        : "Tambah Topik",
     save: isRtl ? "حفظ" : locale === "en" ? "Save" : "Simpan",
     delete: isRtl ? "حذف" : locale === "en" ? "Delete" : "Hapus",
     no_topics: isRtl
@@ -204,7 +204,11 @@ export default async function QuestionBanksPage({
         ? "You haven't created any question banks yet."
         : "Kamu belum membuat bank soal.",
     all: isRtl ? "الكل" : locale === "en" ? "All" : "Semua",
-    no_topic: isRtl ? "بدون موضوع" : locale === "en" ? "No topic" : "Tanpa topik",
+    no_topic: isRtl
+      ? "بدون موضوع"
+      : locale === "en"
+        ? "No topic"
+        : "Tanpa topik",
     questions_saved: isRtl
       ? "الأسئلة المحفوظة"
       : locale === "en"
@@ -258,24 +262,37 @@ export default async function QuestionBanksPage({
 
   const errorMessage = (() => {
     switch (searchParams.error) {
-      case "invalid_bank": return L.err_invalid_bank;
-      case "duplicate_bank": return L.err_dup_bank;
-      case "create_bank_failed": return L.err_create_bank;
-      case "invalid_bank_id": return L.err_invalid_bank_id;
+      case "invalid_bank":
+        return L.err_invalid_bank;
+      case "duplicate_bank":
+        return L.err_dup_bank;
+      case "create_bank_failed":
+        return L.err_create_bank;
+      case "invalid_bank_id":
+        return L.err_invalid_bank_id;
       default:
-        return searchParams.error ? `${dict.common.error}: ${searchParams.error}` : null;
+        return searchParams.error
+          ? `${dict.common.error}: ${searchParams.error}`
+          : null;
     }
   })();
 
   const categoryErrorMessage = (() => {
     switch (searchParams.category_error) {
-      case "invalid": return L.cat_invalid;
-      case "duplicate": return L.cat_dup;
-      case "create_failed": return L.cat_create_failed;
-      case "update_failed": return L.cat_update_failed;
-      case "delete_failed": return L.cat_delete_failed;
-      case "in_use": return L.cat_in_use;
-      default: return null;
+      case "invalid":
+        return L.cat_invalid;
+      case "duplicate":
+        return L.cat_dup;
+      case "create_failed":
+        return L.cat_create_failed;
+      case "update_failed":
+        return L.cat_update_failed;
+      case "delete_failed":
+        return L.cat_delete_failed;
+      case "in_use":
+        return L.cat_in_use;
+      default:
+        return null;
     }
   })();
 
@@ -376,12 +393,14 @@ export default async function QuestionBanksPage({
     <div className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{L.page_title}</h1>
-          <p className="mt-1 text-sm text-neutral-600">{L.page_sub}</p>
+          <h1 className="font-display text-2xl font-black text-teal-700">
+            {L.page_title}
+          </h1>
+          <p className="mt-1 text-sm text-softslate/80">{L.page_sub}</p>
         </div>
         <Link
           href="/dashboard"
-          className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm hover:bg-neutral-50"
+          className="rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
         >
           {L.dashboard}
         </Link>
@@ -390,7 +409,7 @@ export default async function QuestionBanksPage({
       {searchParams.deleted === "1" ? (
         <div
           role="alert"
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 text-sm text-sage-600"
         >
           {L.deleted_ok}
         </div>
@@ -399,7 +418,7 @@ export default async function QuestionBanksPage({
       {errorMessage ? (
         <div
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {errorMessage}
         </div>
@@ -408,7 +427,7 @@ export default async function QuestionBanksPage({
       {categoryErrorMessage ? (
         <div
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {categoryErrorMessage}
         </div>
@@ -416,14 +435,16 @@ export default async function QuestionBanksPage({
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{L.my_banks}</h2>
-          <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700">
+          <h2 className="font-display text-lg font-black text-teal-700">
+            {L.my_banks}
+          </h2>
+          <span className="rounded-full bg-terracotta-100 px-3 py-1 text-sm font-bold text-terracotta-600">
             {banks?.length ?? 0} {L.banks_count}
           </span>
         </div>
 
         {!banks || banks.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          <div className="aesthetic-card text-center text-sm text-softslate/70">
             {L.no_banks}
           </div>
         ) : (
@@ -448,16 +469,16 @@ export default async function QuestionBanksPage({
             const header = (
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-base font-bold text-neutral-900">
+                  <h3 className="truncate text-base font-black text-teal-700">
                     {bank.name}
                   </h3>
                   {bank.description ? (
-                    <p className="mt-0.5 truncate text-sm text-neutral-500">
+                    <p className="mt-0.5 truncate text-sm text-softslate/70">
                       {bank.description}
                     </p>
                   ) : null}
                 </div>
-                <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+                <span className="shrink-0 rounded-full bg-terracotta-100 px-3 py-1 text-xs font-bold text-terracotta-600">
                   {bankQuestions.length} {L.questions_unit}
                 </span>
               </div>
@@ -470,8 +491,10 @@ export default async function QuestionBanksPage({
                 header={header}
                 defaultOpen={isFilterActive}
               >
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50/40 p-3">
-                  <div className="text-xs text-red-700">{L.delete_bank_warn}</div>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50/40 p-3">
+                  <div className="text-xs text-red-700">
+                    {L.delete_bank_warn}
+                  </div>
                   <DeleteBankForm
                     bankId={bank.id}
                     bankName={bank.name}
@@ -479,12 +502,12 @@ export default async function QuestionBanksPage({
                   />
                 </div>
 
-                <div className="rounded-xl border border-neutral-200 bg-white p-4">
-                  <h4 className="font-semibold">{L.import_title}</h4>
-                  <p className="mt-1 mb-3 text-sm text-neutral-600">
+                <div className="rounded-2xl border border-sage-200/60 bg-white p-4">
+                  <h4 className="font-black text-teal-700">{L.import_title}</h4>
+                  <p className="mt-1 mb-3 text-sm text-softslate/70">
                     {L.import_desc}
                   </p>
-                  <p className="mb-3 rounded-md bg-blue-50 p-3 text-xs text-blue-900">
+                  <p className="mb-3 rounded-xl bg-teal-50 p-3 text-xs text-teal-700">
                     {L.import_note}
                   </p>
                   <QuestionBankImportForm questionBankId={bank.id} />
@@ -492,8 +515,10 @@ export default async function QuestionBanksPage({
 
                 <div>
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-semibold">{L.questions_saved}</h4>
-                    <span className="text-sm text-neutral-500">
+                    <h4 className="font-black text-teal-700">
+                      {L.questions_saved}
+                    </h4>
+                    <span className="text-sm text-softslate/70">
                       {filteredBankQuestions.length} / {bankQuestions.length}{" "}
                       {L.questions_unit}
                     </span>
@@ -505,8 +530,8 @@ export default async function QuestionBanksPage({
                         href={`/dashboard/question-banks?bank=${bank.id}`}
                         className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
                           isFilterActive && !activeCat
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                            ? "border-teal-700 bg-teal-700 text-white"
+                            : "border-sage-200 bg-white text-teal-700 hover:bg-sage-50"
                         }`}
                       >
                         {L.all} ({bankQuestions.length})
@@ -517,15 +542,16 @@ export default async function QuestionBanksPage({
                           (q) => q.category_id === cat.id,
                         ).length;
                         if (count === 0) return null;
-                        const isActive = isFilterActive && activeCat === cat.id;
+                        const isActive =
+                          isFilterActive && activeCat === cat.id;
                         return (
                           <Link
                             key={cat.id}
                             href={`/dashboard/question-banks?bank=${bank.id}&cat=${cat.id}`}
                             className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
                               isActive
-                                ? "border-violet-600 bg-violet-600 text-white"
-                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                                ? "border-terracotta-500 bg-terracotta-500 text-white"
+                                : "border-sage-200 bg-white text-teal-700 hover:bg-sage-50"
                             }`}
                           >
                             {cat.name} ({count})
@@ -545,8 +571,8 @@ export default async function QuestionBanksPage({
                             href={`/dashboard/question-banks?bank=${bank.id}&cat=__none__`}
                             className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
                               isActive
-                                ? "border-amber-600 bg-amber-600 text-white"
-                                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+                                ? "border-sage-500 bg-sage-500 text-white"
+                                : "border-sage-200 bg-white text-teal-700 hover:bg-sage-50"
                             }`}
                           >
                             {L.no_topic} ({noneCount})
@@ -557,8 +583,10 @@ export default async function QuestionBanksPage({
                   ) : null}
 
                   {filteredBankQuestions.length === 0 ? (
-                    <div className="mt-4 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-                      {bankQuestions.length === 0 ? L.no_q_in_bank : L.no_q_filter}
+                    <div className="mt-4 rounded-2xl border border-dashed border-sage-200 bg-sage-50/40 p-5 text-center text-sm text-softslate/70">
+                      {bankQuestions.length === 0
+                        ? L.no_q_in_bank
+                        : L.no_q_filter}
                     </div>
                   ) : (
                     <div className="mt-4 space-y-4">
@@ -569,26 +597,27 @@ export default async function QuestionBanksPage({
                         return (
                           <article
                             key={question.id}
-                            className="rounded-lg border border-neutral-200 p-4"
+                            className="rounded-2xl border border-sage-200/60 bg-white p-4"
                           >
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-softslate/70">
                               <span>
-                                {locale === "ar" ? "السؤال" : "Soal"} {index + 1}
+                                {locale === "ar" ? "السؤال" : "Soal"}{" "}
+                                {index + 1}
                               </span>
                               {question.category_id ? (
-                                <span className="rounded-full bg-neutral-100 px-2 py-1">
+                                <span className="rounded-full bg-terracotta-100 px-2 py-1 text-terracotta-600">
                                   {categoryMap.get(question.category_id) ??
                                     "—"}
                                 </span>
                               ) : null}
                               {question.difficulty ? (
-                                <span className="rounded-full bg-neutral-100 px-2 py-1">
+                                <span className="rounded-full bg-teal-100 px-2 py-1 text-teal-700">
                                   {difficultyLabel[question.difficulty]}
                                 </span>
                               ) : null}
                             </div>
 
-                            <p className="mt-3 text-base font-medium leading-8">
+                            <p className="mt-3 text-base font-medium leading-8 text-teal-700">
                               {question.question_text ?? "—"}
                             </p>
 
@@ -603,18 +632,18 @@ export default async function QuestionBanksPage({
                                 return (
                                   <div
                                     key={key}
-                                    className={`rounded-md border p-3 ${
+                                    className={`rounded-xl border p-3 ${
                                       isCorrect
-                                        ? "border-green-300 bg-green-50 text-green-900"
-                                        : "border-neutral-200 bg-white"
+                                        ? "border-sage-500/40 bg-sage-50 text-sage-600"
+                                        : "border-sage-200/60 bg-white text-softslate"
                                     }`}
                                   >
-                                    <span className="font-semibold">
+                                    <span className="font-black">
                                       {key}.
                                     </span>{" "}
                                     {option?.option_text ?? L.option_missing}
                                     {isCorrect ? (
-                                      <span className="mr-2 text-xs font-semibold">
+                                      <span className="ms-2 text-xs font-black">
                                         ✓ {L.correct}
                                       </span>
                                     ) : null}
@@ -640,10 +669,12 @@ export default async function QuestionBanksPage({
                                 option_key: option.option_key,
                                 option_text: option.option_text,
                               }))}
-                              categories={(categories ?? []).map((category) => ({
-                                id: category.id,
-                                name: category.name,
-                              }))}
+                              categories={(categories ?? []).map(
+                                (category) => ({
+                                  id: category.id,
+                                  name: category.name,
+                                }),
+                              )}
                               mediaCount={
                                 (mediaByQuestion.get(question.id) ?? []).length
                               }
@@ -660,39 +691,40 @@ export default async function QuestionBanksPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">{L.create_bank_title}</h2>
+      <section className="aesthetic-card">
+        <h2 className="font-display text-lg font-black text-teal-700">
+          {L.create_bank_title}
+        </h2>
         <form action={createQuestionBank} className="mt-4 grid gap-3">
           <input
             name="name"
             required
             maxLength={100}
             placeholder={L.name_placeholder}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
           />
           <textarea
             name="description"
             maxLength={500}
             placeholder={L.desc_placeholder}
             rows={3}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
           />
-          <button
-            type="submit"
-            className="w-fit rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
+          <button type="submit" className="btn-primary w-fit">
             {L.create_bank_btn}
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <section className="aesthetic-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">{L.topics_title}</h2>
-            <p className="mt-1 text-sm text-neutral-600">{L.topics_desc}</p>
+            <h2 className="font-display text-lg font-black text-teal-700">
+              {L.topics_title}
+            </h2>
+            <p className="mt-1 text-sm text-softslate/70">{L.topics_desc}</p>
           </div>
-          <span className="text-sm text-neutral-500">
+          <span className="text-sm text-softslate/70">
             {categories?.length ?? 0} {L.topics_count}
           </span>
         </div>
@@ -711,12 +743,9 @@ export default async function QuestionBanksPage({
             required
             maxLength={100}
             placeholder={L.name_placeholder}
-            className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+            className="min-w-0 flex-1 rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
           />
-          <button
-            type="submit"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
+          <button type="submit" className="btn-primary">
             {L.add_topic}
           </button>
         </form>
@@ -726,7 +755,7 @@ export default async function QuestionBanksPage({
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="rounded-md border border-neutral-200 p-3"
+                className="rounded-2xl border border-sage-200/60 bg-white p-3"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <form
@@ -746,11 +775,11 @@ export default async function QuestionBanksPage({
                       defaultValue={category.name}
                       required
                       maxLength={100}
-                      className="min-w-0 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                      className="min-w-0 flex-1 rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
                     />
                     <button
                       type="submit"
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+                      className="rounded-full border border-sage-200 bg-white px-3 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
                     >
                       {L.save}
                     </button>
@@ -759,7 +788,7 @@ export default async function QuestionBanksPage({
                     <input type="hidden" name="id" value={category.id} />
                     <button
                       type="submit"
-                      className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                      className="rounded-full border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
                     >
                       {L.delete}
                     </button>
@@ -769,7 +798,7 @@ export default async function QuestionBanksPage({
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-md border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
+          <div className="mt-5 rounded-2xl border border-dashed border-sage-200 bg-sage-50/40 p-5 text-center text-sm text-softslate/70">
             {L.no_topics}
           </div>
         )}
@@ -777,16 +806,18 @@ export default async function QuestionBanksPage({
 
       <AiPromptSection />
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <section className="aesthetic-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">{L.excel_title}</h2>
-            <p className="mt-1 text-sm text-neutral-600">{L.excel_desc}</p>
+            <h2 className="font-display text-lg font-black text-teal-700">
+              {L.excel_title}
+            </h2>
+            <p className="mt-1 text-sm text-softslate/70">{L.excel_desc}</p>
           </div>
           <a
             href="/templates/question-bank-template.xlsx"
             download
-            className="w-fit rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50"
+            className="w-fit rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
           >
             {L.excel_download}
           </a>

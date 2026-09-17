@@ -15,11 +15,36 @@ const MODE_LABEL_KEY: Record<
   string,
   { ar: string; en: string; id: string; forRoom: boolean }
 > = {
-  competitive: { ar: "تنافسي", en: "Competitive", id: "Kompetitif", forRoom: true },
-  cooperative: { ar: "تعاوني", en: "Cooperative", id: "Kooperatif", forRoom: true },
-  endless: { ar: "بلا نهاية", en: "Endless", id: "Tanpa Batas", forRoom: false },
-  practice: { ar: "تمرين", en: "Practice", id: "Latihan", forRoom: false },
-  learning: { ar: "تعليمي (قديم)", en: "Learning (old)", id: "Pembelajaran (lama)", forRoom: true },
+  competitive: {
+    ar: "تنافسي",
+    en: "Competitive",
+    id: "Kompetitif",
+    forRoom: true,
+  },
+  cooperative: {
+    ar: "تعاوني",
+    en: "Cooperative",
+    id: "Kooperatif",
+    forRoom: true,
+  },
+  endless: {
+    ar: "بلا نهاية",
+    en: "Endless",
+    id: "Tanpa Batas",
+    forRoom: false,
+  },
+  practice: {
+    ar: "تمرين",
+    en: "Practice",
+    id: "Latihan",
+    forRoom: false,
+  },
+  learning: {
+    ar: "تعليمي (قديم)",
+    en: "Learning (old)",
+    id: "Pembelajaran (lama)",
+    forRoom: true,
+  },
 };
 
 export default async function GamesPage({
@@ -128,7 +153,11 @@ export default async function GamesPage({
         ? "Create a game and use your existing questions in an interactive learning experience."
         : "Buat permainan dan gunakan soal yang sudah ada untuk pengalaman belajar interaktif.",
     back: isRtl ? "لوحة التحكم" : locale === "en" ? "Dashboard" : "Dashboard",
-    my_games: isRtl ? "ألعابي" : locale === "en" ? "My Games" : "Permainan Saya",
+    my_games: isRtl
+      ? "ألعابي"
+      : locale === "en"
+        ? "My Games"
+        : "Permainan Saya",
     my_games_desc: isRtl
       ? "الألعاب التي أنشأها حسابك الحالي."
       : locale === "en"
@@ -139,8 +168,16 @@ export default async function GamesPage({
       : locale === "en"
         ? "No games yet."
         : "Belum ada permainan.",
-    play: isRtl ? "▶ تشغيل اللعبة" : locale === "en" ? "▶ Play Game" : "▶ Mainkan",
-    no_room: isRtl ? "بدون غرفة" : locale === "en" ? "No room" : "Tanpa Room",
+    play: isRtl
+      ? "▶ تشغيل اللعبة"
+      : locale === "en"
+        ? "▶ Play Game"
+        : "▶ Mainkan",
+    no_room: isRtl
+      ? "بدون غرفة"
+      : locale === "en"
+        ? "No room"
+        : "Tanpa Room",
     self_practice: isRtl
       ? "📖 تدريب ذاتي — متاح في بوابة الطالب"
       : locale === "en"
@@ -156,14 +193,46 @@ export default async function GamesPage({
       : locale === "en"
         ? "Choose class and questions, then set the game mode."
         : "Pilih kelas dan soal, lalu atur mode permainan.",
-    label_name: isRtl ? "اسم اللعبة" : locale === "en" ? "Game Name" : "Nama Permainan",
-    label_class: isRtl ? "الفصل الدراسي" : locale === "en" ? "Class" : "Kelas",
-    choose_class: isRtl ? "اختر الفصل" : locale === "en" ? "Choose class" : "Pilih kelas",
-    label_ranking: isRtl ? "إظهار الترتيب" : locale === "en" ? "Show ranking" : "Tampilkan peringkat",
-    ranking_full: isRtl ? "للجميع" : locale === "en" ? "Everyone" : "Semua",
-    ranking_hidden: isRtl ? "مخفي" : locale === "en" ? "Hidden" : "Disembunyikan",
-    ranking_self: isRtl ? "لللاعب نفسه" : locale === "en" ? "Only player" : "Hanya pemain",
-    btn_create: isRtl ? "إنشاء اللعبة" : locale === "en" ? "Create Game" : "Buat Permainan",
+    label_name: isRtl
+      ? "اسم اللعبة"
+      : locale === "en"
+        ? "Game Name"
+        : "Nama Permainan",
+    label_class: isRtl
+      ? "الفصل الدراسي"
+      : locale === "en"
+        ? "Class"
+        : "Kelas",
+    choose_class: isRtl
+      ? "اختر الفصل"
+      : locale === "en"
+        ? "Choose class"
+        : "Pilih kelas",
+    label_ranking: isRtl
+      ? "إظهار الترتيب"
+      : locale === "en"
+        ? "Show ranking"
+        : "Tampilkan peringkat",
+    ranking_full: isRtl
+      ? "للجميع"
+      : locale === "en"
+        ? "Everyone"
+        : "Semua",
+    ranking_hidden: isRtl
+      ? "مخفي"
+      : locale === "en"
+        ? "Hidden"
+        : "Disembunyikan",
+    ranking_self: isRtl
+      ? "لللاعب نفسه"
+      : locale === "en"
+        ? "Only player"
+        : "Hanya pemain",
+    btn_create: isRtl
+      ? "إنشاء اللعبة"
+      : locale === "en"
+        ? "Create Game"
+        : "Buat Permainan",
     no_class_warn: isRtl
       ? "أنشئ فصلًا دراسيًا أولًا قبل إنشاء اللعبة."
       : locale === "en"
@@ -174,29 +243,35 @@ export default async function GamesPage({
       : locale === "en"
         ? "Create a question bank first before creating a game."
         : "Buat bank soal dulu sebelum membuat permainan.",
-    delete_title: isRtl ? "حذف اللعبة" : locale === "en" ? "Delete game" : "Hapus permainan",
+    delete_title: isRtl
+      ? "حذف اللعبة"
+      : locale === "en"
+        ? "Delete game"
+        : "Hapus permainan",
   };
 
   return (
     <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-neutral-500">
+          <p className="text-sm font-bold text-terracotta-500">
             {dict.common.brand_top}
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">{labels.title}</h1>
-          <p className="mt-2 text-sm text-neutral-600">{labels.subtitle}</p>
+          <h1 className="font-display mt-1 text-3xl font-black tracking-tight text-teal-700">
+            {labels.title}
+          </h1>
+          <p className="mt-2 text-sm text-softslate/80">{labels.subtitle}</p>
         </div>
         <Link
           href="/dashboard"
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+          className="rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
         >
           {labels.back}
         </Link>
       </header>
 
       {searchParams.error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {searchParams.error}
           {searchParams.msg ? (
             <div className="mt-1 text-xs opacity-80">{searchParams.msg}</div>
@@ -207,16 +282,20 @@ export default async function GamesPage({
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{labels.my_games}</h2>
-            <p className="mt-1 text-sm text-neutral-500">{labels.my_games_desc}</p>
+            <h2 className="font-display text-lg font-black text-teal-700">
+              {labels.my_games}
+            </h2>
+            <p className="mt-1 text-sm text-softslate/70">
+              {labels.my_games_desc}
+            </p>
           </div>
-          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+          <span className="rounded-full bg-terracotta-100 px-3 py-1 text-xs font-bold text-terracotta-600">
             {gameList.length}
           </span>
         </div>
 
         {gameList.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">
+          <div className="aesthetic-card text-center text-sm text-softslate/70">
             {labels.no_games}
           </div>
         ) : (
@@ -234,43 +313,40 @@ export default async function GamesPage({
               const durationMinutes = Math.round(game.duration_seconds / 60);
 
               return (
-                <article
-                  key={game.id}
-                  className="flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md"
-                >
+                <article key={game.id} className="aesthetic-card flex flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate text-lg font-semibold">
+                      <h3 className="font-display truncate text-lg font-black text-teal-700">
                         {game.name}
                       </h3>
-                      <p className="mt-1 truncate text-sm text-neutral-500">
+                      <p className="mt-1 truncate text-sm text-softslate/70">
                         {className}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-md bg-violet-50 px-2 py-1 font-bold text-violet-700">
+                    <span className="rounded-full bg-terracotta-100 px-2 py-1 font-bold text-terracotta-600">
                       {getModeLabel(game.mode)}
                     </span>
                     {isTimed ? (
-                      <span className="rounded-md bg-amber-50 px-2 py-1 font-bold text-amber-700">
+                      <span className="rounded-full bg-teal-100 px-2 py-1 font-bold text-teal-700">
                         {durationMinutes} {isRtl ? "د" : "min"}
                       </span>
                     ) : (
-                      <span className="rounded-md bg-blue-50 px-2 py-1 font-bold text-blue-700">
+                      <span className="rounded-full bg-sage-100 px-2 py-1 font-bold text-sage-600">
                         ∞
                       </span>
                     )}
                     {hasBacksound ? (
-                      <span className="rounded-md bg-fuchsia-50 px-2 py-1 font-bold text-fuchsia-700">
+                      <span className="rounded-full bg-sage-100 px-2 py-1 font-bold text-sage-600">
                         🎵
                       </span>
                     ) : null}
                   </div>
 
                   {!isRoom ? (
-                    <p className="mt-2 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-bold text-blue-800">
+                    <p className="mt-2 rounded-xl bg-teal-50 px-2 py-1.5 text-[11px] font-bold text-teal-700">
                       {labels.self_practice}
                     </p>
                   ) : null}
@@ -281,13 +357,13 @@ export default async function GamesPage({
                         <input type="hidden" name="game_id" value={game.id} />
                         <button
                           type="submit"
-                          className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
+                          className="w-full rounded-full bg-terracotta-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-terracotta-600"
                         >
                           {labels.play}
                         </button>
                       </form>
                     ) : (
-                      <div className="flex-1 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2.5 text-center text-xs font-bold text-blue-700">
+                      <div className="flex-1 rounded-full border border-dashed border-teal-200 bg-teal-50 px-4 py-2.5 text-center text-xs font-bold text-teal-700">
                         {labels.no_room}
                       </div>
                     )}
@@ -297,7 +373,7 @@ export default async function GamesPage({
                       <button
                         type="submit"
                         title={labels.delete_title}
-                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                        className="rounded-full border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
                       >
                         🗑
                       </button>
@@ -310,25 +386,32 @@ export default async function GamesPage({
         )}
       </section>
 
-      <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="aesthetic-card">
         <div>
-          <h2 className="text-lg font-semibold">{labels.create_title}</h2>
-          <p className="mt-1 text-sm text-neutral-500">{labels.create_desc}</p>
+          <h2 className="font-display text-lg font-black text-teal-700">
+            {labels.create_title}
+          </h2>
+          <p className="mt-1 text-sm text-softslate/70">
+            {labels.create_desc}
+          </p>
         </div>
 
         {classList.length === 0 ? (
-          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="mt-5 rounded-2xl border border-terracotta-500/25 bg-terracotta-50 p-4 text-sm text-terracotta-600">
             {labels.no_class_warn}
           </div>
         ) : bankList.length === 0 ? (
-          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="mt-5 rounded-2xl border border-terracotta-500/25 bg-terracotta-50 p-4 text-sm text-terracotta-600">
             {labels.no_bank_warn}
           </div>
         ) : (
           <form action={createGame} className="mt-6 space-y-6">
             <div className="grid gap-5 lg:grid-cols-2">
               <div>
-                <label htmlFor="game-name" className="block text-sm font-medium">
+                <label
+                  htmlFor="game-name"
+                  className="block text-sm font-bold text-teal-700"
+                >
                   {labels.label_name}
                 </label>
                 <input
@@ -337,12 +420,15 @@ export default async function GamesPage({
                   type="text"
                   required
                   maxLength={120}
-                  className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+                  className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
                 />
               </div>
 
               <div>
-                <label htmlFor="class-id" className="block text-sm font-medium">
+                <label
+                  htmlFor="class-id"
+                  className="block text-sm font-bold text-teal-700"
+                >
                   {labels.label_class}
                 </label>
                 <select
@@ -350,7 +436,7 @@ export default async function GamesPage({
                   name="class_id"
                   required
                   defaultValue=""
-                  className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
+                  className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
                 >
                   <option value="" disabled>
                     {labels.choose_class}
@@ -366,7 +452,7 @@ export default async function GamesPage({
               <div>
                 <label
                   htmlFor="ranking-visibility"
-                  className="block text-sm font-medium"
+                  className="block text-sm font-bold text-teal-700"
                 >
                   {labels.label_ranking}
                 </label>
@@ -374,7 +460,7 @@ export default async function GamesPage({
                   id="ranking-visibility"
                   name="ranking_visibility"
                   defaultValue="full"
-                  className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
+                  className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
                 >
                   <option value="full">{labels.ranking_full}</option>
                   <option value="hidden">{labels.ranking_hidden}</option>
@@ -399,7 +485,7 @@ export default async function GamesPage({
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              className="w-full rounded-full bg-terracotta-500 px-5 py-3 text-sm font-black text-white transition hover:bg-terracotta-600"
             >
               {labels.btn_create}
             </button>
