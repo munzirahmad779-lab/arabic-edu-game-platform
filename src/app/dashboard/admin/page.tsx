@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TeacherList } from "./teacher-list";
 import { StudentSessions } from "./student-sessions";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
 
@@ -14,19 +16,24 @@ export default async function AdminPage() {
 
   if (!user) redirect("/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.admin;
+
   if (user.email !== SUPER_ADMIN_EMAIL) {
     return (
-      <main className="mx-auto max-w-3xl p-6" dir="rtl">
+      <main className="mx-auto max-w-3xl p-6" dir={isRtl ? "rtl" : "ltr"}>
         <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-center">
           <div className="text-5xl">🔒</div>
           <h1 className="mt-3 text-2xl font-black text-red-800">
-            غير مصرح لك بالوصول
+            {t.unauthorized_title}
           </h1>
           <Link
             href="/dashboard"
             className="mt-5 inline-flex rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"
           >
-            العودة إلى لوحة التحكم
+            {t.back_dashboard}
           </Link>
         </div>
       </main>
@@ -63,28 +70,24 @@ export default async function AdminPage() {
   }>;
 
   return (
-    <main className="space-y-6" dir="rtl">
+    <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href="/dashboard"
           className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
         >
-          ← العودة إلى لوحة التحكم
+          ← {t.back_dashboard}
         </Link>
       </div>
 
       <header className="rounded-[2rem] bg-gradient-to-l from-slate-800 via-slate-900 to-black p-6 text-white shadow-xl">
-        <p className="text-sm font-semibold text-white/75">
-          لوحة الإدارة (Super Admin)
-        </p>
-        <h1 className="mt-1 text-3xl font-black">🛡️ الإدارة</h1>
-        <p className="mt-2 text-sm text-white/85">
-          إدارة حسابات المعلمين والجلسات النشطة للطلاب.
-        </p>
+        <p className="text-sm font-semibold text-white/75">{t.header_label}</p>
+        <h1 className="mt-1 text-3xl font-black">{t.header_title}</h1>
+        <p className="mt-2 text-sm text-white/85">{t.header_desc}</p>
       </header>
 
-      <TeacherList teachers={teachers} />
-      <StudentSessions sessions={sessions} />
+      <TeacherList teachers={teachers} dict={dict} />
+      <StudentSessions sessions={sessions} dict={dict} />
     </main>
   );
 }

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReportView } from "./report-view";
 import { todayWib } from "@/lib/format-wib";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = { date?: string };
 
@@ -20,6 +22,10 @@ export default async function ReportsPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
 
   const date = isValidDate(searchParams.date) ? searchParams.date : todayWib();
 
@@ -48,21 +54,25 @@ export default async function ReportsPage({
   const practiceRows = rows.filter((r) => r.source === "practice");
 
   return (
-    <main className="space-y-6" dir="rtl">
+    <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href="/dashboard"
           className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
         >
-          ← العودة إلى لوحة التحكم
+          ← {dict.reports.back_dashboard}
         </Link>
       </div>
 
       <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl">
-        <p className="text-sm font-semibold text-white/75">التقارير</p>
-        <h1 className="mt-1 text-3xl font-black">📄 التقرير اليومي</h1>
+        <p className="text-sm font-semibold text-white/75">
+          {dict.reports.header_label}
+        </p>
+        <h1 className="mt-1 text-3xl font-black">
+          {dict.reports.header_title}
+        </h1>
         <p className="mt-2 text-sm text-white/85">
-          لخّص نتائج اليوم، وانسخ التقرير إلى ChatGPT / Meta AI لتحليل أعمق.
+          {dict.reports.header_desc}
         </p>
       </header>
 
@@ -70,6 +80,7 @@ export default async function ReportsPage({
         date={date}
         roomRows={roomRows}
         practiceRows={practiceRows}
+        dict={dict}
       />
     </main>
   );

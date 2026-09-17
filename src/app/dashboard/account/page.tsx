@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function AccountPage({
   searchParams,
@@ -14,6 +16,11 @@ export default async function AccountPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.account;
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, email")
@@ -23,68 +30,63 @@ export default async function AccountPage({
   const err = searchParams.error;
 
   return (
-    <main className="space-y-6" dir="rtl">
+    <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href="/dashboard"
           className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
         >
-          ← العودة إلى لوحة التحكم
+          ← {t.back_dashboard}
         </Link>
       </div>
 
       <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl">
-        <p className="text-sm font-semibold text-white/75">إدارة الحساب</p>
-        <h1 className="mt-1 text-3xl font-black">⚙️ الحساب</h1>
-        <p className="mt-2 text-sm text-white/85">
-          عدّل اسمك، وانتقل بسرعة إلى صفحات السجل والتقارير.
+        <p className="text-sm font-semibold text-white/75">
+          {t.header_label}
         </p>
+        <h1 className="mt-1 text-3xl font-black">{t.header_title}</h1>
+        <p className="mt-2 text-sm text-white/85">{t.header_desc}</p>
       </header>
 
       {searchParams.saved === "1" ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
-          ✓ تم حفظ التغييرات.
+          {t.saved}
         </div>
       ) : null}
 
       {err ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-800">
-          خطأ: {err}
+          {t.error_prefix} {err}
         </div>
       ) : null}
 
       <ProfileForm
         initialName={profile?.full_name ?? ""}
         email={profile?.email ?? user.email ?? ""}
+        dict={dict}
       />
 
-      {/* Info ubah password */}
       <div className="rounded-[2rem] border border-amber-100 bg-amber-50/60 p-5">
         <div className="flex items-start gap-3">
           <span className="text-2xl">🔒</span>
           <div className="flex-1">
-            <p className="font-black text-amber-900">
-              تغيير كلمة المرور
-            </p>
-            <p className="mt-1 text-sm text-amber-800">
-              لتغيير كلمة المرور، استخدم زر «نسيت كلمة المرور» في صفحة تسجيل
-              الدخول — ستصلك رسالة على بريدك الإلكتروني تحتوي على رابط آمن.
-            </p>
+            <p className="font-black text-amber-900">{t.change_pw_title}</p>
+            <p className="mt-1 text-sm text-amber-800">{t.change_pw_desc}</p>
             <Link
               href="/login"
               className="mt-3 inline-flex rounded-xl bg-amber-600 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-700"
             >
-              الذهاب إلى صفحة تسجيل الدخول
+              {t.change_pw_btn}
             </Link>
           </div>
         </div>
       </div>
 
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-black text-neutral-900">🔗 روابط سريعة</h2>
-        <p className="mt-1 text-xs text-neutral-500">
-          للوصول السريع إلى صفحات السجل والتقارير.
-        </p>
+        <h2 className="text-lg font-black text-neutral-900">
+          {t.quick_links_title}
+        </h2>
+        <p className="mt-1 text-xs text-neutral-500">{t.quick_links_desc}</p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Link
@@ -96,10 +98,10 @@ export default async function AccountPage({
             </span>
             <div className="min-w-0">
               <p className="font-bold text-neutral-900 group-hover:text-violet-700">
-                سجل الطلاب
+                {t.link_students_title}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                تفاصيل أداء كل طالب بحسب الوضع
+                {t.link_students_desc}
               </p>
             </div>
           </Link>
@@ -113,10 +115,10 @@ export default async function AccountPage({
             </span>
             <div className="min-w-0">
               <p className="font-bold text-neutral-900 group-hover:text-violet-700">
-                التقارير اليومية
+                {t.link_reports_title}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                لخّص اليوم وانسخه إلى ChatGPT / Meta AI
+                {t.link_reports_desc}
               </p>
             </div>
           </Link>

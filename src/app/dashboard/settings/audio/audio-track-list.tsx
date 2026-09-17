@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { deleteAudioTrack, toggleAudioTrack } from "./actions";
 import { AudioTrackForm } from "./audio-track-form";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
 
 type Track = {
   id: string;
@@ -14,27 +17,34 @@ type Track = {
   pages: string[];
 };
 
-const PAGE_LABEL: Record<string, string> = {
-  dashboard: "لوحة المعلم",
-  login: "تسجيل الدخول",
-  student: "بوابة الطالب",
-  game: "اللعبة",
-  final: "النتيجة النهائية",
-};
-
-export function AudioTrackList({ tracks }: { tracks: Track[] }) {
+export function AudioTrackList({
+  tracks,
+  dict,
+}: {
+  tracks: Track[];
+  dict: Dict;
+}) {
+  const t = dict.audio_settings;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const PAGE_LABEL: Record<string, string> = {
+    dashboard: t.page_dashboard,
+    login: t.page_login,
+    student: t.page_student,
+    game: t.page_game,
+    final: t.page_final,
+  };
 
   if (tracks.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
         <div className="text-4xl">🎵</div>
         <p className="mt-3 font-bold text-neutral-700">
-          لم تضف أي مقطع بعد
+          {t.list_empty_title}
         </p>
         <p className="mt-1 text-xs text-neutral-500">
-          استخدم النموذج أعلاه لإضافة أول مقطع موسيقى.
+          {t.list_empty_desc}
         </p>
       </div>
     );
@@ -54,6 +64,7 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                 mode="edit"
                 track={track}
                 onCancel={() => setEditingId(null)}
+                dict={dict}
               />
             ) : (
               <div className="space-y-3">
@@ -65,11 +76,11 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                       </span>
                       {track.enabled ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                          مفعّل
+                          {t.list_status_enabled}
                         </span>
                       ) : (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                          معطّل
+                          {t.list_status_disabled}
                         </span>
                       )}
                       <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
@@ -100,7 +111,9 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                       }
                       className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
                     >
-                      {previewUrl === track.audio_url ? "إيقاف" : "استماع"}
+                      {previewUrl === track.audio_url
+                        ? t.list_btn_stop
+                        : t.list_btn_listen}
                     </button>
 
                     <form action={toggleAudioTrack}>
@@ -118,7 +131,9 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                             : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                         }`}
                       >
-                        {track.enabled ? "إيقاف" : "تشغيل"}
+                        {track.enabled
+                          ? t.list_btn_disable
+                          : t.list_btn_enable}
                       </button>
                     </form>
 
@@ -127,13 +142,17 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                       onClick={() => setEditingId(track.id)}
                       className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
                     >
-                      تعديل
+                      {t.list_btn_edit}
                     </button>
 
                     <form
                       action={deleteAudioTrack}
                       onSubmit={(e) => {
-                        if (!window.confirm(`حذف "${track.name}"؟`)) {
+                        if (
+                          !window.confirm(
+                            `${t.list_confirm_delete_prefix} "${track.name}"${t.list_confirm_delete_suffix}`,
+                          )
+                        ) {
                           e.preventDefault();
                         }
                       }}
@@ -143,7 +162,7 @@ export function AudioTrackList({ tracks }: { tracks: Track[] }) {
                         type="submit"
                         className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
                       >
-                        حذف
+                        {t.list_btn_delete}
                       </button>
                     </form>
                   </div>

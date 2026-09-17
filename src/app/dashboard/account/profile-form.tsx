@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { updateProfile } from "./actions";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
 
 export function ProfileForm({
   initialName,
   email,
+  dict,
 }: {
   initialName: string;
   email: string;
+  dict: Dict;
 }) {
+  const t = dict.account;
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -20,9 +26,11 @@ export function ProfileForm({
           👤
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-violet-600">الملف الشخصي</p>
+          <p className="text-xs font-bold text-violet-600">
+            {t.profile_label}
+          </p>
           <h2 className="mt-1 truncate text-xl font-black text-neutral-900">
-            {initialName || "بدون اسم"}
+            {initialName || t.no_name}
           </h2>
           <p className="mt-0.5 truncate text-sm text-neutral-500" dir="ltr">
             {email}
@@ -44,7 +52,7 @@ export function ProfileForm({
               htmlFor="full_name"
               className="block text-sm font-bold text-neutral-700"
             >
-              الاسم الكامل
+              {t.full_name}
             </label>
             <input
               id="full_name"
@@ -62,14 +70,14 @@ export function ProfileForm({
               disabled={submitting}
               className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:opacity-60"
             >
-              {submitting ? "..." : "💾 حفظ"}
+              {submitting ? "..." : t.btn_save}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
               className="rounded-xl border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50"
             >
-              إلغاء
+              {t.btn_cancel}
             </button>
           </div>
         </form>
@@ -79,7 +87,7 @@ export function ProfileForm({
           onClick={() => setEditing(true)}
           className="mt-5 w-full rounded-xl border border-violet-200 bg-violet-50 px-5 py-3 text-sm font-black text-violet-700 transition hover:bg-violet-100"
         >
-          ✏️ تعديل الاسم
+          {t.btn_edit_name}
         </button>
       )}
 
@@ -88,7 +96,7 @@ export function ProfileForm({
           type="submit"
           className="w-full rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-black text-red-700 transition hover:bg-red-100"
         >
-          🚪 تسجيل الخروج
+          {t.btn_logout}
         </button>
       </form>
     </div>
