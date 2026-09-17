@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { ok: false, message: "GEMINI_API_KEY not configured" },
+        { ok: false, message: "GEMINI_API_KEY belum dikonfigurasi" },
         { status: 500 },
       );
     }
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const submissionId = body.submission_id;
     if (!submissionId) {
       return NextResponse.json(
-        { ok: false, message: "submission_id required" },
+        { ok: false, message: "submission_id wajib diisi" },
         { status: 400 },
       );
     }
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     if (subErr || !sub) {
       return NextResponse.json(
-        { ok: false, message: "submission not found" },
+        { ok: false, message: "Submission tidak ditemukan" },
         { status: 404 },
       );
     }
@@ -82,7 +82,11 @@ export async function POST(req: Request) {
       const errText = await geminiRes.text();
       console.error("[grade-essay] gemini error:", errText);
       return NextResponse.json(
-        { ok: false, message: "AI service error", detail: errText.slice(0, 500) },
+        {
+          ok: false,
+          message: "Layanan AI bermasalah",
+          detail: errText.slice(0, 500),
+        },
         { status: 502 },
       );
     }
@@ -96,7 +100,7 @@ export async function POST(req: Request) {
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!rawText) {
       return NextResponse.json(
-        { ok: false, message: "Empty AI response" },
+        { ok: false, message: "Respons AI kosong" },
         { status: 502 },
       );
     }
@@ -114,7 +118,7 @@ export async function POST(req: Request) {
       const m = rawText.match(/\{[\s\S]*\}/);
       if (!m) {
         return NextResponse.json(
-          { ok: false, message: "Cannot parse AI response" },
+          { ok: false, message: "Tidak bisa mem-parsing respons AI" },
           { status: 502 },
         );
       }
@@ -145,7 +149,7 @@ export async function POST(req: Request) {
     if (updErr) {
       console.error("[grade-essay] update error:", updErr);
       return NextResponse.json(
-        { ok: false, message: "DB update failed", detail: updErr.message },
+        { ok: false, message: "Gagal update database", detail: updErr.message },
         { status: 500 },
       );
     }
@@ -160,7 +164,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("[grade-essay] exception:", err);
     return NextResponse.json(
-      { ok: false, message: "Internal error" },
+      { ok: false, message: "Kesalahan internal" },
       { status: 500 },
     );
   }

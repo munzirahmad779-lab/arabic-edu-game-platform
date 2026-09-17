@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -96,8 +97,8 @@ export default function LoginPage() {
 
   if (!dict) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6">
-        <p className="text-sm text-neutral-500">...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#F7F1E8] p-6">
+        <p className="text-sm text-[#2B2B2B]/60">...</p>
       </main>
     );
   }
@@ -109,40 +110,51 @@ export default function LoginPage() {
 
   return (
     <main
-      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6"
+      className="flex min-h-screen items-center justify-center bg-[#F7F1E8] p-6"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="w-full max-w-sm space-y-5">
         <div className="flex justify-between">
           <Link
             href="/"
-            className="text-xs font-bold text-violet-600 hover:underline"
+            className="text-xs font-bold text-[#C25F3E] hover:underline"
           >
             ← {dict.common.back_home}
           </Link>
           <LanguageSwitcher current={locale} />
         </div>
 
+        <div className="flex justify-center">
+          <Image
+            src="/logo-horizontal.png"
+            alt={dict.common.brand_main}
+            width={400}
+            height={175}
+            className="h-20 w-auto"
+            priority
+          />
+        </div>
+
         <div className="text-center">
-          <h1 className="text-2xl font-black text-neutral-900">
+          <h1 className="font-display text-2xl font-black text-[#1F4A4E]">
             {mode === "sign_in"
               ? `🎓 ${t.title_sign_in}`
               : `🔑 ${t.title_forgot}`}
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-[#2B2B2B]/60">
             {mode === "sign_in" ? t.desc_sign_in : t.desc_forgot}
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-3xl border border-violet-100 bg-white p-6 shadow-xl"
+          className="space-y-4 rounded-3xl border border-[#8FA68E]/30 bg-white p-6 shadow-xl"
           noValidate
         >
           <div className="space-y-1">
             <label
               htmlFor="email"
-              className="block text-sm font-bold text-neutral-700"
+              className="block text-sm font-bold text-[#1F4A4E]"
             >
               {t.label_email}
             </label>
@@ -152,7 +164,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+              className="w-full rounded-xl border border-[#8FA68E]/40 bg-[#FBF7F0] px-3 py-2.5 text-sm outline-none focus:border-[#D97757] focus:ring-4 focus:ring-[#D97757]/15"
               autoComplete="email"
               dir="ltr"
             />
@@ -162,7 +174,7 @@ export default function LoginPage() {
             <div className="space-y-1">
               <label
                 htmlFor="password"
-                className="block text-sm font-bold text-neutral-700"
+                className="block text-sm font-bold text-[#1F4A4E]"
               >
                 {t.label_password}
               </label>
@@ -173,7 +185,7 @@ export default function LoginPage() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="w-full rounded-xl border border-[#8FA68E]/40 bg-[#FBF7F0] px-3 py-2.5 text-sm outline-none focus:border-[#D97757] focus:ring-4 focus:ring-[#D97757]/15"
                 autoComplete="current-password"
                 dir="ltr"
               />
@@ -195,7 +207,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 disabled:opacity-50"
+            className="w-full rounded-xl bg-[#D97757] px-4 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#C25F3E] disabled:opacity-50"
           >
             {isSubmitting
               ? "..."
@@ -212,29 +224,31 @@ export default function LoginPage() {
             setError(null);
             setInfoMessage(null);
           }}
-          className="w-full text-center text-sm font-bold text-violet-700 underline"
+          className="w-full text-center text-sm font-bold text-[#2F6D72] underline"
         >
           {mode === "sign_in" ? t.link_forgot : t.link_back}
         </button>
 
-        <div className="rounded-3xl border-2 border-dashed border-emerald-200 bg-emerald-50/40 p-5 text-center">
-          <p className="text-sm font-black text-emerald-900">
+        <div className="rounded-3xl border-2 border-dashed border-[#8FA68E]/50 bg-[#8FA68E]/10 p-5 text-center">
+          <p className="text-sm font-black text-[#1F4A4E]">
             {t.register_title}
           </p>
-          <p className="mt-1 text-xs text-emerald-700">{t.register_desc}</p>
+          <p className="mt-1 text-xs text-[#2F6D72]">{t.register_desc}</p>
           <a
             href={waLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2F6D72] px-5 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#1F4A4E]"
           >
             <span className="text-xl">📱</span>
             <span>{t.register_btn}</span>
           </a>
-          <p className="mt-3 text-[10px] text-emerald-600">{t.register_note}</p>
+          <p className="mt-3 text-[10px] text-[#2F6D72]/80">
+            {t.register_note}
+          </p>
         </div>
 
-        <p className="text-center text-xs text-neutral-400">
+        <p className="text-center text-xs text-[#2B2B2B]/50">
           {t.register_footer}
         </p>
       </div>

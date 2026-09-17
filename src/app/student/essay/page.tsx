@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type EssayRow = {
   id: string;
@@ -16,6 +18,11 @@ export default async function StudentEssayListPage() {
   const session = await requireStudent();
   const token = await getStudentToken();
   if (!token) redirect("/student/login");
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.student;
 
   const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,7 +39,7 @@ export default async function StudentEssayListPage() {
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl space-y-6">
         <nav>
@@ -41,21 +48,23 @@ export default async function StudentEssayListPage() {
             className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
           >
             <span>→</span>
-            <span>رجوع إلى الصفحة الرئيسية</span>
+            <span>{t.essay_list_back_home}</span>
           </Link>
         </nav>
 
         <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl sm:p-8">
-          <p className="text-xs font-bold text-white/75">بوابة الطالب</p>
+          <p className="text-xs font-bold text-white/75">
+            {t.essay_list_header_label}
+          </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            ✍️ مهام الكتابة
+            {t.essay_list_header_title}
           </h1>
           <p className="mt-3 text-sm text-white/85">
-            اكتب إجابتك ثم سلّمها — سيتم تصحيحها تلقائيًا بالذكاء الاصطناعي،
-            وستحصل على ملاحظات تفصيلية.
+            {t.essay_list_header_desc}
           </p>
           <p className="mt-2 text-xs text-white/70">
-            الصف: <span className="font-bold">{session.class_name}</span>
+            {t.class_label}{" "}
+            <span className="font-bold">{session.class_name}</span>
           </p>
         </header>
 
@@ -63,20 +72,20 @@ export default async function StudentEssayListPage() {
           <section className="rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white p-12 text-center shadow-lg">
             <div className="text-6xl">📝</div>
             <p className="mt-4 font-bold text-neutral-700">
-              لا توجد مهام كتابة بعد
+              {t.essay_list_empty_title}
             </p>
             <p className="mt-2 text-sm text-neutral-500">
-              في انتظار أن يضيف معلمك مهمة.
+              {t.essay_list_empty_desc}
             </p>
           </section>
         ) : (
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-black text-neutral-900">
-                المهام المتاحة
+                {t.essay_list_available_title}
               </h2>
               <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-                {essays.length} مهمة
+                {essays.length} {t.essay_list_count_suffix}
               </span>
             </div>
 
@@ -97,18 +106,18 @@ export default async function StudentEssayListPage() {
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                           <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-bold text-neutral-600">
-                            ⏱ {e.duration_minutes} دقيقة
+                            ⏱ {e.duration_minutes} {t.essay_list_duration_suffix}
                           </span>
                           {e.has_submission ? (
                             <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">
-                              ✓ تم التسليم
+                              {t.essay_list_submitted}
                               {e.ai_score !== null
                                 ? ` — ${e.ai_score}/100`
                                 : ""}
                             </span>
                           ) : (
                             <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-700">
-                              لم تبدأ بعد
+                              {t.essay_list_not_started}
                             </span>
                           )}
                         </div>

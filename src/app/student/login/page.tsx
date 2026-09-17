@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Hero3D } from "@/components/three/hero-3d";
 import { loginStudent } from "../actions";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -42,8 +43,8 @@ export default function StudentLoginPage() {
 
   if (!dict) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-6">
-        <p className="text-sm text-neutral-500">...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#F7F1E8] p-6">
+        <p className="text-sm text-[#2B2B2B]/60">...</p>
       </main>
     );
   }
@@ -54,19 +55,19 @@ export default function StudentLoginPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-teal-50"
+      className="relative min-h-screen overflow-hidden bg-[#F7F1E8]"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-teal-200/40 blur-3xl" />
+        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#8FA68E]/30 blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-[#D97757]/20 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-bold text-emerald-700 transition hover:text-emerald-800"
+            className="flex items-center gap-2 text-sm font-bold text-[#2F6D72] transition hover:text-[#1F4A4E]"
           >
             <span className="text-lg">←</span>
             <span>{c.back_home}</span>
@@ -76,7 +77,7 @@ export default function StudentLoginPage() {
             <LanguageSwitcher current={locale} />
             <Link
               href="/login"
-              className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-50"
+              className="rounded-xl border border-[#D97757]/40 bg-white px-4 py-2 text-xs font-bold text-[#C25F3E] transition hover:bg-[#D97757]/10"
             >
               🎓 {t.nav_teacher}
             </Link>
@@ -85,20 +86,29 @@ export default function StudentLoginPage() {
 
         <section className="mt-8 grid items-center gap-8 lg:mt-12 lg:grid-cols-2">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-1.5 text-xs font-bold text-emerald-700 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="mb-5 flex justify-start">
+              <Image
+                src="/logo-horizontal.png"
+                alt={c.brand_main}
+                width={400}
+                height={175}
+                className="h-16 w-auto sm:h-20"
+                priority
+              />
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#2F6D72]/30 bg-white/70 px-4 py-1.5 text-xs font-bold text-[#2F6D72] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#8FA68E]" />
               {t.portal_title}
             </div>
 
-            <h1 className="mt-5 text-3xl font-black leading-tight text-neutral-900 sm:text-4xl">
+            <h1 className="font-display mt-5 text-3xl font-black leading-tight text-[#1F4A4E] sm:text-4xl">
               {t.hero_line1}
               <br />
-              <span className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                {t.hero_line2}
-              </span>
+              <span className="text-[#D97757]">{t.hero_line2}</span>
             </h1>
 
-            <p className="mt-4 text-sm leading-8 text-neutral-600 sm:text-base">
+            <p className="mt-4 text-sm leading-8 text-[#2B2B2B]/70 sm:text-base">
               {t.hero_desc}
             </p>
 
@@ -115,12 +125,12 @@ export default function StudentLoginPage() {
                 await loginStudent(fd);
                 setSubmitting(false);
               }}
-              className="mt-6 space-y-4 rounded-3xl border border-emerald-100 bg-white p-6 shadow-xl"
+              className="mt-6 space-y-4 rounded-3xl border border-[#8FA68E]/30 bg-white p-6 shadow-xl"
             >
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-bold text-neutral-700"
+                  className="block text-sm font-bold text-[#1F4A4E]"
                 >
                   {t.label_name}
                 </label>
@@ -131,14 +141,14 @@ export default function StudentLoginPage() {
                   required
                   maxLength={100}
                   autoComplete="off"
-                  className="mt-2 w-full rounded-2xl border border-neutral-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="mt-2 w-full rounded-2xl border border-[#8FA68E]/40 bg-[#FBF7F0] px-4 py-3 outline-none focus:border-[#D97757] focus:ring-4 focus:ring-[#D97757]/15"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="pin"
-                  className="block text-sm font-bold text-neutral-700"
+                  className="block text-sm font-bold text-[#1F4A4E]"
                 >
                   {t.label_pin}
                 </label>
@@ -152,7 +162,7 @@ export default function StudentLoginPage() {
                   maxLength={6}
                   required
                   autoComplete="off"
-                  className="mt-2 w-full rounded-2xl border border-neutral-300 px-4 py-3 text-center tracking-[0.3em] outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="mt-2 w-full rounded-2xl border border-[#8FA68E]/40 bg-[#FBF7F0] px-4 py-3 text-center tracking-[0.3em] outline-none focus:border-[#D97757] focus:ring-4 focus:ring-[#D97757]/15"
                   dir="ltr"
                 />
               </div>
@@ -160,7 +170,7 @@ export default function StudentLoginPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60"
+                className="w-full rounded-2xl bg-[#D97757] px-5 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#C25F3E] disabled:opacity-60"
               >
                 {submitting ? "..." : `${t.btn_login} ←`}
               </button>
@@ -168,7 +178,7 @@ export default function StudentLoginPage() {
           </div>
 
           <div className="relative">
-            <div className="absolute inset-0 -z-10 rounded-[3rem] bg-gradient-to-br from-emerald-200/50 to-teal-200/50 blur-2xl" />
+            <div className="absolute inset-0 -z-10 rounded-[3rem] bg-gradient-to-br from-[#8FA68E]/40 to-[#D97757]/20 blur-2xl" />
             <Hero3D />
           </div>
         </section>

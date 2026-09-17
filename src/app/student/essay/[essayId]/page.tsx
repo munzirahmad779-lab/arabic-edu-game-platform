@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { EssayPlayer } from "./essay-player";
 
 type EssayData = {
@@ -29,6 +31,9 @@ export default async function EssayPlayPage({
   const token = await getStudentToken();
   if (!token) redirect("/student/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("student_get_essay", {
     p_token: token,
@@ -47,6 +52,8 @@ export default async function EssayPlayPage({
       essay={essay}
       studentName={session.name}
       className={session.class_name}
+      dict={dict}
+      locale={locale}
     />
   );
 }

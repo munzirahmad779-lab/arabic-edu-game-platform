@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { Hero3D } from "@/components/three/hero-3d";
+import { HeroIllustration } from "@/components/hero-illustration";
+import { Marquee } from "@/components/marquee";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -17,144 +19,167 @@ export default async function HomePage() {
   const dict = await getDictionary(locale);
   const t = dict.home;
   const c = dict.common;
-
   const isRtl = locale === "ar";
 
+  const marqueeItems = [
+    { icon: "🎮", title: t.feat_modes_title, desc: "Kompetitif & kooperatif" },
+    { icon: "📊", title: t.feat_reports_title, desc: "Siap analisis dengan AI" },
+    { icon: "🎯", title: t.feat_practice_title, desc: "Bebas berlatih & evaluasi" },
+    { icon: "📚", title: t.feat_bank_title, desc: "Template Excel siap pakai" },
+    { icon: "🔊", title: t.feat_audio_title, desc: "Musik latar per halaman" },
+    { icon: "🎨", title: t.feat_themes_title, desc: "Sesuaikan warna dashboard" },
+  ];
+
   return (
-    <main
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-violet-50 via-white to-fuchsia-50"
+    <div
+      className="relative flex min-h-screen flex-col overflow-hidden bg-warmwhite"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-200/40 blur-3xl" />
+      {/* Breathing blobs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] animate-blob-breathe rounded-full bg-sage-500/20 blur-3xl" />
+        <div
+          className="absolute -bottom-40 -left-40 h-[30rem] w-[30rem] animate-blob-breathe rounded-full bg-terracotta-500/15 blur-3xl"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl text-white shadow-md">
-              ✦
-            </span>
-            <div>
-              <p className="text-xs font-bold text-violet-600">
-                {c.brand_top}
-              </p>
-              <p className="text-sm font-black text-neutral-900">
-                {c.brand_main}
-              </p>
-              <p className="text-[10px] font-bold text-neutral-500">
-                {c.brand_by}
-              </p>
-            </div>
-          </div>
+      {/* ============ NAVBAR ============ */}
+      <header className="relative z-20 mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-7">
+        <Link
+          href="/"
+          className="flex items-center"
+          aria-label={c.brand_main}
+        >
+          <Image
+            src="/logo-horizontal.png"
+            alt={c.brand_main}
+            width={400}
+            height={175}
+            className="h-12 w-auto sm:h-14"
+            priority
+          />
+        </Link>
 
-          <nav className="flex flex-wrap items-center gap-2">
-            <LanguageSwitcher current={locale} />
+        <nav className="hidden items-center gap-8 text-sm font-bold text-teal-700/80 lg:flex">
+          <a href="#fitur" className="transition hover:text-terracotta-500">
+            Fitur
+          </a>
+          <a href="#modes" className="transition hover:text-terracotta-500">
+            {t.feat_modes_title}
+          </a>
+          <a href="#laporan" className="transition hover:text-terracotta-500">
+            {t.feat_reports_title}
+          </a>
+          <a href="#latihan" className="transition hover:text-terracotta-500">
+            {t.feat_practice_title}
+          </a>
+        </nav>
 
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard"
-                className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-violet-700"
-              >
-                {c.nav_dashboard} →
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/student/login"
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100"
-                >
-                  👥 {c.nav_student}
-                </Link>
-                <Link
-                  href="/login"
-                  className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-violet-700"
-                >
-                  {c.nav_teacher}
-                </Link>
-              </>
-            )}
-          </nav>
-        </header>
-
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 shadow-sm sm:text-sm">
-          <span className="text-xl">🔊</span>
-          <p className="flex-1">
-            <b>{t.audio_hint_title}:</b> {t.audio_hint_text}
-          </p>
-        </div>
-
-        <section className="mt-8 grid items-center gap-8 lg:mt-12 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-1.5 text-xs font-bold text-violet-700 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              {t.badge_updated}
-            </div>
-
-            <h1 className="text-4xl font-black leading-tight text-neutral-900 sm:text-5xl lg:text-6xl">
-              {t.hero_line1}
-              <br />
-              <span className="bg-gradient-to-l from-violet-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-                {t.hero_line2}
-              </span>
-            </h1>
-
-            <p className="max-w-xl text-base leading-8 text-neutral-600 sm:text-lg">
-              {t.hero_desc}
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/login"
-                className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-6 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
-              >
-                🎓 {t.cta_teacher}
-              </Link>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher current={locale} />
+          {isLoggedIn ? (
+            <Link href="/dashboard" className="btn-primary">
+              {c.nav_dashboard} →
+            </Link>
+          ) : (
+            <>
               <Link
                 href="/student/login"
-                className="rounded-2xl border-2 border-violet-200 bg-white px-6 py-4 text-base font-black text-violet-700 shadow-md transition hover:-translate-y-0.5 hover:bg-violet-50"
+                className="hidden sm:inline-flex btn-secondary"
               >
-                👥 {t.cta_student}
+                👥 {c.nav_student}
               </Link>
-            </div>
+              <Link href="/login" className="btn-primary">
+                {c.nav_teacher}
+              </Link>
+            </>
+          )}
+        </div>
+      </header>
 
-            <div className="flex flex-wrap gap-2 pt-2">
-              {[
-                `🎮 ${t.badge_modes}`,
-                `📖 ${t.badge_materials}`,
-                `🎯 ${t.badge_practice}`,
-                `📊 ${t.badge_reports}`,
-                `🔊 ${t.badge_audio}`,
-              ].map((label) => (
-                <span
-                  key={label}
-                  className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-700 shadow-sm"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
+      {/* ============ HERO ============ */}
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-12 px-4 pb-16 pt-8 sm:px-6 lg:flex-row lg:items-center lg:gap-16 lg:pb-24 lg:pt-12">
+        <div className="animate-fade-up flex w-full flex-col gap-6 lg:w-1/2">
+          <div className="inline-flex w-max items-center gap-2 rounded-full border border-sage-200 bg-white/70 px-4 py-1.5 text-xs font-bold text-sage-600 shadow-sm backdrop-blur-md">
+            <span className="h-2 w-2 rounded-full bg-terracotta-500" />
+            {t.badge_updated}
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 -z-10 rounded-[3rem] bg-gradient-to-br from-violet-200/50 to-fuchsia-200/50 blur-2xl" />
-            <Hero3D />
-          </div>
-        </section>
+          <h1 className="font-display text-4xl font-black leading-[1.1] text-teal-700 sm:text-5xl lg:text-6xl">
+            {t.hero_line1}
+            <br />
+            <span className="italic text-terracotta-500">
+              {t.hero_line2}
+            </span>
+          </h1>
 
-        <section className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="mt-2 max-w-lg text-base leading-8 text-softslate sm:text-lg">
+            {t.hero_desc}
+          </p>
+
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            <Link href="/login" className="btn-primary">
+              🎓 {t.cta_teacher}
+            </Link>
+            <Link
+              href="/student/login"
+              className="text-sm font-black text-teal-700 underline-offset-4 transition hover:text-terracotta-500 hover:underline"
+            >
+              {t.cta_student} →
+            </Link>
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              `🎮 ${t.badge_modes}`,
+              `🎯 ${t.badge_practice}`,
+              `📊 ${t.badge_reports}`,
+            ].map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-sage-200 bg-white/70 px-3 py-1 text-xs font-bold text-teal-700 shadow-sm"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative flex w-full justify-center animate-soft-float lg:w-1/2">
+          <HeroIllustration />
+        </div>
+      </main>
+
+      {/* ============ FEATURE GRID ============ */}
+      <section
+        id="fitur"
+        className="relative z-10 mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-20 sm:px-6"
+      >
+        <div className="mb-10 text-center">
+          <p className="text-xs font-black tracking-widest text-terracotta-500">
+            FITUR
+          </p>
+          <h2 className="font-display mt-3 text-3xl font-black text-teal-700 sm:text-4xl">
+            Semua yang Anda butuhkan
+          </h2>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <FeatureCard
+            id="modes"
             icon="🎮"
             title={t.feat_modes_title}
             desc={t.feat_modes_desc}
           />
           <FeatureCard
+            id="laporan"
             icon="📊"
             title={t.feat_reports_title}
             desc={t.feat_reports_desc}
           />
           <FeatureCard
+            id="latihan"
             icon="🎯"
             title={t.feat_practice_title}
             desc={t.feat_practice_desc}
@@ -174,50 +199,69 @@ export default async function HomePage() {
             title={t.feat_themes_title}
             desc={t.feat_themes_desc}
           />
-        </section>
+        </div>
+      </section>
 
-        <section className="mt-16 rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-8 text-white shadow-2xl sm:p-12">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="text-2xl font-black sm:text-3xl">{t.cta_ready}</h2>
+      {/* ============ CTA ============ */}
+      <section className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-teal-500 to-teal-700 p-10 text-white shadow-2xl sm:p-14">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-terracotta-500/40 blur-3xl" />
+          <div className="relative flex flex-col items-center gap-5 text-center">
+            <h2 className="font-display text-3xl font-black sm:text-4xl">
+              {t.cta_ready}
+            </h2>
             <p className="max-w-xl text-sm text-white/85 sm:text-base">
               {t.cta_ready_desc}
             </p>
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
-              <Link
-                href="/login"
-                className="rounded-2xl bg-white px-6 py-3.5 text-base font-black text-violet-700 shadow-lg transition hover:-translate-y-0.5"
-              >
-                {t.cta_start} →
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className="mt-2 inline-flex items-center justify-center rounded-full bg-terracotta-500 px-7 py-3.5 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-terracotta-600"
+            >
+              {t.cta_start} →
+            </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="mt-12 border-t border-neutral-200 pt-6 text-center text-xs text-neutral-500">
-          <p>{t.footer_by}</p>
-          <p className="mt-1">{t.footer_sub}</p>
-        </footer>
-      </div>
-    </main>
+      {/* ============ MARQUEE ============ */}
+      <Marquee items={marqueeItems} />
+
+      {/* ============ FOOTER ============ */}
+      <footer className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-4 py-10 text-center text-xs text-softslate/70 sm:px-6">
+        <Image
+          src="/logo-horizontal.png"
+          alt={c.brand_main}
+          width={240}
+          height={105}
+          className="h-10 w-auto opacity-90"
+        />
+        <p>{t.footer_by}</p>
+        <p>{t.footer_sub}</p>
+      </footer>
+    </div>
   );
 }
 
 function FeatureCard({
+  id,
   icon,
   title,
   desc,
 }: {
+  id?: string;
   icon: string;
   title: string;
   desc: string;
 }) {
   return (
-    <article className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl text-white shadow-md">
+    <article id={id} className="aesthetic-card scroll-mt-24">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-terracotta-500 text-2xl text-white shadow-md">
         {icon}
       </span>
-      <h3 className="mt-4 font-black text-neutral-900">{title}</h3>
-      <p className="mt-1 text-sm leading-7 text-neutral-600">{desc}</p>
+      <h3 className="font-display mt-5 text-lg font-black text-teal-700">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-7 text-softslate/80">{desc}</p>
     </article>
   );
 }

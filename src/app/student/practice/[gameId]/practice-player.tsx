@@ -8,6 +8,10 @@ import {
   resumeBackgroundAudio,
 } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
+type Locale = "id" | "en" | "ar";
 
 type MediaItem = {
   id: string;
@@ -64,17 +68,6 @@ type RpcClient = {
   }>;
 };
 
-const MODE_AR: Record<string, string> = {
-  endless: "بلا نهاية",
-  practice: "تمرين",
-};
-
-const DIFFICULTY_AR: Record<string, string> = {
-  easy: "سهل",
-  medium: "متوسط",
-  hard: "صعب",
-};
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i -= 1) {
@@ -90,14 +83,31 @@ export function PracticePlayer({
   initialProgress,
   studentName,
   className,
+  dict,
+  locale,
 }: {
   token: string;
   game: GameData;
   initialProgress: ProgressRow[];
   studentName: string;
   className: string;
+  dict: Dict;
+  locale: Locale;
 }) {
-  // Soal diacak sekali saat mount
+  const t = dict.student;
+  const isRtl = locale === "ar";
+
+  const MODE_LABEL: Record<string, string> = {
+    endless: t.mode_endless,
+    practice: t.mode_practice,
+  };
+
+  const DIFFICULTY_LABEL: Record<string, string> = {
+    easy: locale === "ar" ? "سهل" : locale === "en" ? "Easy" : "Mudah",
+    medium: locale === "ar" ? "متوسط" : locale === "en" ? "Medium" : "Sedang",
+    hard: locale === "ar" ? "صعب" : locale === "en" ? "Hard" : "Sulit",
+  };
+
   const [questions] = useState<Question[]>(() => shuffle(game.questions));
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -121,11 +131,6 @@ export function PracticePlayer({
   const [showScore, setShowScore] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const totalQuestions = questions.length;
   const answeredCount = Object.keys(answers).length;
@@ -135,7 +140,6 @@ export function PracticePlayer({
   const progressPercent =
     totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
-  // Bangun URL media lengkap
   const mediaUrl = useMemo(() => {
     const supabase = createClient();
     return (path: string) =>
@@ -143,7 +147,6 @@ export function PracticePlayer({
         .publicUrl;
   }, []);
 
-  // Kalau sudah ada progress lengkap saat mount → langsung tampilkan skor
   useEffect(() => {
     if (initialProgress.length >= totalQuestions && totalQuestions > 0) {
       setShowScore(true);
@@ -176,7 +179,7 @@ export function PracticePlayer({
       });
 
       if (error || !data || !data[0]) {
-        setSubmitError("تعذر تسجيل الإجابة. حاول مرة أخرى.");
+        setSubmitError(t.player_submit_error);
         return;
       }
 
@@ -192,14 +195,13 @@ export function PracticePlayer({
         },
       }));
 
-      // Auto-scroll ke feedback
       setTimeout(() => {
         document
           .getElementById("practice-feedback")
           ?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
     } catch {
-      setSubmitError("تعذر الاتصال بالخادم.");
+      setSubmitError(t.player_connection_error);
     } finally {
       setSubmitting(false);
     }
@@ -217,7 +219,7 @@ export function PracticePlayer({
 
   async function resetPractice() {
     if (resetting) return;
-    if (!window.confirm("هل تريد حذف كل إجاباتك والبدء من جديد؟")) return;
+    if (!window.confirm(t.player_confirm_reset)) return;
 
     setResetting(true);
 
@@ -248,32 +250,28 @@ export function PracticePlayer({
     }));
   }
 
-  // ============ SCORE VIEW ============
   if (showScore) {
-        const pctForConfetti =
-      totalQuestions > 0
-        ? Math.round((correctCount / totalQuestions) * 100)
-        : 0;
-    const showConfetti = pctForConfetti >= 70;
     const percent =
       totalQuestions > 0
         ? Math.round((correctCount / totalQuestions) * 100)
         : 0;
+    const showConfetti = percent >= 70;
 
-    const medal = percent >= 90 ? "🏆" : percent >= 70 ? "🥈" : percent >= 50 ? "🥉" : "📚";
+    const medal =
+      percent >= 90 ? "🏆" : percent >= 70 ? "🥈" : percent >= 50 ? "🥉" : "📚";
     const message =
       percent >= 90
-        ? "ممتاز! نتيجة رائعة جدًا"
+        ? t.player_score_high
         : percent >= 70
-          ? "أداء جيد جدًا، واصل التقدم"
+          ? t.player_score_good
           : percent >= 50
-            ? "أداء مقبول، راجع الأسئلة مرة أخرى"
-            : "تحتاج إلى مراجعة الإجابات";
+            ? t.player_score_ok
+            : t.player_score_low;
 
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-violet-50 p-4 sm:p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         {showConfetti ? (
           <Confetti particleCount={140} originY={0.9} />
@@ -285,7 +283,7 @@ export function PracticePlayer({
               className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
             >
               <span>→</span>
-              <span>رجوع إلى التدريبات</span>
+              <span>{t.player_back_practices}</span>
             </Link>
           </nav>
 
@@ -302,7 +300,7 @@ export function PracticePlayer({
                   {correctCount}
                 </div>
                 <div className="mt-1 text-xs font-bold text-neutral-500">
-                  إجابات صحيحة
+                  {t.player_correct_label}
                 </div>
               </div>
               <div className="h-16 w-px bg-slate-200" />
@@ -311,7 +309,7 @@ export function PracticePlayer({
                   {totalQuestions}
                 </div>
                 <div className="mt-1 text-xs font-bold text-neutral-500">
-                  مجموع الأسئلة
+                  {t.player_total_label}
                 </div>
               </div>
               <div className="h-16 w-px bg-slate-200" />
@@ -320,7 +318,7 @@ export function PracticePlayer({
                   {percent}%
                 </div>
                 <div className="mt-1 text-xs font-bold text-neutral-500">
-                  النسبة
+                  {t.player_percent_label}
                 </div>
               </div>
             </div>
@@ -332,7 +330,7 @@ export function PracticePlayer({
               onClick={() => setShowReview((v) => !v)}
               className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
             >
-              {showReview ? "إخفاء المراجعة" : "📋 راجع إجاباتك"}
+              {showReview ? t.player_review_hide : t.player_review_show}
             </button>
             <button
               type="button"
@@ -340,14 +338,14 @@ export function PracticePlayer({
               disabled={resetting}
               className="rounded-2xl border-2 border-violet-200 bg-white px-5 py-4 text-base font-black text-violet-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-violet-50 disabled:opacity-60"
             >
-              {resetting ? "جاري الحذف..." : "🔁 إعادة من البداية"}
+              {resetting ? t.player_reset_loading : t.player_reset}
             </button>
           </div>
 
           {showReview ? (
             <section className="space-y-4">
               <h2 className="text-lg font-black text-neutral-900">
-                مراجعة جميع الأسئلة
+                {t.player_review_title}
               </h2>
               {questions.map((q, idx) => {
                 const a = answers[q.id];
@@ -363,7 +361,7 @@ export function PracticePlayer({
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
-                        سؤال {idx + 1}
+                        {t.player_question_prefix} {idx + 1}
                       </span>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-black ${
@@ -372,7 +370,7 @@ export function PracticePlayer({
                             : "bg-rose-100 text-rose-800"
                         }`}
                       >
-                        {correct ? "✓ صحيح" : "✗ خطأ"}
+                        {correct ? t.player_correct : t.player_wrong}
                       </span>
                     </div>
 
@@ -400,13 +398,13 @@ export function PracticePlayer({
                             </span>{" "}
                             {opt.option_text}
                             {isCorrectOpt ? (
-                              <span className="mr-2 text-xs font-bold">
-                                ✓ الإجابة الصحيحة
+                              <span className="ms-2 text-xs font-bold">
+                                {t.player_correct_answer_mark}
                               </span>
                             ) : null}
                             {isSelected && !isCorrectOpt ? (
-                              <span className="mr-2 text-xs font-bold">
-                                (اختيارك)
+                              <span className="ms-2 text-xs font-bold">
+                                {t.player_your_answer_mark}
                               </span>
                             ) : null}
                           </div>
@@ -421,14 +419,16 @@ export function PracticePlayer({
                           onClick={() => toggleExplanation(q.id)}
                           className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-800 transition hover:bg-violet-100"
                         >
-                          {explanationShown ? "إخفاء السبب" : "لماذا؟"}
+                          {explanationShown
+                            ? t.player_why_hide
+                            : t.player_why_show}
                         </button>
 
                         {explanationShown ? (
                           <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/60 p-4 text-sm leading-7 text-violet-950">
                             {a.explanation && a.explanation.trim().length > 0
                               ? a.explanation
-                              : "لا يوجد شرح متاح لهذا السؤال."}
+                              : t.player_no_explanation}
                           </div>
                         ) : null}
                       </div>
@@ -443,17 +443,19 @@ export function PracticePlayer({
     );
   }
 
-  // ============ PLAY VIEW ============
   if (!currentQuestion) {
     return (
-      <main className="min-h-screen bg-slate-50 p-6" dir="rtl">
+      <main
+        className="min-h-screen bg-slate-50 p-6"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
         <div className="mx-auto max-w-2xl rounded-3xl bg-white p-8 text-center shadow">
-          <p className="text-neutral-600">لا توجد أسئلة في هذا التدريب.</p>
+          <p className="text-neutral-600">{t.player_no_questions}</p>
           <Link
             href="/student/practice"
             className="mt-4 inline-flex rounded-2xl bg-violet-600 px-6 py-3 font-bold text-white"
           >
-            رجوع
+            {t.player_back}
           </Link>
         </div>
       </main>
@@ -463,10 +465,9 @@ export function PracticePlayer({
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 p-4 py-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl space-y-5">
-        {/* Header */}
         <header className="rounded-[2rem] bg-white p-5 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -478,22 +479,23 @@ export function PracticePlayer({
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
-                  {MODE_AR[game.game_mode] ?? game.game_mode}
+                  {MODE_LABEL[game.game_mode] ?? game.game_mode}
                 </span>
                 <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-bold text-neutral-600">
-                  بلا وقت
+                  {t.player_no_time}
                 </span>
               </div>
             </div>
             <div className="rounded-2xl bg-violet-50 px-4 py-2 text-center">
-              <div className="text-xs font-bold text-violet-600">السؤال</div>
+              <div className="text-xs font-bold text-violet-600">
+                {t.player_question_label}
+              </div>
               <div className="text-lg font-black text-violet-900">
                 {currentIndex + 1} / {totalQuestions}
               </div>
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="mt-4">
             <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
               <div
@@ -503,18 +505,18 @@ export function PracticePlayer({
             </div>
             <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
               <span>
-                {answeredCount} من {totalQuestions} تمت الإجابة
+                {answeredCount} {t.player_progress_of} {totalQuestions}{" "}
+                {t.player_progress_done}
               </span>
               <span>{progressPercent}%</span>
             </div>
           </div>
         </header>
 
-        {/* Question card */}
         <section className="rounded-[2rem] bg-white p-6 shadow-xl sm:p-8">
           <div className="flex items-center justify-between gap-3">
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
-              {DIFFICULTY_AR[currentQuestion.difficulty] ??
+              {DIFFICULTY_LABEL[currentQuestion.difficulty] ??
                 currentQuestion.difficulty}
             </span>
             {currentAnswer ? (
@@ -525,7 +527,7 @@ export function PracticePlayer({
                     : "bg-rose-100 text-rose-800"
                 }`}
               >
-                {currentAnswer.isCorrect ? "✓ صحيح" : "✗ خطأ"}
+                {currentAnswer.isCorrect ? t.player_correct : t.player_wrong}
               </span>
             ) : null}
           </div>
@@ -551,7 +553,7 @@ export function PracticePlayer({
                   return (
                     <div key={m.id} className="space-y-2">
                       <p className="text-center text-xs font-bold text-violet-600">
-                        🎧 استمع بعناية
+                        {t.player_listen}
                       </p>
                       <audio
                         src={url}
@@ -572,7 +574,7 @@ export function PracticePlayer({
                   return (
                     <div key={m.id} className="space-y-2">
                       <p className="text-center text-xs font-bold text-violet-600">
-                        🎬 شاهد بعناية
+                        {t.player_watch}
                       </p>
                       <video
                         src={url}
@@ -605,7 +607,7 @@ export function PracticePlayer({
                 currentAnswer?.correct === option.option_key && currentAnswer;
 
               let cls =
-                "rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-4 text-right text-base font-bold text-neutral-800 shadow-sm transition";
+                "rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-4 text-start text-base font-bold text-neutral-800 shadow-sm transition";
 
               if (!currentAnswer) {
                 cls +=
@@ -613,10 +615,10 @@ export function PracticePlayer({
               } else {
                 if (isCorrectOpt) {
                   cls =
-                    "rounded-2xl border-2 border-emerald-400 bg-emerald-50 px-5 py-4 text-right text-base font-bold text-emerald-900 shadow-sm";
+                    "rounded-2xl border-2 border-emerald-400 bg-emerald-50 px-5 py-4 text-start text-base font-bold text-emerald-900 shadow-sm";
                 } else if (isSelected) {
                   cls =
-                    "rounded-2xl border-2 border-rose-300 bg-rose-50 px-5 py-4 text-right text-base font-bold text-rose-900 shadow-sm";
+                    "rounded-2xl border-2 border-rose-300 bg-rose-50 px-5 py-4 text-start text-base font-bold text-rose-900 shadow-sm";
                 } else {
                   cls += " opacity-60";
                 }
@@ -630,18 +632,18 @@ export function PracticePlayer({
                   onClick={() => void submitAnswer(option.option_key)}
                   className={cls}
                 >
-                  <span className="ml-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-700 text-sm font-black text-white">
+                  <span className="me-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-700 text-sm font-black text-white">
                     {option.option_key}
                   </span>
                   {option.option_text}
                   {currentAnswer && isCorrectOpt ? (
-                    <span className="mr-2 text-xs font-black">
-                      ✓ الإجابة الصحيحة
+                    <span className="ms-2 text-xs font-black">
+                      {t.player_correct_answer_mark}
                     </span>
                   ) : null}
                   {currentAnswer && isSelected && !isCorrectOpt ? (
-                    <span className="mr-2 text-xs font-black">
-                      ✗ اختيارك
+                    <span className="ms-2 text-xs font-black">
+                      {t.player_your_answer_mark}
                     </span>
                   ) : null}
                 </button>
@@ -655,7 +657,6 @@ export function PracticePlayer({
             </div>
           ) : null}
 
-          {/* Feedback + explanation */}
           {currentAnswer ? (
             <div id="practice-feedback" className="mt-6 space-y-3">
               <div
@@ -666,8 +667,8 @@ export function PracticePlayer({
                 }`}
               >
                 {currentAnswer.isCorrect
-                  ? "✓ إجابة صحيحة! أحسنت"
-                  : `✗ إجابة خاطئة — الصحيح هو ${currentAnswer.correct}`}
+                  ? t.player_feedback_correct
+                  : `${t.player_feedback_wrong_prefix} ${currentAnswer.correct}`}
               </div>
 
               <button
@@ -675,7 +676,9 @@ export function PracticePlayer({
                 onClick={() => toggleExplanation(currentQuestion.id)}
                 className="w-full rounded-2xl border-2 border-violet-200 bg-violet-50 px-5 py-3 text-sm font-black text-violet-800 transition hover:bg-violet-100"
               >
-                {currentExplanationShown ? "إخفاء السبب" : "لماذا؟ 🤔"}
+                {currentExplanationShown
+                  ? t.player_why_hide
+                  : t.player_why_show}
               </button>
 
               {currentExplanationShown ? (
@@ -683,7 +686,7 @@ export function PracticePlayer({
                   {currentAnswer.explanation &&
                   currentAnswer.explanation.trim().length > 0
                     ? currentAnswer.explanation
-                    : "لا يوجد شرح متاح لهذا السؤال."}
+                    : t.player_no_explanation}
                 </div>
               ) : null}
 
@@ -693,18 +696,17 @@ export function PracticePlayer({
                 className="w-full rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
               >
                 {currentIndex + 1 < totalQuestions
-                  ? "السؤال التالي ←"
-                  : "🏁 عرض النتيجة"}
+                  ? t.player_next
+                  : t.player_show_score}
               </button>
             </div>
           ) : null}
         </section>
 
-        {/* Navigasi soal */}
         {!currentAnswer ? (
           <section className="rounded-2xl bg-white p-4 shadow-sm">
             <p className="text-center text-xs font-bold text-neutral-500">
-              اختر إجابة من الخيارات أعلاه
+              {t.player_choose_hint}
             </p>
           </section>
         ) : (
@@ -726,7 +728,7 @@ export function PracticePlayer({
                     type="button"
                     onClick={() => setCurrentIndex(i)}
                     className={`h-8 w-8 rounded-lg text-xs font-black transition ${cls}`}
-                    title={`السؤال ${i + 1}`}
+                    title={`${t.player_question_prefix} ${i + 1}`}
                   >
                     {i + 1}
                   </button>
@@ -739,13 +741,11 @@ export function PracticePlayer({
                 onClick={() => setShowScore(true)}
                 className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
               >
-                عرض النتيجة النهائية ←
+                {t.player_show_final}
               </button>
             ) : null}
           </section>
         )}
-
-        {mounted ? null : null}
       </div>
     </main>
   );

@@ -1,29 +1,32 @@
 import { joinRoom } from "./actions";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export default function JoinPage({
+export default async function JoinPage({
   searchParams,
 }: {
   searchParams: { error?: string; code?: string };
 }) {
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.join;
+
   const prefilledCode = (searchParams.code ?? "").trim().toUpperCase();
 
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-sky-50 px-4 py-10"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-md">
         <div className="mb-6 text-center">
-          <p className="text-sm font-bold text-violet-600">
-            Magguru
-          </p>
+          <p className="text-sm font-bold text-violet-600">{t.brand}</p>
           <h1 className="mt-2 text-3xl font-black text-neutral-900">
-            دخول غرفة اللعب
+            {t.title}
           </h1>
           <p className="mt-2 text-sm text-neutral-600">
-            {prefilledCode
-              ? "أدخل اسمك للانضمام إلى الغرفة."
-              : "أدخل رمز الغرفة واسمك للانضمام."}
+            {prefilledCode ? t.desc_prefilled : t.desc_normal}
           </p>
         </div>
 
@@ -42,7 +45,7 @@ export default function JoinPage({
               <input type="hidden" name="code" value={prefilledCode} />
               <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
                 <div className="text-xs font-bold text-emerald-700">
-                  كود الغرفة
+                  {t.code_label}
                 </div>
                 <div className="mt-1 text-lg font-black tracking-[0.14em] text-emerald-900">
                   {prefilledCode}
@@ -52,7 +55,7 @@ export default function JoinPage({
           ) : (
             <div>
               <label htmlFor="join-code" className="block text-sm font-bold">
-                كود الغرفة
+                {t.code_label}
               </label>
               <input
                 id="join-code"
@@ -70,7 +73,7 @@ export default function JoinPage({
 
           <div>
             <label htmlFor="join-name" className="block text-sm font-bold">
-              الاسم
+              {t.name_label}
             </label>
             <input
               id="join-name"
@@ -84,9 +87,9 @@ export default function JoinPage({
 
           <div>
             <label htmlFor="join-pin" className="block text-sm font-bold">
-              PIN الطالب{" "}
-              <span className="mr-2 text-xs font-normal text-neutral-500">
-                اختياري للضيف
+              {t.pin_label}{" "}
+              <span className="ms-2 text-xs font-normal text-neutral-500">
+                {t.pin_optional}
               </span>
             </label>
             <input
@@ -103,7 +106,7 @@ export default function JoinPage({
             type="submit"
             className="w-full rounded-2xl bg-violet-600 px-5 py-3.5 font-black text-white transition hover:bg-violet-700"
           >
-            دخول الغرفة
+            {t.submit_btn}
           </button>
         </form>
       </div>

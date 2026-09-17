@@ -9,6 +9,8 @@ import {
 } from "@/components/materials/material-youtube";
 import { MaterialImage } from "@/components/materials/material-image";
 import { MaterialPdf } from "@/components/materials/material-pdf";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const MATERIAL_CSS = `
   .material-content {
@@ -83,6 +85,11 @@ export default async function MaterialReadPage({
   const token = await getStudentToken();
   if (!token) redirect("/student/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.student;
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("student_get_material", {
     p_token: token,
@@ -97,7 +104,6 @@ export default async function MaterialReadPage({
   const hasContent = hasTiptapContent(material.content_json);
   const hasVideo = hasYouTube(material.youtube_url);
 
-  // Generate public URL untuk gambar & PDF (bucket question-media = public)
   const imageUrl = material.image_path
     ? supabase.storage.from("question-media").getPublicUrl(material.image_path)
         .data.publicUrl
@@ -107,7 +113,9 @@ export default async function MaterialReadPage({
         .data.publicUrl
     : null;
 
-  const formattedDate = new Intl.DateTimeFormat("ar-EG", {
+  const dateLocale =
+    locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "id-ID";
+  const formattedDate = new Intl.DateTimeFormat(dateLocale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -116,7 +124,7 @@ export default async function MaterialReadPage({
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-sky-50 p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl space-y-5">
         <nav>
@@ -125,7 +133,7 @@ export default async function MaterialReadPage({
             className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
           >
             <span>→</span>
-            <span>رجوع إلى المواد</span>
+            <span>{t.material_back}</span>
           </Link>
         </nav>
 
@@ -137,13 +145,15 @@ export default async function MaterialReadPage({
             {material.title}
           </h1>
           <p className="mt-2 text-xs text-neutral-500">
-            آخر تحديث: {formattedDate}
+            {t.material_updated_prefix} {formattedDate}
           </p>
         </header>
 
         {hasVideo && material.youtube_url ? (
           <section className="space-y-2">
-            <h2 className="text-sm font-bold text-neutral-700">🎬 فيديو</h2>
+            <h2 className="text-sm font-bold text-neutral-700">
+              {t.material_video_title}
+            </h2>
             <MaterialYouTube url={material.youtube_url} />
           </section>
         ) : null}
@@ -151,7 +161,7 @@ export default async function MaterialReadPage({
         {imageUrl ? (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-neutral-700">
-              🖼️ صورة توضيحية
+              {t.material_image_title}
             </h2>
             <MaterialImage url={imageUrl} alt={material.title} />
           </section>
@@ -163,7 +173,7 @@ export default async function MaterialReadPage({
             renderTiptap(material.content_json)
           ) : (
             <p className="text-center text-sm text-neutral-500">
-              لا يوجد محتوى نصي في هذه المادة بعد.
+              {t.material_no_content}
             </p>
           )}
         </article>
@@ -171,7 +181,7 @@ export default async function MaterialReadPage({
         {pdfUrl ? (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-neutral-700">
-              📄 ملف PDF مرفق
+              {t.material_pdf_title}
             </h2>
             <MaterialPdf url={pdfUrl} title={material.title} />
           </section>

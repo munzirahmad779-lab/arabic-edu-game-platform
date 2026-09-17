@@ -2,6 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import idDict from "@/lib/i18n/id.json";
+import enDict from "@/lib/i18n/en.json";
+import arDict from "@/lib/i18n/ar.json";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  isLocale,
+  type Locale,
+} from "@/lib/i18n/dictionaries";
+
+type Dict = typeof idDict;
+const DICTS: Record<Locale, Dict> = {
+  id: idDict,
+  en: enDict as unknown as Dict,
+  ar: arDict as unknown as Dict,
+};
+
+function readLocale(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const m = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  const v = m ? decodeURIComponent(m[1]) : DEFAULT_LOCALE;
+  return isLocale(v) ? v : DEFAULT_LOCALE;
+}
 
 type Row = {
   question_position: number;
@@ -23,7 +48,22 @@ type RpcClient = {
   }>;
 };
 
-export function RoomReview({ token }: { token: string }) {
+export function RoomReview({
+  token,
+  dict: injectedDict,
+}: {
+  token: string;
+  dict?: Dict;
+}) {
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => {
+    setLocale(readLocale());
+  }, []);
+
+  const dict = injectedDict ?? DICTS[locale];
+  const t = dict.join;
+  const isRtl = locale === "ar";
+
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -57,20 +97,21 @@ export function RoomReview({ token }: { token: string }) {
   const wrongRows = rows.filter((r) => !r.is_correct);
 
   return (
-    <section className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur">
+    <section
+      className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 text-right"
+        className="flex w-full items-center justify-between gap-3 text-start"
       >
         <div>
-          <h2 className="text-lg font-black text-white">
-            📋 راجع إجاباتك
-          </h2>
+          <h2 className="text-lg font-black text-white">{t.review_title}</h2>
           <p className="mt-1 text-xs text-white/70">
             {wrongRows.length > 0
-              ? `${wrongRows.length} إجابة خاطئة من ${rows.length}`
-              : "كل الإجابات صحيحة 🎉"}
+              ? `${wrongRows.length} ${t.review_wrong_of} ${rows.length}`
+              : t.review_all_correct}
           </p>
         </div>
         <span className="text-2xl text-white/70">{open ? "−" : "+"}</span>
@@ -92,7 +133,7 @@ export function RoomReview({ token }: { token: string }) {
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
-                    السؤال {idx + 1}
+                    {t.review_question_prefix} {idx + 1}
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-black ${
@@ -101,12 +142,12 @@ export function RoomReview({ token }: { token: string }) {
                         : "bg-emerald-100 text-emerald-800"
                     }`}
                   >
-                    {isWrong ? "✗ خطأ" : "✓ صحيح"}
+                    {isWrong ? t.review_wrong : t.review_correct}
                   </span>
                 </div>
 
                 <p className="mt-3 text-base font-bold leading-8 text-slate-900">
-                  {r.question_text ?? "(سؤال بلا نص)"}
+                  {r.question_text ?? t.review_no_question_text}
                 </p>
 
                 <div className="mt-3 space-y-2">
@@ -133,13 +174,13 @@ export function RoomReview({ token }: { token: string }) {
                         <span className="font-black">{opt.option_key}.</span>{" "}
                         {opt.option_text}
                         {isCorrectOpt ? (
-                          <span className="mr-2 text-xs font-black">
-                            ✓ الإجابة الصحيحة
+                          <span className="ms-2 text-xs font-black">
+                            {t.review_correct_mark}
                           </span>
                         ) : null}
                         {isSelected && isWrong ? (
-                          <span className="mr-2 text-xs font-black">
-                            ✗ اختيارك
+                          <span className="ms-2 text-xs font-black">
+                            {t.review_your_mark}
                           </span>
                         ) : null}
                       </div>
@@ -147,7 +188,6 @@ export function RoomReview({ token }: { token: string }) {
                   })}
                 </div>
 
-                {/* Tombol لماذا untuk SEMUA soal */}
                 <div className="mt-3">
                   <button
                     type="button"
@@ -159,14 +199,14 @@ export function RoomReview({ token }: { token: string }) {
                     }
                     className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-800 transition hover:bg-violet-100"
                   >
-                    {explanationShown ? "إخفاء السبب" : "لماذا؟ 🤔"}
+                    {explanationShown ? t.review_why_hide : t.review_why}
                   </button>
 
                   {explanationShown ? (
                     <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3 text-sm leading-7 text-violet-950">
                       {r.explanation && r.explanation.trim().length > 0
                         ? r.explanation
-                        : "لا يوجد شرح متاح لهذا السؤال."}
+                        : t.review_no_explanation}
                     </div>
                   ) : null}
                 </div>

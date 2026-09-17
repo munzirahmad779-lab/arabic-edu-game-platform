@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import "./dashboard-themes.css";
@@ -29,15 +30,15 @@ export default async function DashboardLayout({
   if (profile && profile.is_active === false) {
     return (
       <div
-        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-rose-50 p-6"
+        className="flex min-h-screen items-center justify-center bg-warmwhite p-6"
         dir="rtl"
       >
         <div className="max-w-md rounded-[2rem] bg-white p-8 text-center shadow-2xl">
           <div className="text-6xl">🚫</div>
-          <h1 className="mt-4 text-2xl font-black text-red-700">
+          <h1 className="font-display mt-4 text-2xl font-black text-red-700">
             Akun Anda dinonaktifkan
           </h1>
-          <p className="mt-3 text-sm text-neutral-600">
+          <p className="mt-3 text-sm text-softslate">
             Hubungi administrator untuk informasi lebih lanjut.
           </p>
           <form action="/auth/logout" method="post" className="mt-6">
@@ -61,22 +62,36 @@ export default async function DashboardLayout({
   return (
     <div
       data-theme={theme}
-      className="min-h-screen bg-neutral-50"
+      className="min-h-screen bg-warmwhite"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-4 sm:px-6">
-        <Link href="/dashboard" className="font-semibold">
-          {dict.common.brand_main}
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-sage-200/60 bg-white/80 px-4 py-4 backdrop-blur sm:px-6">
+        <Link
+          href="/dashboard"
+          className="flex items-center"
+          aria-label={dict.common.brand_main}
+        >
+          <Image
+            src="/logo-horizontal.png"
+            alt={dict.common.brand_main}
+            width={240}
+            height={105}
+            className="h-10 w-auto sm:h-11"
+            priority
+          />
         </Link>
         <div className="flex items-center gap-3">
           <LanguageSwitcher current={locale} />
-          <span className="hidden text-sm text-neutral-600 sm:inline" dir="ltr">
+          <span
+            className="hidden text-sm text-softslate/80 sm:inline"
+            dir="ltr"
+          >
             {profile?.full_name || profile?.email || user.email}
           </span>
           <form action="/auth/logout" method="post">
             <button
               type="submit"
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+              className="rounded-full border border-sage-200 bg-white px-4 py-1.5 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
             >
               {dict.dashboard.logout}
             </button>

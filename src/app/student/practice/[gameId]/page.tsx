@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { PracticePlayer } from "./practice-player";
 
 type MediaItem = {
@@ -50,6 +52,9 @@ export default async function PracticeGamePage({
   const token = await getStudentToken();
   if (!token) redirect("/student/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("student_get_practice_game", {
@@ -80,6 +85,8 @@ export default async function PracticeGamePage({
       initialProgress={progress}
       studentName={session.name}
       className={session.class_name}
+      dict={dict}
+      locale={locale}
     />
   );
 }
