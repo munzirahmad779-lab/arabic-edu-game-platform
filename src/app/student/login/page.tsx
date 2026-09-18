@@ -73,11 +73,17 @@ export default function StudentLoginPage() {
             <span>{c.back_home}</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <LanguageSwitcher current={locale} />
             <Link
-              href="/login"
+              href="/assessment"
               className="rounded-xl border border-[#D97757]/40 bg-white px-4 py-2 text-xs font-bold text-[#C25F3E] transition hover:bg-[#D97757]/10"
+            >
+              📝 Ikut Ujian
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-xl border border-[#8FA68E]/40 bg-white px-4 py-2 text-xs font-bold text-[#2F6D72] transition hover:bg-[#8FA68E]/10"
             >
               🎓 {t.nav_teacher}
             </Link>
@@ -175,6 +181,18 @@ export default function StudentLoginPage() {
                 {submitting ? "..." : `${t.btn_login} ←`}
               </button>
             </form>
+
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-[#D97757]/40 bg-[#D97757]/5 p-4 text-center">
+              <p className="text-xs font-bold text-[#C25F3E]">
+                📝 Punya token ujian? Langsung masuk tanpa login.
+              </p>
+              <Link
+                href="/assessment"
+                className="mt-2 inline-flex rounded-full bg-[#D97757] px-5 py-2 text-xs font-black text-white transition hover:bg-[#C25F3E]"
+              >
+                Ikut Ujian TOEFL/TOAFL →
+              </Link>
+            </div>
           </div>
 
           <div className="relative">

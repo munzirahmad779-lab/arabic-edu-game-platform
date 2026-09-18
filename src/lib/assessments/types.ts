@@ -203,7 +203,7 @@ export const DEFAULT_SECTION_CONFIG: Record<
     {
       section_type: "structure",
       title: {
-        id: "Tarakib & Qawaid",
+        id: "Tarakib wa Qawaid",
         en: "Structure & Grammar",
         ar: "التراكيب والقواعد",
       },
@@ -261,6 +261,27 @@ export const DEFAULT_SECTION_CONFIG: Record<
       scaled_max: 67,
     },
   ],
+};
+
+export const ASSESSMENT_TYPE_LABEL: Record<
+  AssessmentType,
+  { id: string; en: string; ar: string }
+> = {
+  toefl_itp: {
+    id: "TOEFL Prediction",
+    en: "TOEFL Prediction",
+    ar: "توقع TOEFL",
+  },
+  toafl: {
+    id: "TOAFL",
+    en: "TOAFL",
+    ar: "TOAFL",
+  },
+  custom: {
+    id: "Custom",
+    en: "Custom",
+    ar: "مخصص",
+  },
 };
 
 export function generateToken(length = 8): string {

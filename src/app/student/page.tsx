@@ -29,7 +29,7 @@ export default async function StudentDashboardPage() {
       className="min-h-screen bg-warmwhite p-4 sm:p-6"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         <header className="aesthetic-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold text-terracotta-500">
@@ -54,6 +54,25 @@ export default async function StudentDashboardPage() {
             </button>
           </form>
         </header>
+
+        {/* KARTU IKUT UJIAN — HIGHLIGHT */}
+        <Link
+          href="/assessment"
+          className="group flex items-center gap-4 rounded-[2rem] border-2 border-terracotta-500/40 bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-5 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
+        >
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-3xl backdrop-blur">
+            📝
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-display text-lg font-black">
+              Ikut Ujian TOEFL / TOAFL
+            </h2>
+            <p className="mt-0.5 text-xs text-white/85">
+              Punya token dari guru? Masukkan di sini untuk kerjakan ujian.
+            </p>
+          </div>
+          <span className="text-2xl">→</span>
+        </Link>
 
         <section className="grid gap-4 sm:grid-cols-3">
           <Link

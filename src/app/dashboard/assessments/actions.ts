@@ -422,3 +422,187 @@ export async function revokeToken(fd: FormData) {
   revalidatePath(`/dashboard/assessments/${assessmentId}`);
   redirect(`/dashboard/assessments/${assessmentId}`);
 }
+
+// ============================================================
+// SAVE AI QUESTIONS
+// ============================================================
+export async function saveAIQuestions(
+  fd: FormData,
+): Promise<{ ok: boolean; message?: string; savedQuestions?: number; savedPassages?: number }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false, message: "Tidak login." };
+
+    const assessmentId = String(fd.get("assessment_id") ?? "");
+    const payloadRaw = String(fd.get("payload") ?? "");
+    if (!assessmentId || !payloadRaw) {
+      return { ok: false, message: "Data tidak lengkap." };
+    }
+
+    let parsed: {
+      passages: Array<{ ref_id: string; title: string | null; content: string }>;
+      questions: Array<{
+        section_type: string;
+        question_number: number;
+        passage_ref: string | null;
+        audio_ref: string | null;
+        question_text: string;
+        option_a: string;
+        option_b: string;
+        option_c: string;
+        option_d: string;
+        correct_answer: string;
+        difficulty: string | null;
+      }>;
+    };
+    try {
+      parsed = JSON.parse(payloadRaw);
+    } catch {
+      return { ok: false, message: "Payload bukan JSON valid." };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+
+    const { data: assessment } = await db
+      .from("assessments")
+      .select("id")
+      .eq("id", assessmentId)
+      .eq("teacher_id", user.id)
+      .maybeSingle();
+
+    if (!assessment) return { ok: false, message: "Ujian tidak ditemukan." };
+
+    const { data: sectionRows } = await db
+      .from("assessment_sections")
+      .select("id, section_type")
+      .eq("assessment_id", assessmentId);
+
+    const sectionMap = new Map<string, string>();
+    for (const s of (sectionRows ?? []) as Array<{
+      id: string;
+      section_type: string;
+    }>) {
+      sectionMap.set(s.section_type, s.id);
+    }
+
+    // Hitung nomor soal berikutnya per section (lanjut dari yang sudah ada)
+    const { data: existingQuestions } = await db
+      .from("assessment_questions")
+      .select("section_id, question_number")
+      .eq("assessment_id", assessmentId);
+
+    const maxNum: Record<string, number> = {};
+    for (const q of (existingQuestions ?? []) as Array<{
+      section_id: string;
+      question_number: number;
+    }>) {
+      if (!maxNum[q.section_id] || q.question_number > maxNum[q.section_id]) {
+        maxNum[q.section_id] = q.question_number;
+      }
+    }
+
+    // Simpan passages
+    const passageIdMap = new Map<string, string>();
+    let savedPassages = 0;
+    for (const p of parsed.passages ?? []) {
+      const sid = sectionMap.get("reading");
+      if (!sid) continue;
+      const { data: ins } = await db
+        .from("assessment_passages")
+        .insert({
+          assessment_id: assessmentId,
+          section_id: sid,
+          passage_order: 1,
+          title: p.title,
+          content: p.content,
+        })
+        .select("id")
+        .single();
+      if (ins) {
+        passageIdMap.set(p.ref_id, (ins as { id: string }).id);
+        savedPassages += 1;
+      }
+    }
+
+    // Simpan questions
+    const questionRows: Array<Record<string, unknown>> = [];
+    for (const q of parsed.questions ?? []) {
+      const sid = sectionMap.get(q.section_type);
+      if (!sid) continue;
+
+      const nextNum = (maxNum[sid] ?? 0) + 1;
+      maxNum[sid] = nextNum;
+
+      questionRows.push({
+        assessment_id: assessmentId,
+        section_id: sid,
+        question_number: nextNum,
+        question_text: q.question_text,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        correct_answer: q.correct_answer,
+        passage_id: q.passage_ref
+          ? passageIdMap.get(q.passage_ref) ?? null
+          : null,
+        audio_group_id: null,
+        difficulty: q.difficulty,
+      });
+    }
+
+    if (questionRows.length === 0) {
+      return { ok: false, message: "Tidak ada soal untuk disimpan." };
+    }
+
+    const { error: insErr } = await db
+      .from("assessment_questions")
+      .insert(questionRows);
+    if (insErr) {
+      return { ok: false, message: insErr.message };
+    }
+
+    // Update question_count per section + total
+    for (const s of (sectionRows ?? []) as Array<{ id: string }>) {
+      const { count } = await db
+        .from("assessment_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("assessment_id", assessmentId)
+        .eq("section_id", s.id);
+      await db
+        .from("assessment_sections")
+        .update({ question_count: count ?? 0 })
+        .eq("id", s.id);
+    }
+
+    const { count: totalCount } = await db
+      .from("assessment_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("assessment_id", assessmentId);
+
+    await db
+      .from("assessments")
+      .update({
+        total_questions: totalCount ?? 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", assessmentId);
+
+    revalidatePath(`/dashboard/assessments/${assessmentId}`);
+
+    return {
+      ok: true,
+      savedQuestions: questionRows.length,
+      savedPassages,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+    };
+  }
+}

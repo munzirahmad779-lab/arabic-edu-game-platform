@@ -39,14 +39,35 @@ export default async function AssessmentDetailPage({
     total_min: "menit",
     btn_publish: "Publikasikan",
     btn_unpublish: "Batalkan Publikasi",
+    btn_ai: "🪄 Generate Soal dengan AI",
     sections_title: "Section Ujian",
+    scoring_title: "📊 Cara Penilaian",
+    scoring_desc:
+      "Sistem penilaian TOEFL Prediction & TOAFL. Setiap section dihitung jumlah benar (raw score), lalu dikonversi ke skor skala 31-68.",
+    scoring_how: "Cara Hitung:",
+    scoring_step_1:
+      "1. Hitung jumlah jawaban benar per section → dapat raw score",
+    scoring_step_2:
+      "2. Konversi raw score ke skor skala section (31-68)",
+    scoring_step_3:
+      "3. Total = (Listening + Structure + Reading) ÷ 3 × 10",
+    scoring_range:
+      "Rentang Total: 310 (rendah) – 677 (sempurna)",
+    scoring_scale: "Kategori Skor:",
+    scoring_scale_excellent: "600-677 — Excellent",
+    scoring_scale_verygood: "550-599 — Very Good",
+    scoring_scale_good: "500-549 — Good",
+    scoring_scale_fair: "450-499 — Fair",
+    scoring_scale_low: "310-449 — Needs Improvement",
+    scoring_note:
+      "⚠️ Catatan: Konversi yang dipakai adalah pendekatan linier. Skor resmi ETS mungkin sedikit berbeda karena tabel konversi aslinya tidak linier.",
     section_listening: "Listening",
     section_structure: "Structure",
     section_reading: "Reading",
     audio_once: "Audio sekali putar",
     can_review: "Bisa review",
     no_review: "Tidak bisa review",
-    import_title: "Impor Soal dari Excel",
+    import_title: "Impor Soal dari Excel (Alternatif)",
     import_desc:
       "Download template, isi, lalu upload di sini. Akan mengganti semua soal lama.",
     btn_download_template: "⬇️ Download Template",
@@ -199,6 +220,23 @@ export default async function AssessmentDetailPage({
         </div>
       </header>
 
+      <Link
+        href={`/dashboard/assessments/${assessment.id}/ai`}
+        className="flex items-center gap-4 rounded-[2rem] border-2 border-terracotta-500/40 bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-5 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
+      >
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-3xl backdrop-blur">
+          🪄
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-lg font-black">{L.btn_ai}</h2>
+          <p className="mt-0.5 text-xs text-white/85">
+            Buat soal baru dari nol, atau paste draft soal Anda untuk
+            dirapikan otomatis.
+          </p>
+        </div>
+        <span className="text-2xl">→</span>
+      </Link>
+
       {searchParams.imported === "1" ? (
         <div className="rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 text-sm font-bold text-sage-600">
           {L.import_ok}
@@ -270,6 +308,70 @@ export default async function AssessmentDetailPage({
             ))}
           </div>
         )}
+      </section>
+
+      {/* CARA PENILAIAN */}
+      <section className="aesthetic-card border-2 border-teal-500/20 bg-teal-50/30">
+        <h2 className="font-display text-lg font-black text-teal-700">
+          {L.scoring_title}
+        </h2>
+        <p className="mt-1 text-sm text-softslate/80">{L.scoring_desc}</p>
+
+        <div className="mt-4 rounded-2xl border border-sage-200/60 bg-white p-4">
+          <p className="text-xs font-black uppercase tracking-wider text-terracotta-500">
+            {L.scoring_how}
+          </p>
+          <ul className="mt-2 space-y-1.5 text-sm text-softslate">
+            <li>{L.scoring_step_1}</li>
+            <li>{L.scoring_step_2}</li>
+            <li className="font-bold text-teal-700">{L.scoring_step_3}</li>
+          </ul>
+          <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-xs font-bold text-teal-700">
+            {L.scoring_range}
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-sage-200/60 bg-white p-4">
+          <p className="text-xs font-black uppercase tracking-wider text-terracotta-500">
+            {L.scoring_scale}
+          </p>
+          <div className="mt-2 space-y-1 text-xs text-softslate">
+            <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
+              <span>{L.scoring_scale_excellent.split(" — ")[0]}</span>
+              <span className="font-black text-sage-600">
+                {L.scoring_scale_excellent.split(" — ")[1]}
+              </span>
+            </div>
+            <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
+              <span>{L.scoring_scale_verygood.split(" — ")[0]}</span>
+              <span className="font-black text-teal-700">
+                {L.scoring_scale_verygood.split(" — ")[1]}
+              </span>
+            </div>
+            <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
+              <span>{L.scoring_scale_good.split(" — ")[0]}</span>
+              <span className="font-black text-terracotta-500">
+                {L.scoring_scale_good.split(" — ")[1]}
+              </span>
+            </div>
+            <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
+              <span>{L.scoring_scale_fair.split(" — ")[0]}</span>
+              <span className="font-black text-terracotta-600">
+                {L.scoring_scale_fair.split(" — ")[1]}
+              </span>
+            </div>
+            <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
+              <span>{L.scoring_scale_low.split(" — ")[0]}</span>
+              <span className="font-black text-softslate">
+                {L.scoring_scale_low.split(" — ")[1]}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-3 rounded-2xl border border-terracotta-500/30 bg-terracotta-50 p-3 text-xs text-terracotta-700">
+          {L.scoring_note}
+        </p>
       </section>
 
       <section className="aesthetic-card">

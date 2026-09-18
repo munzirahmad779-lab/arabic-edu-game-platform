@@ -35,7 +35,6 @@ export default async function HomePage() {
       className="relative flex min-h-screen flex-col overflow-hidden bg-warmwhite"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      {/* Breathing blobs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] animate-blob-breathe rounded-full bg-sage-500/20 blur-3xl" />
         <div
@@ -65,14 +64,14 @@ export default async function HomePage() {
           <a href="#fitur" className="transition hover:text-terracotta-500">
             Fitur
           </a>
+          <a href="#ujian" className="transition hover:text-terracotta-500">
+            Ujian
+          </a>
           <a href="#modes" className="transition hover:text-terracotta-500">
             {t.feat_modes_title}
           </a>
           <a href="#laporan" className="transition hover:text-terracotta-500">
             {t.feat_reports_title}
-          </a>
-          <a href="#latihan" className="transition hover:text-terracotta-500">
-            {t.feat_practice_title}
           </a>
         </nav>
 
@@ -151,6 +150,112 @@ export default async function HomePage() {
         </div>
       </main>
 
+      {/* ============ SECTION TOEFL / TOAFL ============ */}
+      <section
+        id="ujian"
+        className="relative z-10 mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-20 sm:px-6"
+      >
+        <div className="relative overflow-hidden rounded-[2.5rem] border-2 border-terracotta-500/30 bg-gradient-to-br from-terracotta-50 via-white to-teal-50 p-8 shadow-xl sm:p-12">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-terracotta-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-teal-500/15 blur-3xl" />
+
+          <div className="relative">
+            <div className="text-center">
+              <p className="text-xs font-black tracking-widest text-terracotta-500">
+                UNGGULAN
+              </p>
+              <h2 className="font-display mt-3 text-3xl font-black text-teal-700 sm:text-4xl">
+                📝 Ujian TOEFL Prediction & TOAFL
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-softslate/80 sm:text-base">
+                Simulasi ujian resmi TOEFL Prediction dan TOAFL dengan 3 section
+                lengkap. Timer per section, audio sekali putar, bacaan, dan
+                konversi skor otomatis 310–677 — sesuai standar asli.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-sage-200/60 bg-white p-4 text-center">
+                <div className="text-3xl">🎧</div>
+                <p className="mt-2 text-xs font-black text-teal-700">
+                  Listening
+                </p>
+                <p className="mt-1 text-[10px] text-softslate/70">
+                  Audio sekali putar
+                </p>
+              </div>
+              <div className="rounded-2xl border border-sage-200/60 bg-white p-4 text-center">
+                <div className="text-3xl">📖</div>
+                <p className="mt-2 text-xs font-black text-teal-700">
+                  Structure
+                </p>
+                <p className="mt-1 text-[10px] text-softslate/70">
+                  Bisa review
+                </p>
+              </div>
+              <div className="rounded-2xl border border-sage-200/60 bg-white p-4 text-center">
+                <div className="text-3xl">📚</div>
+                <p className="mt-2 text-xs font-black text-teal-700">
+                  Reading
+                </p>
+                <p className="mt-1 text-[10px] text-softslate/70">
+                  Banyak bacaan
+                </p>
+              </div>
+              <div className="rounded-2xl border border-sage-200/60 bg-white p-4 text-center">
+                <div className="text-3xl">🏆</div>
+                <p className="mt-2 text-xs font-black text-teal-700">
+                  Skor 310–677
+                </p>
+                <p className="mt-1 text-[10px] text-softslate/70">
+                  Konversi otomatis
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-teal-500/30 bg-white/80 p-5 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-wider text-teal-600">
+                  Untuk Guru
+                </p>
+                <h3 className="font-display mt-2 text-lg font-black text-teal-700">
+                  Buat Ujian dengan AI
+                </h3>
+                <p className="mt-2 text-xs leading-6 text-softslate/80">
+                  Generate soal otomatis dengan AI, atau paste draft soal Anda
+                  untuk dirapikan. Buat token, pantau hasil.
+                </p>
+                <Link
+                  href="/login"
+                  className="mt-4 inline-flex rounded-full bg-teal-700 px-5 py-2.5 text-xs font-black text-white transition hover:bg-teal-600"
+                >
+                  🎓 Masuk Guru →
+                </Link>
+              </div>
+
+              <div className="rounded-2xl border border-terracotta-500/30 bg-white/80 p-5 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-wider text-terracotta-500">
+                  Untuk Siswa
+                </p>
+                <h3 className="font-display mt-2 text-lg font-black text-teal-700">
+                  Ikut Ujian dengan Token
+                </h3>
+                <p className="mt-2 text-xs leading-6 text-softslate/80">
+                  Punya token dari guru? Langsung masuk dan kerjakan ujian
+                  TOEFL Prediction atau TOAFL tanpa perlu daftar akun.
+                </p>
+                <Link
+                  href="/assessment"
+                  className="mt-4 inline-flex rounded-full bg-terracotta-500 px-5 py-2.5 text-xs font-black text-white transition hover:bg-terracotta-600"
+                >
+                  📝 Ikut Ujian →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ============ FEATURE GRID ============ */}
       <section
         id="fitur"
@@ -179,7 +284,6 @@ export default async function HomePage() {
             desc={t.feat_reports_desc}
           />
           <FeatureCard
-            id="latihan"
             icon="🎯"
             title={t.feat_practice_title}
             desc={t.feat_practice_desc}

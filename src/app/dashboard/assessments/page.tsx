@@ -26,14 +26,14 @@ export default async function AssessmentsPage({
   const isRtl = locale === "ar";
 
   const L = {
-    title: "Ujian TOEFL / TOAFL",
+    title: "Ujian TOEFL & TOAFL",
     subtitle:
-      "Buat simulasi TOEFL ITP atau TOAFL dengan 3 section (Listening, Structure, Reading), timer penuh, dan masuk pakai token.",
+      "Buat simulasi TOEFL Prediction atau TOAFL dengan 3 section (Listening, Structure, Reading), timer penuh, dan masuk pakai token.",
     create_title: "Buat Ujian Baru",
     label_title: "Judul Ujian",
-    placeholder_title: "Contoh: TOEFL ITP Prediction - November 2026",
+    placeholder_title: "Contoh: TOEFL Prediction - November 2026",
     label_type: "Tipe Ujian",
-    type_toefl: "TOEFL ITP",
+    type_toefl: "TOEFL Prediction",
     type_toafl: "TOAFL",
     type_custom: "Custom",
     label_level: "Level (opsional)",
@@ -69,6 +69,12 @@ export default async function AssessmentsPage({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const list: any[] = assessmentsData ?? [];
+
+  const typeLabel = (t: string) => {
+    if (t === "toefl_itp") return "TOEFL Prediction";
+    if (t === "toafl") return "TOAFL";
+    return "Custom";
+  };
 
   const errorMsg = (() => {
     if (searchParams.error === "invalid_title") return L.err_invalid_title;
@@ -240,7 +246,7 @@ export default async function AssessmentsPage({
 
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
                   <span className="rounded-full bg-terracotta-100 px-2 py-1 font-bold text-terracotta-600">
-                    {String(a.assessment_type).toUpperCase()}
+                    {typeLabel(a.assessment_type)}
                   </span>
                   {a.level ? (
                     <span className="rounded-full bg-teal-100 px-2 py-1 font-bold text-teal-700">
