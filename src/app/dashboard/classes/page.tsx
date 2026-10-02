@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createClass } from "./actions";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -33,9 +34,20 @@ export default async function ClassesPage({
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
 
-  const editing = searchParams.edit
-    ? classes?.find((cls) => cls.id === searchParams.edit)
-    : null;
+  const errorMsg = (() => {
+    switch (searchParams.error) {
+      case "invalid_name":
+        return "Nama kelas tidak valid (1-100 karakter).";
+      case "invalid_subject":
+        return "Mata pelajaran tidak valid (maks 100 karakter).";
+      case "duplicate":
+        return "Kelas dengan nama ini sudah ada.";
+      case "create_failed":
+        return "Gagal membuat kelas. Coba lagi.";
+      default:
+        return searchParams.error ? `Error: ${searchParams.error}` : null;
+    }
+  })();
 
   return (
     <main className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
@@ -57,27 +69,24 @@ export default async function ClassesPage({
         </Link>
       </header>
 
+      {errorMsg ? (
+        <div
+          role="alert"
+          className="rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-3 text-sm font-bold text-red-800"
+        >
+          ⚠️ {errorMsg}
+        </div>
+      ) : null}
+
       <section className="aesthetic-card">
         <div>
           <h2 className="font-display text-lg font-black text-teal-700">
-            {editing ? t.edit_title : t.create_title}
+            {t.create_title}
           </h2>
           <p className="mt-1 text-sm text-softslate/70">{t.create_desc}</p>
         </div>
 
-        <form
-          action={
-            editing
-              ? `/dashboard/classes/${editing.id}?edit=1`
-              : "/dashboard/classes"
-          }
-          method="post"
-          className="mt-5 grid gap-4 sm:grid-cols-2"
-        >
-          {editing ? (
-            <input type="hidden" name="id" value={editing.id} />
-          ) : null}
-
+        <form action={createClass} className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <label
               htmlFor="class-name"
@@ -90,8 +99,7 @@ export default async function ClassesPage({
               name="name"
               type="text"
               required
-              maxLength={120}
-              defaultValue={editing?.name ?? ""}
+              maxLength={100}
               placeholder={t.label_name_placeholder}
               className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
@@ -108,25 +116,16 @@ export default async function ClassesPage({
               id="class-subject"
               name="subject"
               type="text"
-              maxLength={120}
-              defaultValue={editing?.subject ?? ""}
+              maxLength={100}
               placeholder={t.label_subject_placeholder}
               className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <button type="submit" className="btn-primary">
-              {editing ? t.btn_save : t.btn_create}
+          <div className="sm:col-span-2">
+            <button type="submit" className="btn-primary w-full">
+              {t.btn_create}
             </button>
-            {editing ? (
-              <Link
-                href="/dashboard/classes"
-                className="rounded-full border border-sage-200 bg-white px-5 py-3 text-sm font-black text-teal-700 transition hover:bg-sage-50"
-              >
-                {t.cancel_edit}
-              </Link>
-            ) : null}
           </div>
         </form>
       </section>
@@ -150,10 +149,7 @@ export default async function ClassesPage({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {classes.map((cls) => (
-              <article
-                key={cls.id}
-                className="aesthetic-card flex flex-col"
-              >
+              <article key={cls.id} className="aesthetic-card flex flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="font-display truncate text-lg font-black text-teal-700">
@@ -181,12 +177,6 @@ export default async function ClassesPage({
                     className="flex-1 rounded-full bg-terracotta-500 px-4 py-2.5 text-center text-sm font-black text-white transition hover:bg-terracotta-600"
                   >
                     {t.open_class}
-                  </Link>
-                  <Link
-                    href={`/dashboard/classes?edit=${cls.id}`}
-                    className="rounded-full border border-sage-200 bg-white px-3 py-2.5 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
-                  >
-                    ✏️
                   </Link>
                 </div>
               </article>
