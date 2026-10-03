@@ -3,37 +3,25 @@ import { NextResponse } from "next/server";
 // ============================================================
 // ROUTE CONFIG
 // ============================================================
-// maxDuration = 60 detik (batas maksimum Vercel Hobby).
-// Tanpa ini, request panjang akan dipotong Vercel di tengah jalan.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // ============================================================
-// KONFIGURASI PROVIDER
+// STRATEGI PROVIDER (UPDATE 4 Okt 2026)
 // ============================================================
-// UPDATE 4 Okt 2026:
-// - NVIDIA memensiunkan "nemotron-3-super-120b-a12b" (410, 3 Okt 2026)
-//   dan "llama-3.3-nemotron-super-49b-v1" (410, 26 Agu 2026).
-//   Model di bawah = yang masih hidup saat tulisan ini dibuat.
-// - Gemini "2.5-flash" pensiun untuk API key baru -> pakai 3.8-flash.
-//   Gemini 3.8 Flash sering 503 (overload) -> wajib retry + fallback.
-// - LLM7 tidak butuh API key asli; string "unused" juga diterima.
+// Pelajaran dari log sebelumnya:
+// - NVIDIA: banyak model EOL (410) + sedang "READ TIMEOUT" massal.
+//   Jangan taruh di depan! Taruh paling belakang.
+// - Gemini: paling bagus JSON-nya, tapi sering 503 (overload).
+//   Wajib retry dengan exponential backoff + fallback 3 model.
+// - LLM7: gratis, tanpa key asli, selector "default"/"fast".
+//   Kalau fetch failed, coba model spesifik + mode anonim.
+//
+// URUTAN: Gemini -> LLM7 -> OpenRouter -> NVIDIA
+// ============================================================
 
-const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const NVIDIA_MODELS = [
-  // Urutan: dari yang paling cepat & hemat token.
-  "deepseek-ai/deepseek-v4-flash-0731",
-  "nvidia/nemotron-3.5-lightning-30b-a3b",
-  "nvidia/nemotron-3-ultra-550b-a55b",
-];
-
-const LLM7_URL = "https://api.llm7.io/v1/chat/completions";
-const LLM7_MODELS = ["default", "fast"];
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODELS = ["deepseek/deepseek-v4-flash:free"];
-
+// --- Gemini ---
 const GEMINI_MODELS = [
   "gemini-3.8-flash",
   "gemini-3.7-flash",
@@ -41,9 +29,35 @@ const GEMINI_MODELS = [
 ];
 const GEMINI_MAX_OUTPUT_TOKENS = 65536;
 
-// Budget total untuk seluruh rantai provider (harus < maxDuration).
+// --- LLM7 ---
+const LLM7_URL = "https://api.llm7.io/v1/chat/completions";
+// Selector resmi: "default", "fast", "pro".
+// Model spesifik sebagai cadangan kalau selector gagal.
+const LLM7_MODELS = ["default", "fast", "DeepSeek-V4-Flash-0731"];
+
+// --- OpenRouter ---
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODELS = ["deepseek/deepseek-v4-flash:free"];
+
+// --- NVIDIA (cadangan terakhir) ---
+const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+// Model yang masih hidup per 4 Okt 2026 (dari build.nvidia.com/models):
+const NVIDIA_MODELS = [
+  "nvidia/nemotron-3-super-120b-a12b",
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "nvidia/nemotron-3.5-lightning-30b-a3b",
+];
+
+// --- Budget waktu ---
+// Vercel Hobby = max 60 detik. Sisakan 5 detik untuk overhead.
 const TOTAL_BUDGET_MS = 55_000;
-const MIN_REMAINING_MS = 8_000;
+const MIN_REMAINING_MS = 5_000;
+
+// --- Timeout per attempt ---
+const TIMEOUT_GEMINI = 20_000;
+const TIMEOUT_LLM7 = 15_000;
+const TIMEOUT_OPENROUTER = 15_000;
+const TIMEOUT_NVIDIA = 12_000;
 
 const JSON_SYSTEM_PROMPT =
   "You are a strict JSON generator. You ALWAYS output valid JSON only, " +
@@ -88,7 +102,6 @@ type ChatCompletion = {
 // UTILITAS: ERROR, TIMEOUT, RETRY
 // ============================================================
 
-/** Ambil pesan error sedetail mungkin, termasuk err.cause (penyebab asli). */
 function describeError(err: unknown): string {
   if (err instanceof Error) {
     if (err.name === "AbortError" || err.name === "TimeoutError") {
@@ -118,7 +131,6 @@ function startTimeout(ms: number): TimedSignal {
   };
 }
 
-/** Error HTTP yang layak dicoba ulang (server sibuk / overload). */
 function isRetryable(msg: string): boolean {
   return (
     /\b(429|500|502|503|504)\b/.test(msg) ||
@@ -145,7 +157,7 @@ async function withRetry<T>(
       const msg = describeError(err);
       const isLast = i >= opts.attempts - 1;
       if (isLast || !opts.shouldRetry(msg)) throw err;
-      const delay = opts.baseDelayMs * 2 ** i + Math.floor(Math.random() * 400);
+      const delay = opts.baseDelayMs * 2 ** i + Math.floor(Math.random() * 500);
       console.warn(
         `[ai-generate] ${opts.label} retry ${i + 1} dalam ${delay}ms karena: ${msg}`,
       );
@@ -167,9 +179,21 @@ async function callOpenAICompatible(args: {
   timeoutMs: number;
   extraHeaders?: Record<string, string>;
   maxTokens?: number;
+  extraBody?: Record<string, unknown>;
 }): Promise<string> {
   const t = startTimeout(args.timeoutMs);
   try {
+    const body: Record<string, unknown> = {
+      model: args.model,
+      messages: [
+        { role: "system", content: JSON_SYSTEM_PROMPT },
+        { role: "user", content: args.prompt },
+      ],
+      temperature: 0.4,
+      max_tokens: args.maxTokens ?? 8000,
+    };
+    if (args.extraBody) Object.assign(body, args.extraBody);
+
     const res = await fetch(args.url, {
       method: "POST",
       signal: t.signal,
@@ -178,22 +202,12 @@ async function callOpenAICompatible(args: {
         Authorization: `Bearer ${args.apiKey}`,
         ...(args.extraHeaders ?? {}),
       },
-      body: JSON.stringify({
-        model: args.model,
-        messages: [
-          { role: "system", content: JSON_SYSTEM_PROMPT },
-          { role: "user", content: args.prompt },
-        ],
-        temperature: 0.4,
-        max_tokens: args.maxTokens ?? 8000,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(
-        `${args.model} ${res.status}: ${body.slice(0, 300)}`,
-      );
+      const text = await res.text();
+      throw new Error(`${args.model} ${res.status}: ${text.slice(0, 300)}`);
     }
 
     const data = (await res.json()) as ChatCompletion;
@@ -218,12 +232,9 @@ async function callGeminiOnce(args: {
     const generationConfig: Record<string, unknown> = {
       responseMimeType: "application/json",
       temperature: 0.4,
-      // 65536 = batas maksimum output Gemini 3.x Flash.
-      // Nilai besar penting karena proses "thinking" ikut memakan kuota ini.
       maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
     };
     if (args.useThinkingConfig) {
-      // "low" = cukup untuk bikin JSON soal, jauh lebih cepat dari default.
       generationConfig.thinkingConfig = { thinkingLevel: "low" };
     }
 
@@ -241,9 +252,9 @@ async function callGeminiOnce(args: {
     });
 
     if (!res.ok) {
-      const body = await res.text();
+      const text = await res.text();
       throw new Error(
-        `Gemini ${args.model} ${res.status}: ${body.slice(0, 300)}`,
+        `Gemini ${args.model} ${res.status}: ${text.slice(0, 300)}`,
       );
     }
 
@@ -258,10 +269,6 @@ async function callGeminiOnce(args: {
   }
 }
 
-/**
- * Panggil Gemini: coba dengan thinkingConfig dulu.
- * Kalau model menolak thinkingConfig dengan error 400, ulangi tanpa itu.
- */
 async function callGemini(args: {
   model: string;
   prompt: string;
@@ -278,8 +285,7 @@ async function callGemini(args: {
     });
   } catch (err) {
     const msg = describeError(err);
-    const isThinkingRejected =
-      /\b400\b/.test(msg) && /thinking/i.test(msg);
+    const isThinkingRejected = /\b400\b/.test(msg) && /thinking/i.test(msg);
     if (!isThinkingRejected) throw err;
     console.warn(
       `[ai-generate] Gemini ${args.model} tolak thinkingConfig, ulangi tanpa: ${msg}`,
@@ -308,81 +314,50 @@ type Attempt = {
 function buildAttempts(): Attempt[] {
   const list: Attempt[] = [];
 
-  const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const llm7Key = process.env.LLM7_API_KEY?.trim();
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
 
-  if (nvidiaKey) {
-    for (const model of NVIDIA_MODELS) {
+  // ---------- 1. GEMINI (paling stabil JSON-nya) ----------
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
       list.push({
-        name: `nvidia:${model}`,
+        name: `gemini:${model}`,
         run: (prompt, timeoutMs) =>
-          callOpenAICompatible({
-            url: NVIDIA_URL,
+          callGemini({
             model,
-            apiKey: nvidiaKey,
             prompt,
+            apiKey: geminiKey,
             timeoutMs,
           }),
-        // NVIDIA tidak diulang (kalau 410 = permanen, kalau network cepat gagal).
-        retryAttempts: 1,
-        retryBaseMs: 1000,
+        // 503 = overload sementara -> retry 3x: 2s, 4s, 8s.
+        retryAttempts: 3,
+        retryBaseMs: 2000,
       });
     }
   }
 
-  // LLM7: coba pakai key yang ada dulu.
-  if (llm7Key) {
-    for (const model of LLM7_MODELS) {
-      list.push({
-        name: `llm7:${model}`,
-        run: (prompt, timeoutMs) =>
-          callOpenAICompatible({
-            url: LLM7_URL,
-            model,
-            apiKey: llm7Key,
-            prompt,
-            timeoutMs,
-          }),
-        retryAttempts: 1,
-        retryBaseMs: 1000,
-      });
-    }
-  }
-
-  // LLM7 cadangan: pakai "unused" (mode anonim) kalau key bermasalah.
-  if (llm7Key && llm7Key !== "unused") {
+  // ---------- 2. LLM7 (gratis, tanpa key asli) ----------
+  // Pakai key kalau ada, kalau tidak pakai "unused" (mode anonim).
+  const llm7KeyToUse = llm7Key && llm7Key.length > 0 ? llm7Key : "unused";
+  for (const model of LLM7_MODELS) {
     list.push({
-      name: "llm7:default(anonymous)",
+      name: `llm7:${model}`,
       run: (prompt, timeoutMs) =>
         callOpenAICompatible({
           url: LLM7_URL,
-          model: "default",
-          apiKey: "unused",
+          model,
+          apiKey: llm7KeyToUse,
           prompt,
           timeoutMs,
         }),
-      retryAttempts: 1,
-      retryBaseMs: 1000,
-    });
-  } else if (!llm7Key) {
-    // Tidak ada key sama sekali -> tetap coba anonim.
-    list.push({
-      name: "llm7:default(anonymous)",
-      run: (prompt, timeoutMs) =>
-        callOpenAICompatible({
-          url: LLM7_URL,
-          model: "default",
-          apiKey: "unused",
-          prompt,
-          timeoutMs,
-        }),
-      retryAttempts: 1,
-      retryBaseMs: 1000,
+      retryAttempts: 2,
+      retryBaseMs: 1500,
     });
   }
 
+  // ---------- 3. OPENROUTER ----------
   if (openrouterKey) {
     for (const model of OPENROUTER_MODELS) {
       list.push({
@@ -405,21 +380,29 @@ function buildAttempts(): Attempt[] {
     }
   }
 
-  // Gemini ditaruh belakang karena 503-nya sering, tapi paling akurat JSON-nya.
-  if (geminiKey) {
-    for (const model of GEMINI_MODELS) {
+  // ---------- 4. NVIDIA (cadangan terakhir, sering timeout) ----------
+  if (nvidiaKey) {
+    for (const model of NVIDIA_MODELS) {
       list.push({
-        name: `gemini:${model}`,
+        name: `nvidia:${model}`,
         run: (prompt, timeoutMs) =>
-          callGemini({
+          callOpenAICompatible({
+            url: NVIDIA_URL,
             model,
+            apiKey: nvidiaKey,
             prompt,
-            apiKey: geminiKey,
             timeoutMs,
+            // Matikan "thinking" supaya respons cepat & tidak timeout.
+            extraBody: {
+              chat_template_kwargs: {
+                enable_thinking: false,
+                force_nonempty_content: true,
+              },
+            },
           }),
-        // 503 = overload sementara -> retry 3x dengan jeda 1.5s, 3s, 6s.
-        retryAttempts: 3,
-        retryBaseMs: 1500,
+        // Jangan retry; kalau timeout sekali, langsung lanjut saja.
+        retryAttempts: 1,
+        retryBaseMs: 1000,
       });
     }
   }
@@ -433,7 +416,7 @@ async function tryProviders(
   const attempts = buildAttempts();
   if (attempts.length === 0) {
     throw new Error(
-      "Tidak ada API key terpasang. Isi .env.local dengan GEMINI_API_KEY / NVIDIA_API_KEY / LLM7_API_KEY.",
+      "Tidak ada API key terpasang. Isi .env.local dengan GEMINI_API_KEY / LLM7_API_KEY / OPENROUTER_API_KEY / NVIDIA_API_KEY.",
     );
   }
 
@@ -448,25 +431,29 @@ async function tryProviders(
       continue;
     }
 
-    // Setiap attempt dapat timeout internal:
-    // - maksimal 25 detik, atau
-    // - sisa budget dikurangi 3 detik (untuk sisanya).
-    const perAttemptTimeout = Math.min(25_000, left - 3_000);
-    if (perAttemptTimeout < 3_000) {
+    // Timeout per attempt = min(timeout default, sisa budget - 2s).
+    const baseTimeout =
+      attempt.name.startsWith("gemini:")
+        ? TIMEOUT_GEMINI
+        : attempt.name.startsWith("llm7:")
+          ? TIMEOUT_LLM7
+          : attempt.name.startsWith("openrouter:")
+            ? TIMEOUT_OPENROUTER
+            : TIMEOUT_NVIDIA;
+
+    const perAttemptTimeout = Math.min(baseTimeout, left - 2000);
+    if (perAttemptTimeout < 3000) {
       errors.push(`${attempt.name}: dilewati (sisa waktu terlalu kecil)`);
       continue;
     }
 
     try {
-      const raw = await withRetry(
-        () => attempt.run(prompt, perAttemptTimeout),
-        {
-          attempts: attempt.retryAttempts,
-          baseDelayMs: attempt.retryBaseMs,
-          label: attempt.name,
-          shouldRetry: isRetryable,
-        },
-      );
+      const raw = await withRetry(() => attempt.run(prompt, perAttemptTimeout), {
+        attempts: attempt.retryAttempts,
+        baseDelayMs: attempt.retryBaseMs,
+        label: attempt.name,
+        shouldRetry: isRetryable,
+      });
       console.log(
         `[ai-generate] sukses via ${attempt.name} dalam ${Date.now() - startedAt}ms`,
       );
@@ -478,9 +465,7 @@ async function tryProviders(
     }
   }
 
-  throw new Error(
-    "Semua provider gagal. " + errors.join(" | "),
-  );
+  throw new Error("Semua provider gagal. " + errors.join(" | "));
 }
 
 // ============================================================
