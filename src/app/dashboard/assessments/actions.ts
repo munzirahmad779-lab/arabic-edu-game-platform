@@ -306,11 +306,23 @@ export async function importAssessment(fd: FormData) {
     }
   }
 
-  let totalQuestions = 0;
-  let totalDuration = 0;
+  // Hitung question_count per section dalam sekali query
+  const { data: allQ } = await db
+    .from("assessment_questions")
+    .select("section_id")
+    .eq("assessment_id", assessmentId);
 
+  const countPerSection = new Map<string, number>();
+  for (const q of (allQ ?? []) as Array<{ section_id: string }>) {
+    countPerSection.set(
+      q.section_id,
+      (countPerSection.get(q.section_id) ?? 0) + 1,
+    );
+  }
+
+  let totalQuestions = 0;
   for (const s of existingSections as Array<{ id: string }>) {
-    const count = questionRows.filter((q) => q.section_id === s.id).length;
+    const count = countPerSection.get(s.id) ?? 0;
     totalQuestions += count;
     await db
       .from("assessment_sections")
@@ -318,6 +330,7 @@ export async function importAssessment(fd: FormData) {
       .eq("id", s.id);
   }
 
+  let totalDuration = 0;
   const { data: sectionDurations } = await db
     .from("assessment_sections")
     .select("duration_minutes")
@@ -426,9 +439,21 @@ export async function revokeToken(fd: FormData) {
 // ============================================================
 // SAVE AI QUESTIONS
 // ============================================================
+// Perubahan (4 Okt 2026):
+// - Constraint DB sekarang: UNIQUE (assessment_id, section_id, question_number)
+//   sehingga nomor boleh reset per section (sesuai TOEFL ITP asli).
+// - Hitung maxNum per section_id, lalu lanjutkan dari nomor terakhir.
+// - Hindari loop N+1 dengan mengumpulkan section_id sekali.
+// - Tambah log untuk mempermudah debug via terminal.
+// ============================================================
 export async function saveAIQuestions(
   fd: FormData,
-): Promise<{ ok: boolean; message?: string; savedQuestions?: number; savedPassages?: number }> {
+): Promise<{
+  ok: boolean;
+  message?: string;
+  savedQuestions?: number;
+  savedPassages?: number;
+}> {
   try {
     const supabase = await createClient();
     const {
@@ -443,7 +468,11 @@ export async function saveAIQuestions(
     }
 
     let parsed: {
-      passages: Array<{ ref_id: string; title: string | null; content: string }>;
+      passages: Array<{
+        ref_id: string;
+        title: string | null;
+        content: string;
+      }>;
       questions: Array<{
         section_type: string;
         question_number: number;
@@ -489,7 +518,7 @@ export async function saveAIQuestions(
       sectionMap.set(s.section_type, s.id);
     }
 
-    // Hitung nomor soal berikutnya per section (lanjut dari yang sudah ada)
+    // Hitung nomor soal berikutnya per section (lanjut dari yang sudah ada).
     const { data: existingQuestions } = await db
       .from("assessment_questions")
       .select("section_id, question_number")
@@ -500,12 +529,13 @@ export async function saveAIQuestions(
       section_id: string;
       question_number: number;
     }>) {
-      if (!maxNum[q.section_id] || q.question_number > maxNum[q.section_id]) {
-        maxNum[q.section_id] = q.question_number;
-      }
+      const prev = maxNum[q.section_id] ?? 0;
+      if (q.question_number > prev) maxNum[q.section_id] = q.question_number;
     }
 
-    // Simpan passages
+    console.log("[saveAIQuestions] maxNum per section:", maxNum);
+
+    // Simpan passages (semua ke section "reading").
     const passageIdMap = new Map<string, string>();
     let savedPassages = 0;
     for (const p of parsed.passages ?? []) {
@@ -528,11 +558,16 @@ export async function saveAIQuestions(
       }
     }
 
-    // Simpan questions
+    // Simpan questions.
     const questionRows: Array<Record<string, unknown>> = [];
     for (const q of parsed.questions ?? []) {
       const sid = sectionMap.get(q.section_type);
-      if (!sid) continue;
+      if (!sid) {
+        console.warn(
+          `[saveAIQuestions] skip soal: section "${q.section_type}" tidak ada di assessment ini`,
+        );
+        continue;
+      }
 
       const nextNum = (maxNum[sid] ?? 0) + 1;
       maxNum[sid] = nextNum;
@@ -550,6 +585,9 @@ export async function saveAIQuestions(
         passage_id: q.passage_ref
           ? passageIdMap.get(q.passage_ref) ?? null
           : null,
+        // AI hanya menghasilkan label (misal "A1"), bukan file audio.
+        // Jadi audio_group_id dibiarkan null. Kalau nanti perlu audio,
+        // tinggal buat audio_groups dan isi di sini.
         audio_group_id: null,
         difficulty: q.difficulty,
       });
@@ -559,35 +597,46 @@ export async function saveAIQuestions(
       return { ok: false, message: "Tidak ada soal untuk disimpan." };
     }
 
+    console.log(
+      `[saveAIQuestions] akan insert ${questionRows.length} soal untuk assessment ${assessmentId}`,
+    );
+
     const { error: insErr } = await db
       .from("assessment_questions")
       .insert(questionRows);
     if (insErr) {
+      console.error("[saveAIQuestions] insert error:", insErr.message);
       return { ok: false, message: insErr.message };
     }
 
-    // Update question_count per section + total
+    // Update question_count per section — pakai satu query lalu hitung di memory.
+    const { data: allQ } = await db
+      .from("assessment_questions")
+      .select("section_id")
+      .eq("assessment_id", assessmentId);
+
+    const countPerSection = new Map<string, number>();
+    for (const q of (allQ ?? []) as Array<{ section_id: string }>) {
+      countPerSection.set(
+        q.section_id,
+        (countPerSection.get(q.section_id) ?? 0) + 1,
+      );
+    }
+
     for (const s of (sectionRows ?? []) as Array<{ id: string }>) {
-      const { count } = await db
-        .from("assessment_questions")
-        .select("id", { count: "exact", head: true })
-        .eq("assessment_id", assessmentId)
-        .eq("section_id", s.id);
+      const count = countPerSection.get(s.id) ?? 0;
       await db
         .from("assessment_sections")
-        .update({ question_count: count ?? 0 })
+        .update({ question_count: count })
         .eq("id", s.id);
     }
 
-    const { count: totalCount } = await db
-      .from("assessment_questions")
-      .select("id", { count: "exact", head: true })
-      .eq("assessment_id", assessmentId);
+    const totalCount = (allQ ?? []).length;
 
     await db
       .from("assessments")
       .update({
-        total_questions: totalCount ?? 0,
+        total_questions: totalCount,
         updated_at: new Date().toISOString(),
       })
       .eq("id", assessmentId);
@@ -600,9 +649,8 @@ export async function saveAIQuestions(
       savedPassages,
     };
   } catch (err) {
-    return {
-      ok: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
-    };
+    const msg = err instanceof Error ? err.message : "Gagal menyimpan.";
+    console.error("[saveAIQuestions] unexpected error:", msg);
+    return { ok: false, message: msg };
   }
 }
