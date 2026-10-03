@@ -1,16 +1,57 @@
 import { NextResponse } from "next/server";
 
+// ============================================================
+// ROUTE CONFIG
+// ============================================================
+// maxDuration = 60 detik (batas maksimum Vercel Hobby).
+// Tanpa ini, request panjang akan dipotong Vercel di tengah jalan.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
+// ============================================================
+// KONFIGURASI PROVIDER
+// ============================================================
+// UPDATE 4 Okt 2026:
+// - NVIDIA memensiunkan "nemotron-3-super-120b-a12b" (410, 3 Okt 2026)
+//   dan "llama-3.3-nemotron-super-49b-v1" (410, 26 Agu 2026).
+//   Model di bawah = yang masih hidup saat tulisan ini dibuat.
+// - Gemini "2.5-flash" pensiun untuk API key baru -> pakai 3.8-flash.
+//   Gemini 3.8 Flash sering 503 (overload) -> wajib retry + fallback.
+// - LLM7 tidak butuh API key asli; string "unused" juga diterima.
+
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+const NVIDIA_MODELS = [
+  // Urutan: dari yang paling cepat & hemat token.
+  "deepseek-ai/deepseek-v4-flash-0731",
+  "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "nvidia/nemotron-3-ultra-550b-a55b",
+];
 
 const LLM7_URL = "https://api.llm7.io/v1/chat/completions";
-const LLM7_MODEL = "default";
+const LLM7_MODELS = ["default", "fast"];
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = "deepseek/deepseek-v4-flash:free";
+const OPENROUTER_MODELS = ["deepseek/deepseek-v4-flash:free"];
 
-const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+];
+const GEMINI_MAX_OUTPUT_TOKENS = 65536;
+
+// Budget total untuk seluruh rantai provider (harus < maxDuration).
+const TOTAL_BUDGET_MS = 55_000;
+const MIN_REMAINING_MS = 8_000;
+
+const JSON_SYSTEM_PROMPT =
+  "You are a strict JSON generator. You ALWAYS output valid JSON only, " +
+  "without markdown fences, without commentary, without explanation.";
+
+// ============================================================
+// TIPE DATA
+// ============================================================
 
 type SectionType = "listening" | "structure" | "reading";
 
@@ -43,129 +84,408 @@ type ChatCompletion = {
   choices?: Array<{ message?: { content?: string } }>;
 };
 
-async function callOpenAICompatible(
-  url: string,
-  model: string,
-  apiKey: string,
-  prompt: string,
-  extraHeaders: Record<string, string> = {},
-): Promise<string> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      ...extraHeaders,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a strict JSON generator. You ALWAYS output valid JSON only, without markdown fences, without commentary.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.4,
-      max_tokens: 8000,
-    }),
-  });
+// ============================================================
+// UTILITAS: ERROR, TIMEOUT, RETRY
+// ============================================================
 
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`${model} ${res.status}: ${t.slice(0, 200)}`);
+/** Ambil pesan error sedetail mungkin, termasuk err.cause (penyebab asli). */
+function describeError(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.name === "AbortError" || err.name === "TimeoutError") {
+      return "timeout";
+    }
+    const anyErr = err as Error & { cause?: unknown };
+    if (anyErr.cause) {
+      const c =
+        anyErr.cause instanceof Error
+          ? `${anyErr.cause.name}: ${anyErr.cause.message}`
+          : String(anyErr.cause);
+      return `${err.name}: ${err.message} (cause: ${c})`;
+    }
+    return `${err.name}: ${err.message}`;
   }
-
-  const data = (await res.json()) as ChatCompletion;
-  const text = data.choices?.[0]?.message?.content ?? "";
-  if (!text) throw new Error(`${model}: empty response`);
-  return text;
+  return String(err);
 }
 
-async function callNVIDIA(prompt: string, apiKey: string): Promise<string> {
-  return callOpenAICompatible(NVIDIA_URL, NVIDIA_MODEL, apiKey, prompt);
+type TimedSignal = { signal: AbortSignal; done: () => void };
+
+function startTimeout(ms: number): TimedSignal {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(1000, ms));
+  return {
+    signal: controller.signal,
+    done: () => clearTimeout(timer),
+  };
 }
 
-async function callLLM7(prompt: string, apiKey: string): Promise<string> {
-  return callOpenAICompatible(LLM7_URL, LLM7_MODEL, apiKey, prompt);
-}
-
-async function callOpenRouter(prompt: string, apiKey: string): Promise<string> {
-  return callOpenAICompatible(
-    OPENROUTER_URL,
-    OPENROUTER_MODEL,
-    apiKey,
-    prompt,
-    {
-      "HTTP-Referer": "https://magguru.app",
-      "X-Title": "Magguru Assessment Generator",
-    },
+/** Error HTTP yang layak dicoba ulang (server sibuk / overload). */
+function isRetryable(msg: string): boolean {
+  return (
+    /\b(429|500|502|503|504)\b/.test(msg) ||
+    /timeout/i.test(msg) ||
+    /UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg)
   );
 }
 
-async function callGemini(prompt: string, apiKey: string): Promise<string> {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.4,
-        maxOutputTokens: 8000,
-      },
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Gemini ${res.status}: ${t.slice(0, 200)}`);
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts: {
+    attempts: number;
+    baseDelayMs: number;
+    label: string;
+    shouldRetry: (msg: string) => boolean;
+  },
+): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < opts.attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = describeError(err);
+      const isLast = i >= opts.attempts - 1;
+      if (isLast || !opts.shouldRetry(msg)) throw err;
+      const delay = opts.baseDelayMs * 2 ** i + Math.floor(Math.random() * 400);
+      console.warn(
+        `[ai-generate] ${opts.label} retry ${i + 1} dalam ${delay}ms karena: ${msg}`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
-  const data = (await res.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  if (!text) throw new Error("Gemini: empty response");
-  return text;
+  throw lastErr;
+}
+
+// ============================================================
+// PEMANGGIL PROVIDER
+// ============================================================
+
+async function callOpenAICompatible(args: {
+  url: string;
+  model: string;
+  apiKey: string;
+  prompt: string;
+  timeoutMs: number;
+  extraHeaders?: Record<string, string>;
+  maxTokens?: number;
+}): Promise<string> {
+  const t = startTimeout(args.timeoutMs);
+  try {
+    const res = await fetch(args.url, {
+      method: "POST",
+      signal: t.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${args.apiKey}`,
+        ...(args.extraHeaders ?? {}),
+      },
+      body: JSON.stringify({
+        model: args.model,
+        messages: [
+          { role: "system", content: JSON_SYSTEM_PROMPT },
+          { role: "user", content: args.prompt },
+        ],
+        temperature: 0.4,
+        max_tokens: args.maxTokens ?? 8000,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(
+        `${args.model} ${res.status}: ${body.slice(0, 300)}`,
+      );
+    }
+
+    const data = (await res.json()) as ChatCompletion;
+    const text = data.choices?.[0]?.message?.content ?? "";
+    if (!text.trim()) throw new Error(`${args.model}: empty response`);
+    return text;
+  } finally {
+    t.done();
+  }
+}
+
+async function callGeminiOnce(args: {
+  model: string;
+  prompt: string;
+  apiKey: string;
+  timeoutMs: number;
+  useThinkingConfig: boolean;
+}): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${args.model}:generateContent`;
+  const t = startTimeout(args.timeoutMs);
+  try {
+    const generationConfig: Record<string, unknown> = {
+      responseMimeType: "application/json",
+      temperature: 0.4,
+      // 65536 = batas maksimum output Gemini 3.x Flash.
+      // Nilai besar penting karena proses "thinking" ikut memakan kuota ini.
+      maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+    };
+    if (args.useThinkingConfig) {
+      // "low" = cukup untuk bikin JSON soal, jauh lebih cepat dari default.
+      generationConfig.thinkingConfig = { thinkingLevel: "low" };
+    }
+
+    const res = await fetch(url, {
+      method: "POST",
+      signal: t.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": args.apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: args.prompt }] }],
+        generationConfig,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(
+        `Gemini ${args.model} ${res.status}: ${body.slice(0, 300)}`,
+      );
+    }
+
+    const data = (await res.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!text.trim()) throw new Error(`Gemini ${args.model}: empty response`);
+    return text;
+  } finally {
+    t.done();
+  }
+}
+
+/**
+ * Panggil Gemini: coba dengan thinkingConfig dulu.
+ * Kalau model menolak thinkingConfig dengan error 400, ulangi tanpa itu.
+ */
+async function callGemini(args: {
+  model: string;
+  prompt: string;
+  apiKey: string;
+  timeoutMs: number;
+}): Promise<string> {
+  try {
+    return await callGeminiOnce({
+      model: args.model,
+      prompt: args.prompt,
+      apiKey: args.apiKey,
+      timeoutMs: args.timeoutMs,
+      useThinkingConfig: true,
+    });
+  } catch (err) {
+    const msg = describeError(err);
+    const isThinkingRejected =
+      /\b400\b/.test(msg) && /thinking/i.test(msg);
+    if (!isThinkingRejected) throw err;
+    console.warn(
+      `[ai-generate] Gemini ${args.model} tolak thinkingConfig, ulangi tanpa: ${msg}`,
+    );
+    return await callGeminiOnce({
+      model: args.model,
+      prompt: args.prompt,
+      apiKey: args.apiKey,
+      timeoutMs: args.timeoutMs,
+      useThinkingConfig: false,
+    });
+  }
+}
+
+// ============================================================
+// ORKESTRASI FALLBACK
+// ============================================================
+
+type Attempt = {
+  name: string;
+  run: (prompt: string, timeoutMs: number) => Promise<string>;
+  retryAttempts: number;
+  retryBaseMs: number;
+};
+
+function buildAttempts(): Attempt[] {
+  const list: Attempt[] = [];
+
+  const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
+  const llm7Key = process.env.LLM7_API_KEY?.trim();
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+
+  if (nvidiaKey) {
+    for (const model of NVIDIA_MODELS) {
+      list.push({
+        name: `nvidia:${model}`,
+        run: (prompt, timeoutMs) =>
+          callOpenAICompatible({
+            url: NVIDIA_URL,
+            model,
+            apiKey: nvidiaKey,
+            prompt,
+            timeoutMs,
+          }),
+        // NVIDIA tidak diulang (kalau 410 = permanen, kalau network cepat gagal).
+        retryAttempts: 1,
+        retryBaseMs: 1000,
+      });
+    }
+  }
+
+  // LLM7: coba pakai key yang ada dulu.
+  if (llm7Key) {
+    for (const model of LLM7_MODELS) {
+      list.push({
+        name: `llm7:${model}`,
+        run: (prompt, timeoutMs) =>
+          callOpenAICompatible({
+            url: LLM7_URL,
+            model,
+            apiKey: llm7Key,
+            prompt,
+            timeoutMs,
+          }),
+        retryAttempts: 1,
+        retryBaseMs: 1000,
+      });
+    }
+  }
+
+  // LLM7 cadangan: pakai "unused" (mode anonim) kalau key bermasalah.
+  if (llm7Key && llm7Key !== "unused") {
+    list.push({
+      name: "llm7:default(anonymous)",
+      run: (prompt, timeoutMs) =>
+        callOpenAICompatible({
+          url: LLM7_URL,
+          model: "default",
+          apiKey: "unused",
+          prompt,
+          timeoutMs,
+        }),
+      retryAttempts: 1,
+      retryBaseMs: 1000,
+    });
+  } else if (!llm7Key) {
+    // Tidak ada key sama sekali -> tetap coba anonim.
+    list.push({
+      name: "llm7:default(anonymous)",
+      run: (prompt, timeoutMs) =>
+        callOpenAICompatible({
+          url: LLM7_URL,
+          model: "default",
+          apiKey: "unused",
+          prompt,
+          timeoutMs,
+        }),
+      retryAttempts: 1,
+      retryBaseMs: 1000,
+    });
+  }
+
+  if (openrouterKey) {
+    for (const model of OPENROUTER_MODELS) {
+      list.push({
+        name: `openrouter:${model}`,
+        run: (prompt, timeoutMs) =>
+          callOpenAICompatible({
+            url: OPENROUTER_URL,
+            model,
+            apiKey: openrouterKey,
+            prompt,
+            timeoutMs,
+            extraHeaders: {
+              "HTTP-Referer": "https://magguru.web.id",
+              "X-Title": "Magguru Assessment Generator",
+            },
+          }),
+        retryAttempts: 2,
+        retryBaseMs: 1500,
+      });
+    }
+  }
+
+  // Gemini ditaruh belakang karena 503-nya sering, tapi paling akurat JSON-nya.
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
+      list.push({
+        name: `gemini:${model}`,
+        run: (prompt, timeoutMs) =>
+          callGemini({
+            model,
+            prompt,
+            apiKey: geminiKey,
+            timeoutMs,
+          }),
+        // 503 = overload sementara -> retry 3x dengan jeda 1.5s, 3s, 6s.
+        retryAttempts: 3,
+        retryBaseMs: 1500,
+      });
+    }
+  }
+
+  return list;
 }
 
 async function tryProviders(
   prompt: string,
 ): Promise<{ raw: string; provider: string }> {
+  const attempts = buildAttempts();
+  if (attempts.length === 0) {
+    throw new Error(
+      "Tidak ada API key terpasang. Isi .env.local dengan GEMINI_API_KEY / NVIDIA_API_KEY / LLM7_API_KEY.",
+    );
+  }
+
+  const startedAt = Date.now();
+  const remaining = () => TOTAL_BUDGET_MS - (Date.now() - startedAt);
   const errors: string[] = [];
-  const nvidiaKey = process.env.NVIDIA_API_KEY;
-  const llm7Key = process.env.LLM7_API_KEY;
-  const openrouterKey = process.env.OPENROUTER_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY;
 
-  const providers: Array<{
-    name: string;
-    key: string | undefined;
-    fn: (p: string, k: string) => Promise<string>;
-  }> = [
-    { name: "nvidia", key: nvidiaKey, fn: callNVIDIA },
-    { name: "llm7", key: llm7Key, fn: callLLM7 },
-    { name: "openrouter-deepseek", key: openrouterKey, fn: callOpenRouter },
-    { name: "gemini", key: geminiKey, fn: callGemini },
-  ];
+  for (const attempt of attempts) {
+    const left = remaining();
+    if (left < MIN_REMAINING_MS) {
+      errors.push(`${attempt.name}: dilewati (budget waktu habis)`);
+      continue;
+    }
 
-  for (const p of providers) {
-    if (!p.key) continue;
+    // Setiap attempt dapat timeout internal:
+    // - maksimal 25 detik, atau
+    // - sisa budget dikurangi 3 detik (untuk sisanya).
+    const perAttemptTimeout = Math.min(25_000, left - 3_000);
+    if (perAttemptTimeout < 3_000) {
+      errors.push(`${attempt.name}: dilewati (sisa waktu terlalu kecil)`);
+      continue;
+    }
+
     try {
-      const raw = await p.fn(prompt, p.key);
-      return { raw, provider: p.name };
+      const raw = await withRetry(
+        () => attempt.run(prompt, perAttemptTimeout),
+        {
+          attempts: attempt.retryAttempts,
+          baseDelayMs: attempt.retryBaseMs,
+          label: attempt.name,
+          shouldRetry: isRetryable,
+        },
+      );
+      console.log(
+        `[ai-generate] sukses via ${attempt.name} dalam ${Date.now() - startedAt}ms`,
+      );
+      return { raw, provider: attempt.name };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`${p.name}: ${msg}`);
-      console.warn(`[ai-generate] ${p.name} gagal:`, msg);
+      const msg = describeError(err);
+      errors.push(`${attempt.name}: ${msg}`);
+      console.warn(`[ai-generate] ${attempt.name} gagal: ${msg}`);
     }
   }
 
   throw new Error(
-    "Semua provider gagal. " +
-      (errors.length > 0 ? errors.join(" | ") : "Tidak ada API key terpasang."),
+    "Semua provider gagal. " + errors.join(" | "),
   );
 }
+
+// ============================================================
+// UTIL: EKSTRAK JSON
+// ============================================================
 
 function extractJson(text: string): unknown {
   let cleaned = text.trim();
@@ -181,6 +501,10 @@ function extractJson(text: string): unknown {
   }
   return JSON.parse(cleaned);
 }
+
+// ============================================================
+// PROMPT BUILDER
+// ============================================================
 
 const SYSTEM_RULES = `Kamu ahli pembuat soal ujian TOEFL ITP dan TOAFL.
 Output kamu HARUS JSON valid, tanpa teks lain, tanpa markdown fence.
@@ -267,6 +591,10 @@ ${draft}
 Kembalikan HANYA JSON.`;
 }
 
+// ============================================================
+// NORMALISASI HASIL AI
+// ============================================================
+
 function normalizeResult(raw: unknown): AIResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const obj = raw as any;
@@ -329,6 +657,10 @@ function normalizeResult(raw: unknown): AIResult {
 
   return { passages, questions };
 }
+
+// ============================================================
+// HANDLER POST
+// ============================================================
 
 export async function POST(req: Request) {
   try {
