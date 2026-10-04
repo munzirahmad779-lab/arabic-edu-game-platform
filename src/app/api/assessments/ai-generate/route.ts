@@ -8,17 +8,15 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // ============================================================
-// STRATEGI PROVIDER (UPDATE 4 Okt 2026)
+// STRATEGI PROVIDER (UPDATE 4 Okt 2026 - v3)
 // ============================================================
 // Pelajaran dari log sebelumnya:
-// - NVIDIA: banyak model EOL (410) + sedang "READ TIMEOUT" massal.
-//   Jangan taruh di depan! Taruh paling belakang.
-// - Gemini: paling bagus JSON-nya, tapi sering 503 (overload).
-//   Wajib retry dengan exponential backoff + fallback 3 model.
-// - LLM7: gratis, tanpa key asli, selector "default"/"fast".
-//   Kalau fetch failed, coba model spesifik + mode anonim.
+// - Gemini 3.8 Flash: paling akurat, tapi LAMBAT & sering timeout.
+//   Solusi: naikkan timeout, turunkan maxOutputTokens, matikan thinking.
+// - NVIDIA: banyak model EOL + READ TIMEOUT massal. Taruh paling belakang.
+// - LLM7: gratis, tapi P95 latency-nya bisa 60 detik. Pakai model spesifik.
 //
-// URUTAN: Gemini -> LLM7 -> OpenRouter -> NVIDIA
+// URUTAN: Gemini (timeout besar) -> LLM7 (model cepat) -> NVIDIA (cadangan)
 // ============================================================
 
 // --- Gemini ---
@@ -27,13 +25,13 @@ const GEMINI_MODELS = [
   "gemini-3.7-flash",
   "gemini-3.6-flash",
 ];
-const GEMINI_MAX_OUTPUT_TOKENS = 65536;
+// Turunkan dari 65536 -> 8000. Cukup untuk 10-20 soal, jauh lebih cepat.
+const GEMINI_MAX_OUTPUT_TOKENS = 8000;
 
 // --- LLM7 ---
 const LLM7_URL = "https://api.llm7.io/v1/chat/completions";
-// Selector resmi: "default", "fast", "pro".
-// Model spesifik sebagai cadangan kalau selector gagal.
-const LLM7_MODELS = ["default", "fast", "DeepSeek-V4-Flash-0731"];
+// "DeepSeek-V4-Flash-0731" punya latency lebih rendah & stabil.
+const LLM7_MODELS = ["DeepSeek-V4-Flash-0731", "default", "fast"];
 
 // --- OpenRouter ---
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -41,7 +39,6 @@ const OPENROUTER_MODELS = ["deepseek/deepseek-v4-flash:free"];
 
 // --- NVIDIA (cadangan terakhir) ---
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-// Model yang masih hidup per 4 Okt 2026 (dari build.nvidia.com/models):
 const NVIDIA_MODELS = [
   "nvidia/nemotron-3-super-120b-a12b",
   "nvidia/nemotron-3-ultra-550b-a55b",
@@ -49,12 +46,11 @@ const NVIDIA_MODELS = [
 ];
 
 // --- Budget waktu ---
-// Vercel Hobby = max 60 detik. Sisakan 5 detik untuk overhead.
 const TOTAL_BUDGET_MS = 55_000;
 const MIN_REMAINING_MS = 5_000;
 
-// --- Timeout per attempt ---
-const TIMEOUT_GEMINI = 20_000;
+// --- Timeout per attempt (disesuaikan) ---
+const TIMEOUT_GEMINI = 30_000; // Dinaikkan dari 20s -> 30s
 const TIMEOUT_LLM7 = 15_000;
 const TIMEOUT_OPENROUTER = 15_000;
 const TIMEOUT_NVIDIA = 12_000;
@@ -64,7 +60,7 @@ const JSON_SYSTEM_PROMPT =
   "without markdown fences, without commentary, without explanation.";
 
 // ============================================================
-// TIPE DATA
+// TIPE DATA (tidak berubah)
 // ============================================================
 
 type SectionType = "listening" | "structure" | "reading";
@@ -99,7 +95,7 @@ type ChatCompletion = {
 };
 
 // ============================================================
-// UTILITAS: ERROR, TIMEOUT, RETRY
+// UTILITAS (tidak berubah)
 // ============================================================
 
 function describeError(err: unknown): string {
@@ -168,7 +164,7 @@ async function withRetry<T>(
 }
 
 // ============================================================
-// PEMANGGIL PROVIDER
+// PEMANGGIL PROVIDER (DIPERBARUI)
 // ============================================================
 
 async function callOpenAICompatible(args: {
@@ -235,6 +231,7 @@ async function callGeminiOnce(args: {
       maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
     };
     if (args.useThinkingConfig) {
+      // thinkingLevel: "low" -> lebih cepat dari default (medium)
       generationConfig.thinkingConfig = { thinkingLevel: "low" };
     }
 
@@ -275,6 +272,7 @@ async function callGemini(args: {
   apiKey: string;
   timeoutMs: number;
 }): Promise<string> {
+  // Coba dengan thinkingConfig dulu
   try {
     return await callGeminiOnce({
       model: args.model,
@@ -285,8 +283,24 @@ async function callGemini(args: {
     });
   } catch (err) {
     const msg = describeError(err);
+    // Jika model menolak thinkingConfig dengan error 400, ulangi tanpa itu.
     const isThinkingRejected = /\b400\b/.test(msg) && /thinking/i.test(msg);
-    if (!isThinkingRejected) throw err;
+    if (!isThinkingRejected) {
+      // Jika timeout, langsung coba tanpa thinking untuk lebih cepat.
+      if (msg === "timeout") {
+        console.warn(
+          `[ai-generate] Gemini ${args.model} timeout, coba tanpa thinking...`,
+        );
+        return await callGeminiOnce({
+          model: args.model,
+          prompt: args.prompt,
+          apiKey: args.apiKey,
+          timeoutMs: args.timeoutMs,
+          useThinkingConfig: false,
+        });
+      }
+      throw err;
+    }
     console.warn(
       `[ai-generate] Gemini ${args.model} tolak thinkingConfig, ulangi tanpa: ${msg}`,
     );
@@ -301,7 +315,7 @@ async function callGemini(args: {
 }
 
 // ============================================================
-// ORKESTRASI FALLBACK
+// ORKESTRASI FALLBACK (DIPERBARUI)
 // ============================================================
 
 type Attempt = {
@@ -319,7 +333,7 @@ function buildAttempts(): Attempt[] {
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
 
-  // ---------- 1. GEMINI (paling stabil JSON-nya) ----------
+  // ---------- 1. GEMINI (timeout besar, thinking dimatikan jika timeout) ----------
   if (geminiKey) {
     for (const model of GEMINI_MODELS) {
       list.push({
@@ -331,15 +345,15 @@ function buildAttempts(): Attempt[] {
             apiKey: geminiKey,
             timeoutMs,
           }),
-        // 503 = overload sementara -> retry 3x: 2s, 4s, 8s.
-        retryAttempts: 3,
+        // Retry 2x dengan jeda naik. Timeout sudah besar (30s),
+        // jadi tidak perlu retry banyak-banyak.
+        retryAttempts: 2,
         retryBaseMs: 2000,
       });
     }
   }
 
-  // ---------- 2. LLM7 (gratis, tanpa key asli) ----------
-  // Pakai key kalau ada, kalau tidak pakai "unused" (mode anonim).
+  // ---------- 2. LLM7 (model spesifik, latency lebih rendah) ----------
   const llm7KeyToUse = llm7Key && llm7Key.length > 0 ? llm7Key : "unused";
   for (const model of LLM7_MODELS) {
     list.push({
@@ -352,8 +366,8 @@ function buildAttempts(): Attempt[] {
           prompt,
           timeoutMs,
         }),
-      retryAttempts: 2,
-      retryBaseMs: 1500,
+      retryAttempts: 1, // Jangan retry banyak, LLM7 P95 latency bisa 60 detik.
+      retryBaseMs: 1000,
     });
   }
 
@@ -374,8 +388,8 @@ function buildAttempts(): Attempt[] {
               "X-Title": "Magguru Assessment Generator",
             },
           }),
-        retryAttempts: 2,
-        retryBaseMs: 1500,
+        retryAttempts: 1,
+        retryBaseMs: 1000,
       });
     }
   }
@@ -400,7 +414,6 @@ function buildAttempts(): Attempt[] {
               },
             },
           }),
-        // Jangan retry; kalau timeout sekali, langsung lanjut saja.
         retryAttempts: 1,
         retryBaseMs: 1000,
       });
@@ -469,7 +482,7 @@ async function tryProviders(
 }
 
 // ============================================================
-// UTIL: EKSTRAK JSON
+// UTIL: EKSTRAK JSON (tidak berubah)
 // ============================================================
 
 function extractJson(text: string): unknown {
@@ -488,7 +501,7 @@ function extractJson(text: string): unknown {
 }
 
 // ============================================================
-// PROMPT BUILDER
+// PROMPT BUILDER (tidak berubah)
 // ============================================================
 
 const SYSTEM_RULES = `Kamu ahli pembuat soal ujian TOEFL ITP dan TOAFL.
@@ -577,7 +590,7 @@ Kembalikan HANYA JSON.`;
 }
 
 // ============================================================
-// NORMALISASI HASIL AI
+// NORMALISASI HASIL AI (tidak berubah)
 // ============================================================
 
 function normalizeResult(raw: unknown): AIResult {
@@ -644,7 +657,7 @@ function normalizeResult(raw: unknown): AIResult {
 }
 
 // ============================================================
-// HANDLER POST
+// HANDLER POST (tidak berubah)
 // ============================================================
 
 export async function POST(req: Request) {
