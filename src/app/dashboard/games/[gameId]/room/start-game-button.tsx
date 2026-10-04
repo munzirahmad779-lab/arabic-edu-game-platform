@@ -6,12 +6,30 @@ import { startRoom } from "../../actions";
 
 const ACTIVE_WINDOW_MS = 60_000;
 
+type GameRoomDict = {
+  starting_game: string;
+  waiting_students_btn: string;
+  start_game_btn: string;
+  student_singular: string;
+  student_plural: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 export default function StartGameButton({
   roomId,
   initialCount,
+  gr,
 }: {
   roomId: string;
   initialCount: number;
+  gr: GameRoomDict;
 }) {
   const [count, setCount] = useState(initialCount);
   const [pending, setPending] = useState(false);
@@ -60,10 +78,14 @@ export default function StartGameButton({
         className="w-full rounded-2xl bg-gradient-to-l from-emerald-500 to-cyan-500 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending
-          ? "جاري بدء اللعبة..."
+          ? gr.starting_game
           : count === 0
-            ? "بانتظار انضمام الطلاب..."
-            : `بدء اللعبة ▶ (${count} ${count === 1 ? "طالب" : "طلاب"})`}
+            ? gr.waiting_students_btn
+            : fmt(gr.start_game_btn, {
+                count,
+                label:
+                  count === 1 ? gr.student_singular : gr.student_plural,
+              })}
       </button>
     </form>
   );

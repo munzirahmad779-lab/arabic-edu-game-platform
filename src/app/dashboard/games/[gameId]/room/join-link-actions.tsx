@@ -3,11 +3,20 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
-type JoinLinkActionsProps = {
-  joinUrl: string;
+type GameRoomDict = {
+  share_title_join_link: string;
+  share_text_join: string;
+  copied_link: string;
+  copy_link: string;
+  share: string;
 };
 
-export default function JoinLinkActions({ joinUrl }: JoinLinkActionsProps) {
+type JoinLinkActionsProps = {
+  joinUrl: string;
+  gr: GameRoomDict;
+};
+
+export default function JoinLinkActions({ joinUrl, gr }: JoinLinkActionsProps) {
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
@@ -24,8 +33,8 @@ export default function JoinLinkActions({ joinUrl }: JoinLinkActionsProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "رابط الانضمام",
-          text: "انضم إلى غرفة اللعب",
+          title: gr.share_title_join_link,
+          text: gr.share_text_join,
           url: joinUrl,
         });
         return;
@@ -54,7 +63,7 @@ export default function JoinLinkActions({ joinUrl }: JoinLinkActionsProps) {
             onClick={copyLink}
             className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5"
           >
-            {copied ? "✓ تم نسخ الرابط" : "نسخ الرابط"}
+            {copied ? gr.copied_link : gr.copy_link}
           </button>
 
           <button
@@ -62,7 +71,7 @@ export default function JoinLinkActions({ joinUrl }: JoinLinkActionsProps) {
             onClick={shareLink}
             className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5"
           >
-            مشاركة
+            {gr.share}
           </button>
         </div>
       </div>

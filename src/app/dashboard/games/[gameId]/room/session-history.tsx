@@ -32,10 +32,36 @@ type RpcClient = {
   }>;
 };
 
+// GameRoomDict lengkap: gabungan semua field yang dibutuhkan
+// file ini + SessionQuestionAnalysis (anaknya).
+type GameRoomDict = {
+  // Untuk session-history
+  session_history: string;
+  no_archived_sessions: string;
+  session_number: string;
+  student_word: string;
+  participants_title: string;
+  loading: string;
+  no_data: string;
+  th_rank: string;
+  th_name: string;
+  th_correct: string;
+  th_points: string;
+  question_analysis: string;
+  // Untuk SessionQuestionAnalysis
+  no_analysis: string;
+  question_prefix: string;
+  correct_word: string;
+  question_no_text: string;
+  explanation_label: string;
+};
+
 export default function SessionHistory({
   sessions,
+  gr,
 }: {
   sessions: SessionRow[];
+  gr: GameRoomDict;
 }) {
   const [mounted, setMounted] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -75,10 +101,10 @@ export default function SessionHistory({
     return (
       <section className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-xl">
         <h2 className="text-xl font-black text-slate-950">
-          📜 سجل الجلسات السابقة
+          {gr.session_history}
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          لا توجد جلسات مؤرشفة بعد.
+          {gr.no_archived_sessions}
         </p>
       </section>
     );
@@ -88,7 +114,7 @@ export default function SessionHistory({
     <section className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-xl">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-black text-slate-950">
-          📜 سجل الجلسات السابقة
+          {gr.session_history}
         </h2>
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
           {sessions.length}
@@ -111,11 +137,12 @@ export default function SessionHistory({
               >
                 <div>
                   <div className="font-black text-slate-900">
-                    الجلسة #{s.session_number}
+                    {gr.session_number}
+                    {s.session_number}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
                     {mounted ? toWibDateTime(s.started_at) : "..."} WIB —{" "}
-                    {s.participant_count} طالب
+                    {s.participant_count} {gr.student_word}
                   </div>
                 </div>
                 <span className="text-2xl text-slate-400">
@@ -127,15 +154,15 @@ export default function SessionHistory({
                 <div className="space-y-4 border-t border-slate-200 bg-white p-4">
                   <div>
                     <h4 className="mb-2 text-xs font-black text-slate-700">
-                      👥 المشاركون
+                      {gr.participants_title}
                     </h4>
                     {loading && !rows ? (
                       <p className="text-center text-sm text-slate-500">
-                        جاري التحميل...
+                        {gr.loading}
                       </p>
                     ) : !rows || rows.length === 0 ? (
                       <p className="text-center text-sm text-slate-500">
-                        لا توجد بيانات.
+                        {gr.no_data}
                       </p>
                     ) : (
                       <div className="overflow-auto rounded-xl">
@@ -143,16 +170,16 @@ export default function SessionHistory({
                           <thead className="bg-slate-100">
                             <tr>
                               <th className="px-3 py-2 text-right font-bold text-slate-600">
-                                #
+                                {gr.th_rank}
                               </th>
                               <th className="px-3 py-2 text-right font-bold text-slate-600">
-                                الاسم
+                                {gr.th_name}
                               </th>
                               <th className="px-3 py-2 text-right font-bold text-slate-600">
-                                صحيح
+                                {gr.th_correct}
                               </th>
                               <th className="px-3 py-2 text-right font-bold text-slate-600">
-                                النقاط
+                                {gr.th_points}
                               </th>
                             </tr>
                           </thead>
@@ -181,9 +208,12 @@ export default function SessionHistory({
 
                   <div className="border-t border-slate-200 pt-4">
                     <h4 className="mb-2 text-xs font-black text-slate-700">
-                      📊 تحليل الأسئلة
+                      {gr.question_analysis}
                     </h4>
-                    <SessionQuestionAnalysis sessionId={s.session_id} />
+                    <SessionQuestionAnalysis
+                      sessionId={s.session_id}
+                      gr={gr}
+                    />
                   </div>
                 </div>
               ) : null}

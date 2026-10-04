@@ -2,14 +2,30 @@
 
 import { archiveRoomSession } from "../../actions";
 
+type GameRoomDict = {
+  archive_confirm_with_participants: string;
+  archive_confirm_no_participants: string;
+  archive_btn: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 export default function ArchiveButton({
   roomId,
   gameId,
   participantCount,
+  gr,
 }: {
   roomId: string;
   gameId: string;
   participantCount: number;
+  gr: GameRoomDict;
 }) {
   return (
     <form action={archiveRoomSession} className="mt-5">
@@ -20,15 +36,17 @@ export default function ArchiveButton({
         onClick={(e) => {
           const msg =
             participantCount > 0
-              ? `سيتم أرشفة الجلسة الحالية بحفظ النتائج والترتيب، ثم إعادة تعيين الغرفة لجلسة جديدة (نفس كود الغرفة).\n\nالمشاركون الحاليون: ${participantCount}\n\nمتابعة؟`
-              : "سيتم إعادة تعيين الغرفة لجلسة جديدة (نفس كود الغرفة).";
+              ? fmt(gr.archive_confirm_with_participants, {
+                  count: participantCount,
+                })
+              : gr.archive_confirm_no_participants;
           if (!window.confirm(msg)) {
             e.preventDefault();
           }
         }}
         className="w-full rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
       >
-        🔄 أرشفة الجلسة وبدء جلسة جديدة
+        {gr.archive_btn}
       </button>
     </form>
   );

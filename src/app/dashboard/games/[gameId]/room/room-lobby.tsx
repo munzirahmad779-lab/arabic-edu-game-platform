@@ -35,6 +35,27 @@ type RpcClient = {
   }>;
 };
 
+type GameRoomDict = {
+  connected_now: string;
+  capacity: string;
+  load_error: string;
+  waiting_students: string;
+  send_code_hint: string;
+  live_ranking: string;
+  student_default: string;
+  connected: string;
+  correct_short: string;
+  not_answered: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 // Peserta dianggap masih aktif kalau heartbeat < 60 detik lalu
 const ACTIVE_WINDOW_MS = 60_000;
 
@@ -42,10 +63,12 @@ export default function RoomLobby({
   roomId,
   initialParticipants,
   capacity,
+  gr,
 }: {
   roomId: string;
   initialParticipants: Participant[];
   capacity: number;
+  gr: GameRoomDict;
 }) {
   const [participants, setParticipants] = useState(initialParticipants);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
@@ -100,7 +123,6 @@ export default function RoomLobby({
     };
   }, [roomId]);
 
-  // Hanya tampilkan peserta yang last_seen_at < 60 detik lalu
   const activeParticipants = useMemo(() => {
     const cutoff = now - ACTIVE_WINDOW_MS;
     return participants.filter((p) => {
@@ -114,7 +136,6 @@ export default function RoomLobby({
     [activeParticipants],
   );
 
-  // Filter leaderboard: hanya peserta yang masih aktif
   const activeLeaderboard = useMemo(
     () => leaderboard.filter((r) => activeIds.has(r.participant_id)),
     [leaderboard, activeIds],
@@ -129,14 +150,16 @@ export default function RoomLobby({
     <div className="mt-5">
       <div className="mb-4 flex items-center justify-between text-sm">
         <span className="font-bold text-slate-700">
-          {activeParticipants.length} متصل الآن
+          {fmt(gr.connected_now, { count: activeParticipants.length })}
         </span>
-        <span className="text-slate-400">السعة {capacity}</span>
+        <span className="text-slate-400">
+          {fmt(gr.capacity, { count: capacity })}
+        </span>
       </div>
 
       {loadError ? (
         <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">
-          خطأ في تحميل البيانات: {loadError}
+          {gr.load_error} {loadError}
         </div>
       ) : null}
 
@@ -144,18 +167,16 @@ export default function RoomLobby({
         <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
           <div className="text-4xl">👥</div>
           <p className="mt-3 font-black text-slate-800">
-            بانتظار انضمام الطلاب
+            {gr.waiting_students}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
-            أرسل كود الغرفة للطلاب لبدء التجمع.
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{gr.send_code_hint}</p>
         </div>
       ) : (
         <div className="max-h-[28rem] space-y-2 overflow-auto">
           {activeLeaderboard.length > 0 ? (
             <div className="mb-3 rounded-2xl border-2 border-amber-200 bg-gradient-to-l from-amber-50 to-yellow-50 p-3">
               <p className="text-xs font-black text-amber-700">
-                🏆 ترتيب مباشر
+                {gr.live_ranking}
               </p>
               <div className="mt-2 space-y-1">
                 {activeLeaderboard.slice(0, 5).map((row) => (
@@ -184,7 +205,7 @@ export default function RoomLobby({
               const label =
                 stats?.participant_name ??
                 participant.guest_name ??
-                `طالب ${index + 1}`;
+                fmt(gr.student_default, { n: index + 1 });
               return (
                 <div
                   key={participant.id}
@@ -193,14 +214,14 @@ export default function RoomLobby({
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-lg font-black text-white">
-                        {label.trim().charAt(0) || "ط"}
+                        {label.trim().charAt(0) || "•"}
                       </div>
                       <div className="min-w-0">
                         <div className="truncate font-black text-slate-900">
                           {label}
                         </div>
                         <div className="mt-1 text-xs font-bold text-emerald-600">
-                          متصل
+                          {gr.connected}
                         </div>
                       </div>
                     </div>
@@ -215,12 +236,15 @@ export default function RoomLobby({
                           </span>
                         </div>
                         <div className="text-xs text-slate-500">
-                          {stats.correct_count}/{stats.answered_count} صحيح
+                          {fmt(gr.correct_short, {
+                            c: stats.correct_count,
+                            a: stats.answered_count,
+                          })}
                         </div>
                       </div>
                     ) : (
                       <div className="text-xs font-bold text-slate-400">
-                        لم يجب بعد
+                        {gr.not_answered}
                       </div>
                     )}
                   </div>

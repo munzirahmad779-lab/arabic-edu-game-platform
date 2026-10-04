@@ -6,6 +6,8 @@ import RoomLobby from "./room-lobby";
 import StartGameButton from "./start-game-button";
 import ArchiveButton from "./archive-button";
 import SessionHistory from "./session-history";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = { roomId?: string; archived?: string; error?: string };
 
@@ -26,12 +28,12 @@ type SessionRow = {
   participant_count: number;
 };
 
-const MODE_AR: Record<string, string> = {
-  competitive: "تنافسي",
-  cooperative: "تعاوني",
-  endless: "بلا نهاية",
-  practice: "تمرين",
-  learning: "تعليمي (قديم)",
+const MODE_KEY: Record<string, string> = {
+  competitive: "mode_competitive",
+  cooperative: "mode_cooperative",
+  endless: "mode_endless",
+  practice: "mode_practice",
+  learning: "mode_learning",
 };
 
 export default async function RoomPage({
@@ -47,12 +49,17 @@ export default async function RoomPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const gr = dict.game_room;
+
   const roomId = searchParams.roomId?.trim();
   if (!roomId) {
     return (
-      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+      <main className="mx-auto max-w-4xl p-6" dir={isRtl ? "rtl" : "ltr"}>
         <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-900">
-          رابط الغرفة غير صحيح.
+          {gr.invalid_room_url}
         </div>
       </main>
     );
@@ -70,9 +77,9 @@ export default async function RoomPage({
 
   if (roomError || !room) {
     return (
-      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+      <main className="mx-auto max-w-4xl p-6" dir={isRtl ? "rtl" : "ltr"}>
         <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-900">
-          تعذر العثور على الغرفة.
+          {gr.room_not_found}
         </div>
       </main>
     );
@@ -105,12 +112,12 @@ export default async function RoomPage({
     questions?: unknown[];
   };
 
-  const gameName = snapshot.game?.name ?? "اللعبة";
+  const gameName = snapshot.game?.name ?? gr.game_fallback;
   const gameMode = snapshot.game?.mode ?? "competitive";
-  const modeAr = MODE_AR[gameMode] ?? gameMode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const modeLabel = (gr as any)[MODE_KEY[gameMode] ?? "mode_competitive"] ?? gameMode;
   const backsoundId = snapshot.game?.backsound_track_id ?? null;
 
-  // Ambil nama backsound kalau ada
   let backsoundName: string | null = null;
   if (backsoundId) {
     const { data: track } = await supabase
@@ -145,7 +152,7 @@ export default async function RoomPage({
   return (
     <main
       className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dbeafe,_transparent_35%),radial-gradient(circle_at_bottom_left,_#fce7f3,_transparent_35%)] p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-2xl">
@@ -153,10 +160,10 @@ export default async function RoomPage({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-white/75">
-                  غرفة اللعب
+                  {gr.room_label}
                 </span>
                 <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white">
-                  {modeAr}
+                  {modeLabel}
                 </span>
                 {backsoundName ? (
                   <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white">
@@ -167,28 +174,26 @@ export default async function RoomPage({
               <h1 className="mt-2 text-3xl font-black sm:text-4xl">
                 {gameName}
               </h1>
-              <p className="mt-2 text-sm text-white/80">
-                اجمع طلابك هنا قبل بدء سباق الكلمات العربية.
-              </p>
+              <p className="mt-2 text-sm text-white/80">{gr.gather_students}</p>
             </div>
             <Link
               href="/dashboard/games"
               className="inline-flex items-center justify-center rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
             >
-              العودة إلى الألعاب
+              {gr.back_to_games}
             </Link>
           </div>
         </header>
 
         {searchParams.archived === "1" ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
-            ✓ تم أرشفة الجلسة بنجاح. الغرفة جاهزة لجلسة جديدة.
+            {gr.archived_success}
           </div>
         ) : null}
 
         {searchParams.error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-800">
-            خطأ: {searchParams.error}
+            {gr.error_prefix} {searchParams.error}
           </div>
         ) : null}
 
@@ -197,7 +202,7 @@ export default async function RoomPage({
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-3xl bg-indigo-50 p-5 text-center">
                 <div className="text-sm font-bold text-indigo-600">
-                  كود الغرفة
+                  {gr.room_code}
                 </div>
                 <div className="mt-2 text-center text-lg font-black tracking-[0.08em] text-indigo-950">
                   {room.code}
@@ -205,14 +210,16 @@ export default async function RoomPage({
               </div>
               <div className="rounded-3xl bg-fuchsia-50 p-5 text-center">
                 <div className="text-sm font-bold text-fuchsia-600">
-                  المشاركون
+                  {gr.participants}
                 </div>
                 <div className="mt-2 text-4xl font-black text-fuchsia-950">
                   {participants?.length ?? 0}
                 </div>
               </div>
               <div className="rounded-3xl bg-amber-50 p-5 text-center">
-                <div className="text-sm font-bold text-amber-700">الأسئلة</div>
+                <div className="text-sm font-bold text-amber-700">
+                  {gr.questions}
+                </div>
                 <div className="mt-2 text-4xl font-black text-amber-950">
                   {questionCount}
                 </div>
@@ -221,15 +228,13 @@ export default async function RoomPage({
 
             <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-center text-white">
               <div className="text-sm font-semibold text-white/60">
-                رابط الانضمام
+                {gr.join_link}
               </div>
-              <JoinLinkActions joinUrl={joinUrl} />
+              <JoinLinkActions joinUrl={joinUrl} gr={gr} />
             </div>
 
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-              💡 شارك الرابط الموجود أعلاه مع الطلاب. إذا فتحت هذه الصفحة من
-              رابط مختلف (مثل Cloudflare أو نطاق Vercel)، سيتبع رابط الانضمام
-              نفس العنوان تلقائيًا.
+              {gr.share_link_hint}
             </div>
           </section>
 
@@ -237,18 +242,18 @@ export default async function RoomPage({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black text-slate-950">
-                  الطلاب في الغرفة
+                  {gr.students_in_room}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  يظهر فقط الطلاب النشطون خلال آخر 60 ثانية.
+                  {gr.only_active_hint}
                 </p>
               </div>
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
                 {room.state === "waiting"
-                  ? "في الانتظار"
+                  ? gr.state_waiting
                   : room.state === "running"
-                    ? "بدأت"
-                    : "انتهت"}
+                    ? gr.state_running
+                    : gr.state_ended}
               </span>
             </div>
 
@@ -256,18 +261,20 @@ export default async function RoomPage({
               roomId={room.id}
               initialParticipants={(participants ?? []) as Participant[]}
               capacity={room.capacity}
+              gr={gr}
             />
 
             {room.state === "waiting" ? (
               <StartGameButton
                 roomId={room.id}
                 initialCount={participants?.length ?? 0}
+                gr={gr}
               />
             ) : null}
 
             {room.state === "running" ? (
               <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-800">
-                اللعبة جارية الآن.
+                {gr.game_running}
               </div>
             ) : null}
 
@@ -276,12 +283,13 @@ export default async function RoomPage({
                 roomId={room.id}
                 gameId={params.gameId}
                 participantCount={participants?.length ?? 0}
+                gr={gr}
               />
             ) : null}
           </section>
         </div>
 
-        <SessionHistory sessions={sessions} />
+        <SessionHistory sessions={sessions} gr={gr} />
       </div>
     </main>
   );
