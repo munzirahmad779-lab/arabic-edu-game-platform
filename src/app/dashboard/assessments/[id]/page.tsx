@@ -8,6 +8,7 @@ import {
   togglePublish,
 } from "../actions";
 import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = {
   error?: string;
@@ -29,80 +30,9 @@ export default async function AssessmentDetailPage({
   if (!user) redirect("/login");
 
   const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const L = dict.assessment_detail;
   const isRtl = locale === "ar";
-
-  const L = {
-    back: "Kembali ke Ujian",
-    status_published: "Dipublikasikan",
-    status_draft: "Draf",
-    total_q: "soal",
-    total_min: "menit",
-    btn_publish: "Publikasikan",
-    btn_unpublish: "Batalkan Publikasi",
-    btn_ai: "🪄 Generate Soal dengan AI",
-    sections_title: "Section Ujian",
-    scoring_title: "📊 Cara Penilaian",
-    scoring_desc:
-      "Sistem penilaian TOEFL Prediction & TOAFL. Setiap section dihitung jumlah benar (raw score), lalu dikonversi ke skor skala 31-68.",
-    scoring_how: "Cara Hitung:",
-    scoring_step_1:
-      "1. Hitung jumlah jawaban benar per section → dapat raw score",
-    scoring_step_2:
-      "2. Konversi raw score ke skor skala section (31-68)",
-    scoring_step_3:
-      "3. Total = (Listening + Structure + Reading) ÷ 3 × 10",
-    scoring_range:
-      "Rentang Total: 310 (rendah) – 677 (sempurna)",
-    scoring_scale: "Kategori Skor:",
-    scoring_scale_excellent: "600-677 — Excellent",
-    scoring_scale_verygood: "550-599 — Very Good",
-    scoring_scale_good: "500-549 — Good",
-    scoring_scale_fair: "450-499 — Fair",
-    scoring_scale_low: "310-449 — Needs Improvement",
-    scoring_note:
-      "⚠️ Catatan: Konversi yang dipakai adalah pendekatan linier. Skor resmi ETS mungkin sedikit berbeda karena tabel konversi aslinya tidak linier.",
-    section_listening: "Listening",
-    section_structure: "Structure",
-    section_reading: "Reading",
-    audio_once: "Audio sekali putar",
-    can_review: "Bisa review",
-    no_review: "Tidak bisa review",
-    import_title: "Impor Soal dari Excel (Alternatif)",
-    import_desc:
-      "Download template, isi, lalu upload di sini. Akan mengganti semua soal lama.",
-    btn_download_template: "⬇️ Download Template",
-    btn_upload: "⬆️ Upload & Impor",
-    file_label: "File Excel (.xlsx)",
-    import_ok: "✓ Impor berhasil.",
-    tokens_title: "Token Masuk",
-    tokens_desc: "Generate token dan kasih ke siswa. Berlaku 7 hari.",
-    btn_generate_token: "🔑 Generate Token Baru",
-    token_created_msg: "✓ Token dibuat:",
-    token_active: "Aktif",
-    token_revoked: "Dicabut",
-    token_expired: "Kedaluwarsa",
-    token_expires: "Kedaluwarsa",
-    token_uses: "pemakaian",
-    btn_revoke: "Cabut",
-    no_tokens: "Belum ada token.",
-    attempts_title: "Percobaan Siswa",
-    attempts_desc: "Siswa yang sudah mengerjakan.",
-    no_attempts: "Belum ada yang mengerjakan.",
-    th_name: "Nama",
-    th_started: "Mulai",
-    th_finished: "Selesai",
-    th_status: "Status",
-    th_total: "Total",
-    status_in_progress: "Sedang dikerjakan",
-    status_completed: "Selesai",
-    status_expired: "Kedaluwarsa",
-    no_sections_warn: "Tidak ada section. Hapus dan buat ulang ujian ini.",
-    client_hint_title: "Bagaimana siswa mulai?",
-    client_hint_1: "Generate token",
-    client_hint_2: "Kasih ke siswa",
-    client_hint_3: "Buka /assessment di device siswa",
-    client_hint_4: "Masukkan token & nama, lalu mulai",
-  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -229,10 +159,7 @@ export default async function AssessmentDetailPage({
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-lg font-black">{L.btn_ai}</h2>
-          <p className="mt-0.5 text-xs text-white/85">
-            Buat soal baru dari nol, atau paste draft soal Anda untuk
-            dirapikan otomatis.
-          </p>
+          <p className="mt-0.5 text-xs text-white/85">{L.btn_ai_desc}</p>
         </div>
         <span className="text-2xl">→</span>
       </Link>
@@ -310,7 +237,6 @@ export default async function AssessmentDetailPage({
         )}
       </section>
 
-      {/* CARA PENILAIAN */}
       <section className="aesthetic-card border-2 border-teal-500/20 bg-teal-50/30">
         <h2 className="font-display text-lg font-black text-teal-700">
           {L.scoring_title}
@@ -337,33 +263,33 @@ export default async function AssessmentDetailPage({
           </p>
           <div className="mt-2 space-y-1 text-xs text-softslate">
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>{L.scoring_scale_excellent.split(" — ")[0]}</span>
+              <span>600-677</span>
               <span className="font-black text-sage-600">
-                {L.scoring_scale_excellent.split(" — ")[1]}
+                {L.scale_excellent}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>{L.scoring_scale_verygood.split(" — ")[0]}</span>
+              <span>550-599</span>
               <span className="font-black text-teal-700">
-                {L.scoring_scale_verygood.split(" — ")[1]}
+                {L.scale_verygood}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>{L.scoring_scale_good.split(" — ")[0]}</span>
+              <span>500-549</span>
               <span className="font-black text-terracotta-500">
-                {L.scoring_scale_good.split(" — ")[1]}
+                {L.scale_good}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>{L.scoring_scale_fair.split(" — ")[0]}</span>
+              <span>450-499</span>
               <span className="font-black text-terracotta-600">
-                {L.scoring_scale_fair.split(" — ")[1]}
+                {L.scale_fair}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>{L.scoring_scale_low.split(" — ")[0]}</span>
+              <span>310-449</span>
               <span className="font-black text-softslate">
-                {L.scoring_scale_low.split(" — ")[1]}
+                {L.scale_needs_improve}
               </span>
             </div>
           </div>

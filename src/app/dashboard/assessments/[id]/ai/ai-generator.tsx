@@ -33,14 +33,83 @@ type GeneratedPassage = {
 
 type Mode = "generate" | "structure";
 
+type AIGeneratorDict = {
+  progress_section_title: string;
+  note_title: string;
+  note_1: string;
+  note_2: string;
+  note_3: string;
+  note_4: string;
+  tab_generate: string;
+  tab_structure: string;
+  generate_title: string;
+  label_section: string;
+  saved_prefix: string;
+  label_count: string;
+  count_5: string;
+  count_10: string;
+  count_20: string;
+  count_30: string;
+  count_40: string;
+  reading_hint: string;
+  label_difficulty: string;
+  diff_easy: string;
+  diff_medium: string;
+  diff_hard: string;
+  diff_mixed: string;
+  label_language: string;
+  lang_english: string;
+  lang_arabic: string;
+  label_topic: string;
+  topic_placeholder: string;
+  structure_title: string;
+  structure_desc: string;
+  structure_limit_warning: string;
+  label_draft: string;
+  draft_placeholder: string;
+  char_suffix: string;
+  btn_loading: string;
+  btn_generate: string;
+  btn_structure_submit: string;
+  provider_prefix: string;
+  error_generic: string;
+  error_conn: string;
+  passages_title: string;
+  remove: string;
+  passage_title_placeholder: string;
+  questions_title: string;
+  edit_before_save: string;
+  badge_question: string;
+  badge_audio: string;
+  label_correct: string;
+  label_diff: string;
+  btn_saving: string;
+  btn_save_template: string;
+  save_success: string;
+  save_success_passages: string;
+  error_save: string;
+  error_save_generic: string;
+  answer_marker_title: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 export function AIGenerator({
   assessmentId,
   assessmentType,
   sectionCounts,
+  dict,
 }: {
   assessmentId: string;
   assessmentType: string;
   sectionCounts: SectionCount[];
+  dict: AIGeneratorDict;
 }) {
   const isToafl = assessmentType === "toafl";
   const isToefl = assessmentType === "toefl_itp";
@@ -103,7 +172,7 @@ export function AIGenerator({
       };
 
       if (!json.ok) {
-        setError(json.message ?? "Gagal generate soal.");
+        setError(json.message ?? dict.error_generic);
         return;
       }
 
@@ -111,7 +180,7 @@ export function AIGenerator({
       setPassages(json.passages ?? []);
       setQuestions(json.questions ?? []);
     } catch {
-      setError("Gagal terhubung ke server.");
+      setError(dict.error_conn);
     } finally {
       setLoading(false);
     }
@@ -152,18 +221,23 @@ export function AIGenerator({
 
       if (result?.ok) {
         const totalPassages = result.savedPassages ?? 0;
+        const passagesPart =
+          totalPassages > 0
+            ? fmt(dict.save_success_passages, { n: totalPassages })
+            : "";
         setSaveMsg(
-          `✓ ${result.savedQuestions ?? 0} soal tersimpan${
-            totalPassages > 0 ? ` + ${totalPassages} bacaan` : ""
-          }. Refresh halaman untuk lihat total.`,
+          fmt(dict.save_success, {
+            q: result.savedQuestions ?? 0,
+            passages: passagesPart,
+          }),
         );
         setQuestions([]);
         setPassages([]);
       } else {
-        setError(result?.message ?? "Gagal menyimpan soal.");
+        setError(result?.message ?? dict.error_save);
       }
     } catch {
-      setError("Gagal menyimpan.");
+      setError(dict.error_save_generic);
     } finally {
       setSaving(false);
     }
@@ -237,23 +311,12 @@ export function AIGenerator({
 
       {/* CATATAN PENTING */}
       <div className="rounded-2xl border border-terracotta-500/30 bg-terracotta-50 p-4 text-xs text-terracotta-700">
-        <p className="font-black">
-          ⚠️ Catatan: Web tidak bisa generate 140 soal sekaligus
-        </p>
+        <p className="font-black">{dict.note_title}</p>
         <ul className="mt-2 list-disc space-y-1 ps-5">
-          <li>
-            Generate per batch (maks 40 soal). Setiap batch otomatis tersimpan
-            dan bertambah.
-          </li>
-          <li>Untuk mencapai 140 soal, ulangi generate beberapa kali.</li>
-          <li>
-            <b>Structure/Listening</b>: 20 soal/batch aman. <b>Reading</b>:
-            5-10 soal/batch (soal lebih panjang).
-          </li>
-          <li>
-            Kalau gagal, coba lagi — sistem otomatis ganti provider (NVIDIA →
-            LLM7 → OpenRouter → Gemini).
-          </li>
+          <li>{dict.note_1}</li>
+          <li>{dict.note_2}</li>
+          <li>{dict.note_3}</li>
+          <li>{dict.note_4}</li>
         </ul>
       </div>
 
@@ -268,7 +331,7 @@ export function AIGenerator({
               : "text-teal-700 hover:bg-sage-50"
           }`}
         >
-          🪄 Generate Soal Baru
+          {dict.tab_generate}
         </button>
         <button
           type="button"
@@ -279,7 +342,7 @@ export function AIGenerator({
               : "text-teal-700 hover:bg-sage-50"
           }`}
         >
-          ✨ Strukturkan Draft
+          {dict.tab_structure}
         </button>
       </div>
 
@@ -287,13 +350,13 @@ export function AIGenerator({
         {mode === "generate" ? (
           <div className="space-y-4">
             <h2 className="font-display text-lg font-black text-teal-700">
-              Buat soal baru dengan AI
+              {dict.generate_title}
             </h2>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-bold text-teal-700">
-                  Section
+                  {dict.label_section}
                 </label>
                 <select
                   value={sectionType}
@@ -310,53 +373,53 @@ export function AIGenerator({
                 </select>
                 {currentSectionInfo ? (
                   <p className="mt-1 text-xs text-softslate/70">
-                    Tersimpan: {currentSectionInfo.current_count} /{" "}
-                    {currentSectionInfo.target_count} soal
+                    {dict.saved_prefix} {currentSectionInfo.current_count} /{" "}
+                    {currentSectionInfo.target_count}
                   </p>
                 ) : null}
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-teal-700">
-                  Jumlah soal per batch
+                  {dict.label_count}
                 </label>
                 <select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
                   className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
                 >
-                  <option value={5}>5 soal</option>
-                  <option value={10}>10 soal</option>
-                  <option value={20}>20 soal (aman untuk Structure)</option>
-                  <option value={30}>30 soal (perlu waktu lebih lama)</option>
-                  <option value={40}>40 soal (maks, sabar)</option>
+                  <option value={5}>{dict.count_5}</option>
+                  <option value={10}>{dict.count_10}</option>
+                  <option value={20}>{dict.count_20}</option>
+                  <option value={30}>{dict.count_30}</option>
+                  <option value={40}>{dict.count_40}</option>
                 </select>
                 {sectionType === "reading" ? (
                   <p className="mt-1 text-xs text-terracotta-600">
-                    💡 Reading: 5-10 soal per batch lebih aman
+                    {dict.reading_hint}
                   </p>
                 ) : null}
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-teal-700">
-                  Kesulitan
+                  {dict.label_difficulty}
                 </label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
                   className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
                 >
-                  <option value="easy">Mudah</option>
-                  <option value="medium">Sedang</option>
-                  <option value="hard">Sulit</option>
-                  <option value="mixed">Campur</option>
+                  <option value="easy">{dict.diff_easy}</option>
+                  <option value="medium">{dict.diff_medium}</option>
+                  <option value="hard">{dict.diff_hard}</option>
+                  <option value="mixed">{dict.diff_mixed}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-teal-700">
-                  Bahasa soal
+                  {dict.label_language}
                 </label>
                 <select
                   value={language}
@@ -365,23 +428,21 @@ export function AIGenerator({
                   }
                   className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
                 >
-                  <option value="english">
-                    Bahasa Inggris (TOEFL Prediction)
-                  </option>
-                  <option value="arabic">Bahasa Arab (TOAFL)</option>
+                  <option value="english">{dict.lang_english}</option>
+                  <option value="arabic">{dict.lang_arabic}</option>
                 </select>
               </div>
 
               <div className="sm:col-span-2">
                 <label className="block text-sm font-bold text-teal-700">
-                  Topik (opsional)
+                  {dict.label_topic}
                 </label>
                 <input
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   maxLength={300}
-                  placeholder="Contoh: Present Perfect, fi'il madhi, daily conversation"
+                  placeholder={dict.topic_placeholder}
                   className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
                 />
               </div>
@@ -390,21 +451,18 @@ export function AIGenerator({
         ) : (
           <div className="space-y-4">
             <h2 className="font-display text-lg font-black text-teal-700">
-              Paste draft soal Anda
+              {dict.structure_title}
             </h2>
             <p className="text-sm text-softslate/70">
-              Paste soal-soal Anda dalam bentuk apa pun (berantakan, campur
-              bahasa, tidak beraturan). AI akan merapikan dan memisahkan
-              otomatis ke section yang tepat.
+              {dict.structure_desc}
             </p>
             <p className="text-xs text-terracotta-600">
-              ⚠️ Maks 15.000 karakter per batch. Kalau draft lebih panjang,
-              bagi jadi beberapa bagian.
+              {dict.structure_limit_warning}
             </p>
 
             <div>
               <label className="block text-sm font-bold text-teal-700">
-                Bahasa soal
+                {dict.label_language}
               </label>
               <select
                 value={language}
@@ -413,27 +471,25 @@ export function AIGenerator({
                 }
                 className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm"
               >
-                <option value="english">
-                  Bahasa Inggris (TOEFL Prediction)
-                </option>
-                <option value="arabic">Bahasa Arab (TOAFL)</option>
+                <option value="english">{dict.lang_english}</option>
+                <option value="arabic">{dict.lang_arabic}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-teal-700">
-                Draft soal
+                {dict.label_draft}
               </label>
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 rows={12}
                 maxLength={15000}
-                placeholder={`Contoh draft:\n\n1. The teacher ____ the exam yesterday.\nA. correct B. corrected C. correcting D. correction\nJawaban: B\n\n2. What does the woman suggest?\nA. Take a break B. Study harder C. Go home D. Call a friend\nJawaban: A`}
+                placeholder={dict.draft_placeholder}
                 className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 font-mono text-sm leading-7 outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
               />
               <p className="mt-1 text-xs text-softslate/60">
-                {draft.length} / 15000 karakter
+                {draft.length} / 15000 {dict.char_suffix}
               </p>
             </div>
           </div>
@@ -446,15 +502,15 @@ export function AIGenerator({
           className="btn-primary mt-5 w-full disabled:opacity-50"
         >
           {loading
-            ? "⏳ Sedang diproses... (bisa 10-30 detik)"
+            ? dict.btn_loading
             : mode === "generate"
-              ? "🪄 Generate dengan AI"
-              : "✨ Strukturkan Draft"}
+              ? dict.btn_generate
+              : dict.btn_structure_submit}
         </button>
 
         {provider ? (
           <p className="mt-2 text-center text-xs text-softslate/60">
-            Diproses oleh: <b>{provider}</b>
+            {dict.provider_prefix} <b>{provider}</b>
           </p>
         ) : null}
 
@@ -468,7 +524,7 @@ export function AIGenerator({
       {passages.length > 0 ? (
         <section className="aesthetic-card">
           <h2 className="font-display text-lg font-black text-teal-700">
-            📖 Bacaan ({passages.length})
+            {dict.passages_title} ({passages.length})
           </h2>
           <div className="mt-4 space-y-4">
             {passages.map((p, idx) => (
@@ -485,7 +541,7 @@ export function AIGenerator({
                     onClick={() => removePassage(p.ref_id)}
                     className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
                   >
-                    Hapus
+                    {dict.remove}
                   </button>
                 </div>
                 <input
@@ -494,7 +550,7 @@ export function AIGenerator({
                   onChange={(e) =>
                     updatePassage(idx, { title: e.target.value })
                   }
-                  placeholder="Judul bacaan (opsional)"
+                  placeholder={dict.passage_title_placeholder}
                   className="mt-3 w-full rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
                 />
                 <textarea
@@ -515,10 +571,10 @@ export function AIGenerator({
         <section className="aesthetic-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-black text-teal-700">
-              📝 Soal yang dihasilkan ({questions.length})
+              {dict.questions_title} ({questions.length})
             </h2>
             <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-600">
-              Edit langsung sebelum simpan
+              {dict.edit_before_save}
             </span>
           </div>
 
@@ -534,7 +590,8 @@ export function AIGenerator({
                       {q.section_type}
                     </span>
                     <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-black text-teal-700">
-                      Soal #{q.question_number}
+                      {dict.badge_question}
+                      {q.question_number}
                     </span>
                     {q.passage_ref ? (
                       <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-600">
@@ -543,7 +600,7 @@ export function AIGenerator({
                     ) : null}
                     {q.audio_ref ? (
                       <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-600">
-                        🎧 {q.audio_ref}
+                        {dict.badge_audio} {q.audio_ref}
                       </span>
                     ) : null}
                   </div>
@@ -552,7 +609,7 @@ export function AIGenerator({
                     onClick={() => removeQuestion(idx)}
                     className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
                   >
-                    Hapus
+                    {dict.remove}
                   </button>
                 </div>
 
@@ -585,7 +642,7 @@ export function AIGenerator({
                             ? "bg-sage-500 text-white"
                             : "bg-sage-100 text-teal-700 hover:bg-sage-200"
                         }`}
-                        title="Tandai sebagai jawaban benar"
+                        title={dict.answer_marker_title}
                       >
                         {label}
                       </button>
@@ -604,7 +661,7 @@ export function AIGenerator({
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                   <label className="flex items-center gap-2">
                     <span className="font-bold text-teal-700">
-                      Jawaban benar:
+                      {dict.label_correct}
                     </span>
                     <select
                       value={q.correct_answer}
@@ -624,7 +681,9 @@ export function AIGenerator({
                   </label>
 
                   <label className="flex items-center gap-2">
-                    <span className="font-bold text-teal-700">Kesulitan:</span>
+                    <span className="font-bold text-teal-700">
+                      {dict.label_diff}
+                    </span>
                     <select
                       value={q.difficulty ?? "medium"}
                       onChange={(e) =>
@@ -635,9 +694,9 @@ export function AIGenerator({
                       }
                       className="rounded-lg border border-sage-200 bg-white px-2 py-1 text-xs font-black"
                     >
-                      <option value="easy">Mudah</option>
-                      <option value="medium">Sedang</option>
-                      <option value="hard">Sulit</option>
+                      <option value="easy">{dict.diff_easy}</option>
+                      <option value="medium">{dict.diff_medium}</option>
+                      <option value="hard">{dict.diff_hard}</option>
                     </select>
                   </label>
                 </div>
@@ -652,8 +711,8 @@ export function AIGenerator({
             className="btn-primary mt-5 w-full"
           >
             {saving
-              ? "⏳ Menyimpan..."
-              : `💾 Simpan ${questions.length} Soal ke Ujian`}
+              ? dict.btn_saving
+              : fmt(dict.btn_save_template, { n: questions.length })}
           </button>
 
           {saveMsg ? (

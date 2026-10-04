@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AIGenerator } from "./ai-generator";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function AIGeneratePage({
   params,
@@ -13,6 +15,11 @@ export default async function AIGeneratePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const p = dict.ai_page;
+  const isRtl = locale === "ar";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -78,13 +85,13 @@ export default async function AIGeneratePage({
   ];
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href={`/dashboard/assessments/${assessment.id}`}
           className="text-sm font-bold text-teal-700 underline-offset-4 hover:underline"
         >
-          ← Kembali ke Ujian
+          ← {p.back}
         </Link>
       </div>
 
@@ -92,14 +99,13 @@ export default async function AIGeneratePage({
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-teal-500/30 blur-3xl" />
         <div className="relative">
           <p className="text-sm font-semibold text-white/80">
-            🪄 AI Generator
+            {p.header_label}
           </p>
           <h1 className="font-display mt-2 text-2xl font-black sm:text-3xl">
             {assessment.title}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-white/85">
-            Buat soal baru dengan AI, atau paste draft soal yang sudah Anda
-            punya untuk dirapikan otomatis.
+            {p.header_desc}
           </p>
         </div>
       </header>
@@ -108,6 +114,7 @@ export default async function AIGeneratePage({
         assessmentId={assessment.id}
         assessmentType={assessment.assessment_type}
         sectionCounts={sectionCounts}
+        dict={dict.ai_generator}
       />
     </main>
   );
