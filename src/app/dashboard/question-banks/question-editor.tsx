@@ -20,23 +20,45 @@ type Option = {
   option_text: string;
 };
 
+type QuestionEditorDict = {
+  edit_question: string;
+  delete_question: string;
+  media_warning: string;
+  question_label: string;
+  topic_label: string;
+  difficulty_label: string;
+  difficulty_easy: string;
+  difficulty_medium: string;
+  difficulty_hard: string;
+  correct_label: string;
+  saving: string;
+  save_edit: string;
+  cancel: string;
+  confirm_delete: string;
+  update_success: string;
+};
+
 export function QuestionEditor({
   question,
   options,
   categories,
   mediaCount,
+  qe,
 }: {
   question: Question;
   options: Option[];
   categories: { id: string; name: string }[];
   mediaCount: number;
+  qe: QuestionEditorDict;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const optionMap = new Map(options.map((option) => [option.option_key, option.option_text]));
+  const optionMap = new Map(
+    options.map((option) => [option.option_key, option.option_text]),
+  );
   const initialCategory = question.category_id ?? categories[0]?.id ?? "";
   const initialDifficulty = question.difficulty ?? "easy";
   const initialCorrect = question.correct_option_key ?? "A";
@@ -53,16 +75,14 @@ export function QuestionEditor({
     }
 
     setEditing(false);
-    setMessage("Soal berhasil diperbarui.");
+    setMessage(qe.update_success);
     router.refresh();
   }
 
   async function onDelete() {
     if (busy) return;
 
-    const confirmed = window.confirm(
-      "Hapus soal ini secara permanen? Tindakan ini tidak dapat dibatalkan.",
-    );
+    const confirmed = window.confirm(qe.confirm_delete);
     if (!confirmed) return;
 
     setBusy(true);
@@ -90,12 +110,10 @@ export function QuestionEditor({
           disabled={busy}
           className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50"
         >
-          تعديل السؤال
+          {qe.edit_question}
         </button>
         {mediaCount > 0 ? (
-          <span className="text-sm text-amber-700">
-            احذف الوسائط المرفقة أولًا قبل حذف السؤال.
-          </span>
+          <span className="text-sm text-amber-700">{qe.media_warning}</span>
         ) : (
           <button
             type="button"
@@ -103,7 +121,7 @@ export function QuestionEditor({
             disabled={busy}
             className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
           >
-            حذف السؤال
+            {qe.delete_question}
           </button>
         )}
         {message ? (
@@ -116,11 +134,16 @@ export function QuestionEditor({
   }
 
   return (
-    <form action={onSubmit} className="mt-4 space-y-3 border-t border-neutral-200 pt-4">
+    <form
+      action={onSubmit}
+      className="mt-4 space-y-3 border-t border-neutral-200 pt-4"
+    >
       <input type="hidden" name="question_id" value={question.id} />
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium">السؤال</span>
+        <span className="mb-1 block text-sm font-medium">
+          {qe.question_label}
+        </span>
         <textarea
           name="question_text"
           defaultValue={question.question_text ?? ""}
@@ -133,7 +156,7 @@ export function QuestionEditor({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">الموضوع</span>
+          <span className="mb-1 block text-sm font-medium">{qe.topic_label}</span>
           <select
             name="category_id"
             defaultValue={initialCategory}
@@ -149,16 +172,18 @@ export function QuestionEditor({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">مستوى الصعوبة</span>
+          <span className="mb-1 block text-sm font-medium">
+            {qe.difficulty_label}
+          </span>
           <select
             name="difficulty"
             defaultValue={initialDifficulty}
             required
             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           >
-            <option value="easy">سهل</option>
-            <option value="medium">متوسط</option>
-            <option value="hard">صعب</option>
+            <option value="easy">{qe.difficulty_easy}</option>
+            <option value="medium">{qe.difficulty_medium}</option>
+            <option value="hard">{qe.difficulty_hard}</option>
           </select>
         </label>
       </div>
@@ -179,7 +204,9 @@ export function QuestionEditor({
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium">الإجابة الصحيحة</span>
+        <span className="mb-1 block text-sm font-medium">
+          {qe.correct_label}
+        </span>
         <select
           name="correct_option_key"
           defaultValue={initialCorrect}
@@ -205,7 +232,7 @@ export function QuestionEditor({
           disabled={busy}
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
         >
-          {busy ? "جارٍ الحفظ..." : "حفظ التعديل"}
+          {busy ? qe.saving : qe.save_edit}
         </button>
         <button
           type="button"
@@ -216,7 +243,7 @@ export function QuestionEditor({
           }}
           className="rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50"
         >
-          إلغاء
+          {qe.cancel}
         </button>
       </div>
     </form>

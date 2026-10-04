@@ -18,6 +18,39 @@ type Media = {
   attached_at: string | null;
 };
 
+type MediaDict = {
+  title: string;
+  empty: string;
+  hint: string;
+  play_limit: string;
+  attached: string;
+  waiting_upload: string;
+  upload_aria: string;
+  delete_media: string;
+  remove_confirm: string;
+  unsupported_type: string;
+  invalid_size: string;
+  no_config: string;
+  upload_failed: string;
+  meta_failed: string;
+  upload_success: string;
+  file_delete_failed: string;
+  meta_delete_failed: string;
+  delete_success: string;
+  preview_private_na: string;
+  preview_private_fail: string;
+  preview_config_na: string;
+  preview_playback_fail: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 const LIMITS: Record<MediaType, number> = {
   audio: 10 * 1024 * 1024,
   image: 5 * 1024 * 1024,
@@ -41,27 +74,22 @@ const MIME_TYPES: Record<MediaType, string[]> = {
     "image/gif",
     "image/svg+xml",
   ],
-  video: [
-    "video/mp4",
-    "video/webm",
-    "video/ogg",
-    "video/quicktime",
-  ],
+  video: ["video/mp4", "video/webm", "video/ogg", "video/quicktime"],
 };
 
 function formatBytes(value: number | null) {
   if (!value) return "";
-  return `${(value / 1024 / 1024).toFixed(
-    value < 1024 * 1024 ? 2 : 1,
-  )} MB`;
+  return `${(value / 1024 / 1024).toFixed(value < 1024 * 1024 ? 2 : 1)} MB`;
 }
 
 export function QuestionMediaManager({
   questionId,
   media,
+  qm,
 }: {
   questionId: string;
   media: Media[];
+  qm: MediaDict;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -85,10 +113,7 @@ export function QuestionMediaManager({
             .from("question-media")
             .createSignedUrl(item.storage_path!, 60 * 10);
 
-          return [
-            item.id,
-            error ? error.message : data.signedUrl,
-          ] as const;
+          return [item.id, error ? error.message : data.signedUrl] as const;
         }),
       )
         .then((entries) => {
@@ -101,7 +126,7 @@ export function QuestionMediaManager({
             if (result.startsWith("http")) {
               nextUrls[id] = result;
             } else {
-              nextErrors[id] = `Pratinjau privat tidak tersedia: ${result}`;
+              nextErrors[id] = fmt(qm.preview_private_na, { msg: result });
             }
           }
 
@@ -114,7 +139,7 @@ export function QuestionMediaManager({
               Object.fromEntries(
                 attached.map((item) => [
                   item.id,
-                  "Pratinjau privat tidak dapat dimuat.",
+                  qm.preview_private_fail,
                 ]),
               ),
             );
@@ -123,10 +148,7 @@ export function QuestionMediaManager({
     } catch {
       setPreviewErrors(
         Object.fromEntries(
-          attached.map((item) => [
-            item.id,
-            "Konfigurasi media tidak tersedia di browser ini.",
-          ]),
+          attached.map((item) => [item.id, qm.preview_config_na]),
         ),
       );
     }
@@ -134,13 +156,12 @@ export function QuestionMediaManager({
     return () => {
       cancelled = true;
     };
-  }, [media]);
+  }, [media, qm.preview_private_fail, qm.preview_private_na, qm.preview_config_na]);
 
   function markPreviewError(mediaId: string) {
     setPreviewErrors((current) => ({
       ...current,
-      [mediaId]:
-        "File media tidak dapat diputar atau ditampilkan. Periksa format file lalu unggah ulang.",
+      [mediaId]: qm.preview_playback_fail,
     }));
   }
 
@@ -150,15 +171,13 @@ export function QuestionMediaManager({
     setMessage(null);
 
     if (!MIME_TYPES[item.media_type].includes(file.type)) {
-      setMessage("Jenis file tidak didukung untuk media ini.");
+      setMessage(qm.unsupported_type);
       return;
     }
 
     if (file.size < 1 || file.size > LIMITS[item.media_type]) {
       setMessage(
-        `Ukuran file tidak valid (maksimum ${formatBytes(
-          LIMITS[item.media_type],
-        )}).`,
+        fmt(qm.invalid_size, { max: formatBytes(LIMITS[item.media_type]) }),
       );
       return;
     }
@@ -171,9 +190,7 @@ export function QuestionMediaManager({
       supabase = createClient();
     } catch {
       setBusyId(null);
-      setMessage(
-        "Konfigurasi media tidak tersedia. Muat ulang halaman atau hubungi administrator.",
-      );
+      setMessage(qm.no_config);
       return;
     }
 
@@ -193,7 +210,7 @@ export function QuestionMediaManager({
 
     if (uploadError) {
       setBusyId(null);
-      setMessage(`Upload gagal: ${uploadError.message}`);
+      setMessage(fmt(qm.upload_failed, { msg: uploadError.message }));
       return;
     }
 
@@ -212,20 +229,18 @@ export function QuestionMediaManager({
     setBusyId(null);
 
     if (metadataError) {
-      setMessage(
-        `File tersimpan tetapi metadata gagal diperbarui: ${metadataError.message}`,
-      );
+      setMessage(fmt(qm.meta_failed, { msg: metadataError.message }));
       return;
     }
 
-    setMessage("Media berhasil diunggah dan dihubungkan ke soal.");
+    setMessage(qm.upload_success);
     window.location.reload();
   }
 
   async function remove(item: Media) {
     if (
       busyId ||
-      !window.confirm(`Hapus media «${item.expected_filename}»?`)
+      !window.confirm(fmt(qm.remove_confirm, { name: item.expected_filename }))
     ) {
       return;
     }
@@ -239,9 +254,7 @@ export function QuestionMediaManager({
       supabase = createClient();
     } catch {
       setBusyId(null);
-      setMessage(
-        "Konfigurasi media tidak tersedia. Muat ulang halaman atau hubungi administrator.",
-      );
+      setMessage(qm.no_config);
       return;
     }
 
@@ -252,7 +265,7 @@ export function QuestionMediaManager({
 
       if (error) {
         setBusyId(null);
-        setMessage(`File tidak dapat dihapus: ${error.message}`);
+        setMessage(fmt(qm.file_delete_failed, { msg: error.message }));
         return;
       }
     }
@@ -266,28 +279,23 @@ export function QuestionMediaManager({
     setBusyId(null);
 
     if (error) {
-      setMessage(`Metadata media tidak dapat dihapus: ${error.message}`);
+      setMessage(fmt(qm.meta_delete_failed, { msg: error.message }));
       return;
     }
 
-    setMessage("Media berhasil dihapus.");
+    setMessage(qm.delete_success);
     window.location.reload();
   }
 
   return (
     <section className="mt-4 border-t border-neutral-200 pt-4">
-      <h5 className="font-medium">الوسائط</h5>
+      <h5 className="font-medium">{qm.title}</h5>
 
       {media.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-500">
-          لا توجد وسائط معلنة لهذا السؤال.
-        </p>
+        <p className="mt-2 text-sm text-neutral-500">{qm.empty}</p>
       ) : (
         <div className="mt-3 space-y-3">
-          <p className="text-sm text-neutral-600">
-            اختر ملف الوسائط من جهازك. لا يشترط أن يطابق اسم الملف الاسم
-            المعلن في Excel.
-          </p>
+          <p className="text-sm text-neutral-600">{qm.hint}</p>
 
           {media.map((item) => (
             <div
@@ -301,15 +309,14 @@ export function QuestionMediaManager({
 
               {item.max_play_count ? (
                 <p className="mt-1 text-neutral-600">
-                  حد التشغيل المحفوظ: {item.max_play_count}. لا يُطبّق إلا عند
-                  توفر تشغيل الطلاب في نظام اللعبة.
+                  {fmt(qm.play_limit, { n: item.max_play_count })}
                 </p>
               ) : null}
 
               {item.storage_path ? (
                 <div className="mt-3 space-y-2">
                   <p className="text-green-700">
-                    تم الإرفاق
+                    {qm.attached}
                     {item.size_bytes
                       ? ` (${formatBytes(item.size_bytes)})`
                       : ""}
@@ -326,7 +333,6 @@ export function QuestionMediaManager({
                   ) : null}
 
                   {item.media_type === "image" && urls[item.id] ? (
-                    // Signed private URLs cannot be optimized by Next.js without remote image configuration.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={urls[item.id]}
@@ -353,20 +359,16 @@ export function QuestionMediaManager({
                   ) : null}
                 </div>
               ) : (
-                <p className="mt-1 text-amber-700">
-                  بانتظار رفع ملف الوسائط.
-                </p>
+                <p className="mt-1 text-amber-700">{qm.waiting_upload}</p>
               )}
 
               <label className="mt-3 block">
-                <span className="sr-only">رفع ملف الوسائط</span>
+                <span className="sr-only">{qm.upload_aria}</span>
                 <input
                   type="file"
                   accept={MIME_TYPES[item.media_type].join(",")}
                   disabled={busyId !== null}
-                  onChange={(event) =>
-                    upload(item, event.target.files?.[0])
-                  }
+                  onChange={(event) => upload(item, event.target.files?.[0])}
                   className="block w-full text-sm"
                 />
               </label>
@@ -377,7 +379,7 @@ export function QuestionMediaManager({
                 onClick={() => remove(item)}
                 className="mt-3 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 disabled:opacity-50"
               >
-                حذف الوسائط
+                {qm.delete_media}
               </button>
             </div>
           ))}

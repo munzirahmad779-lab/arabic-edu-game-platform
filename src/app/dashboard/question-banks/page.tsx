@@ -72,192 +72,225 @@ export default async function QuestionBanksPage({
   const isRtl = locale === "ar";
 
   const L = {
-    page_title: isRtl
-      ? "بنك الأسئلة"
-      : locale === "en"
-        ? "Question Banks"
-        : "Bank Soal",
-    page_sub: isRtl
-      ? "إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي."
-      : locale === "en"
-        ? "Create question banks and import MCQ questions from the official Excel template."
-        : "Buat bank soal dan impor soal MCQ dari template Excel resmi.",
-    dashboard: isRtl ? "لوحة التحكم" : "Dashboard",
-    deleted_ok: isRtl
-      ? "✓ تم حذف بنك الأسئلة بنجاح."
-      : locale === "en"
-        ? "✓ Question bank deleted."
-        : "✓ Bank soal berhasil dihapus.",
-    err_invalid_bank: isRtl
-      ? "Nama atau deskripsi buku soal tidak valid."
-      : locale === "en"
-        ? "Question bank name or description is invalid."
-        : "Nama atau deskripsi bank soal tidak valid.",
-    err_dup_bank: isRtl
-      ? "Buku soal dengan nama tersebut sudah ada."
-      : locale === "en"
-        ? "A question bank with that name already exists."
-        : "Bank soal dengan nama itu sudah ada.",
-    err_create_bank: isRtl
-      ? "Buku soal gagal dibuat."
-      : locale === "en"
-        ? "Failed to create question bank."
-        : "Gagal membuat bank soal.",
-    err_invalid_bank_id: isRtl
-      ? "معرف البنك غير صالح."
-      : locale === "en"
-        ? "Invalid bank ID."
-        : "ID bank tidak valid.",
-    cat_invalid: isRtl
-      ? "Nama topik tidak valid. Gunakan 1–100 karakter."
-      : locale === "en"
-        ? "Invalid topic name. Use 1–100 characters."
-        : "Nama topik tidak valid. Gunakan 1–100 karakter.",
-    cat_dup: isRtl
-      ? "Topik dengan nama tersebut sudah ada."
-      : locale === "en"
-        ? "A topic with that name already exists."
-        : "Topik dengan nama itu sudah ada.",
-    cat_create_failed: isRtl
-      ? "Topik gagal dibuat."
-      : locale === "en"
-        ? "Failed to create topic."
-        : "Gagal membuat topik.",
-    cat_update_failed: isRtl
-      ? "Topik gagal diperbarui."
-      : locale === "en"
-        ? "Failed to update topic."
-        : "Gagal memperbarui topik.",
-    cat_delete_failed: isRtl
-      ? "Topik gagal dihapus."
-      : locale === "en"
-        ? "Failed to delete topic."
-        : "Gagal menghapus topik.",
-    cat_in_use: isRtl
-      ? "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal."
-      : locale === "en"
-        ? "Topic cannot be deleted while still used by questions in the bank."
-        : "Topik tidak bisa dihapus selama masih dipakai oleh soal di bank.",
-    topics_title: isRtl
-      ? "موضوعات الأسئلة"
-      : locale === "en"
-        ? "Question Topics"
-        : "Topik Soal",
-    topics_desc: isRtl
-      ? "أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب Excel."
-      : locale === "en"
-        ? "Create topics whose names you will use in the «Topik» column inside the Excel template."
-        : "Buat topik yang namanya akan kamu pakai di kolom «Topik» dalam template Excel.",
-    topics_count: isRtl ? "موضوع" : locale === "en" ? "topics" : "topik",
-    add_topic: isRtl
-      ? "إضافة موضوع"
-      : locale === "en"
-        ? "Add Topic"
-        : "Tambah Topik",
-    save: isRtl ? "حفظ" : locale === "en" ? "Save" : "Simpan",
-    delete: isRtl ? "حذف" : locale === "en" ? "Delete" : "Hapus",
-    no_topics: isRtl
-      ? "لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة."
-      : locale === "en"
-        ? "No topics yet. Create a topic before importing questions."
-        : "Belum ada topik. Buat topik dulu sebelum impor soal.",
-    excel_title: isRtl
-      ? "قالب Excel الرسمي"
-      : locale === "en"
-        ? "Official Excel Template"
-        : "Template Excel Resmi",
-    excel_desc: isRtl
-      ? "القالب يحتوي على 140 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة حقيقية."
-      : locale === "en"
-        ? "The template contains 140 ready rows and no real questions."
-        : "Template berisi 140 baris siap isi dan tidak ada soal asli.",
-    excel_download: isRtl
-      ? "تنزيل القالب"
-      : locale === "en"
-        ? "Download Template"
-        : "Unduh Template",
-    create_bank_title: isRtl
-      ? "إنشاء بنك جديد"
-      : locale === "en"
-        ? "Create New Bank"
-        : "Buat Bank Baru",
-    name_placeholder: isRtl
-      ? "مثال: النحو الأساسي"
-      : locale === "en"
-        ? "Example: Basic Grammar"
-        : "Contoh: Nahwu Dasar",
-    desc_placeholder: isRtl
-      ? "وصف اختياري"
-      : locale === "en"
-        ? "Optional description"
-        : "Deskripsi opsional",
-    create_bank_btn: isRtl
-      ? "إنشاء بنك الأسئلة"
-      : locale === "en"
-        ? "Create Question Bank"
-        : "Buat Bank Soal",
-    my_banks: isRtl ? "بنكي" : locale === "en" ? "My Banks" : "Bank Saya",
-    banks_count: isRtl ? "بنك" : locale === "en" ? "banks" : "bank",
-    no_banks: isRtl
-      ? "لم تنشئ بنك أسئلة بعد."
-      : locale === "en"
-        ? "You haven't created any question banks yet."
-        : "Kamu belum membuat bank soal.",
-    all: isRtl ? "الكل" : locale === "en" ? "All" : "Semua",
-    no_topic: isRtl
-      ? "بدون موضوع"
-      : locale === "en"
-        ? "No topic"
-        : "Tanpa topik",
-    questions_saved: isRtl
-      ? "الأسئلة المحفوظة"
-      : locale === "en"
-        ? "Saved Questions"
-        : "Soal Tersimpan",
-    questions_unit: isRtl ? "سؤال" : locale === "en" ? "questions" : "soal",
-    no_q_in_bank: isRtl
-      ? "لا توجد أسئلة محفوظة في هذا البنك."
-      : locale === "en"
-        ? "No saved questions in this bank."
-        : "Belum ada soal di bank ini.",
-    no_q_filter: isRtl
-      ? "لا توجد أسئلة تطابق الفلتر المحدد."
-      : locale === "en"
-        ? "No questions match the selected filter."
-        : "Tidak ada soal yang cocok dengan filter.",
-    correct: isRtl
-      ? "الإجابة الصحيحة"
-      : locale === "en"
-        ? "Correct Answer"
-        : "Jawaban Benar",
-    option_missing: isRtl
-      ? "الخيار غير موجود"
-      : locale === "en"
-        ? "Option not found"
-        : "Opsi tidak ditemukan",
-    import_title: isRtl
-      ? "استيراد الأسئلة من Excel"
-      : locale === "en"
-        ? "Import Questions from Excel"
-        : "Impor Soal dari Excel",
-    import_desc: isRtl
-      ? "تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد."
-      : locale === "en"
-        ? "The file is reviewed first. No questions saved if any error found."
-        : "File direview dulu. Tidak ada soal tersimpan jika ada 1 error.",
-    import_note: isRtl
-      ? "تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط."
-      : locale === "en"
-        ? "The «YA» value in Excel creates an expected media record only."
-        : "Nilai «YA» di Excel hanya membuat catatan media yang diharapkan.",
-    delete_bank_warn: isRtl
-      ? "⚠️ حذف البنك سيحذف جميع الأسئلة داخله."
-      : locale === "en"
-        ? "⚠️ Deleting the bank will delete all questions inside."
-        : "⚠️ Menghapus bank akan menghapus semua soal di dalamnya.",
-    difficulty_easy: isRtl ? "Mudah" : locale === "en" ? "Easy" : "Mudah",
-    difficulty_medium: isRtl ? "Sedang" : locale === "en" ? "Medium" : "Sedang",
-    difficulty_hard: isRtl ? "Sulit" : locale === "en" ? "Hard" : "Sulit",
+    page_title:
+      locale === "ar"
+        ? "بنك الأسئلة"
+        : locale === "en"
+          ? "Question Banks"
+          : "Bank Soal",
+    page_sub:
+      locale === "ar"
+        ? "إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي."
+        : locale === "en"
+          ? "Create question banks and import MCQ questions from the official Excel template."
+          : "Buat bank soal dan impor soal MCQ dari template Excel resmi.",
+    dashboard:
+      locale === "ar" ? "لوحة التحكم" : locale === "en" ? "Dashboard" : "Dashboard",
+    deleted_ok:
+      locale === "ar"
+        ? "✓ تم حذف بنك الأسئلة بنجاح."
+        : locale === "en"
+          ? "✓ Question bank deleted."
+          : "✓ Bank soal berhasil dihapus.",
+    err_invalid_bank:
+      locale === "ar"
+        ? "Nama atau deskripsi buku soal tidak valid."
+        : locale === "en"
+          ? "Question bank name or description is invalid."
+          : "Nama atau deskripsi bank soal tidak valid.",
+    err_dup_bank:
+      locale === "ar"
+        ? "Buku soal dengan nama tersebut sudah ada."
+        : locale === "en"
+          ? "A question bank with that name already exists."
+          : "Bank soal dengan nama itu sudah ada.",
+    err_create_bank:
+      locale === "ar"
+        ? "Buku soal gagal dibuat."
+        : locale === "en"
+          ? "Failed to create question bank."
+          : "Gagal membuat bank soal.",
+    err_invalid_bank_id:
+      locale === "ar"
+        ? "معرف البنك غير صالح."
+        : locale === "en"
+          ? "Invalid bank ID."
+          : "ID bank tidak valid.",
+    cat_invalid:
+      locale === "ar"
+        ? "Nama topik tidak valid. Gunakan 1–100 karakter."
+        : locale === "en"
+          ? "Invalid topic name. Use 1–100 characters."
+          : "Nama topik tidak valid. Gunakan 1–100 karakter.",
+    cat_dup:
+      locale === "ar"
+        ? "Topik dengan nama tersebut sudah ada."
+        : locale === "en"
+          ? "A topic with that name already exists."
+          : "Topik dengan nama itu sudah ada.",
+    cat_create_failed:
+      locale === "ar"
+        ? "Topik gagal dibuat."
+        : locale === "en"
+          ? "Failed to create topic."
+          : "Gagal membuat topik.",
+    cat_update_failed:
+      locale === "ar"
+        ? "Topik gagal diperbarui."
+        : locale === "en"
+          ? "Failed to update topic."
+          : "Gagal memperbarui topik.",
+    cat_delete_failed:
+      locale === "ar"
+        ? "Topik gagal dihapus."
+        : locale === "en"
+          ? "Failed to delete topic."
+          : "Gagal menghapus topik.",
+    cat_in_use:
+      locale === "ar"
+        ? "Topik tidak dapat dihapus selama masih dipakai oleh soal di Bank Soal."
+        : locale === "en"
+          ? "Topic cannot be deleted while still used by questions in the bank."
+          : "Topik tidak bisa dihapus selama masih dipakai oleh soal di bank.",
+    topics_title:
+      locale === "ar"
+        ? "موضوعات الأسئلة"
+        : locale === "en"
+          ? "Question Topics"
+          : "Topik Soal",
+    topics_desc:
+      locale === "ar"
+        ? "أنشئ الموضوعات التي ستستخدم أسماءها في عمود «Topik» داخل قالب Excel."
+        : locale === "en"
+          ? "Create topics whose names you will use in the «Topik» column inside the Excel template."
+          : "Buat topik yang namanya akan kamu pakai di kolom «Topik» dalam template Excel.",
+    topics_count: locale === "ar" ? "موضوع" : locale === "en" ? "topics" : "topik",
+    add_topic:
+      locale === "ar" ? "إضافة موضوع" : locale === "en" ? "Add Topic" : "Tambah Topik",
+    save: locale === "ar" ? "حفظ" : locale === "en" ? "Save" : "Simpan",
+    delete: locale === "ar" ? "حذف" : locale === "en" ? "Delete" : "Hapus",
+    no_topics:
+      locale === "ar"
+        ? "لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة."
+        : locale === "en"
+          ? "No topics yet. Create a topic before importing questions."
+          : "Belum ada topik. Buat topik dulu sebelum impor soal.",
+    excel_title:
+      locale === "ar"
+        ? "قالب Excel الرسمي"
+        : locale === "en"
+          ? "Official Excel Template"
+          : "Template Excel Resmi",
+    excel_desc:
+      locale === "ar"
+        ? "القالب يحتوي على 140 صفًا جاهزًا للإدخال ولا يحتوي على أسئلة حقيقية."
+        : locale === "en"
+          ? "The template contains 140 ready rows and no real questions."
+          : "Template berisi 140 baris siap isi dan tidak ada soal asli.",
+    excel_download:
+      locale === "ar"
+        ? "تنزيل القالب"
+        : locale === "en"
+          ? "Download Template"
+          : "Unduh Template",
+    create_bank_title:
+      locale === "ar"
+        ? "إنشاء بنك جديد"
+        : locale === "en"
+          ? "Create New Bank"
+          : "Buat Bank Baru",
+    name_placeholder:
+      locale === "ar"
+        ? "مثال: النحو الأساسي"
+        : locale === "en"
+          ? "Example: Basic Grammar"
+          : "Contoh: Nahwu Dasar",
+    desc_placeholder:
+      locale === "ar"
+        ? "وصف اختياري"
+        : locale === "en"
+          ? "Optional description"
+          : "Deskripsi opsional",
+    create_bank_btn:
+      locale === "ar"
+        ? "إنشاء بنك الأسئلة"
+        : locale === "en"
+          ? "Create Question Bank"
+          : "Buat Bank Soal",
+    my_banks:
+      locale === "ar" ? "بنكي" : locale === "en" ? "My Banks" : "Bank Saya",
+    banks_count: locale === "ar" ? "بنك" : locale === "en" ? "banks" : "bank",
+    no_banks:
+      locale === "ar"
+        ? "لم تنشئ بنك أسئلة بعد."
+        : locale === "en"
+          ? "You haven't created any question banks yet."
+          : "Kamu belum membuat bank soal.",
+    all: locale === "ar" ? "الكل" : locale === "en" ? "All" : "Semua",
+    no_topic:
+      locale === "ar" ? "بدون موضوع" : locale === "en" ? "No topic" : "Tanpa topik",
+    questions_saved:
+      locale === "ar"
+        ? "الأسئلة المحفوظة"
+        : locale === "en"
+          ? "Saved Questions"
+          : "Soal Tersimpan",
+    questions_unit:
+      locale === "ar" ? "سؤال" : locale === "en" ? "questions" : "soal",
+    no_q_in_bank:
+      locale === "ar"
+        ? "لا توجد أسئلة محفوظة في هذا البنك."
+        : locale === "en"
+          ? "No saved questions in this bank."
+          : "Belum ada soal di bank ini.",
+    no_q_filter:
+      locale === "ar"
+        ? "لا توجد أسئلة تطابق الفلتر المحدد."
+        : locale === "en"
+          ? "No questions match the selected filter."
+          : "Tidak ada soal yang cocok dengan filter.",
+    correct:
+      locale === "ar"
+        ? "الإجابة الصحيحة"
+        : locale === "en"
+          ? "Correct Answer"
+          : "Jawaban Benar",
+    option_missing:
+      locale === "ar"
+        ? "الخيار غير موجود"
+        : locale === "en"
+          ? "Option not found"
+          : "Opsi tidak ditemukan",
+    import_title:
+      locale === "ar"
+        ? "استيراد الأسئلة من Excel"
+        : locale === "en"
+          ? "Import Questions from Excel"
+          : "Impor Soal dari Excel",
+    import_desc:
+      locale === "ar"
+        ? "تتم مراجعة الملف أولًا. لا يتم حفظ أي سؤال إذا وُجد خطأ واحد."
+        : locale === "en"
+          ? "The file is reviewed first. No questions saved if any error found."
+          : "File direview dulu. Tidak ada soal tersimpan jika ada 1 error.",
+    import_note:
+      locale === "ar"
+        ? "تُنشئ قيمة «YA» في ملف Excel سجلًا لوسائط متوقعة فقط."
+        : locale === "en"
+          ? "The «YA» value in Excel creates an expected media record only."
+          : "Nilai «YA» di Excel hanya membuat catatan media yang diharapkan.",
+    delete_bank_warn:
+      locale === "ar"
+        ? "⚠️ حذف البنك سيحذف جميع الأسئلة داخله."
+        : locale === "en"
+          ? "⚠️ Deleting the bank will delete all questions inside."
+          : "⚠️ Menghapus bank akan menghapus semua soal di dalamnya.",
+    difficulty_easy:
+      locale === "ar" ? "سهل" : locale === "en" ? "Easy" : "Mudah",
+    difficulty_medium:
+      locale === "ar" ? "متوسط" : locale === "en" ? "Medium" : "Sedang",
+    difficulty_hard:
+      locale === "ar" ? "صعب" : locale === "en" ? "Hard" : "Sulit",
   };
 
   const errorMessage = (() => {
@@ -363,9 +396,7 @@ export default async function QuestionBanksPage({
     media = (mediaData ?? []) as MediaRow[];
   }
 
-  const categoryMap = new Map(
-    (categories ?? []).map((c) => [c.id, c.name]),
-  );
+  const categoryMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
 
   const optionsByQuestion = new Map<string, OptionRow[]>();
   for (const option of options) {
@@ -499,6 +530,7 @@ export default async function QuestionBanksPage({
                     bankId={bank.id}
                     bankName={bank.name}
                     questionCount={bankQuestions.length}
+                    qd={dict.qb.delete}
                   />
                 </div>
 
@@ -510,7 +542,10 @@ export default async function QuestionBanksPage({
                   <p className="mb-3 rounded-xl bg-teal-50 p-3 text-xs text-teal-700">
                     {L.import_note}
                   </p>
-                  <QuestionBankImportForm questionBankId={bank.id} />
+                  <QuestionBankImportForm
+                    questionBankId={bank.id}
+                    qi={dict.qb.import}
+                  />
                 </div>
 
                 <div>
@@ -542,8 +577,7 @@ export default async function QuestionBanksPage({
                           (q) => q.category_id === cat.id,
                         ).length;
                         if (count === 0) return null;
-                        const isActive =
-                          isFilterActive && activeCat === cat.id;
+                        const isActive = isFilterActive && activeCat === cat.id;
                         return (
                           <Link
                             key={cat.id}
@@ -606,8 +640,7 @@ export default async function QuestionBanksPage({
                               </span>
                               {question.category_id ? (
                                 <span className="rounded-full bg-terracotta-100 px-2 py-1 text-terracotta-600">
-                                  {categoryMap.get(question.category_id) ??
-                                    "—"}
+                                  {categoryMap.get(question.category_id) ?? "—"}
                                 </span>
                               ) : null}
                               {question.difficulty ? (
@@ -638,9 +671,7 @@ export default async function QuestionBanksPage({
                                         : "border-sage-200/60 bg-white text-softslate"
                                     }`}
                                   >
-                                    <span className="font-black">
-                                      {key}.
-                                    </span>{" "}
+                                    <span className="font-black">{key}.</span>{" "}
                                     {option?.option_text ?? L.option_missing}
                                     {isCorrect ? (
                                       <span className="ms-2 text-xs font-black">
@@ -655,6 +686,7 @@ export default async function QuestionBanksPage({
                             <QuestionMediaManager
                               questionId={question.id}
                               media={mediaByQuestion.get(question.id) ?? []}
+                              qm={dict.qb.media}
                             />
                             <QuestionEditor
                               question={{
@@ -662,22 +694,20 @@ export default async function QuestionBanksPage({
                                 category_id: question.category_id,
                                 question_text: question.question_text,
                                 difficulty: question.difficulty,
-                                correct_option_key:
-                                  question.correct_option_key,
+                                correct_option_key: question.correct_option_key,
                               }}
                               options={questionOptions.map((option) => ({
                                 option_key: option.option_key,
                                 option_text: option.option_text,
                               }))}
-                              categories={(categories ?? []).map(
-                                (category) => ({
-                                  id: category.id,
-                                  name: category.name,
-                                }),
-                              )}
+                              categories={(categories ?? []).map((category) => ({
+                                id: category.id,
+                                name: category.name,
+                              }))}
                               mediaCount={
                                 (mediaByQuestion.get(question.id) ?? []).length
                               }
+                              qe={dict.qb.editor}
                             />
                           </article>
                         );
