@@ -17,20 +17,46 @@ type Bank = {
   description: string | null;
 };
 
-const DIFFICULTY_AR: Record<string, string> = {
-  easy: "سهل",
-  medium: "متوسط",
-  hard: "صعب",
+type QuestionsPickerDict = {
+  legend: string;
+  selected_badge: string;
+  hint_open: string;
+  questions_count: string;
+  selected_in_bank: string;
+  no_questions: string;
+  all: string;
+  none_category: string;
+  no_match: string;
+  no_text: string;
+  difficulty_easy: string;
+  difficulty_medium: string;
+  difficulty_hard: string;
 };
+
+function fmt(template: string, count: number): string {
+  return template.replace("{count}", String(count));
+}
+
+function difficultyLabel(
+  d: "easy" | "medium" | "hard" | null,
+  qp: QuestionsPickerDict,
+): string {
+  if (d === "easy") return qp.difficulty_easy;
+  if (d === "medium") return qp.difficulty_medium;
+  if (d === "hard") return qp.difficulty_hard;
+  return "";
+}
 
 export function QuestionsPicker({
   banks,
   categories,
   questionsByBank,
+  qp,
 }: {
   banks: Bank[];
   categories: Category[];
   questionsByBank: Record<string, Question[]>;
+  qp: QuestionsPickerDict;
 }) {
   const [openBank, setOpenBank] = useState<string | null>(
     banks.length === 1 ? banks[0].id : null,
@@ -54,16 +80,14 @@ export function QuestionsPicker({
   return (
     <div className="space-y-3">
       <fieldset>
-        <legend className="text-sm font-medium">اختر الأسئلة</legend>
+        <legend className="text-sm font-medium">{qp.legend}</legend>
 
         {selected.size > 0 ? (
           <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-800">
-            ✓ تم اختيار {selected.size} سؤال
+            {fmt(qp.selected_badge, selected.size)}
           </div>
         ) : (
-          <p className="mt-2 text-xs text-neutral-500">
-            اضغط على اسم أي بنك لفتحه واختيار الأسئلة منه.
-          </p>
+          <p className="mt-2 text-xs text-neutral-500">{qp.hint_open}</p>
         )}
 
         <div className="mt-3 space-y-3">
@@ -100,11 +124,11 @@ export function QuestionsPicker({
                         {bank.name}
                       </span>
                       <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
-                        {questions.length} سؤال
+                        {fmt(qp.questions_count, questions.length)}
                       </span>
                       {selectedInBank > 0 ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                          ✓ {selectedInBank} مختار
+                          {fmt(qp.selected_in_bank, selectedInBank)}
                         </span>
                       ) : null}
                     </div>
@@ -128,7 +152,7 @@ export function QuestionsPicker({
                   <div className="space-y-4 border-t border-neutral-200 p-4">
                     {questions.length === 0 ? (
                       <p className="text-center text-sm text-neutral-500">
-                        لا توجد أسئلة في هذا البنك.
+                        {qp.no_questions}
                       </p>
                     ) : (
                       <>
@@ -143,7 +167,7 @@ export function QuestionsPicker({
                                   : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
                               }`}
                             >
-                              الكل ({questions.length})
+                              {qp.all} ({questions.length})
                             </button>
 
                             {categories.map((cat) => {
@@ -182,7 +206,7 @@ export function QuestionsPicker({
                                       : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
                                   }`}
                                 >
-                                  بدون موضوع ({noneCount})
+                                  {qp.none_category} ({noneCount})
                                 </button>
                               );
                             })()}
@@ -191,7 +215,7 @@ export function QuestionsPicker({
 
                         {filtered.length === 0 ? (
                           <p className="rounded-lg bg-neutral-50 p-4 text-center text-sm text-neutral-500">
-                            لا توجد أسئلة تطابق الفلتر المحدد.
+                            {qp.no_match}
                           </p>
                         ) : (
                           <div className="max-h-96 space-y-2 overflow-auto rounded-lg bg-neutral-50 p-2">
@@ -217,12 +241,11 @@ export function QuestionsPicker({
                                   <span className="min-w-0 flex-1">
                                     <span className="block text-sm font-medium text-neutral-900">
                                       {idx + 1}.{" "}
-                                      {q.question_text || "(سؤال بلا نص)"}
+                                      {q.question_text || qp.no_text}
                                     </span>
                                     {q.difficulty ? (
                                       <span className="mt-1 inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                                        {DIFFICULTY_AR[q.difficulty] ??
-                                          q.difficulty}
+                                        {difficultyLabel(q.difficulty, qp)}
                                       </span>
                                     ) : null}
                                   </span>
