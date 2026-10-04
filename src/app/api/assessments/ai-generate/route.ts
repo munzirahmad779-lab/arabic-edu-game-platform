@@ -8,15 +8,15 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // ============================================================
-// STRATEGI PROVIDER (UPDATE 4 Okt 2026 - v3)
+// STRATEGI PROVIDER (UPDATE 4 Okt 2026 - v4)
 // ============================================================
-// Pelajaran dari log sebelumnya:
-// - Gemini 3.8 Flash: paling akurat, tapi LAMBAT & sering timeout.
-//   Solusi: naikkan timeout, turunkan maxOutputTokens, matikan thinking.
-// - NVIDIA: banyak model EOL + READ TIMEOUT massal. Taruh paling belakang.
-// - LLM7: gratis, tapi P95 latency-nya bisa 60 detik. Pakai model spesifik.
-//
-// URUTAN: Gemini (timeout besar) -> LLM7 (model cepat) -> NVIDIA (cadangan)
+// Pelajaran dari log v3:
+// - Gemini 3.8 & 3.7 sering 503 (overload). 3.6 masih jalan.
+// - Kalau dicoba BERURUTAN, kita buang ~8 detik untuk tahu 3.8/3.7 gagal.
+// - SOLUSI: kirim ke beberapa provider SEKALIGUS (parallel race).
+//   Yang pertama balas JSON valid, itu yang dipakai. Yang lain dibuang.
+// - LLM7 dan Gemini jalan bareng. Kalau LLM7 cepat (8-15s), kita menang
+//   besar. Kalau LLM7 lambat/gagal, Gemini 3.6 tetap jadi jaring pengaman.
 // ============================================================
 
 // --- Gemini ---
@@ -25,19 +25,17 @@ const GEMINI_MODELS = [
   "gemini-3.7-flash",
   "gemini-3.6-flash",
 ];
-// Turunkan dari 65536 -> 8000. Cukup untuk 10-20 soal, jauh lebih cepat.
 const GEMINI_MAX_OUTPUT_TOKENS = 8000;
 
 // --- LLM7 ---
 const LLM7_URL = "https://api.llm7.io/v1/chat/completions";
-// "DeepSeek-V4-Flash-0731" punya latency lebih rendah & stabil.
 const LLM7_MODELS = ["DeepSeek-V4-Flash-0731", "default", "fast"];
 
 // --- OpenRouter ---
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODELS = ["deepseek/deepseek-v4-flash:free"];
 
-// --- NVIDIA (cadangan terakhir) ---
+// --- NVIDIA (paling belakang) ---
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const NVIDIA_MODELS = [
   "nvidia/nemotron-3-super-120b-a12b",
@@ -49,18 +47,22 @@ const NVIDIA_MODELS = [
 const TOTAL_BUDGET_MS = 55_000;
 const MIN_REMAINING_MS = 5_000;
 
-// --- Timeout per attempt (disesuaikan) ---
-const TIMEOUT_GEMINI = 30_000; // Dinaikkan dari 20s -> 30s
-const TIMEOUT_LLM7 = 15_000;
-const TIMEOUT_OPENROUTER = 15_000;
-const TIMEOUT_NVIDIA = 12_000;
+// --- Timeout per attempt ---
+const TIMEOUT_GEMINI = 50_000; // Gemini butuh waktu; beri lega.
+const TIMEOUT_LLM7 = 25_000;
+const TIMEOUT_OPENROUTER = 25_000;
+const TIMEOUT_NVIDIA = 15_000;
+
+// Berapa provider yang dicoba bersamaan di grup pertama.
+// 3 = LLM7 + Gemini 3.8 + Gemini 3.7, misalnya.
+const RACE_GROUP_SIZE = 3;
 
 const JSON_SYSTEM_PROMPT =
   "You are a strict JSON generator. You ALWAYS output valid JSON only, " +
   "without markdown fences, without commentary, without explanation.";
 
 // ============================================================
-// TIPE DATA (tidak berubah)
+// TIPE DATA
 // ============================================================
 
 type SectionType = "listening" | "structure" | "reading";
@@ -95,7 +97,7 @@ type ChatCompletion = {
 };
 
 // ============================================================
-// UTILITAS (tidak berubah)
+// UTILITAS
 // ============================================================
 
 function describeError(err: unknown): string {
@@ -135,6 +137,30 @@ function isRetryable(msg: string): boolean {
   );
 }
 
+/**
+ * Jalankan beberapa promise; ambil yang pertama SUCCESS (resolve).
+ * Kalau semua gagal, throw Error gabungan.
+ */
+function firstSuccess<T>(tasks: Array<Promise<T>>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (tasks.length === 0) {
+      reject(new Error("Tidak ada task untuk di-race"));
+      return;
+    }
+    let pending = tasks.length;
+    const errors: string[] = [];
+    for (const p of tasks) {
+      p.then(resolve).catch((err) => {
+        errors.push(describeError(err));
+        pending -= 1;
+        if (pending === 0) {
+          reject(new Error("Semua gagal: " + errors.join(" | ")));
+        }
+      });
+    }
+  });
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   opts: {
@@ -164,7 +190,7 @@ async function withRetry<T>(
 }
 
 // ============================================================
-// PEMANGGIL PROVIDER (DIPERBARUI)
+// PEMANGGIL PROVIDER
 // ============================================================
 
 async function callOpenAICompatible(args: {
@@ -231,7 +257,6 @@ async function callGeminiOnce(args: {
       maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
     };
     if (args.useThinkingConfig) {
-      // thinkingLevel: "low" -> lebih cepat dari default (medium)
       generationConfig.thinkingConfig = { thinkingLevel: "low" };
     }
 
@@ -272,7 +297,6 @@ async function callGemini(args: {
   apiKey: string;
   timeoutMs: number;
 }): Promise<string> {
-  // Coba dengan thinkingConfig dulu
   try {
     return await callGeminiOnce({
       model: args.model,
@@ -283,24 +307,8 @@ async function callGemini(args: {
     });
   } catch (err) {
     const msg = describeError(err);
-    // Jika model menolak thinkingConfig dengan error 400, ulangi tanpa itu.
     const isThinkingRejected = /\b400\b/.test(msg) && /thinking/i.test(msg);
-    if (!isThinkingRejected) {
-      // Jika timeout, langsung coba tanpa thinking untuk lebih cepat.
-      if (msg === "timeout") {
-        console.warn(
-          `[ai-generate] Gemini ${args.model} timeout, coba tanpa thinking...`,
-        );
-        return await callGeminiOnce({
-          model: args.model,
-          prompt: args.prompt,
-          apiKey: args.apiKey,
-          timeoutMs: args.timeoutMs,
-          useThinkingConfig: false,
-        });
-      }
-      throw err;
-    }
+    if (!isThinkingRejected) throw err;
     console.warn(
       `[ai-generate] Gemini ${args.model} tolak thinkingConfig, ulangi tanpa: ${msg}`,
     );
@@ -315,7 +323,7 @@ async function callGemini(args: {
 }
 
 // ============================================================
-// ORKESTRASI FALLBACK (DIPERBARUI)
+// ORKESTRASI FALLBACK (PARALLEL RACE)
 // ============================================================
 
 type Attempt = {
@@ -333,27 +341,10 @@ function buildAttempts(): Attempt[] {
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
 
-  // ---------- 1. GEMINI (timeout besar, thinking dimatikan jika timeout) ----------
-  if (geminiKey) {
-    for (const model of GEMINI_MODELS) {
-      list.push({
-        name: `gemini:${model}`,
-        run: (prompt, timeoutMs) =>
-          callGemini({
-            model,
-            prompt,
-            apiKey: geminiKey,
-            timeoutMs,
-          }),
-        // Retry 2x dengan jeda naik. Timeout sudah besar (30s),
-        // jadi tidak perlu retry banyak-banyak.
-        retryAttempts: 2,
-        retryBaseMs: 2000,
-      });
-    }
-  }
+  // Urutan menentukan grup race pertama.
+  // Kita taruh LLM7 dulu (potensi cepat), lalu Gemini (paling akurat).
 
-  // ---------- 2. LLM7 (model spesifik, latency lebih rendah) ----------
+  // ---------- LLM7 ----------
   const llm7KeyToUse = llm7Key && llm7Key.length > 0 ? llm7Key : "unused";
   for (const model of LLM7_MODELS) {
     list.push({
@@ -366,12 +357,32 @@ function buildAttempts(): Attempt[] {
           prompt,
           timeoutMs,
         }),
-      retryAttempts: 1, // Jangan retry banyak, LLM7 P95 latency bisa 60 detik.
+      retryAttempts: 1,
       retryBaseMs: 1000,
     });
   }
 
-  // ---------- 3. OPENROUTER ----------
+  // ---------- Gemini ----------
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
+      list.push({
+        name: `gemini:${model}`,
+        run: (prompt, timeoutMs) =>
+          callGemini({
+            model,
+            prompt,
+            apiKey: geminiKey,
+            timeoutMs,
+          }),
+        // Gemini sering 503, retry penting. Tapi karena sekarang di-race,
+        // retry 1x cukup; kalau 503 sekali, biar provider lain menang.
+        retryAttempts: 1,
+        retryBaseMs: 1000,
+      });
+    }
+  }
+
+  // ---------- OpenRouter ----------
   if (openrouterKey) {
     for (const model of OPENROUTER_MODELS) {
       list.push({
@@ -394,7 +405,7 @@ function buildAttempts(): Attempt[] {
     }
   }
 
-  // ---------- 4. NVIDIA (cadangan terakhir, sering timeout) ----------
+  // ---------- NVIDIA ----------
   if (nvidiaKey) {
     for (const model of NVIDIA_MODELS) {
       list.push({
@@ -406,7 +417,6 @@ function buildAttempts(): Attempt[] {
             apiKey: nvidiaKey,
             prompt,
             timeoutMs,
-            // Matikan "thinking" supaya respons cepat & tidak timeout.
             extraBody: {
               chat_template_kwargs: {
                 enable_thinking: false,
@@ -423,6 +433,13 @@ function buildAttempts(): Attempt[] {
   return list;
 }
 
+function getTimeout(name: string): number {
+  if (name.startsWith("gemini:")) return TIMEOUT_GEMINI;
+  if (name.startsWith("llm7:")) return TIMEOUT_LLM7;
+  if (name.startsWith("openrouter:")) return TIMEOUT_OPENROUTER;
+  return TIMEOUT_NVIDIA;
+}
+
 async function tryProviders(
   prompt: string,
 ): Promise<{ raw: string; provider: string }> {
@@ -435,42 +452,83 @@ async function tryProviders(
 
   const startedAt = Date.now();
   const remaining = () => TOTAL_BUDGET_MS - (Date.now() - startedAt);
-  const errors: string[] = [];
 
-  for (const attempt of attempts) {
-    const left = remaining();
-    if (left < MIN_REMAINING_MS) {
-      errors.push(`${attempt.name}: dilewati (budget waktu habis)`);
-      continue;
-    }
-
-    // Timeout per attempt = min(timeout default, sisa budget - 2s).
-    const baseTimeout =
-      attempt.name.startsWith("gemini:")
-        ? TIMEOUT_GEMINI
-        : attempt.name.startsWith("llm7:")
-          ? TIMEOUT_LLM7
-          : attempt.name.startsWith("openrouter:")
-            ? TIMEOUT_OPENROUTER
-            : TIMEOUT_NVIDIA;
-
-    const perAttemptTimeout = Math.min(baseTimeout, left - 2000);
-    if (perAttemptTimeout < 3000) {
-      errors.push(`${attempt.name}: dilewati (sisa waktu terlalu kecil)`);
-      continue;
-    }
-
-    try {
-      const raw = await withRetry(() => attempt.run(prompt, perAttemptTimeout), {
-        attempts: attempt.retryAttempts,
-        baseDelayMs: attempt.retryBaseMs,
-        label: attempt.name,
-        shouldRetry: isRetryable,
-      });
+  // Bungkus satu attempt jadi Promise<{raw, provider}>.
+  // Validasi JSON DI DALAM race, supaya provider yang balas non-JSON
+  // otomatis dianggap gagal.
+  const makeRaceTask = (attempt: Attempt, timeoutMs: number) => {
+    return (async () => {
+      const raw = await withRetry(
+        () => attempt.run(prompt, timeoutMs),
+        {
+          attempts: attempt.retryAttempts,
+          baseDelayMs: attempt.retryBaseMs,
+          label: attempt.name,
+          shouldRetry: isRetryable,
+        },
+      );
+      // Validasi cepat: harus JSON, harus ada minimal 1 soal.
+      const parsed = extractJson(raw);
+      const norm = normalizeResult(parsed);
+      if (norm.questions.length === 0) {
+        throw new Error(`${attempt.name}: 0 soal valid`);
+      }
       console.log(
-        `[ai-generate] sukses via ${attempt.name} dalam ${Date.now() - startedAt}ms`,
+        `[ai-generate] ${attempt.name} balas ${norm.questions.length} soal valid dalam ${Date.now() - startedAt}ms`,
       );
       return { raw, provider: attempt.name };
+    })();
+  };
+
+  // Bagi jadi dua grup: race pertama (paralel) & sisanya (sequential).
+  const head = attempts.slice(0, RACE_GROUP_SIZE);
+  const tail = attempts.slice(RACE_GROUP_SIZE);
+
+  const errors: string[] = [];
+
+  // -------- FASE 1: RACE PARALEL --------
+  if (head.length > 0) {
+    console.log(
+      `[ai-generate] race paralel: ${head.map((a) => a.name).join(", ")}`,
+    );
+    const headTasks = head.map((attempt) => {
+      const baseTimeout = getTimeout(attempt.name);
+      const perAttemptTimeout = Math.min(baseTimeout, Math.max(5_000, remaining() - 3_000));
+      return makeRaceTask(attempt, perAttemptTimeout);
+    });
+
+    try {
+      const winner = await firstSuccess(headTasks);
+      console.log(
+        `[ai-generate] MENANG: ${winner.provider} dalam ${Date.now() - startedAt}ms`,
+      );
+      return winner;
+    } catch (err) {
+      const msg = describeError(err);
+      errors.push(`[race] ${msg}`);
+      console.warn(`[ai-generate] race paralel gagal: ${msg}`);
+    }
+  }
+
+  // -------- FASE 2: SISA PROVIDER (SEQUENTIAL) --------
+  for (const attempt of tail) {
+    const left = remaining();
+    if (left < MIN_REMAINING_MS) {
+      errors.push(`${attempt.name}: dilewati (budget habis)`);
+      continue;
+    }
+    const baseTimeout = getTimeout(attempt.name);
+    const perAttemptTimeout = Math.min(baseTimeout, left - 2_000);
+    if (perAttemptTimeout < 3_000) {
+      errors.push(`${attempt.name}: dilewati (sisa waktu kecil)`);
+      continue;
+    }
+    try {
+      const result = await makeRaceTask(attempt, perAttemptTimeout);
+      console.log(
+        `[ai-generate] MENANG (tail): ${result.provider} dalam ${Date.now() - startedAt}ms`,
+      );
+      return result;
     } catch (err) {
       const msg = describeError(err);
       errors.push(`${attempt.name}: ${msg}`);
@@ -482,7 +540,7 @@ async function tryProviders(
 }
 
 // ============================================================
-// UTIL: EKSTRAK JSON (tidak berubah)
+// UTIL: EKSTRAK JSON
 // ============================================================
 
 function extractJson(text: string): unknown {
@@ -501,7 +559,7 @@ function extractJson(text: string): unknown {
 }
 
 // ============================================================
-// PROMPT BUILDER (tidak berubah)
+// PROMPT BUILDER
 // ============================================================
 
 const SYSTEM_RULES = `Kamu ahli pembuat soal ujian TOEFL ITP dan TOAFL.
@@ -590,7 +648,7 @@ Kembalikan HANYA JSON.`;
 }
 
 // ============================================================
-// NORMALISASI HASIL AI (tidak berubah)
+// NORMALISASI HASIL AI
 // ============================================================
 
 function normalizeResult(raw: unknown): AIResult {
@@ -657,7 +715,7 @@ function normalizeResult(raw: unknown): AIResult {
 }
 
 // ============================================================
-// HANDLER POST (tidak berubah)
+// HANDLER POST
 // ============================================================
 
 export async function POST(req: Request) {
