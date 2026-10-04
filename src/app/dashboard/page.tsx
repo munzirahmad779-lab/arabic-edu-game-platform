@@ -224,10 +224,10 @@ export default async function DashboardPage() {
             <div>
               <p className="text-3xl">🎓</p>
               <h2 className="font-display mt-4 font-black">
-                Ujian TOEFL / TOAFL
+                {t.assessment_title}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/85">
-                Buat simulasi TOEFL ITP atau TOAFL resmi.
+                {t.assessment_desc}
               </p>
             </div>
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">

@@ -107,6 +107,10 @@
     "students_mgmt": "Manajemen Siswa",
     "students_mgmt_desc": "Tambahkan siswa ke kelas dan buat PIN untuk setiap siswa.",
     "open_students": "Buka Manajemen Siswa",
+        "deactivated_title": "Akun Anda dinonaktifkan",
+    "deactivated_desc": "Hubungi administrator untuk informasi lebih lanjut.",
+    "assessment_title": "Ujian TOEFL / TOAFL",
+    "assessment_desc": "Buat simulasi TOEFL ITP atau TOAFL resmi.",
     "logout": "Keluar"
   },
   "classes": {
@@ -572,5 +576,29 @@
     "error_token_limit": "Token sudah mencapai batas pemakaian.",
     "error_not_published": "Ujian belum dipublikasikan.",
     "error_start_failed": "Gagal memulai ujian. Coba lagi."
+  },
+    "widget": {
+    "settings_title": "⚙️ Pengaturan Cepat",
+    "settings_aria": "Pengaturan Cepat",
+    "close": "Tutup",
+    "mute_on": "Suara Aktif",
+    "mute_off": "Suara Dimatikan",
+    "theme_title": "🎨 Tema Dashboard",
+    "theme_violet": "Violet",
+    "theme_rose": "Rose",
+    "theme_emerald": "Emerald",
+    "theme_sky": "Sky",
+    "theme_amber": "Amber",
+    "theme_indigo": "Indigo",
+    "theme_slate": "Slate",
+    "theme_teal": "Teal",
+    "link_music": "Musik",
+    "link_students": "Siswa",
+    "link_reports": "Laporan",
+    "link_account": "Akun",
+    "link_admin": "Panel Admin",
+    "copy_portal": "Salin Link Portal Siswa",
+    "copied": "✓ Tersalin",
+    "gesture_hint": "👆 Klik di mana saja untuk memulai musik"
   }
 }

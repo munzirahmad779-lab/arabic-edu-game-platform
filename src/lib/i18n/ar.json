@@ -107,6 +107,10 @@
     "students_mgmt": "إدارة الطلاب",
     "students_mgmt_desc": "أضف الطلاب إلى فصولك وأنشئ PIN لكل طالب.",
     "open_students": "فتح إدارة الطلاب",
+        "deactivated_title": "تم تعطيل حسابك",
+    "deactivated_desc": "تواصل مع المسؤول لمزيد من المعلومات.",
+    "assessment_title": "محاكاة اختبار TOEFL / TOAFL",
+    "assessment_desc": "أنشئ محاكاة TOEFL ITP أو TOAFL رسمية.",
     "logout": "تسجيل الخروج"
   },
   "classes": {
@@ -572,5 +576,29 @@
     "error_token_limit": "وصل الرمز إلى حد الاستخدام.",
     "error_not_published": "لم يتم نشر الاختبار.",
     "error_start_failed": "تعذر بدء الاختبار. حاول مرة أخرى."
+  },
+    "widget": {
+    "settings_title": "⚙️ الإعدادات السريعة",
+    "settings_aria": "الإعدادات السريعة",
+    "close": "إغلاق",
+    "mute_on": "الصوت مفعّل",
+    "mute_off": "الصوت مكتوم",
+    "theme_title": "🎨 ثيم لوحة التحكم",
+    "theme_violet": "بنفسجي",
+    "theme_rose": "وردي",
+    "theme_emerald": "زمردي",
+    "theme_sky": "سماوي",
+    "theme_amber": "عسلي",
+    "theme_indigo": "نيلي",
+    "theme_slate": "رمادي",
+    "theme_teal": "أزرق مخضر",
+    "link_music": "الموسيقى",
+    "link_students": "الطلاب",
+    "link_reports": "التقارير",
+    "link_account": "الحساب",
+    "link_admin": "لوحة الإدارة",
+    "copy_portal": "نسخ رابط بوابة الطالب",
+    "copied": "✓ تم النسخ",
+    "gesture_hint": "👆 انقر في أي مكان لتشغيل الموسيقى"
   }
 }

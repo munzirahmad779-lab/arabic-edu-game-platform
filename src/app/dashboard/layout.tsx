@@ -27,26 +27,29 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .single();
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.dashboard;
+
   if (profile && profile.is_active === false) {
     return (
       <div
         className="flex min-h-screen items-center justify-center bg-warmwhite p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="max-w-md rounded-[2rem] bg-white p-8 text-center shadow-2xl">
           <div className="text-6xl">🚫</div>
           <h1 className="font-display mt-4 text-2xl font-black text-red-700">
-            Akun Anda dinonaktifkan
+            {t.deactivated_title}
           </h1>
-          <p className="mt-3 text-sm text-softslate">
-            Hubungi administrator untuk informasi lebih lanjut.
-          </p>
+          <p className="mt-3 text-sm text-softslate">{t.deactivated_desc}</p>
           <form action="/auth/logout" method="post" className="mt-6">
             <button
               type="submit"
               className="w-full rounded-2xl bg-red-600 px-6 py-3 text-base font-black text-white transition hover:bg-red-700"
             >
-              Logout
+                              {dict.dashboard.logout}
             </button>
           </form>
         </div>
@@ -54,9 +57,6 @@ export default async function DashboardLayout({
     );
   }
 
-  const locale = await getLocale();
-  const dict = await getDictionary(locale);
-  const isRtl = locale === "ar";
   const theme = profile?.theme ?? "violet";
 
   return (

@@ -107,6 +107,10 @@
     "students_mgmt": "Student Management",
     "students_mgmt_desc": "Add students to classes and create a PIN for each student.",
     "open_students": "Open Student Management",
+        "deactivated_title": "Your account is deactivated",
+    "deactivated_desc": "Contact the administrator for more information.",
+    "assessment_title": "TOEFL / TOAFL Exam Simulation",
+    "assessment_desc": "Create an official TOEFL ITP or TOAFL simulation.",
     "logout": "Logout"
   },
   "classes": {
@@ -572,5 +576,29 @@
     "error_token_limit": "Token has reached its usage limit.",
     "error_not_published": "The exam has not been published.",
     "error_start_failed": "Failed to start the exam. Please try again."
+  },
+    "widget": {
+    "settings_title": "⚙️ Quick Settings",
+    "settings_aria": "Quick Settings",
+    "close": "Close",
+    "mute_on": "Sound On",
+    "mute_off": "Sound Muted",
+    "theme_title": "🎨 Dashboard Theme",
+    "theme_violet": "Violet",
+    "theme_rose": "Rose",
+    "theme_emerald": "Emerald",
+    "theme_sky": "Sky",
+    "theme_amber": "Amber",
+    "theme_indigo": "Indigo",
+    "theme_slate": "Slate",
+    "theme_teal": "Teal",
+    "link_music": "Music",
+    "link_students": "Students",
+    "link_reports": "Reports",
+    "link_account": "Account",
+    "link_admin": "Admin Panel",
+    "copy_portal": "Copy Student Portal Link",
+    "copied": "✓ Copied",
+    "gesture_hint": "👆 Click anywhere to start music"
   }
 }
