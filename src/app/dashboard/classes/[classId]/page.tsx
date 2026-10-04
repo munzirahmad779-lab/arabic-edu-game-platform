@@ -332,6 +332,7 @@ export default async function ClassDetailPage({
                     classId={classRow.id}
                     action={updateMaterial}
                     mf={cd.mf}
+                    isRtl={isRtl}
                     initialData={{
                       id: editing.id,
                       title: editing.title,
@@ -351,6 +352,7 @@ export default async function ClassDetailPage({
                 classId={classRow.id}
                 action={createMaterial}
                 mf={cd.mf}
+                isRtl={isRtl}
               />
             )}
             <div className="mt-3">

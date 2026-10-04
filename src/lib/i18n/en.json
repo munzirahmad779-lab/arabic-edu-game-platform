@@ -710,7 +710,49 @@
     "game_mode_competitive": "Competitive",
     "game_mode_learning": "Learning",
     "game_duration_suffix": "s",
+        "preview": {
+      "notice": "👁️ Student preview — this is how the student will see this material",
+      "back": "Back to Class Management",
+      "last_updated": "Last updated:"
+    },
+    "mv": {
+      "video_title": "🎬 Video",
+      "image_title": "🖼️ Illustration",
+      "no_content": "No text content in this material yet.",
+      "pdf_title": "📄 Attached PDF"
+    },
+    "pdf": {
+      "download": "Download PDF"
+    },
     "mf": {
+            "editor": {
+        "placeholder": "Write material content here...",
+        "loading": "Loading editor...",
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "h1": "Heading 1",
+        "h2": "Heading 2",
+        "h3": "Heading 3",
+        "bullet": "• List",
+        "bullet_title": "Bullet list",
+        "numbered": "1. List",
+        "numbered_title": "Numbered list",
+        "quote": "❝",
+        "quote_title": "Quote",
+        "align_right": "⬅",
+        "align_right_title": "Align right",
+        "align_center": "⬌",
+        "align_center_title": "Align center",
+        "align_left": "➡",
+        "align_left_title": "Align left",
+        "hr": "―",
+        "hr_title": "Divider",
+        "undo": "↶",
+        "undo_title": "Undo",
+        "redo": "↷",
+        "redo_title": "Redo"
+      },
       "title_label": "Material Title",
       "title_placeholder": "Example: Introduction to Nahwu",
       "content_label": "Material Content",

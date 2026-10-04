@@ -5,7 +5,37 @@ import MaterialEditor from "@/components/material-editor";
 
 type Mode = "create" | "edit";
 
+type EditorDict = {
+  placeholder: string;
+  loading: string;
+  bold: string;
+  italic: string;
+  underline: string;
+  h1: string;
+  h2: string;
+  h3: string;
+  bullet: string;
+  bullet_title: string;
+  numbered: string;
+  numbered_title: string;
+  quote: string;
+  quote_title: string;
+  align_right: string;
+  align_right_title: string;
+  align_center: string;
+  align_center_title: string;
+  align_left: string;
+  align_left_title: string;
+  hr: string;
+  hr_title: string;
+  undo: string;
+  undo_title: string;
+  redo: string;
+  redo_title: string;
+};
+
 type MaterialFormDict = {
+  editor: EditorDict;
   title_label: string;
   title_placeholder: string;
   content_label: string;
@@ -31,6 +61,7 @@ type MaterialFormProps = {
   classId: string;
   action: (formData: FormData) => void | Promise<void>;
   mf: MaterialFormDict;
+  isRtl?: boolean;
   initialData?: {
     id: string;
     title: string;
@@ -47,6 +78,7 @@ export default function MaterialForm({
   classId,
   action,
   mf,
+  isRtl = false,
   initialData,
   onCancel,
 }: MaterialFormProps) {
@@ -102,7 +134,12 @@ export default function MaterialForm({
           {mf.content_label}
         </label>
         <div className="mt-2">
-          <MaterialEditor value={contentJson} onChange={setContentJson} />
+          <MaterialEditor
+            value={contentJson}
+            onChange={setContentJson}
+            me={mf.editor}
+            isRtl={isRtl}
+          />
         </div>
       </div>
 

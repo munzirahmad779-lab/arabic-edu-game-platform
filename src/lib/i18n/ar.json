@@ -710,7 +710,49 @@
     "game_mode_competitive": "تنافسي",
     "game_mode_learning": "تعليمي",
     "game_duration_suffix": "ث",
+        "preview": {
+      "notice": "👁️ Pratinjau sebagai siswa — beginilah siswa akan melihat materi ini",
+      "back": "Kembali ke Manajemen Kelas",
+      "last_updated": "Terakhir diperbarui:"
+    },
+    "mv": {
+      "video_title": "🎬 Video",
+      "image_title": "🖼️ Gambar Ilustrasi",
+      "no_content": "Belum ada konten teks di materi ini.",
+      "pdf_title": "📄 File PDF Terlampir"
+    },
+    "pdf": {
+      "download": "Unduh PDF"
+    },
     "mf": {
+            "editor": {
+        "placeholder": "Tulis konten materi di sini...",
+        "loading": "Memuat editor...",
+        "bold": "Tebal",
+        "italic": "Miring",
+        "underline": "Garis bawah",
+        "h1": "Judul 1",
+        "h2": "Judul 2",
+        "h3": "Judul 3",
+        "bullet": "• Daftar",
+        "bullet_title": "Daftar poin",
+        "numbered": "1. Daftar",
+        "numbered_title": "Daftar bernomor",
+        "quote": "❝",
+        "quote_title": "Kutipan",
+        "align_right": "⬅",
+        "align_right_title": "Rata kanan",
+        "align_center": "⬌",
+        "align_center_title": "Rata tengah",
+        "align_left": "➡",
+        "align_left_title": "Rata kiri",
+        "hr": "―",
+        "hr_title": "Garis pemisah",
+        "undo": "↶",
+        "undo_title": "Batalkan",
+        "redo": "↷",
+        "redo_title": "Ulangi"
+      },
       "title_label": "عنوان المادة",
       "title_placeholder": "مثال: مقدمة في النحو",
       "content_label": "محتوى المادة",

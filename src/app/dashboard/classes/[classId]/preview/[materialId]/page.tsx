@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MaterialView } from "@/components/materials/material-view";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function MaterialPreviewPage({
   params,
@@ -13,6 +15,11 @@ export default async function MaterialPreviewPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const cd = dict.cd;
+  const isRtl = locale === "ar";
 
   const { data: classRow } = await supabase
     .from("classes")
@@ -35,15 +42,17 @@ export default async function MaterialPreviewPage({
   if (!material) notFound();
 
   const imageUrl = material.image_path
-    ? supabase.storage.from("question-media").getPublicUrl(material.image_path)
-        .data.publicUrl
+    ? supabase.storage
+        .from("question-media")
+        .getPublicUrl(material.image_path).data.publicUrl
     : null;
   const pdfUrl = material.pdf_path
     ? supabase.storage.from("question-media").getPublicUrl(material.pdf_path)
         .data.publicUrl
     : null;
 
-  const formattedDate = new Intl.DateTimeFormat("ar-EG", {
+  const dateLocale = isRtl ? "ar-EG" : locale;
+  const formattedDate = new Intl.DateTimeFormat(dateLocale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -52,11 +61,11 @@ export default async function MaterialPreviewPage({
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-violet-50 p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl space-y-5">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-bold text-amber-800">
-          👁️ معاينة كطالب — هذه هي الطريقة التي سيرى بها الطالب المادة
+          {cd.preview.notice}
         </div>
 
         <nav>
@@ -64,8 +73,8 @@ export default async function MaterialPreviewPage({
             href={`/dashboard/classes/${params.classId}`}
             className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
           >
-            <span>→</span>
-            <span>العودة إلى إدارة الفصل</span>
+            <span>{isRtl ? "→" : "←"}</span>
+            <span>{cd.preview.back}</span>
           </Link>
         </nav>
 
@@ -78,7 +87,7 @@ export default async function MaterialPreviewPage({
             {material.title}
           </h1>
           <p className="mt-2 text-xs text-neutral-500">
-            آخر تحديث: {formattedDate}
+            {cd.preview.last_updated} {formattedDate}
           </p>
         </header>
 
@@ -86,6 +95,8 @@ export default async function MaterialPreviewPage({
           material={material}
           imageUrl={imageUrl}
           pdfUrl={pdfUrl}
+          mv={cd.mv}
+          pdf={cd.pdf}
         />
       </div>
     </main>

@@ -710,7 +710,49 @@
     "game_mode_competitive": "Kompetitif",
     "game_mode_learning": "Pembelajaran",
     "game_duration_suffix": "dtk",
+        "preview": {
+      "notice": "👁️ معاينة كطالب — هذه هي الطريقة التي سيرى بها الطالب المادة",
+      "back": "العودة إلى إدارة الفصل",
+      "last_updated": "آخر تحديث:"
+    },
+    "mv": {
+      "video_title": "🎬 فيديو",
+      "image_title": "🖼️ صورة توضيحية",
+      "no_content": "لا يوجد محتوى نصي في هذه المادة بعد.",
+      "pdf_title": "📄 ملف PDF مرفق"
+    },
+    "pdf": {
+      "download": "تحميل PDF"
+    },
     "mf": {
+            "editor": {
+        "placeholder": "اكتب محتوى المادة هنا...",
+        "loading": "جاري تحميل المحرر...",
+        "bold": "غامق",
+        "italic": "مائل",
+        "underline": "تحته خط",
+        "h1": "عنوان 1",
+        "h2": "عنوان 2",
+        "h3": "عنوان 3",
+        "bullet": "• قائمة",
+        "bullet_title": "قائمة نقطية",
+        "numbered": "1. قائمة",
+        "numbered_title": "قائمة رقمية",
+        "quote": "❝",
+        "quote_title": "اقتباس",
+        "align_right": "⬅",
+        "align_right_title": "محاذاة يمين",
+        "align_center": "⬌",
+        "align_center_title": "توسيط",
+        "align_left": "➡",
+        "align_left_title": "محاذاة يسار",
+        "hr": "―",
+        "hr_title": "خط فاصل",
+        "undo": "↶",
+        "undo_title": "تراجع",
+        "redo": "↷",
+        "redo_title": "إعادة"
+      },
       "title_label": "Judul Materi",
       "title_placeholder": "Contoh: Pengantar Nahwu",
       "content_label": "Konten Materi",
