@@ -107,7 +107,7 @@
     "students_mgmt": "إدارة الطلاب",
     "students_mgmt_desc": "أضف الطلاب إلى فصولك وأنشئ PIN لكل طالب.",
     "open_students": "فتح إدارة الطلاب",
-        "deactivated_title": "تم تعطيل حسابك",
+    "deactivated_title": "تم تعطيل حسابك",
     "deactivated_desc": "تواصل مع المسؤول لمزيد من المعلومات.",
     "assessment_title": "محاكاة اختبار TOEFL / TOAFL",
     "assessment_desc": "أنشئ محاكاة TOEFL ITP أو TOAFL رسمية.",
@@ -561,7 +561,7 @@
     "review_no_explanation": "لا يوجد شرح متاح لهذا السؤال.",
     "review_no_question_text": "(سؤال بلا نص)"
   },
-    "assessment_entry": {
+  "assessment_entry": {
     "title": "دخول الاختبار",
     "desc": "أدخل الرمز الذي قدمه لك معلمك.",
     "label_token": "الرمز",
@@ -577,7 +577,7 @@
     "error_not_published": "لم يتم نشر الاختبار.",
     "error_start_failed": "تعذر بدء الاختبار. حاول مرة أخرى."
   },
-    "assessment_detail": {
+  "assessment_detail": {
     "back": "العودة إلى الاختبار",
     "status_published": "منشور",
     "status_draft": "مسودة",
@@ -706,52 +706,52 @@
     "header_label": "🪄 مولّد الذكاء الاصطناعي",
     "header_desc": "أنشئ أسئلة جديدة بالذكاء الاصطناعي، أو الصق مسودة أسئلتك الحالية لترتيبها تلقائيًا."
   },
-    "cd": {
+  "cd": {
     "game_mode_competitive": "تنافسي",
     "game_mode_learning": "تعليمي",
     "game_duration_suffix": "ث",
-        "preview": {
-      "notice": "👁️ Pratinjau sebagai siswa — beginilah siswa akan melihat materi ini",
-      "back": "Kembali ke Manajemen Kelas",
-      "last_updated": "Terakhir diperbarui:"
+    "preview": {
+      "notice": "👁️ معاينة كطالب — هذه هي الطريقة التي سيرى بها الطالب المادة",
+      "back": "العودة إلى إدارة الفصل",
+      "last_updated": "آخر تحديث:"
     },
     "mv": {
-      "video_title": "🎬 Video",
-      "image_title": "🖼️ Gambar Ilustrasi",
-      "no_content": "Belum ada konten teks di materi ini.",
-      "pdf_title": "📄 File PDF Terlampir"
+      "video_title": "🎬 فيديو",
+      "image_title": "🖼️ صورة توضيحية",
+      "no_content": "لا يوجد محتوى نصي في هذه المادة بعد.",
+      "pdf_title": "📄 ملف PDF مرفق"
     },
     "pdf": {
-      "download": "Unduh PDF"
+      "download": "تحميل PDF"
     },
     "mf": {
-            "editor": {
-        "placeholder": "Tulis konten materi di sini...",
-        "loading": "Memuat editor...",
-        "bold": "Tebal",
-        "italic": "Miring",
-        "underline": "Garis bawah",
-        "h1": "Judul 1",
-        "h2": "Judul 2",
-        "h3": "Judul 3",
-        "bullet": "• Daftar",
-        "bullet_title": "Daftar poin",
-        "numbered": "1. Daftar",
-        "numbered_title": "Daftar bernomor",
+      "editor": {
+        "placeholder": "اكتب محتوى المادة هنا...",
+        "loading": "جاري تحميل المحرر...",
+        "bold": "غامق",
+        "italic": "مائل",
+        "underline": "تحته خط",
+        "h1": "عنوان 1",
+        "h2": "عنوان 2",
+        "h3": "عنوان 3",
+        "bullet": "• قائمة",
+        "bullet_title": "قائمة نقطية",
+        "numbered": "1. قائمة",
+        "numbered_title": "قائمة رقمية",
         "quote": "❝",
-        "quote_title": "Kutipan",
+        "quote_title": "اقتباس",
         "align_right": "⬅",
-        "align_right_title": "Rata kanan",
+        "align_right_title": "محاذاة يمين",
         "align_center": "⬌",
-        "align_center_title": "Rata tengah",
+        "align_center_title": "توسيط",
         "align_left": "➡",
-        "align_left_title": "Rata kiri",
+        "align_left_title": "محاذاة يسار",
         "hr": "―",
-        "hr_title": "Garis pemisah",
+        "hr_title": "خط فاصل",
         "undo": "↶",
-        "undo_title": "Batalkan",
+        "undo_title": "تراجع",
         "redo": "↷",
-        "redo_title": "Ulangi"
+        "redo_title": "إعادة"
       },
       "title_label": "عنوان المادة",
       "title_placeholder": "مثال: مقدمة في النحو",
@@ -829,7 +829,7 @@
       "open_review": "← فتح صفحة المراجعة"
     }
   },
-    "qb": {
+  "qb": {
     "editor": {
       "edit_question": "تعديل السؤال",
       "delete_question": "حذف السؤال",
@@ -895,7 +895,7 @@
       "confirm_empty": "هل أنت متأكد من حذف \"{name}\"؟"
     }
   },
-    "game_room": {
+  "game_room": {
     "invalid_room_url": "رابط الغرفة غير صحيح.",
     "room_not_found": "تعذر العثور على الغرفة.",
     "game_fallback": "اللعبة",
@@ -961,7 +961,7 @@
     "archive_confirm_no_participants": "سيتم إعادة تعيين الغرفة لجلسة جديدة (نفس كود الغرفة).",
     "archive_btn": "🔄 أرشفة الجلسة وبدء جلسة جديدة"
   },
-    "games_page": {
+  "games_page": {
     "title": "الألعاب",
     "subtitle": "أنشئ لعبة واستخدم أسئلتك الحالية في تجربة تعليمية تفاعلية.",
     "back": "لوحة التحكم",
@@ -1021,7 +1021,7 @@
     "difficulty_medium": "متوسط",
     "difficulty_hard": "صعب"
   },
-    "widget": {
+  "widget": {
     "settings_title": "⚙️ الإعدادات السريعة",
     "settings_aria": "الإعدادات السريعة",
     "close": "إغلاق",
