@@ -1,0 +1,6 @@
+﻿4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\components\hero-illustration.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\assessments\[id]\ai\ai-generator.tsx
+2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\assessment\[attemptToken]\result\page.tsx
+2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\ai-prompt-section.tsx
+2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\assessment\[attemptToken]\player.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\import-form.tsx

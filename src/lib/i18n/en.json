@@ -556,5 +556,21 @@
     "review_why_hide": "Hide explanation",
     "review_no_explanation": "No explanation available for this question.",
     "review_no_question_text": "(question with no text)"
+  },
+    "assessment_entry": {
+    "title": "Enter Exam",
+    "desc": "Enter the token provided by your teacher.",
+    "label_token": "Token",
+    "placeholder_token": "ABCD1234",
+    "label_name": "Full Name",
+    "btn_start": "Start Exam →",
+    "hint_connection": "Make sure your internet connection is stable. The timer will start.",
+    "back_home": "← Back to Home",
+    "error_missing": "Token & name are required.",
+    "error_token_invalid": "Invalid token.",
+    "error_token_expired": "Token has expired.",
+    "error_token_limit": "Token has reached its usage limit.",
+    "error_not_published": "The exam has not been published.",
+    "error_start_failed": "Failed to start the exam. Please try again."
   }
 }

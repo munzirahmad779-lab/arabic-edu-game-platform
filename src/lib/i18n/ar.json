@@ -556,5 +556,21 @@
     "review_why_hide": "إخفاء السبب",
     "review_no_explanation": "لا يوجد شرح متاح لهذا السؤال.",
     "review_no_question_text": "(سؤال بلا نص)"
+  },
+    "assessment_entry": {
+    "title": "دخول الاختبار",
+    "desc": "أدخل الرمز الذي قدمه لك معلمك.",
+    "label_token": "الرمز",
+    "placeholder_token": "ABCD1234",
+    "label_name": "الاسم الكامل",
+    "btn_start": "ابدأ الاختبار ←",
+    "hint_connection": "تأكد من استقرار الاتصال بالإنترنت. سيبدأ المؤقت.",
+    "back_home": "← العودة إلى الصفحة الرئيسية",
+    "error_missing": "الرمز والاسم مطلوبان.",
+    "error_token_invalid": "الرمز غير صالح.",
+    "error_token_expired": "انتهت صلاحية الرمز.",
+    "error_token_limit": "وصل الرمز إلى حد الاستخدام.",
+    "error_not_published": "لم يتم نشر الاختبار.",
+    "error_start_failed": "تعذر بدء الاختبار. حاول مرة أخرى."
   }
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 async function startAttempt(fd: FormData) {
   "use server";
@@ -13,7 +15,7 @@ async function startAttempt(fd: FormData) {
   const name = String(fd.get("name") ?? "").trim();
 
   if (!token || !name) {
-    redirect("/assessment?error=" + encodeURIComponent("Token & nama wajib diisi."));
+    redirect("/assessment?error=missing");
   }
 
   const { data: tokenRow } = await db
@@ -24,15 +26,15 @@ async function startAttempt(fd: FormData) {
     .maybeSingle();
 
   if (!tokenRow) {
-    redirect("/assessment?error=" + encodeURIComponent("Token tidak valid."));
+    redirect("/assessment?error=token_invalid");
   }
 
   if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
-    redirect("/assessment?error=" + encodeURIComponent("Token sudah kedaluwarsa."));
+    redirect("/assessment?error=token_expired");
   }
 
   if (tokenRow.used_count >= tokenRow.max_uses) {
-    redirect("/assessment?error=" + encodeURIComponent("Token sudah mencapai batas pemakaian."));
+    redirect("/assessment?error=token_limit");
   }
 
   const { data: assessmentRow } = await db
@@ -42,7 +44,7 @@ async function startAttempt(fd: FormData) {
     .maybeSingle();
 
   if (!assessmentRow || !assessmentRow.is_published) {
-    redirect("/assessment?error=" + encodeURIComponent("Ujian belum dipublikasikan."));
+    redirect("/assessment?error=not_published");
   }
 
   const attemptToken = Array.from({ length: 64 }, () =>
@@ -64,10 +66,7 @@ async function startAttempt(fd: FormData) {
     .single();
 
   if (attemptErr || !attemptRow) {
-    redirect(
-      "/assessment?error=" +
-        encodeURIComponent("Gagal memulai ujian. Coba lagi."),
-    );
+    redirect("/assessment?error=start_failed");
   }
 
   await db
@@ -75,7 +74,6 @@ async function startAttempt(fd: FormData) {
     .update({ used_count: tokenRow.used_count + 1 })
     .eq("id", tokenRow.id);
 
-  // Buat attempt_sections untuk semua section
   const { data: sections } = await db
     .from("assessment_sections")
     .select("id, section_order")
@@ -100,8 +98,27 @@ export default async function AssessmentEntryPage({
 }: {
   searchParams: { error?: string };
 }) {
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const t = dict.assessment_entry;
+  const isRtl = locale === "ar";
+
+  const errorCode = searchParams.error;
+  const errorMap: Record<string, string> = {
+    missing: t.error_missing,
+    token_invalid: t.error_token_invalid,
+    token_expired: t.error_token_expired,
+    token_limit: t.error_token_limit,
+    not_published: t.error_not_published,
+    start_failed: t.error_start_failed,
+  };
+  const errorMessage = errorCode ? (errorMap[errorCode] ?? errorCode) : null;
+
   return (
-    <main className="min-h-screen bg-warmwhite p-4 sm:p-6">
+    <main
+      dir={isRtl ? "rtl" : "ltr"}
+      className="min-h-screen bg-warmwhite p-4 sm:p-6"
+    >
       <div className="mx-auto max-w-md space-y-6 py-12">
         <div className="flex justify-center">
           <Image
@@ -116,16 +133,14 @@ export default async function AssessmentEntryPage({
 
         <div className="text-center">
           <h1 className="font-display text-3xl font-black text-teal-700">
-            Masuk Ujian
+            {t.title}
           </h1>
-          <p className="mt-2 text-sm text-softslate/70">
-            Masukkan token yang diberikan guru Anda.
-          </p>
+          <p className="mt-2 text-sm text-softslate/70">{t.desc}</p>
         </div>
 
-        {searchParams.error ? (
+        {errorMessage ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
-            {searchParams.error}
+            {errorMessage}
           </div>
         ) : null}
 
@@ -135,7 +150,7 @@ export default async function AssessmentEntryPage({
               htmlFor="token"
               className="block text-sm font-bold text-teal-700"
             >
-              Token
+              {t.label_token}
             </label>
             <input
               id="token"
@@ -145,7 +160,7 @@ export default async function AssessmentEntryPage({
               maxLength={8}
               minLength={8}
               autoComplete="off"
-              placeholder="ABCD1234"
+              placeholder={t.placeholder_token}
               autoFocus
               className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-4 py-3 text-center text-lg font-mono font-black tracking-[0.3em] uppercase outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
               dir="ltr"
@@ -157,7 +172,7 @@ export default async function AssessmentEntryPage({
               htmlFor="name"
               className="block text-sm font-bold text-teal-700"
             >
-              Nama Lengkap
+              {t.label_name}
             </label>
             <input
               id="name"
@@ -171,11 +186,11 @@ export default async function AssessmentEntryPage({
           </div>
 
           <button type="submit" className="btn-primary w-full">
-            Mulai Ujian →
+            {t.btn_start}
           </button>
 
           <p className="text-center text-xs text-softslate/60">
-            Pastikan koneksi internet stabil. Timer akan mulai berjalan.
+            {t.hint_connection}
           </p>
         </form>
 
@@ -184,7 +199,7 @@ export default async function AssessmentEntryPage({
             href="/"
             className="text-xs font-bold text-teal-700 underline-offset-4 hover:underline"
           >
-            ← Kembali ke Halaman Utama
+            {t.back_home}
           </Link>
         </div>
       </div>

@@ -1,0 +1,15 @@
+﻿4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\admin\student-sessions.tsx
+4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\admin\reset-password-button.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\students\delete-history-button.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\essays\[essayId]\review-list.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\admin\teacher-list.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\reports\report-view.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\settings\audio\audio-track-list.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\student\practice\[gameId]\practice-player.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\reset-password\page.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\question-editor.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\material-sortable-list.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\essay-list.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\games\[gameId]\room\archive-button.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\media-manager.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\delete-bank-form.tsx

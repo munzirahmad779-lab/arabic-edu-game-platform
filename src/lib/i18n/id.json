@@ -556,5 +556,21 @@
     "review_why_hide": "Sembunyikan penjelasan",
     "review_no_explanation": "Belum ada penjelasan untuk soal ini.",
     "review_no_question_text": "(soal tanpa teks)"
+  },
+  "assessment_entry": {
+    "title": "Masuk Ujian",
+    "desc": "Masukkan token yang diberikan guru Anda.",
+    "label_token": "Token",
+    "placeholder_token": "ABCD1234",
+    "label_name": "Nama Lengkap",
+    "btn_start": "Mulai Ujian →",
+    "hint_connection": "Pastikan koneksi internet stabil. Timer akan mulai berjalan.",
+    "back_home": "← Kembali ke Halaman Utama",
+    "error_missing": "Token & nama wajib diisi.",
+    "error_token_invalid": "Token tidak valid.",
+    "error_token_expired": "Token sudah kedaluwarsa.",
+    "error_token_limit": "Token sudah mencapai batas pemakaian.",
+    "error_not_published": "Ujian belum dipublikasikan.",
+    "error_start_failed": "Gagal memulai ujian. Coba lagi."
   }
 }
