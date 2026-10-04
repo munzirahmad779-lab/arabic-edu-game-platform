@@ -50,6 +50,7 @@ export default async function ClassDetailPage({
   const dict = await getDictionary(locale);
   const t = dict.class_detail;
   const c = dict.common;
+  const cd = dict.cd;
   const isRtl = locale === "ar";
 
   const { data: classRow, error: classError } = await supabase
@@ -276,7 +277,7 @@ export default async function ClassDetailPage({
             <h3 className="mb-4 text-base font-black text-terracotta-600">
               {t.essay_create_title}
             </h3>
-            <EssayForm classId={classRow.id} />
+            <EssayForm classId={classRow.id} ef={cd.ef} />
             <div className="mt-3">
               <Link
                 href={`/dashboard/classes/${classRow.id}`}
@@ -288,7 +289,7 @@ export default async function ClassDetailPage({
           </div>
         ) : null}
 
-        <EssayList essays={essays} classId={classRow.id} />
+        <EssayList essays={essays} classId={classRow.id} el={cd.el} />
       </section>
 
       {/* Materials */}
@@ -330,6 +331,7 @@ export default async function ClassDetailPage({
                     mode="edit"
                     classId={classRow.id}
                     action={updateMaterial}
+                    mf={cd.mf}
                     initialData={{
                       id: editing.id,
                       title: editing.title,
@@ -348,6 +350,7 @@ export default async function ClassDetailPage({
                 mode="create"
                 classId={classRow.id}
                 action={createMaterial}
+                mf={cd.mf}
               />
             )}
             <div className="mt-3">
@@ -373,6 +376,7 @@ export default async function ClassDetailPage({
             has_pdf: Boolean(m.pdf_path),
           }))}
           classId={classRow.id}
+          ml={cd.ml}
         />
       </section>
 
@@ -475,17 +479,10 @@ export default async function ClassDetailPage({
                   <div className="font-bold text-teal-700">{game.name}</div>
                   <div className="mt-1 text-xs text-softslate/70">
                     {game.mode === "competitive"
-                      ? isRtl
-                        ? "تنافسي"
-                        : locale === "en"
-                          ? "Competitive"
-                          : "Kompetitif"
-                      : isRtl
-                        ? "تعليمي"
-                        : locale === "en"
-                          ? "Learning"
-                          : "Pembelajaran"}{" "}
-                    · {game.duration_seconds}s
+                      ? cd.game_mode_competitive
+                      : cd.game_mode_learning}{" "}
+                    · {game.duration_seconds}
+                    {cd.game_duration_suffix}
                   </div>
                 </div>
                 <Link

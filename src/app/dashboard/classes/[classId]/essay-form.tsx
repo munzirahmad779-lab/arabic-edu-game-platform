@@ -3,7 +3,32 @@
 import { useState } from "react";
 import { createEssay } from "./essay-actions";
 
-export function EssayForm({ classId }: { classId: string }) {
+type EssayFormDict = {
+  title_label: string;
+  title_placeholder: string;
+  theme_label: string;
+  theme_placeholder: string;
+  theme_hint: string;
+  question_label: string;
+  question_placeholder: string;
+  ideal_label: string;
+  ideal_placeholder: string;
+  duration_label: string;
+  rubric_title: string;
+  rubric_content: string;
+  rubric_grammar: string;
+  rubric_vocab: string;
+  submit: string;
+  submitting: string;
+};
+
+export function EssayForm({
+  classId,
+  ef,
+}: {
+  classId: string;
+  ef: EssayFormDict;
+}) {
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -22,7 +47,7 @@ export function EssayForm({ classId }: { classId: string }) {
           htmlFor="essay-title"
           className="block text-sm font-bold text-neutral-800"
         >
-          عنوان المهمة
+          {ef.title_label}
         </label>
         <input
           id="essay-title"
@@ -30,7 +55,7 @@ export function EssayForm({ classId }: { classId: string }) {
           type="text"
           required
           maxLength={200}
-          placeholder="مثال: اكتب فقرة عن النحو"
+          placeholder={ef.title_placeholder}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
@@ -40,20 +65,17 @@ export function EssayForm({ classId }: { classId: string }) {
           htmlFor="essay-theme"
           className="block text-sm font-bold text-neutral-800"
         >
-          الموضوع / تلميح للطالب (اختياري)
+          {ef.theme_label}
         </label>
         <input
           id="essay-theme"
           name="theme"
           type="text"
           maxLength={300}
-          placeholder="مثال: الجملة الاسمية والفعلية"
+          placeholder={ef.theme_placeholder}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
-        <p className="mt-1 text-xs text-neutral-500">
-          يظهر هذا التلميح للطالب في صفحة البداية. السؤال الكامل لا يظهر حتى
-          يبدأ الطالب الكتابة.
-        </p>
+        <p className="mt-1 text-xs text-neutral-500">{ef.theme_hint}</p>
       </div>
 
       <div>
@@ -61,7 +83,7 @@ export function EssayForm({ classId }: { classId: string }) {
           htmlFor="essay-question"
           className="block text-sm font-bold text-neutral-800"
         >
-          السؤال الكامل (لن يظهر للطالب إلا بعد بدء الكتابة)
+          {ef.question_label}
         </label>
         <textarea
           id="essay-question"
@@ -69,7 +91,7 @@ export function EssayForm({ classId }: { classId: string }) {
           required
           maxLength={5000}
           rows={4}
-          placeholder="اكتب فقرة من 5 أسطر تصف فيها..."
+          placeholder={ef.question_placeholder}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
@@ -79,14 +101,14 @@ export function EssayForm({ classId }: { classId: string }) {
           htmlFor="essay-ideal"
           className="block text-sm font-bold text-neutral-800"
         >
-          الإجابة المثالية (مرجع للذكاء الاصطناعي — اختياري)
+          {ef.ideal_label}
         </label>
         <textarea
           id="essay-ideal"
           name="ideal_answer"
           maxLength={5000}
           rows={4}
-          placeholder="اكتب نموذج الإجابة المثالية لمساعدة AI في التقييم"
+          placeholder={ef.ideal_placeholder}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
@@ -96,7 +118,7 @@ export function EssayForm({ classId }: { classId: string }) {
           htmlFor="essay-duration"
           className="block text-sm font-bold text-neutral-800"
         >
-          مدة الكتابة بالدقائق
+          {ef.duration_label}
         </label>
         <input
           id="essay-duration"
@@ -112,13 +134,11 @@ export function EssayForm({ classId }: { classId: string }) {
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-        <p className="text-sm font-bold text-neutral-800">
-          معايير التقييم (يجب أن يكون المجموع 100)
-        </p>
+        <p className="text-sm font-bold text-neutral-800">{ef.rubric_title}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div>
             <label className="block text-xs font-bold text-neutral-600">
-              المحتوى والأفكار
+              {ef.rubric_content}
             </label>
             <input
               name="rubric_content"
@@ -132,7 +152,7 @@ export function EssayForm({ classId }: { classId: string }) {
           </div>
           <div>
             <label className="block text-xs font-bold text-neutral-600">
-              القواعد النحوية
+              {ef.rubric_grammar}
             </label>
             <input
               name="rubric_grammar"
@@ -146,7 +166,7 @@ export function EssayForm({ classId }: { classId: string }) {
           </div>
           <div>
             <label className="block text-xs font-bold text-neutral-600">
-              المفردات والأسلوب
+              {ef.rubric_vocab}
             </label>
             <input
               name="rubric_vocabulary"
@@ -166,7 +186,7 @@ export function EssayForm({ classId }: { classId: string }) {
         disabled={submitting}
         className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 disabled:opacity-60"
       >
-        {submitting ? "..." : "➕ إنشاء مهمة كتابة"}
+        {submitting ? ef.submitting : ef.submit}
       </button>
     </form>
   );
