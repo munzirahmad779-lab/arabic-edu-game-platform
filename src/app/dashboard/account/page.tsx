@@ -63,7 +63,7 @@ export default async function AccountPage({
       <ProfileForm
         initialName={profile?.full_name ?? ""}
         email={profile?.email ?? user.email ?? ""}
-        dict={dict}
+        dict={dict as never}
       />
 
       <div className="rounded-[2rem] border border-amber-100 bg-amber-50/60 p-5">

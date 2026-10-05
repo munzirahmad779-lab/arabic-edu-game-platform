@@ -1,4 +1,4 @@
-﻿import { notFound, redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
@@ -52,7 +52,7 @@ export default async function EssayPlayPage({
       essay={essay}
       studentName={session.name}
       className={session.class_name}
-      dict={dict as never}
+      dict={dict}
       locale={locale}
     />
   );

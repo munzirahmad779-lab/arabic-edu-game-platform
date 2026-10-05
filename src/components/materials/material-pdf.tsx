@@ -5,8 +5,10 @@ export function MaterialPdf({
 }: {
   url: string;
   title: string;
-  pdf: { download: string };
+  pdf?: { download: string };
 }) {
+  const downloadLabel = pdf?.download ?? "Download PDF";
+
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-md">
       <div className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50 px-4 py-3">
@@ -23,7 +25,7 @@ export function MaterialPdf({
           download
           className="shrink-0 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
         >
-          {pdf.download}
+          {downloadLabel}
         </a>
       </div>
       <div className="relative aspect-[4/5] w-full bg-neutral-100 sm:aspect-[4/3]">

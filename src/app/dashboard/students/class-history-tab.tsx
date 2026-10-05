@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeleteHistoryButton } from "./delete-history-button";
 import { toWibDate } from "@/lib/format-wib";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type HistoryRow = {
   student_id: string;
@@ -14,12 +16,12 @@ type HistoryRow = {
   last_activity: string | null;
 };
 
-const MODE_AR: Record<string, string> = {
-  competitive: "تنافسي",
-  cooperative: "تعاوني",
-  endless: "بلا نهاية",
-  practice: "تمرين",
-  learning: "تعليمي",
+const MODE_KEY: Record<string, string> = {
+  competitive: "mode_competitive",
+  cooperative: "mode_cooperative",
+  endless: "mode_endless",
+  practice: "mode_practice",
+  learning: "mode_learning",
 };
 
 const MODE_COLOR: Record<string, string> = {
@@ -33,6 +35,10 @@ const MODE_COLOR: Record<string, string> = {
 export async function ClassHistoryTab({ classId }: { classId: string }) {
   const supabase = await createClient();
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const t = dict.class_history;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc("teacher_class_history", {
     p_class_id: classId,
@@ -41,7 +47,8 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
   if (error) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-        تعذر تحميل السجل: {error.message}
+        {t.load_error_prefix}
+        {error.message}
       </div>
     );
   }
@@ -53,11 +60,9 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
       <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
         <div className="text-4xl">📊</div>
         <p className="mt-3 text-sm font-bold text-neutral-700">
-          لا توجد نتائج بعد لهذا الفصل
+          {t.empty_title}
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
-          عندما يلعب الطلاب أو يتدربون، ستظهر النتائج هنا.
-        </p>
+        <p className="mt-1 text-xs text-neutral-500">{t.empty_desc}</p>
       </div>
     );
   }
@@ -72,11 +77,15 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
 
   const students = Array.from(byStudent.entries());
 
+  const modeLabel = (mode: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (t as any)[MODE_KEY[mode] ?? "mode_competitive"] ?? mode;
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-        💡 اضغط على اسم الطالب لعرض تفاصيل كل وضع. يمكنك حذف سجل وضع معيّن
-        بزر 🗑 بجانب اسم الوضع، أو حذف كل السجلات من الزر الأحمر.
+        {t.hint}
       </div>
 
       <div className="space-y-3">
@@ -100,15 +109,15 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
               <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-lg font-black text-white">
-                    {info.name.trim().charAt(0) || "ط"}
+                    {info.name.trim().charAt(0) || "?"}
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-black text-neutral-900">
                       {info.name}
                     </p>
                     <p className="mt-0.5 text-xs text-neutral-500">
-                      {info.rows.length} وضع · {totalCorrect}/{totalQ} صحيح (
-                      {overallPct}%)
+                      {info.rows.length} {t.modes_word} · {totalCorrect}/
+                      {totalQ} {t.correct_word} ({overallPct}%)
                     </p>
                   </div>
                 </div>
@@ -116,6 +125,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                 <DeleteHistoryButton
                   studentId={studentId}
                   studentName={info.name}
+                  dict={dict.delete_history}
                 />
               </div>
 
@@ -141,16 +151,17 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                               "bg-neutral-100 text-neutral-700"
                             }`}
                           >
-                            {MODE_AR[r.mode] ?? r.mode}
+                            {modeLabel(r.mode)}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-neutral-500">
-                              {r.sessions_count} جلسة
+                              {r.sessions_count} {t.sessions_word}
                             </span>
                             <DeleteHistoryButton
                               studentId={studentId}
                               studentName={info.name}
                               mode={r.mode}
+                              dict={dict.delete_history}
                             />
                           </div>
                         </div>
@@ -159,7 +170,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                           {r.best_score !== null ? (
                             <div className="rounded-xl bg-neutral-50 p-2">
                               <div className="text-[10px] font-bold text-neutral-500">
-                                أفضل نتيجة
+                                {t.best_score}
                               </div>
                               <div className="mt-0.5 text-lg font-black text-emerald-700">
                                 {r.best_score}
@@ -169,7 +180,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                           {r.avg_score !== null ? (
                             <div className="rounded-xl bg-neutral-50 p-2">
                               <div className="text-[10px] font-bold text-neutral-500">
-                                المتوسط
+                                {t.avg_score}
                               </div>
                               <div className="mt-0.5 text-lg font-black text-violet-700">
                                 {r.avg_score}
@@ -178,7 +189,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                           ) : null}
                           <div className="rounded-xl bg-neutral-50 p-2">
                             <div className="text-[10px] font-bold text-neutral-500">
-                              صحيح
+                              {t.correct_label}
                             </div>
                             <div className="mt-0.5 text-lg font-black text-neutral-800">
                               {r.correct_count}/{r.total_questions}
@@ -186,7 +197,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                           </div>
                           <div className="rounded-xl bg-neutral-50 p-2">
                             <div className="text-[10px] font-bold text-neutral-500">
-                              النسبة
+                              {t.percent_label}
                             </div>
                             <div className="mt-0.5 text-lg font-black text-amber-700">
                               {pct}%
@@ -195,7 +206,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                         </div>
 
                         <p className="mt-2 text-center text-[10px] text-neutral-400">
-                          آخر نشاط: {toWibDate(r.last_activity)} WIB
+                          {t.last_activity} {toWibDate(r.last_activity)} WIB
                         </p>
                       </div>
                     );

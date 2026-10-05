@@ -1021,7 +1021,7 @@
     "difficulty_medium": "Sedang",
     "difficulty_hard": "Sulit"
   },
-  "join_errors": {
+    "join_errors": {
     "incomplete": "Data bergabung tidak lengkap.",
     "room_not_found": "Kode ruangan salah.",
     "room_not_open": "Ruangan ini tidak lagi terbuka untuk bergabung.",

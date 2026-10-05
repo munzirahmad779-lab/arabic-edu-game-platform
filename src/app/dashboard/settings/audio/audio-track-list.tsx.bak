@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { deleteAudioTrack, toggleAudioTrack } from "./actions";
@@ -64,7 +64,7 @@ export function AudioTrackList({
                 mode="edit"
                 track={track}
                 onCancel={() => setEditingId(null)}
-                dict={dict as never}
+                dict={dict}
               />
             ) : (
               <div className="space-y-3">

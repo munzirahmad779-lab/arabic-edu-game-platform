@@ -86,8 +86,8 @@ export default async function AdminPage() {
         <p className="mt-2 text-sm text-white/85">{t.header_desc}</p>
       </header>
 
-      <TeacherList teachers={teachers} dict={dict} />
-      <StudentSessions sessions={sessions} dict={dict} />
+      <TeacherList teachers={teachers} dict={dict as never} />
+      <StudentSessions sessions={sessions} dict={dict as never} />
     </main>
   );
 }

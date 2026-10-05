@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -146,7 +146,7 @@ export function TeacherList({
                 <ResetPasswordButton
                   email={teacher.email}
                   name={teacher.full_name || ""}
-                  dict={dict as never}
+                  dict={dict}
                 />
 
                 <button

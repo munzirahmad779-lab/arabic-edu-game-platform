@@ -21,7 +21,7 @@ export function PortalLinkBox({ url }: { url: string }) {
       onClick={() => void copy()}
       className="shrink-0 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-emerald-700"
     >
-      {copied ? "✓ تم النسخ" : "📋 نسخ الرابط"}
+      {copied ? "✓" : "📋"}
     </button>
   );
 }

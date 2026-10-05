@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReportView } from "./report-view";
@@ -80,7 +80,7 @@ export default async function ReportsPage({
         date={date}
         roomRows={roomRows}
         practiceRows={practiceRows}
-        dict={dict as never}
+        dict={dict}
       />
     </main>
   );

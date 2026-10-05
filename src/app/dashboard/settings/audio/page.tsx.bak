@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AudioTrackForm } from "./audio-track-form";
@@ -121,7 +121,7 @@ export default async function AudioSettingsPage({
         <h2 className="mb-4 text-lg font-black text-neutral-900">
           {t.add_title}
         </h2>
-        <AudioTrackForm mode="create" dict={dict as never} />
+        <AudioTrackForm mode="create" dict={dict} />
       </section>
 
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-xl">
@@ -133,7 +133,7 @@ export default async function AudioSettingsPage({
             {list.length}
           </span>
         </div>
-        <AudioTrackList tracks={list} dict={dict as never} />
+        <AudioTrackList tracks={list} dict={dict} />
       </section>
 
       <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
