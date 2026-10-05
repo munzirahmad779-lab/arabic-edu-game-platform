@@ -1033,7 +1033,9 @@
     "invalid_pin": "Invalid PIN.",
     "student_not_found": "Student not found in this class.",
     "already_joined": "This student is already in the room.",
-    "generic": "Failed to join the room."
+    "generic": "Failed to join the room.",
+    "pin_required": "PIN is required for this class.",
+    "invalid_name": "Invalid name."
   },
   "class_history": {
     "load_error_prefix": "Failed to load history: ",
@@ -1178,7 +1180,7 @@
     "empty_classes": "No classes yet. Start by creating your first class.",
     "empty_activities": "No activity yet."
   },
-    "student_home": {
+  "student_home": {
     "welcome_title": "Hello, {name} 👋",
     "welcome_subtitle": "Ready to learn today?",
     "exam_card_title": "Take TOEFL / TOAFL Exam",
@@ -1195,7 +1197,7 @@
     "materials_updated": "Updated",
     "logout": "Logout"
   },
-    "anagram": {
+  "anagram": {
     "title": "Spelling Master",
     "instruction": "Arrange the letters into the correct answer",
     "hint_label": "Hint",

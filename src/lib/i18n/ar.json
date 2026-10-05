@@ -715,7 +715,9 @@
     "invalid_pin": "رمز PIN غير صحيح.",
     "student_not_found": "لم يتم العثور على هذا الطالب في الفصل.",
     "already_joined": "هذا الطالب موجود بالفعل في الغرفة.",
-    "generic": "تعذر الانضمام إلى الغرفة."
+    "generic": "تعذر الانضمام إلى الغرفة.",
+    "pin_required": "PIN مطلوب لهذا الفصل.",
+    "invalid_name": "الاسم غير صالح."
   },
   "class_history": {
     "load_error_prefix": "تعذر تحميل السجل: ",
@@ -1178,7 +1180,7 @@
     "empty_classes": "لا توجد فصول بعد. ابدأ بإنشاء فصلك الأول.",
     "empty_activities": "لا يوجد نشاط بعد."
   },
-    "student_home": {
+  "student_home": {
     "welcome_title": "مرحبًا، {name} 👋",
     "welcome_subtitle": "هل أنت مستعد للتعلم اليوم؟",
     "exam_card_title": "أدِّ اختبار TOEFL / TOAFL",
@@ -1195,7 +1197,7 @@
     "materials_updated": "آخر تحديث",
     "logout": "تسجيل الخروج"
   },
-    "anagram": {
+  "anagram": {
     "title": "ترتيب الحروف",
     "instruction": "رتّب الحروف لتكوين الإجابة الصحيحة",
     "hint_label": "تلميح",

@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "No tracks yet. Go to Music Settings to add tracks.",
     "backsound_hint": "This music will play during gameplay for this specific game."
   },
-    "questions_picker": {
+  "questions_picker": {
     "legend": "Choose Questions",
     "selected_badge": "✓ {count} questions selected",
     "hint_open": "Click any bank name to open it and pick questions.",
@@ -1072,7 +1072,7 @@
     "copy": "📋 Copy Link",
     "copied": "✓ Copied"
   },
-    "review_list": {
+  "review_list": {
     "empty_title": "No answers yet",
     "empty_desc": "Waiting for students to submit their answers.",
     "err_range": "Score must be between 0 and 100.",
@@ -1118,7 +1118,7 @@
     "save_btn": "Save New Password",
     "submitting": "..."
   },
-    "status": {
+  "status": {
     "loading": "Loading...",
     "error_title": "An unexpected error occurred",
     "error_desc": "An error occurred while processing the request. Please try again.",
@@ -1127,7 +1127,7 @@
     "not_found_desc": "The page you're looking for doesn't exist or has been moved.",
     "not_found_back": "Back to Home"
   },
-    "sidebar": {
+  "sidebar": {
     "group_data": "Data",
     "group_activity": "Activity",
     "group_other": "Other",
@@ -1145,27 +1145,6 @@
     "menu_close": "Close menu"
   },
   "dashboard_home": {
-    "greeting_morning": "Good morning",
-    "greeting_afternoon": "Good afternoon",
-    "greeting_evening": "Good evening",
-    "welcome_subtitle": "Have a great day!",
-    "quick_actions_title": "⚡ Quick Actions",
-    "quick_add_class": "Add Class",
-    "quick_add_student": "Add Student",
-    "quick_add_game": "Create Game",
-    "quick_add_question": "Add Question",
-    "quick_add_exam": "Create Exam",
-    "quick_add_material": "Add Material",
-    "today_summary_title": "📊 Today's Summary",
-    "today_games": "Games played",
-    "today_essays_pending": "Essays pending",
-    "today_exams_active": "Active exams",
-    "today_students_active": "Active students today",
-    "recent_activity_title": "📋 Recent Activity",
-    "recent_activity_empty": "No activity yet.",
-    "no_data": "No data."
-  },
-    "dashboard_home": {
     "greeting_morning": "Good morning",
     "greeting_afternoon": "Good afternoon",
     "greeting_evening": "Good evening",
@@ -1198,6 +1177,56 @@
     "quick_add_exam": "+ Exam",
     "empty_classes": "No classes yet. Start by creating your first class.",
     "empty_activities": "No activity yet."
+  },
+    "student_home": {
+    "welcome_title": "Hello, {name} 👋",
+    "welcome_subtitle": "Ready to learn today?",
+    "exam_card_title": "Take TOEFL / TOAFL Exam",
+    "exam_card_desc": "Have a token from your teacher? Enter it here to take the exam.",
+    "card_practice_title": "Self Practice",
+    "card_practice_desc": "Practice your teacher's questions — no time limit, anytime.",
+    "card_essay_title": "Writing Tasks",
+    "card_essay_desc": "Write your answer, get instant AI score.",
+    "card_guided_title": "Join Class Game",
+    "card_guided_desc": "Enter the room code from your teacher to play.",
+    "materials_title": "📖 Learning Materials",
+    "materials_count_suffix": "materials",
+    "materials_empty": "No published materials yet.",
+    "materials_updated": "Updated",
+    "logout": "Logout"
+  },
+    "anagram": {
+    "title": "Spelling Master",
+    "instruction": "Arrange the letters into the correct answer",
+    "hint_label": "Hint",
+    "submit": "Check",
+    "clear": "Clear All",
+    "backspace": "Remove 1",
+    "correct": "✓ Correct!",
+    "wrong": "✗ Wrong — answer: {answer}",
+    "next": "Next Question",
+    "finish": "View Score",
+    "no_letters": "Pick letters first",
+    "no_questions": "No questions in this game.",
+    "score_label": "Score",
+    "correct_count": "Correct",
+    "time_label": "Time",
+    "shuffled_hint": "Letters are shuffled",
+    "skip": "Skip"
+  },
+  "matching": {
+    "title": "Matching Pairs",
+    "instruction": "Open two cards — match the question with its answer",
+    "pairs_label": "Pairs",
+    "moves_label": "Moves",
+    "match_found": "✓ Matched!",
+    "match_wrong": "✗ Not a pair",
+    "finish": "Finish",
+    "no_questions": "No questions for this mode.",
+    "score_label": "Score",
+    "time_label": "Time",
+    "restart": "Restart",
+    "all_done": "All pairs matched!"
   },
   "widget": {
     "settings_title": "⚙️ Quick Settings",

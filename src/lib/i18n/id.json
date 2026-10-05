@@ -1033,7 +1033,11 @@
     "invalid_pin": "PIN salah.",
     "student_not_found": "Siswa tidak ditemukan di kelas ini.",
     "already_joined": "Siswa ini sudah ada di ruangan.",
-    "generic": "Gagal bergabung ke ruangan."
+        "pin_required": "PIN wajib diisi untuk kelas ini.",
+    "invalid_name": "Nama tidak valid.",
+    "generic": "Gagal bergabung ke ruangan.",
+    "pin_required": "PIN wajib diisi untuk kelas ini.",
+    "invalid_name": "Nama tidak valid."
   },
   "class_history": {
     "load_error_prefix": "Gagal memuat riwayat: ",

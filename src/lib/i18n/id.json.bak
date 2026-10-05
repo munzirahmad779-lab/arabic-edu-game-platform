@@ -1178,7 +1178,7 @@
     "empty_classes": "Belum ada kelas. Mulai dengan membuat kelas pertama Anda.",
     "empty_activities": "Belum ada aktivitas."
   },
-    "student_home": {
+  "student_home": {
     "welcome_title": "Halo, {name} 👋",
     "welcome_subtitle": "Siap belajar hari ini?",
     "exam_card_title": "Ikut Ujian TOEFL / TOAFL",
@@ -1195,7 +1195,7 @@
     "materials_updated": "Diperbarui",
     "logout": "Keluar"
   },
-    "anagram": {
+  "anagram": {
     "title": "Susun Huruf",
     "instruction": "Susun huruf menjadi jawaban yang benar",
     "hint_label": "Petunjuk",

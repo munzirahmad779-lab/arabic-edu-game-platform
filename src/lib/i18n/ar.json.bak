@@ -688,7 +688,7 @@
     "backsound_empty_hint": "لا توجد مقاطع محمّلة. اذهب إلى إعدادات الموسيقى لإضافة مقاطع.",
     "backsound_hint": "سيتم تشغيل هذه الموسيقى أثناء اللعب في هذه اللعبة تحديدًا."
   },
-    "questions_picker": {
+  "questions_picker": {
     "legend": "اختر الأسئلة",
     "selected_badge": "✓ تم اختيار {count} سؤال",
     "hint_open": "اضغط على اسم أي بنك لفتحه واختيار الأسئلة منه.",
@@ -754,7 +754,7 @@
     "copy": "📋 نسخ الرابط",
     "copied": "✓ تم النسخ"
   },
-    "assessment_detail": {
+  "assessment_detail": {
     "back": "العودة إلى الاختبار",
     "status_published": "منشور",
     "status_draft": "مسودة",
@@ -1072,7 +1072,7 @@
       "confirm_empty": "هل أنت متأكد من حذف \"{name}\"؟"
     }
   },
-    "review_list": {
+  "review_list": {
     "empty_title": "لا توجد إجابات بعد",
     "empty_desc": "في انتظار أن يسلم الطلاب إجاباتهم.",
     "err_range": "الدرجة يجب أن تكون بين 0 و100.",
@@ -1118,7 +1118,7 @@
     "save_btn": "حفظ كلمة المرور الجديدة",
     "submitting": "..."
   },
-    "status": {
+  "status": {
     "loading": "جارٍ التحميل...",
     "error_title": "حدث خطأ غير متوقع",
     "error_desc": "حدث خطأ أثناء معالجة الطلب. حاول مرة أخرى.",
@@ -1127,7 +1127,7 @@
     "not_found_desc": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
     "not_found_back": "العودة إلى الصفحة الرئيسية"
   },
-    "sidebar": {
+  "sidebar": {
     "group_data": "البيانات",
     "group_activity": "الأنشطة",
     "group_other": "أخرى",
@@ -1145,27 +1145,6 @@
     "menu_close": "إغلاق القائمة"
   },
   "dashboard_home": {
-    "greeting_morning": "صباح الخير",
-    "greeting_afternoon": "مساء الخير",
-    "greeting_evening": "مساء الخير",
-    "welcome_subtitle": "أتمنى لك يومًا سعيدًا!",
-    "quick_actions_title": "⚡ إجراءات سريعة",
-    "quick_add_class": "إضافة فصل",
-    "quick_add_student": "إضافة طالب",
-    "quick_add_game": "إنشاء لعبة",
-    "quick_add_question": "إضافة سؤال",
-    "quick_add_exam": "إنشاء اختبار",
-    "quick_add_material": "إضافة مادة",
-    "today_summary_title": "📊 ملخص اليوم",
-    "today_games": "الألعاب التي لُعبت",
-    "today_essays_pending": "المقالات المعلّقة",
-    "today_exams_active": "الاختبارات النشطة",
-    "today_students_active": "الطلاب النشطون اليوم",
-    "recent_activity_title": "📋 آخر الأنشطة",
-    "recent_activity_empty": "لا يوجد نشاط بعد.",
-    "no_data": "لا توجد بيانات."
-  },
-    "dashboard_home": {
     "greeting_morning": "صباح الخير",
     "greeting_afternoon": "مساء الخير",
     "greeting_evening": "مساء الخير",
@@ -1198,6 +1177,56 @@
     "quick_add_exam": "+ اختبار",
     "empty_classes": "لا توجد فصول بعد. ابدأ بإنشاء فصلك الأول.",
     "empty_activities": "لا يوجد نشاط بعد."
+  },
+    "student_home": {
+    "welcome_title": "مرحبًا، {name} 👋",
+    "welcome_subtitle": "هل أنت مستعد للتعلم اليوم؟",
+    "exam_card_title": "أدِّ اختبار TOEFL / TOAFL",
+    "exam_card_desc": "هل لديك رمز من معلمك؟ أدخله هنا لبدء الاختبار.",
+    "card_practice_title": "تدريب ذاتي",
+    "card_practice_desc": "تدرّب على أسئلة معلمك — بلا وقت، في أي وقت.",
+    "card_essay_title": "مهام الكتابة",
+    "card_essay_desc": "اكتب إجابتك واحصل على تقييم AI فوري.",
+    "card_guided_title": "انضم إلى لعبة الفصل",
+    "card_guided_desc": "أدخل كود الغرفة من معلمك للبدء في اللعب.",
+    "materials_title": "📖 المواد الدراسية",
+    "materials_count_suffix": "مادة",
+    "materials_empty": "لا توجد مواد منشورة بعد.",
+    "materials_updated": "آخر تحديث",
+    "logout": "تسجيل الخروج"
+  },
+    "anagram": {
+    "title": "ترتيب الحروف",
+    "instruction": "رتّب الحروف لتكوين الإجابة الصحيحة",
+    "hint_label": "تلميح",
+    "submit": "تحقق",
+    "clear": "حذف الكل",
+    "backspace": "حذف واحد",
+    "correct": "✓ صحيح!",
+    "wrong": "✗ خطأ — الإجابة: {answer}",
+    "next": "السؤال التالي",
+    "finish": "عرض النتيجة",
+    "no_letters": "اختر الحروف أولًا",
+    "no_questions": "لا توجد أسئلة في هذه اللعبة.",
+    "score_label": "النتيجة",
+    "correct_count": "صحيح",
+    "time_label": "الوقت",
+    "shuffled_hint": "الحروف مبعثرة",
+    "skip": "تخطّى"
+  },
+  "matching": {
+    "title": "مطابقة الكلمات",
+    "instruction": "افتح بطاقتين — طابق السؤال مع إجابته",
+    "pairs_label": "أزواج",
+    "moves_label": "الحركات",
+    "match_found": "✓ تطابق!",
+    "match_wrong": "✗ ليس زوجًا",
+    "finish": "إنهاء",
+    "no_questions": "لا توجد أسئلة لهذا الوضع.",
+    "score_label": "النتيجة",
+    "time_label": "الوقت",
+    "restart": "إعادة",
+    "all_done": "كل الأزواج مطابقة!"
   },
   "widget": {
     "settings_title": "⚙️ الإعدادات السريعة",
