@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "Belum ada track. Buka Pengaturan Musik untuk menambah.",
     "backsound_hint": "Musik ini akan diputar selama bermain di permainan ini."
   },
-    "questions_picker": {
+  "questions_picker": {
     "legend": "Pilih Soal",
     "selected_badge": "✓ {count} soal dipilih",
     "hint_open": "Klik nama bank untuk membuka dan pilih soal.",
@@ -1072,7 +1072,7 @@
     "copy": "📋 Salin Link",
     "copied": "✓ Tersalin"
   },
-    "review_list": {
+  "review_list": {
     "empty_title": "Belum ada jawaban",
     "empty_desc": "Menunggu siswa mengumpulkan jawaban mereka.",
     "err_range": "Nilai harus antara 0 dan 100.",
@@ -1118,7 +1118,7 @@
     "save_btn": "Simpan Password Baru",
     "submitting": "..."
   },
-    "status": {
+  "status": {
     "loading": "Memuat...",
     "error_title": "Terjadi kesalahan tak terduga",
     "error_desc": "Terjadi kesalahan saat memproses permintaan. Coba lagi.",
@@ -1127,7 +1127,7 @@
     "not_found_desc": "Halaman yang Anda cari tidak ada atau sudah dipindahkan.",
     "not_found_back": "Kembali ke Halaman Utama"
   },
-    "sidebar": {
+  "sidebar": {
     "group_data": "Data",
     "group_activity": "Aktivitas",
     "group_other": "Lainnya",
@@ -1148,22 +1148,35 @@
     "greeting_morning": "Selamat pagi",
     "greeting_afternoon": "Selamat siang",
     "greeting_evening": "Selamat malam",
-    "welcome_subtitle": "Semoga harimu menyenangkan!",
+    "welcome_title": "Selamat datang, {name} 👋",
+    "welcome_subtitle": "Kelola pembelajaran Anda dengan lebih mudah.",
+    "my_classes_title": "🏫 Kelas Saya",
+    "students_count_suffix": "siswa",
+    "open_class": "Buka Kelas",
+    "view_all": "Lihat semua",
+    "needs_attention_title": "🎯 Perlu Perhatian",
+    "attention_essays": "{n} essay belum dinilai",
+    "attention_essays_cta": "Nilai sekarang",
+    "attention_exams": "{n} ujian sedang aktif",
+    "attention_exams_cta": "Buka ujian",
+    "attention_students": "{n} siswa perlu perhatian",
+    "attention_students_cta": "Lihat siswa",
+    "all_safe": "Semua aman",
+    "all_safe_desc": "Tidak ada yang perlu ditindaklanjuti",
+    "recent_activity_title": "🕐 Aktivitas Terakhir",
+    "activity_soal_created": "Soal baru dibuat",
+    "activity_game_played": "Game dimainkan",
+    "activity_class_created": "Kelas dibuat",
+    "activity_exam_created": "Ujian dibuat",
     "quick_actions_title": "⚡ Aksi Cepat",
-    "quick_add_class": "Tambah Kelas",
-    "quick_add_student": "Tambah Siswa",
-    "quick_add_game": "Buat Game",
-    "quick_add_question": "Tambah Soal",
-    "quick_add_exam": "Buat Ujian",
-    "quick_add_material": "Tambah Materi",
-    "today_summary_title": "📊 Ringkasan Hari Ini",
-    "today_games": "Game dimainkan",
-    "today_essays_pending": "Essay menunggu dinilai",
-    "today_exams_active": "Ujian aktif",
-    "today_students_active": "Siswa aktif hari ini",
-    "recent_activity_title": "📋 Aktivitas Terbaru",
-    "recent_activity_empty": "Belum ada aktivitas.",
-    "no_data": "Tidak ada data."
+    "quick_add_class": "+ Kelas",
+    "quick_add_student": "+ Siswa",
+    "quick_add_material": "+ Materi",
+    "quick_add_question": "+ Soal",
+    "quick_add_game": "+ Game",
+    "quick_add_exam": "+ Ujian",
+    "empty_classes": "Belum ada kelas. Mulai dengan membuat kelas pertama Anda.",
+    "empty_activities": "Belum ada aktivitas."
   },
   "widget": {
     "settings_title": "⚙️ Pengaturan Cepat",

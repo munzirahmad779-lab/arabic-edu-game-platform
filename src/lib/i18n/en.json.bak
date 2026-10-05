@@ -107,7 +107,7 @@
     "students_mgmt": "Student Management",
     "students_mgmt_desc": "Add students to classes and create a PIN for each student.",
     "open_students": "Open Student Management",
-        "deactivated_title": "Your account is deactivated",
+    "deactivated_title": "Your account is deactivated",
     "deactivated_desc": "Contact the administrator for more information.",
     "assessment_title": "TOEFL / TOAFL Exam Simulation",
     "assessment_desc": "Create an official TOEFL ITP or TOAFL simulation.",
@@ -561,7 +561,7 @@
     "review_no_explanation": "No explanation available for this question.",
     "review_no_question_text": "(question with no text)"
   },
-    "assessment_entry": {
+  "assessment_entry": {
     "title": "Enter Exam",
     "desc": "Enter the token provided by your teacher.",
     "label_token": "Token",
@@ -577,7 +577,7 @@
     "error_not_published": "The exam has not been published.",
     "error_start_failed": "Failed to start the exam. Please try again."
   },
-    "assessment_detail": {
+  "assessment_detail": {
     "back": "Back to Exam",
     "status_published": "Published",
     "status_draft": "Draft",
@@ -706,11 +706,11 @@
     "header_label": "🪄 AI Generator",
     "header_desc": "Create new questions with AI, or paste your existing draft to be structured automatically."
   },
-    "cd": {
+  "cd": {
     "game_mode_competitive": "Competitive",
     "game_mode_learning": "Learning",
     "game_duration_suffix": "s",
-        "preview": {
+    "preview": {
       "notice": "👁️ Student preview — this is how the student will see this material",
       "back": "Back to Class Management",
       "last_updated": "Last updated:"
@@ -725,7 +725,7 @@
       "download": "Download PDF"
     },
     "mf": {
-            "editor": {
+      "editor": {
         "placeholder": "Write material content here...",
         "loading": "Loading editor...",
         "bold": "Bold",
@@ -829,7 +829,7 @@
       "open_review": "← Open Review Page"
     }
   },
-    "qb": {
+  "qb": {
     "editor": {
       "edit_question": "Edit Question",
       "delete_question": "Delete Question",
@@ -895,7 +895,7 @@
       "confirm_empty": "Are you sure you want to delete \"{name}\"?"
     }
   },
-    "game_room": {
+  "game_room": {
     "invalid_room_url": "Invalid room link.",
     "room_not_found": "Room not found.",
     "game_fallback": "Game",
@@ -961,7 +961,7 @@
     "archive_confirm_no_participants": "The room will be reset for a new session (same room code).",
     "archive_btn": "🔄 Archive Session & Start New One"
   },
-    "games_page": {
+  "games_page": {
     "title": "Games",
     "subtitle": "Create a game and use your existing questions in an interactive learning experience.",
     "back": "Dashboard",
@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "No tracks yet. Go to Music Settings to add tracks.",
     "backsound_hint": "This music will play during gameplay for this specific game."
   },
-  "questions_picker": {
+    "questions_picker": {
     "legend": "Choose Questions",
     "selected_badge": "✓ {count} questions selected",
     "hint_open": "Click any bank name to open it and pick questions.",
@@ -1019,9 +1019,13 @@
     "no_text": "(question with no text)",
     "difficulty_easy": "Easy",
     "difficulty_medium": "Medium",
-    "difficulty_hard": "Hard"
+    "difficulty_hard": "Hard",
+    "select_all": "Select All",
+    "deselect_all": "Clear",
+    "select_all_bank": "✓ Select All in This Bank",
+    "deselect_all_bank": "✕ Clear This Bank"
   },
-    "join_errors": {
+  "join_errors": {
     "incomplete": "Incomplete join data.",
     "room_not_found": "Invalid room code.",
     "room_not_open": "This room is no longer open to join.",
@@ -1068,54 +1072,134 @@
     "copy": "📋 Copy Link",
     "copied": "✓ Copied"
   },
-    "join_errors": {
-    "incomplete": "Incomplete join data.",
-    "room_not_found": "Invalid room code.",
-    "room_not_open": "This room is no longer open to join.",
-    "room_full": "Room is full.",
-    "invalid_pin": "Invalid PIN.",
-    "student_not_found": "Student not found in this class.",
-    "already_joined": "This student is already in the room.",
-    "generic": "Failed to join the room."
+    "review_list": {
+    "empty_title": "No answers yet",
+    "empty_desc": "Waiting for students to submit their answers.",
+    "err_range": "Score must be between 0 and 100.",
+    "err_prefix": "Error: ",
+    "err_conn": "Failed to connect to server.",
+    "edited_badge": "✏️ Edited",
+    "initial_grade": "Initial Grade",
+    "student_answer_title": "Student Answer",
+    "duration_prefix": "⏱ Writing time: ",
+    "minutes_suffix": "minutes",
+    "subscore_content": "Content",
+    "subscore_grammar": "Grammar",
+    "subscore_vocab": "Vocabulary",
+    "ai_feedback_title": "📝 AI Notes",
+    "teacher_feedback_title": "✏️ Teacher Notes",
+    "final_score_label": "Final Score (0-100)",
+    "teacher_feedback_label": "Teacher Notes (optional)",
+    "save_btn": "💾 Save",
+    "cancel_btn": "Cancel",
+    "saving": "...",
+    "edit_grade_btn": "✏️ Edit Score / Add Notes"
   },
-  "class_history": {
-    "load_error_prefix": "Failed to load history: ",
-    "empty_title": "No results yet for this class",
-    "empty_desc": "When students play or practice, results will appear here.",
-    "hint": "💡 Click a student's name to see details for each mode. Delete a specific mode's history with the 🗑 button next to the mode name, or delete all history with the red button.",
-    "modes_word": "modes",
-    "correct_word": "correct",
-    "sessions_word": "sessions",
-    "best_score": "Best Score",
-    "avg_score": "Average",
-    "correct_label": "Correct",
-    "percent_label": "Percent",
-    "last_activity": "Last activity:",
-    "mode_competitive": "Competitive",
-    "mode_cooperative": "Cooperative",
-    "mode_endless": "Endless",
-    "mode_practice": "Practice",
-    "mode_learning": "Learning"
+  "essay_review": {
+    "back_link": "Back to Class",
+    "header_label": "Writing Task Review",
+    "duration_suffix": "minutes",
+    "submissions_suffix": "submissions",
+    "question_label": "Question"
   },
-  "delete_history": {
-    "confirm_mode_prefix": "History \"",
-    "confirm_mode_suffix": "\" only",
-    "confirm_all": "all history",
-    "confirm_body_prefix": "Will delete ",
-    "confirm_body_mid": " for student \"",
-    "confirm_body_suffix": "\" permanently. Continue?",
-    "error_prefix": "Error: ",
-    "connection_error": "Failed to connect to server.",
-    "btn_delete_all": "🗑️ Delete History",
-    "btn_delete_all_title": "Delete student history (all modes)",
-    "btn_delete_mode_title": "Delete history for mode ",
-    "loading": "..."
+  "reset_pw": {
+    "checking": "Checking link...",
+    "invalid_link_title": "Invalid or expired link",
+    "invalid_link_desc": "The link is invalid or has expired. Please request a new link from the login page.",
+    "back_to_login": "Back to Login",
+    "title": "🔒 New Password",
+    "desc": "Enter your new password twice.",
+    "password_label": "New Password",
+    "confirm_label": "Confirm Password",
+    "err_short": "Password must be at least 6 characters.",
+    "err_mismatch": "Passwords do not match.",
+    "err_conn": "Failed to connect to server.",
+    "success_info": "✓ Password changed successfully. Redirecting...",
+    "save_btn": "Save New Password",
+    "submitting": "..."
   },
-  "portal_link": {
-    "copy": "📋 Copy Link",
-    "copied": "✓ Copied"
+    "status": {
+    "loading": "Loading...",
+    "error_title": "An unexpected error occurred",
+    "error_desc": "An error occurred while processing the request. Please try again.",
+    "error_retry": "Try Again",
+    "not_found_title": "Page not found",
+    "not_found_desc": "The page you're looking for doesn't exist or has been moved.",
+    "not_found_back": "Back to Home"
   },
-    "widget": {
+    "sidebar": {
+    "group_data": "Data",
+    "group_activity": "Activity",
+    "group_other": "Other",
+    "nav_dashboard": "Dashboard",
+    "nav_classes": "Classes",
+    "nav_students": "Students",
+    "nav_games": "Games",
+    "nav_question_banks": "Question Banks",
+    "nav_assessments": "Exams",
+    "nav_reports": "Reports",
+    "nav_account": "Account",
+    "nav_audio": "Music",
+    "nav_admin": "Admin",
+    "menu_open": "Open menu",
+    "menu_close": "Close menu"
+  },
+  "dashboard_home": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "welcome_subtitle": "Have a great day!",
+    "quick_actions_title": "⚡ Quick Actions",
+    "quick_add_class": "Add Class",
+    "quick_add_student": "Add Student",
+    "quick_add_game": "Create Game",
+    "quick_add_question": "Add Question",
+    "quick_add_exam": "Create Exam",
+    "quick_add_material": "Add Material",
+    "today_summary_title": "📊 Today's Summary",
+    "today_games": "Games played",
+    "today_essays_pending": "Essays pending",
+    "today_exams_active": "Active exams",
+    "today_students_active": "Active students today",
+    "recent_activity_title": "📋 Recent Activity",
+    "recent_activity_empty": "No activity yet.",
+    "no_data": "No data."
+  },
+    "dashboard_home": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "welcome_title": "Welcome, {name} 👋",
+    "welcome_subtitle": "Manage your teaching with ease.",
+    "my_classes_title": "🏫 My Classes",
+    "students_count_suffix": "students",
+    "open_class": "Open Class",
+    "view_all": "View all",
+    "needs_attention_title": "🎯 Needs Attention",
+    "attention_essays": "{n} essays to grade",
+    "attention_essays_cta": "Grade now",
+    "attention_exams": "{n} active exams",
+    "attention_exams_cta": "Open exam",
+    "attention_students": "{n} students need attention",
+    "attention_students_cta": "View students",
+    "all_safe": "All clear",
+    "all_safe_desc": "Nothing needs your attention",
+    "recent_activity_title": "🕐 Recent Activity",
+    "activity_soal_created": "Question created",
+    "activity_game_played": "Game played",
+    "activity_class_created": "Class created",
+    "activity_exam_created": "Exam created",
+    "quick_actions_title": "⚡ Quick Actions",
+    "quick_add_class": "+ Class",
+    "quick_add_student": "+ Student",
+    "quick_add_material": "+ Material",
+    "quick_add_question": "+ Question",
+    "quick_add_game": "+ Game",
+    "quick_add_exam": "+ Exam",
+    "empty_classes": "No classes yet. Start by creating your first class.",
+    "empty_activities": "No activity yet."
+  },
+  "widget": {
     "settings_title": "⚙️ Quick Settings",
     "settings_aria": "Quick Settings",
     "close": "Close",

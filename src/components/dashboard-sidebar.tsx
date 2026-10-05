@@ -82,20 +82,27 @@ export function DashboardSidebar({
 
   const menu = (
     <>
-      <Link
-        href="/dashboard"
-        onClick={() => setOpen(false)}
-        className="flex items-center justify-center border-b border-sage-200/60 px-4 py-4"
-      >
-        <Image
-          src="/logo-horizontal.png"
-          alt={brandName}
-          width={200}
-          height={88}
-          className="h-9 w-auto"
-          priority
-        />
-      </Link>
+      {/* Logo (tetap) */}
+      <div className="border-b border-sage-200/60 px-5 py-5">
+        <Link
+          href="/dashboard"
+          onClick={() => setOpen(false)}
+          className="flex items-center"
+          aria-label={brandName}
+        >
+          <Image
+            src="/logo-horizontal.png"
+            alt={brandName}
+            width={200}
+            height={88}
+            className="h-9 w-auto"
+            priority
+          />
+        </Link>
+        <p className="mt-2 text-[10px] font-bold tracking-wide text-softslate/60">
+          Belajar • Bermain • Berkembang
+        </p>
+      </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <MenuGroup
@@ -120,10 +127,6 @@ export function DashboardSidebar({
           onLink={() => setOpen(false)}
         />
       </nav>
-
-      <div className="border-t border-sage-200/60 p-3 text-center text-[10px] text-softslate/50">
-        Magguru © 2026
-      </div>
     </>
   );
 
@@ -184,10 +187,10 @@ function MenuGroup({
 }) {
   return (
     <div className="mb-5">
-      <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wider text-softslate/60">
+      <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-wider text-softslate/50">
         {label}
       </p>
-      <ul className="space-y-1">
+      <ul className="space-y-0.5">
         {items.map((item) => {
           const active = isActive(pathname, item.href);
           return (
@@ -197,8 +200,8 @@ function MenuGroup({
                 onClick={onLink}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                   active
-                    ? "bg-terracotta-500 text-white shadow-sm"
-                    : "text-teal-700 hover:bg-sage-50"
+                    ? "bg-terracotta-100 text-terracotta-700"
+                    : "text-softslate hover:bg-sage-50 hover:text-teal-700"
                 }`}
               >
                 <span className="text-base">{item.icon}</span>

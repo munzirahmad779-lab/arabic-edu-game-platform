@@ -688,7 +688,7 @@
     "backsound_empty_hint": "لا توجد مقاطع محمّلة. اذهب إلى إعدادات الموسيقى لإضافة مقاطع.",
     "backsound_hint": "سيتم تشغيل هذه الموسيقى أثناء اللعب في هذه اللعبة تحديدًا."
   },
-    "questions_picker": {
+  "questions_picker": {
     "legend": "اختر الأسئلة",
     "selected_badge": "✓ تم اختيار {count} سؤال",
     "hint_open": "اضغط على اسم أي بنك لفتحه واختيار الأسئلة منه.",
@@ -754,7 +754,7 @@
     "copy": "📋 نسخ الرابط",
     "copied": "✓ تم النسخ"
   },
-    "assessment_detail": {
+  "assessment_detail": {
     "back": "العودة إلى الاختبار",
     "status_published": "منشور",
     "status_draft": "مسودة",
@@ -1072,7 +1072,7 @@
       "confirm_empty": "هل أنت متأكد من حذف \"{name}\"؟"
     }
   },
-    "review_list": {
+  "review_list": {
     "empty_title": "لا توجد إجابات بعد",
     "empty_desc": "في انتظار أن يسلم الطلاب إجاباتهم.",
     "err_range": "الدرجة يجب أن تكون بين 0 و100.",
@@ -1118,7 +1118,7 @@
     "save_btn": "حفظ كلمة المرور الجديدة",
     "submitting": "..."
   },
-    "status": {
+  "status": {
     "loading": "جارٍ التحميل...",
     "error_title": "حدث خطأ غير متوقع",
     "error_desc": "حدث خطأ أثناء معالجة الطلب. حاول مرة أخرى.",
@@ -1127,7 +1127,7 @@
     "not_found_desc": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
     "not_found_back": "العودة إلى الصفحة الرئيسية"
   },
-    "sidebar": {
+  "sidebar": {
     "group_data": "البيانات",
     "group_activity": "الأنشطة",
     "group_other": "أخرى",
@@ -1148,22 +1148,35 @@
     "greeting_morning": "صباح الخير",
     "greeting_afternoon": "مساء الخير",
     "greeting_evening": "مساء الخير",
-    "welcome_subtitle": "أتمنى لك يومًا سعيدًا!",
+    "welcome_title": "مرحبًا، {name} 👋",
+    "welcome_subtitle": "أدر تعليمك بسهولة أكبر.",
+    "my_classes_title": "🏫 فصولي",
+    "students_count_suffix": "طالب",
+    "open_class": "فتح الفصل",
+    "view_all": "عرض الكل",
+    "needs_attention_title": "🎯 يحتاج انتباه",
+    "attention_essays": "{n} مقال بحاجة للتقييم",
+    "attention_essays_cta": "قيّم الآن",
+    "attention_exams": "{n} اختبار نشط",
+    "attention_exams_cta": "افتح الاختبار",
+    "attention_students": "{n} طالب يحتاج انتباه",
+    "attention_students_cta": "عرض الطلاب",
+    "all_safe": "كل شيء بخير",
+    "all_safe_desc": "لا يوجد ما يحتاج متابعة",
+    "recent_activity_title": "🕐 آخر الأنشطة",
+    "activity_soal_created": "تم إنشاء سؤال",
+    "activity_game_played": "تم لعب لعبة",
+    "activity_class_created": "تم إنشاء فصل",
+    "activity_exam_created": "تم إنشاء اختبار",
     "quick_actions_title": "⚡ إجراءات سريعة",
-    "quick_add_class": "إضافة فصل",
-    "quick_add_student": "إضافة طالب",
-    "quick_add_game": "إنشاء لعبة",
-    "quick_add_question": "إضافة سؤال",
-    "quick_add_exam": "إنشاء اختبار",
-    "quick_add_material": "إضافة مادة",
-    "today_summary_title": "📊 ملخص اليوم",
-    "today_games": "الألعاب التي لُعبت",
-    "today_essays_pending": "المقالات المعلّقة",
-    "today_exams_active": "الاختبارات النشطة",
-    "today_students_active": "الطلاب النشطون اليوم",
-    "recent_activity_title": "📋 آخر الأنشطة",
-    "recent_activity_empty": "لا يوجد نشاط بعد.",
-    "no_data": "لا توجد بيانات."
+    "quick_add_class": "+ فصل",
+    "quick_add_student": "+ طالب",
+    "quick_add_material": "+ مادة",
+    "quick_add_question": "+ سؤال",
+    "quick_add_game": "+ لعبة",
+    "quick_add_exam": "+ اختبار",
+    "empty_classes": "لا توجد فصول بعد. ابدأ بإنشاء فصلك الأول.",
+    "empty_activities": "لا يوجد نشاط بعد."
   },
   "widget": {
     "settings_title": "⚙️ الإعدادات السريعة",

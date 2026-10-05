@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "No tracks yet. Go to Music Settings to add tracks.",
     "backsound_hint": "This music will play during gameplay for this specific game."
   },
-    "questions_picker": {
+  "questions_picker": {
     "legend": "Choose Questions",
     "selected_badge": "✓ {count} questions selected",
     "hint_open": "Click any bank name to open it and pick questions.",
@@ -1072,7 +1072,7 @@
     "copy": "📋 Copy Link",
     "copied": "✓ Copied"
   },
-    "review_list": {
+  "review_list": {
     "empty_title": "No answers yet",
     "empty_desc": "Waiting for students to submit their answers.",
     "err_range": "Score must be between 0 and 100.",
@@ -1118,7 +1118,7 @@
     "save_btn": "Save New Password",
     "submitting": "..."
   },
-    "status": {
+  "status": {
     "loading": "Loading...",
     "error_title": "An unexpected error occurred",
     "error_desc": "An error occurred while processing the request. Please try again.",
@@ -1127,7 +1127,7 @@
     "not_found_desc": "The page you're looking for doesn't exist or has been moved.",
     "not_found_back": "Back to Home"
   },
-    "sidebar": {
+  "sidebar": {
     "group_data": "Data",
     "group_activity": "Activity",
     "group_other": "Other",
@@ -1148,22 +1148,35 @@
     "greeting_morning": "Good morning",
     "greeting_afternoon": "Good afternoon",
     "greeting_evening": "Good evening",
-    "welcome_subtitle": "Have a great day!",
+    "welcome_title": "Welcome, {name} 👋",
+    "welcome_subtitle": "Manage your teaching with ease.",
+    "my_classes_title": "🏫 My Classes",
+    "students_count_suffix": "students",
+    "open_class": "Open Class",
+    "view_all": "View all",
+    "needs_attention_title": "🎯 Needs Attention",
+    "attention_essays": "{n} essays to grade",
+    "attention_essays_cta": "Grade now",
+    "attention_exams": "{n} active exams",
+    "attention_exams_cta": "Open exam",
+    "attention_students": "{n} students need attention",
+    "attention_students_cta": "View students",
+    "all_safe": "All clear",
+    "all_safe_desc": "Nothing needs your attention",
+    "recent_activity_title": "🕐 Recent Activity",
+    "activity_soal_created": "Question created",
+    "activity_game_played": "Game played",
+    "activity_class_created": "Class created",
+    "activity_exam_created": "Exam created",
     "quick_actions_title": "⚡ Quick Actions",
-    "quick_add_class": "Add Class",
-    "quick_add_student": "Add Student",
-    "quick_add_game": "Create Game",
-    "quick_add_question": "Add Question",
-    "quick_add_exam": "Create Exam",
-    "quick_add_material": "Add Material",
-    "today_summary_title": "📊 Today's Summary",
-    "today_games": "Games played",
-    "today_essays_pending": "Essays pending",
-    "today_exams_active": "Active exams",
-    "today_students_active": "Active students today",
-    "recent_activity_title": "📋 Recent Activity",
-    "recent_activity_empty": "No activity yet.",
-    "no_data": "No data."
+    "quick_add_class": "+ Class",
+    "quick_add_student": "+ Student",
+    "quick_add_material": "+ Material",
+    "quick_add_question": "+ Question",
+    "quick_add_game": "+ Game",
+    "quick_add_exam": "+ Exam",
+    "empty_classes": "No classes yet. Start by creating your first class.",
+    "empty_activities": "No activity yet."
   },
   "widget": {
     "settings_title": "⚙️ Quick Settings",

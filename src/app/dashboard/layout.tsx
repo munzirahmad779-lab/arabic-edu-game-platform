@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import "./dashboard-themes.css";
@@ -78,16 +79,32 @@ export default async function DashboardLayout({
       />
 
       <div className="lg:ps-60">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-sage-200/60 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
-          <Link
-            href="/dashboard"
-            className="ms-12 flex items-center gap-2 lg:ms-0"
-          >
-            <span className="font-display text-base font-black text-teal-700 sm:text-lg">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-sage-200/60 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+          {/* Logo + nama halaman */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="ms-12 flex items-center gap-2 lg:ms-0"
+              aria-label={dict.common.brand_main}
+            >
+              <Image
+                src="/logo-horizontal.png"
+                alt={dict.common.brand_main}
+                width={200}
+                height={88}
+                className="h-8 w-auto sm:h-9"
+                priority
+              />
+            </Link>
+            <span className="hidden text-sm font-bold text-softslate/40 sm:inline">
+              /
+            </span>
+            <span className="hidden text-sm font-black text-teal-700 sm:inline">
               {sb.nav_dashboard}
             </span>
-          </Link>
+          </div>
 
+          {/* Kanan: bahasa + nama + keluar */}
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher current={locale} />
             <span
