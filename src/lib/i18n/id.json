@@ -1021,6 +1021,53 @@
     "difficulty_medium": "Sedang",
     "difficulty_hard": "Sulit"
   },
+    "join_errors": {
+    "incomplete": "Data bergabung tidak lengkap.",
+    "room_not_found": "Kode ruangan salah.",
+    "room_not_open": "Ruangan ini tidak lagi terbuka untuk bergabung.",
+    "room_full": "Ruangan penuh.",
+    "invalid_pin": "PIN salah.",
+    "student_not_found": "Siswa tidak ditemukan di kelas ini.",
+    "already_joined": "Siswa ini sudah ada di ruangan.",
+    "generic": "Gagal bergabung ke ruangan."
+  },
+  "class_history": {
+    "load_error_prefix": "Gagal memuat riwayat: ",
+    "empty_title": "Belum ada hasil untuk kelas ini",
+    "empty_desc": "Saat siswa bermain atau berlatih, hasilnya akan muncul di sini.",
+    "hint": "💡 Klik nama siswa untuk melihat detail setiap mode. Hapus riwayat mode tertentu dengan tombol 🗑 di samping nama mode, atau hapus semua riwayat dengan tombol merah.",
+    "modes_word": "mode",
+    "correct_word": "benar",
+    "sessions_word": "sesi",
+    "best_score": "Nilai Terbaik",
+    "avg_score": "Rata-rata",
+    "correct_label": "Benar",
+    "percent_label": "Persentase",
+    "last_activity": "Aktivitas terakhir:",
+    "mode_competitive": "Kompetitif",
+    "mode_cooperative": "Kooperatif",
+    "mode_endless": "Tanpa Batas",
+    "mode_practice": "Latihan",
+    "mode_learning": "Pembelajaran"
+  },
+  "delete_history": {
+    "confirm_mode_prefix": "Riwayat \"",
+    "confirm_mode_suffix": "\" saja",
+    "confirm_all": "semua riwayat",
+    "confirm_body_prefix": "Akan menghapus ",
+    "confirm_body_mid": " siswa \"",
+    "confirm_body_suffix": "\" secara permanen. Lanjutkan?",
+    "error_prefix": "Kesalahan: ",
+    "connection_error": "Gagal terhubung ke server.",
+    "btn_delete_all": "🗑️ Hapus Riwayat",
+    "btn_delete_all_title": "Hapus riwayat siswa (semua mode)",
+    "btn_delete_mode_title": "Hapus riwayat mode ",
+    "loading": "..."
+  },
+  "portal_link": {
+    "copy": "📋 Salin Link",
+    "copied": "✓ Tersalin"
+  },
   "widget": {
     "settings_title": "⚙️ Pengaturan Cepat",
     "settings_aria": "Pengaturan Cepat",
