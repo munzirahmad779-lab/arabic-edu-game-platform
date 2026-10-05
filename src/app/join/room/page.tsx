@@ -102,7 +102,7 @@ type RpcClient = {
   }>;
 };
 
-const HEARTBEAT_INTERVAL_MS = 5000;
+const HEARTBEAT_INTERVAL_MS = 10000;
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -156,6 +156,7 @@ export default function JoinRoomPage({
 
   const skewRef = useRef(0);
   const lastHeartbeatRef = useRef(0);
+  const lastPollRef = useRef(0);
   const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
 
   useEffect(() => {
@@ -241,7 +242,12 @@ export default function JoinRoomPage({
       const nowTs = Date.now();
       setNow(nowTs);
 
-      if (roomStateRef.current !== "ended" && !sessionEnded) {
+      const state = roomStateRef.current;
+      if (state === "ended" || sessionEnded) return;
+
+      const pollInterval = state === "waiting" ? 2500 : 1500;
+      if (nowTs - lastPollRef.current > pollInterval) {
+        lastPollRef.current = nowTs;
         void loadSession();
         void loadLeaderboard();
       }

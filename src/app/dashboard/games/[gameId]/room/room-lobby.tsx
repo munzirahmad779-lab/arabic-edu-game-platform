@@ -112,10 +112,15 @@ export default function RoomLobby({
     };
 
     void refresh();
+    let lastRefresh = 0;
     const fallback = window.setInterval(() => {
-      setNow(Date.now());
-      refresh();
-    }, 2000);
+      const nowTs = Date.now();
+      setNow(nowTs);
+      if (nowTs - lastRefresh > 2500) {
+        lastRefresh = nowTs;
+        refresh();
+      }
+    }, 1000);
 
     return () => {
       alive = false;
