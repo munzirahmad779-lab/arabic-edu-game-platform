@@ -1068,6 +1068,15 @@
     "copy": "📋 Copy Link",
     "copied": "✓ Copied"
   },
+    "status": {
+    "loading": "Loading...",
+    "error_title": "An unexpected error occurred",
+    "error_desc": "An error occurred while processing the request. Please try again.",
+    "error_retry": "Try Again",
+    "not_found_title": "Page not found",
+    "not_found_desc": "The page you're looking for doesn't exist or has been moved.",
+    "not_found_back": "Back to Home"
+  },
   "widget": {
     "settings_title": "⚙️ Quick Settings",
     "settings_aria": "Quick Settings",

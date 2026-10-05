@@ -1068,6 +1068,15 @@
     "copy": "📋 Salin Link",
     "copied": "✓ Tersalin"
   },
+    "status": {
+    "loading": "Memuat...",
+    "error_title": "Terjadi kesalahan tak terduga",
+    "error_desc": "Terjadi kesalahan saat memproses permintaan. Coba lagi.",
+    "error_retry": "Coba Lagi",
+    "not_found_title": "Halaman tidak ditemukan",
+    "not_found_desc": "Halaman yang Anda cari tidak ada atau sudah dipindahkan.",
+    "not_found_back": "Kembali ke Halaman Utama"
+  },
   "widget": {
     "settings_title": "⚙️ Pengaturan Cepat",
     "settings_aria": "Pengaturan Cepat",
