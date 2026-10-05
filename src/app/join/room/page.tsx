@@ -8,6 +8,7 @@ import {
 } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
 import { RoomReview } from "./room-review";
+import { AnagramPlayer } from "@/components/game-players/anagram-player";
 import idDict from "@/lib/i18n/id.json";
 import enDict from "@/lib/i18n/en.json";
 import arDict from "@/lib/i18n/ar.json";
@@ -132,6 +133,8 @@ export default function JoinRoomPage({
     endless: dict.reports.mode_endless,
     practice: dict.reports.mode_practice,
     learning: dict.reports.mode_learning,
+    anagram: dict.anagram.title,
+    matching: dict.matching.title,
   };
 
   const DIFFICULTY_LABEL: Record<string, string> = {
@@ -279,6 +282,7 @@ export default function JoinRoomPage({
 
   const adjustedNow = now + skewRef.current;
   const isCooperative = session?.game_mode === "cooperative";
+  const isAnagram = session?.game_mode === "anagram";
 
   const countdown = useMemo(() => {
     if (
@@ -327,7 +331,7 @@ export default function JoinRoomPage({
       submitting ||
       session.answer_submitted ||
       session.room_state !== "running" ||
-      countdown !== 0 ||
+      (countdown !== null && countdown !== 0) ||
       (totalSecondsLeft !== null && totalSecondsLeft === 0) ||
       (!isCooperative && answerSecondsLeft === 0)
     ) {
@@ -760,136 +764,170 @@ export default function JoinRoomPage({
             <p className="mt-3 text-white/80">{t.room_countdown_hint}</p>
           </div>
         ) : session.question ? (
-          <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between gap-3">
-              <div
-                className={`rounded-full px-4 py-2 text-xs font-black ${
-                  DIFFICULTY_COLOR[session.question.difficulty] ??
-                  "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {DIFFICULTY_LABEL[session.question.difficulty] ??
-                  session.question.difficulty}
-              </div>
+          isAnagram ? (
+            /* ============ MODE ANAGRAM ============ */
+            <div className="mt-6">
+              <AnagramPlayer
+                key={session.question.id}
+                questions={[session.question]}
+                dict={dict.anagram}
+                onAnswer={async (qid, optionId) => {
+                  await submitAnswer(optionId);
+                }}
+                onFinish={() => {
+                  // no-op — server yang menaikkan soal
+                }}
+                isRtl={isRtl}
+                singleQuestionMode
+                questionNumber={session.question_index + 1}
+                totalQuestions={session.question_count}
+              />
 
-              {isCooperative ? (
-                <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
-                  {t.room_coop_no_timer}
+              {session.answer_submitted ? (
+                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
+                  {t.room_answer_recorded}
                 </div>
-              ) : (
+              ) : null}
+
+              {submitError ? (
+                <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
+                  {submitError}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            /* ============ MODE QUIZ BIASA ============ */
+            <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
+              <div className="flex items-center justify-between gap-3">
                 <div
-                  className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
-                    (answerSecondsLeft ?? timeLimitSec) <= 5
-                      ? "animate-pulse bg-rose-100 text-rose-800"
-                      : "bg-amber-100 text-amber-800"
+                  className={`rounded-full px-4 py-2 text-xs font-black ${
+                    DIFFICULTY_COLOR[session.question.difficulty] ??
+                    "bg-slate-100 text-slate-700"
                   }`}
                 >
-                  ⏱ {answerSecondsLeft ?? timeLimitSec}{" "}
-                  {t.room_seconds_suffix}
+                  {DIFFICULTY_LABEL[session.question.difficulty] ??
+                    session.question.difficulty}
                 </div>
-              )}
-            </div>
 
-            {session.question.media && session.question.media.length > 0 ? (
-              <div className="mt-6 space-y-4">
-                {session.question.media.map((m) => {
-                  if (!m.public_url) return null;
-                  if (m.media_type === "image") {
-                    return (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={m.id}
-                        src={m.public_url}
-                        alt=""
-                        className="mx-auto max-h-80 rounded-2xl border-2 border-slate-200 object-contain"
-                      />
-                    );
-                  }
-                  if (m.media_type === "audio") {
-                    return (
-                      <div key={m.id} className="space-y-2">
-                        <p className="text-center text-xs font-bold text-violet-600">
-                          {t.room_listen}
-                        </p>
-                        <audio
+                {isCooperative ? (
+                  <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
+                    {t.room_coop_no_timer}
+                  </div>
+                ) : (
+                  <div
+                    className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
+                      (answerSecondsLeft ?? timeLimitSec) <= 5
+                        ? "animate-pulse bg-rose-100 text-rose-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    ⏱ {answerSecondsLeft ?? timeLimitSec}{" "}
+                    {t.room_seconds_suffix}
+                  </div>
+                )}
+              </div>
+
+              {session.question.media && session.question.media.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {session.question.media.map((m) => {
+                    if (!m.public_url) return null;
+                    if (m.media_type === "image") {
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={m.id}
                           src={m.public_url}
-                          controls
-                          controlsList={
-                            m.max_play_count === 1
-                              ? "nodownload noplaybackrate"
-                              : undefined
-                          }
-                          onPlay={() => pauseBackgroundAudio()}
-                          onEnded={() => resumeBackgroundAudio()}
-                          className="mx-auto w-full max-w-md"
+                          alt=""
+                          className="mx-auto max-h-80 rounded-2xl border-2 border-slate-200 object-contain"
                         />
-                      </div>
-                    );
-                  }
-                  if (m.media_type === "video") {
-                    return (
-                      <div key={m.id} className="space-y-2">
-                        <p className="text-center text-xs font-bold text-violet-600">
-                          {t.room_watch}
-                        </p>
-                        <video
-                          src={m.public_url}
-                          controls
-                          controlsList={
-                            m.max_play_count === 1
-                              ? "nodownload noplaybackrate"
-                              : undefined
-                          }
-                          onPlay={() => pauseBackgroundAudio()}
-                          onEnded={() => resumeBackgroundAudio()}
-                          className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                      );
+                    }
+                    if (m.media_type === "audio") {
+                      return (
+                        <div key={m.id} className="space-y-2">
+                          <p className="text-center text-xs font-bold text-violet-600">
+                            {t.room_listen}
+                          </p>
+                          <audio
+                            src={m.public_url}
+                            controls
+                            controlsList={
+                              m.max_play_count === 1
+                                ? "nodownload noplaybackrate"
+                                : undefined
+                            }
+                            onPlay={() => pauseBackgroundAudio()}
+                            onEnded={() => resumeBackgroundAudio()}
+                            className="mx-auto w-full max-w-md"
+                          />
+                        </div>
+                      );
+                    }
+                    if (m.media_type === "video") {
+                      return (
+                        <div key={m.id} className="space-y-2">
+                          <p className="text-center text-xs font-bold text-violet-600">
+                            {t.room_watch}
+                          </p>
+                          <video
+                            src={m.public_url}
+                            controls
+                            controlsList={
+                              m.max_play_count === 1
+                                ? "nodownload noplaybackrate"
+                                : undefined
+                            }
+                            onPlay={() => pauseBackgroundAudio()}
+                            onEnded={() => resumeBackgroundAudio()}
+                            className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              ) : null}
+
+              <h2 className="mt-8 text-center text-3xl font-black leading-relaxed sm:text-4xl">
+                {session.question.question_text}
+              </h2>
+
+              <div className="mt-8 grid gap-4">
+                {session.question.options.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={
+                      submitting ||
+                      session.answer_submitted ||
+                      (!isCooperative && answerSecondsLeft === 0) ||
+                      (isCooperative && totalSecondsLeft === 0)
+                    }
+                    onClick={() => void submitAnswer(option.id)}
+                    className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-start text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="me-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white">
+                      {option.option_key}
+                    </span>
+                    {option.option_text}
+                  </button>
+                ))}
               </div>
-            ) : null}
 
-            <h2 className="mt-8 text-center text-3xl font-black leading-relaxed sm:text-4xl">
-              {session.question.question_text}
-            </h2>
+              {session.answer_submitted ? (
+                <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
+                  {t.room_answer_recorded}
+                </div>
+              ) : null}
 
-            <div className="mt-8 grid gap-4">
-              {session.question.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={
-                    submitting ||
-                    session.answer_submitted ||
-                    (!isCooperative && answerSecondsLeft === 0) ||
-                    (isCooperative && totalSecondsLeft === 0)
-                  }
-                  onClick={() => void submitAnswer(option.id)}
-                  className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-start text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="me-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white">
-                    {option.option_key}
-                  </span>
-                  {option.option_text}
-                </button>
-              ))}
-            </div>
-
-            {session.answer_submitted ? (
-              <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
-                {t.room_answer_recorded}
-              </div>
-            ) : null}
-
-            {submitError ? (
-              <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
-                {submitError}
-              </div>
-            ) : null}
-          </section>
+              {submitError ? (
+                <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
+                  {submitError}
+                </div>
+              ) : null}
+            </section>
+          )
         ) : (
           <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
             <h2 className="text-2xl font-black">{t.room_preparing}</h2>

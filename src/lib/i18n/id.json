@@ -1178,7 +1178,7 @@
     "empty_classes": "Belum ada kelas. Mulai dengan membuat kelas pertama Anda.",
     "empty_activities": "Belum ada aktivitas."
   },
-    "student_home": {
+  "student_home": {
     "welcome_title": "Halo, {name} 👋",
     "welcome_subtitle": "Siap belajar hari ini?",
     "exam_card_title": "Ikut Ujian TOEFL / TOAFL",
@@ -1194,6 +1194,39 @@
     "materials_empty": "Belum ada materi yang dipublikasikan.",
     "materials_updated": "Diperbarui",
     "logout": "Keluar"
+  },
+  "anagram": {
+    "title": "Susun Huruf",
+    "instruction": "Susun huruf menjadi jawaban yang benar",
+    "hint_label": "Petunjuk",
+    "submit": "Periksa",
+    "clear": "Hapus Semua",
+    "backspace": "Hapus 1",
+    "correct": "✓ Benar!",
+    "wrong": "✗ Salah — jawaban: {answer}",
+    "next": "Soal Berikutnya",
+    "finish": "Lihat Skor",
+    "no_letters": "Pilih huruf dulu",
+    "no_questions": "Tidak ada soal di game ini.",
+    "score_label": "Skor",
+    "correct_count": "Benar",
+    "time_label": "Waktu",
+    "shuffled_hint": "Huruf sudah diacak",
+    "skip": "Lewati"
+  },
+  "matching": {
+    "title": "Cocokkan Kata",
+    "instruction": "Buka dua kartu — cocokkan soal dengan jawabannya",
+    "pairs_label": "Pasang",
+    "moves_label": "Langkah",
+    "match_found": "✓ Cocok!",
+    "match_wrong": "✗ Bukan pasangan",
+    "finish": "Selesai",
+    "no_questions": "Tidak ada soal untuk mode ini.",
+    "score_label": "Skor",
+    "time_label": "Waktu",
+    "restart": "Mulai Ulang",
+    "all_done": "Semua pasangan sudah ketemu!"
   },
   "widget": {
     "settings_title": "⚙️ Pengaturan Cepat",

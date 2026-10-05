@@ -18,6 +18,8 @@ const MODE_FOR_ROOM: Record<string, boolean> = {
   endless: false,
   practice: false,
   learning: true,
+  anagram: true,
+  matching: true,
 };
 
 // Mode -> key dictionary untuk label
@@ -27,6 +29,8 @@ const MODE_LABEL_KEY: Record<string, string> = {
   endless: "mode_endless",
   practice: "mode_practice",
   learning: "mode_learning",
+  anagram: "mode_anagram",
+  matching: "mode_matching",
 };
 
 export default async function GamesPage({

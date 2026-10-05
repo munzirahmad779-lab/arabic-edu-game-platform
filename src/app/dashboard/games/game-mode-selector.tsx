@@ -31,7 +31,10 @@ type Props = {
 export function GameModeSelector({ tracks, gm }: Props) {
   const [mode, setMode] = useState("competitive");
   const isTimed =
-    mode === "competitive" || mode === "cooperative" || mode === "learning";
+    mode === "competitive" ||
+    mode === "cooperative" ||
+    mode === "learning" ||
+    mode === "anagram";
   const isSelfPractice = mode === "endless" || mode === "practice";
 
   return (
@@ -49,6 +52,9 @@ export function GameModeSelector({ tracks, gm }: Props) {
         >
           <option value="competitive">{gm.competitive}</option>
           <option value="cooperative">{gm.cooperative}</option>
+          <option value="anagram">
+            ✨ Susun Huruf (Anagram) — main di game room
+          </option>
           <option value="endless">{gm.endless}</option>
           <option value="practice">{gm.practice}</option>
         </select>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hand-written Supabase Database type.
  */
 
@@ -11,7 +11,7 @@ export type Json =
   | Json[];
 
 export type ExplanationTiming = "after_each_question" | "after_game_only" | "never";
-export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning";
+export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning" | "anagram" | "matching";
 export type GameType = "arabic_chase_race";
 export type QuestionType = "mcq";
 export type RankingVisibility = "full" | "hidden" | "self_only";
