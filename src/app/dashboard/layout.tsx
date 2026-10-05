@@ -1,11 +1,13 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import "./dashboard-themes.css";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { DashboardSidebar } from "@/components/dashboard-sidebar";
+
+const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
 
 export default async function DashboardLayout({
   children,
@@ -31,6 +33,7 @@ export default async function DashboardLayout({
   const dict = await getDictionary(locale);
   const isRtl = locale === "ar";
   const t = dict.dashboard;
+  const sb = dict.sidebar;
 
   if (profile && profile.is_active === false) {
     return (
@@ -49,7 +52,7 @@ export default async function DashboardLayout({
               type="submit"
               className="w-full rounded-2xl bg-red-600 px-6 py-3 text-base font-black text-white transition hover:bg-red-700"
             >
-                              {dict.dashboard.logout}
+              {dict.dashboard.logout}
             </button>
           </form>
         </div>
@@ -58,6 +61,8 @@ export default async function DashboardLayout({
   }
 
   const theme = profile?.theme ?? "violet";
+  const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+  const displayName = profile?.full_name || profile?.email || user.email || "";
 
   return (
     <div
@@ -65,40 +70,47 @@ export default async function DashboardLayout({
       className="min-h-screen bg-warmwhite"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-sage-200/60 bg-white/80 px-4 py-4 backdrop-blur sm:px-6">
-        <Link
-          href="/dashboard"
-          className="flex items-center"
-          aria-label={dict.common.brand_main}
-        >
-          <Image
-            src="/logo-horizontal.png"
-            alt={dict.common.brand_main}
-            width={240}
-            height={105}
-            className="h-10 w-auto sm:h-11"
-            priority
-          />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher current={locale} />
-          <span
-            className="hidden text-sm text-softslate/80 sm:inline"
-            dir="ltr"
+      <DashboardSidebar
+        locale={locale}
+        dict={sb}
+        brandName={dict.common.brand_main}
+        isSuperAdmin={isSuperAdmin}
+      />
+
+      <div className="lg:ps-60">
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-sage-200/60 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+          <Link
+            href="/dashboard"
+            className="ms-12 flex items-center gap-2 lg:ms-0"
           >
-            {profile?.full_name || profile?.email || user.email}
-          </span>
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              className="rounded-full border border-sage-200 bg-white px-4 py-1.5 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
+            <span className="font-display text-base font-black text-teal-700 sm:text-lg">
+              {sb.nav_dashboard}
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher current={locale} />
+            <span
+              className="hidden max-w-[160px] truncate text-sm font-bold text-softslate/80 sm:inline"
+              dir="ltr"
             >
-              {dict.dashboard.logout}
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
+              {displayName}
+            </span>
+            <form action="/auth/logout" method="post">
+              <button
+                type="submit"
+                className="rounded-full border border-sage-200 bg-white px-3 py-1.5 text-xs font-bold text-teal-700 transition hover:bg-sage-50 sm:text-sm"
+              >
+                {dict.dashboard.logout}
+              </button>
+            </form>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
