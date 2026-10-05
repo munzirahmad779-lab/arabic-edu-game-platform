@@ -8,7 +8,11 @@ import {
 } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
 import { RoomReview } from "./room-review";
-import { AnagramPlayer } from "@/components/game-players/anagram-player";
+import {
+  AnagramPlayer,
+  type AnswerPayload,
+  type AnswerResult,
+} from "@/components/game-players/anagram-player";
 import idDict from "@/lib/i18n/id.json";
 import enDict from "@/lib/i18n/en.json";
 import arDict from "@/lib/i18n/ar.json";
@@ -58,6 +62,7 @@ type Question = {
   time_limit_seconds?: number;
   options: Option[];
   media?: Media[];
+  correct_option_key?: string;
 };
 
 type Session = {
@@ -101,6 +106,15 @@ type RpcClient = {
     data: TResult[] | null;
     error: { message: string } | null;
   }>;
+};
+
+type SubmitRow = {
+  accepted: boolean;
+  is_correct: boolean;
+  score_awarded: number;
+  response_time_ms: number;
+  room_state: string;
+  next_question_index: number;
 };
 
 const HEARTBEAT_INTERVAL_MS = 10000;
@@ -325,9 +339,19 @@ export default function JoinRoomPage({
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
   }, [adjustedNow, session, isCooperative]);
 
-  async function submitAnswer(optionId: string) {
+  /**
+   * Submit jawaban ke server.
+   * Mendukung 2 tipe:
+   * - Option-based (quiz biasa): p_selected_option_id diisi, p_answer_text null
+   * - Text-based (anagram): p_answer_text diisi, p_selected_option_id optional
+   */
+  async function submitAnswer(payload: {
+    questionId: string;
+    selectedOptionId: string | null;
+    answerText: string | null;
+  }): Promise<AnswerResult> {
     if (
-      !session?.question ||
+      !session ||
       submitting ||
       session.answer_submitted ||
       session.room_state !== "running" ||
@@ -335,7 +359,7 @@ export default function JoinRoomPage({
       (totalSecondsLeft !== null && totalSecondsLeft === 0) ||
       (!isCooperative && answerSecondsLeft === 0)
     ) {
-      return;
+      return { accepted: false, isCorrect: false };
     }
 
     setSubmitting(true);
@@ -343,11 +367,15 @@ export default function JoinRoomPage({
 
     try {
       const supabase = createClient() as unknown as RpcClient;
-      const { error: submitErr } = await supabase.rpc("submit_game_answer", {
-        p_join_token: token,
-        p_question_id: session.question.id,
-        p_selected_option_id: optionId,
-      });
+      const { data, error: submitErr } = await supabase.rpc<SubmitRow>(
+        "submit_game_answer",
+        {
+          p_join_token: token,
+          p_question_id: payload.questionId,
+          p_selected_option_id: payload.selectedOptionId,
+          p_answer_text: payload.answerText,
+        },
+      );
 
       if (submitErr) {
         const msg = submitErr.message;
@@ -362,12 +390,22 @@ export default function JoinRoomPage({
         } else {
           setSubmitError(t.room_err_submit);
         }
+        return { accepted: false, isCorrect: false };
       }
 
-      await loadSession();
-      await loadLeaderboard();
+      const row = data?.[0];
+
+      // Refresh session di background — jangan blok return
+      void loadSession();
+      void loadLeaderboard();
+
+      return {
+        accepted: row?.accepted ?? false,
+        isCorrect: row?.is_correct ?? false,
+      };
     } catch {
       setSubmitError(t.room_err_connect);
+      return { accepted: false, isCorrect: false };
     } finally {
       setSubmitting(false);
     }
@@ -771,8 +809,12 @@ export default function JoinRoomPage({
                 key={session.question.id}
                 questions={[session.question]}
                 dict={dict.anagram}
-                onAnswer={async (qid, optionId) => {
-                  await submitAnswer(optionId);
+                onAnswer={async (payload: AnswerPayload) => {
+                  return await submitAnswer({
+                    questionId: payload.questionId,
+                    selectedOptionId: payload.selectedOptionId,
+                    answerText: payload.answerText,
+                  });
                 }}
                 onFinish={() => {
                   // no-op — server yang menaikkan soal
@@ -904,7 +946,13 @@ export default function JoinRoomPage({
                       (!isCooperative && answerSecondsLeft === 0) ||
                       (isCooperative && totalSecondsLeft === 0)
                     }
-                    onClick={() => void submitAnswer(option.id)}
+                    onClick={() =>
+                      void submitAnswer({
+                        questionId: session.question!.id,
+                        selectedOptionId: option.id,
+                        answerText: null,
+                      })
+                    }
                     className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-start text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <span className="me-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white">

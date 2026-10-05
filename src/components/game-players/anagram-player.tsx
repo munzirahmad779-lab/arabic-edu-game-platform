@@ -13,6 +13,7 @@ type Question = {
   question_text: string;
   difficulty: string;
   options: Option[];
+  correct_option_key?: string;
 };
 
 type AnagramDict = {
@@ -35,22 +36,35 @@ type AnagramDict = {
   skip: string;
 };
 
+export type AnswerPayload = {
+  questionId: string;
+  answerText: string | null;
+  selectedOptionId: string | null;
+  elapsedMs: number;
+};
+
+export type AnswerResult = {
+  accepted: boolean;
+  isCorrect: boolean;
+};
+
 type Props = {
   questions: Question[];
   dict: AnagramDict;
-  onAnswer: (questionId: string, selectedOptionId: string) => Promise<void>;
+  onAnswer: (payload: AnswerPayload) => Promise<AnswerResult>;
   onFinish?: (correct: number, total: number) => void;
   isRtl: boolean;
-  /**
-   * Mode single-question: dipakai saat di game room — soal datang satu per satu
-   * dari server. Setelah menjawab, komponen langsung lapor ke parent dan
-   * parent akan memuat soal berikutnya.
-   */
   singleQuestionMode?: boolean;
-  /** Nomor soal saat ini (untuk display "3 / 10") */
   questionNumber?: number;
-  /** Total soal (untuk display "3 / 10") */
   totalQuestions?: number;
+};
+
+type FeedbackState = "correct" | "wrong" | "error" | null;
+
+type LetterTile = {
+  id: string;
+  unit: string;
+  used: boolean;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -70,15 +84,38 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return out;
 }
 
-function splitChars(s: string): string[] {
-  return Array.from(s);
+function isArabicDiacritic(code: number): boolean {
+  return (
+    (code >= 0x064b && code <= 0x065f) ||
+    code === 0x0670 ||
+    (code >= 0x06d6 && code <= 0x06dc) ||
+    (code >= 0x06df && code <= 0x06e4) ||
+    (code >= 0x06e7 && code <= 0x06e8) ||
+    (code >= 0x06ea && code <= 0x06ed)
+  );
 }
 
-type LetterTile = {
-  id: string;
-  char: string;
-  used: boolean;
-};
+function splitIntoUnits(s: string): string[] {
+  const normalized = s.normalize("NFC");
+  const result: string[] = [];
+  for (const char of Array.from(normalized)) {
+    const code = char.codePointAt(0) ?? 0;
+    if (isArabicDiacritic(code) && result.length > 0) {
+      result[result.length - 1] += char;
+    } else {
+      result.push(char);
+    }
+  }
+  return result;
+}
+
+function hasArabic(s: string): boolean {
+  return /[\u0600-\u06FF]/.test(s);
+}
+
+function normalizeAnswer(s: string): string {
+  return s.normalize("NFC").replace(/\s+/g, " ").trim();
+}
 
 export function AnagramPlayer({
   questions,
@@ -92,111 +129,141 @@ export function AnagramPlayer({
 }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [correctAnswerText, setCorrectAnswerText] = useState<string>("");
+  const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [correctAnswerText, setCorrectAnswerText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [timeStart] = useState(() => Date.now());
+  const [wrongHint, setWrongHint] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [tiles, setTiles] = useState<LetterTile[]>([]);
   const [slots, setSlots] = useState<(LetterTile | null)[]>([]);
-  const [wrongHint, setWrongHint] = useState(false);
+
+  const [timeStart, setTimeStart] = useState(() => Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
   const timeoutRef = useRef<number | null>(null);
+  const initializedQuestionKeyRef = useRef<string | null>(null);
 
   const totalQuestions = totalQuestionsProp ?? questions.length;
   const currentQuestion = questions[currentIndex];
-
-  // Untuk single mode: soal pertama = soal aktif (index 0)
   const activeQuestion = singleQuestionMode ? questions[0] : currentQuestion;
+  const activeQuestionId = activeQuestion?.id ?? null;
 
+  // Ambil opsi benar dari correct_option_key (TIDAK pakai options[0])
   const correctOption = useMemo(() => {
-    if (!activeQuestion || activeQuestion.options.length === 0) return null;
-    return activeQuestion.options[0];
+    if (!activeQuestion) return null;
+    if (!activeQuestion.correct_option_key) return null;
+    return (
+      activeQuestion.options.find(
+        (o) => o.option_key === activeQuestion.correct_option_key,
+      ) ?? null
+    );
   }, [activeQuestion]);
 
-  // Init tiles + slots tiap soal baru
+  // Init tiles — hanya saat soal berubah
   useEffect(() => {
     if (!activeQuestion || !correctOption) return;
 
-    const answerChars = splitChars(correctOption.option_text.trim());
+    const answerText = normalizeAnswer(correctOption.option_text);
+    const questionKey = [
+      activeQuestion.id,
+      correctOption.id,
+      answerText,
+    ].join(":");
 
-    const newTiles: LetterTile[] = answerChars.map((ch, i) => ({
-      id: `t-${i}-${Math.random().toString(36).slice(2, 7)}`,
-      char: ch,
+    if (initializedQuestionKeyRef.current === questionKey) return;
+    initializedQuestionKeyRef.current = questionKey;
+
+    const units = splitIntoUnits(answerText);
+
+    const newTiles: LetterTile[] = units.map((u, i) => ({
+      id: `tile-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      unit: u,
       used: false,
     }));
 
     setTiles(shuffle(newTiles));
-    setSlots(new Array(answerChars.length).fill(null));
+    setSlots(new Array(units.length).fill(null));
     setFeedback(null);
     setWrongHint(false);
-    setCorrectAnswerText(correctOption.option_text);
+    setSaveError(null);
+
+    const now = Date.now();
+    setTimeStart(now);
+    setElapsedSeconds(0);
   }, [activeQuestion, correctOption]);
 
+  // Timer real
+  useEffect(() => {
+    if (finished) return;
+    const id = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - timeStart) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [finished, timeStart]);
+
+  // Cleanup
   useEffect(() => {
     return () => {
       if (timeoutRef.current !== null) {
         window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, []);
 
+  const answerIsArabic = hasArabic(correctAnswerText);
+  const answerDir = answerIsArabic ? "rtl" : "ltr";
+
   // ============ AKSI ============
   function pickLetter(tile: LetterTile) {
     if (feedback === "correct" || submitting || tile.used) return;
+    const idx = slots.findIndex((s) => s === null);
+    if (idx === -1) return;
 
-    const emptyIdx = slots.findIndex((s) => s === null);
-    if (emptyIdx === -1) return;
-
-    const nextSlots = [...slots];
-    nextSlots[emptyIdx] = tile;
-    setSlots(nextSlots);
-
-    const nextTiles = tiles.map((t) =>
-      t.id === tile.id ? { ...t, used: true } : t,
+    const next = [...slots];
+    next[idx] = tile;
+    setSlots(next);
+    setTiles((prev) =>
+      prev.map((t) => (t.id === tile.id ? { ...t, used: true } : t)),
     );
-    setTiles(nextTiles);
     setWrongHint(false);
   }
 
-  function removeFromSlot(slotIndex: number) {
+  function removeFromSlot(i: number) {
     if (feedback === "correct" || submitting) return;
-    const tile = slots[slotIndex];
+    const tile = slots[i];
     if (!tile) return;
-
-    const nextSlots = [...slots];
-    nextSlots[slotIndex] = null;
-    setSlots(nextSlots);
-
-    const nextTiles = tiles.map((t) =>
-      t.id === tile.id ? { ...t, used: false } : t,
+    const next = [...slots];
+    next[i] = null;
+    setSlots(next);
+    setTiles((prev) =>
+      prev.map((t) => (t.id === tile.id ? { ...t, used: false } : t)),
     );
-    setTiles(nextTiles);
     setWrongHint(false);
   }
 
   function clearAll() {
     if (feedback === "correct" || submitting) return;
     setSlots(new Array(slots.length).fill(null));
-    setTiles(tiles.map((t) => ({ ...t, used: false })));
+    setTiles((prev) => prev.map((t) => ({ ...t, used: false })));
     setWrongHint(false);
   }
 
   function backspace() {
     if (feedback === "correct" || submitting) return;
-    let lastIdx = -1;
     for (let i = slots.length - 1; i >= 0; i -= 1) {
       if (slots[i] !== null) {
-        lastIdx = i;
-        break;
+        removeFromSlot(i);
+        return;
       }
     }
-    if (lastIdx === -1) return;
-    removeFromSlot(lastIdx);
   }
 
   async function submit() {
-    if (!activeQuestion || submitting) return;
+    if (!activeQuestion || !correctOption || submitting || feedback === "correct")
+      return;
 
     const hasEmpty = slots.some((s) => s === null);
     if (hasEmpty) {
@@ -204,39 +271,55 @@ export function AnagramPlayer({
       return;
     }
 
-    const userAnswer = slots.map((s) => s?.char ?? "").join("");
-    const isCorrect = userAnswer === correctAnswerText;
+    const userAnswer = normalizeAnswer(
+      slots.map((s) => s?.unit ?? "").join(""),
+    );
 
-    setSubmitting(true);
-
+    // Cari option_id kalau userAnswer persis cocok dengan salah satu option
     const matchedOption =
       activeQuestion.options.find(
-        (o) => o.option_text.trim() === userAnswer,
-      ) ?? activeQuestion.options[0];
+        (o) => normalizeAnswer(o.option_text) === userAnswer,
+      ) ?? null;
+
+    setSubmitting(true);
+    setSaveError(null);
 
     try {
-      await onAnswer(activeQuestion.id, matchedOption.id);
+      const result = await onAnswer({
+        questionId: activeQuestion.id,
+        answerText: userAnswer,
+        selectedOptionId: matchedOption?.id ?? null,
+        elapsedMs: Date.now() - timeStart,
+      });
+
+      if (!result.accepted) {
+        setFeedback("error");
+        setSaveError("Jawaban belum berhasil disimpan. Coba lagi.");
+        return;
+      }
+
+      if (result.isCorrect) {
+        setFeedback("correct");
+        const next = correctCount + 1;
+        setCorrectCount(next);
+        timeoutRef.current = window.setTimeout(() => {
+          timeoutRef.current = null;
+          goNext(true, next);
+        }, 1800);
+      } else {
+        setFeedback("wrong");
+      }
     } catch {
-      // ignore
+      setFeedback("error");
+      setSaveError("Jawaban gagal disimpan. Coba lagi.");
+    } finally {
+      setSubmitting(false);
     }
-
-    if (isCorrect) {
-      setFeedback("correct");
-      setCorrectCount((c) => c + 1);
-      timeoutRef.current = window.setTimeout(() => {
-        goNext(true);
-      }, 900);
-    } else {
-      setFeedback("wrong");
-    }
-
-    setSubmitting(false);
   }
 
-  function goNext(wasCorrect: boolean) {
-    const nextCount = wasCorrect ? correctCount + 1 : correctCount;
+  function goNext(wasCorrect: boolean, knownCorrect?: number) {
+    const nextCount = knownCorrect ?? (wasCorrect ? correctCount + 1 : correctCount);
 
-    // Single mode — lapor ke parent, tidak ada "finished" screen
     if (singleQuestionMode) {
       onFinish?.(nextCount, 1);
       return;
@@ -252,26 +335,31 @@ export function AnagramPlayer({
   }
 
   function skip() {
-    if (submitting) return;
+    if (submitting || feedback === "correct") return;
     goNext(false);
   }
 
-  // ============ RENDER: finished (hanya non-single mode) ============
+  // ============ RENDER ============
+  if (!activeQuestion || !correctOption) {
+    return (
+      <div className="rounded-[2rem] border border-red-100 bg-white p-8 text-center shadow-sm">
+        <div className="text-4xl">⚠️</div>
+        <p className="mt-3 text-sm font-bold text-red-700">
+          {!activeQuestion
+            ? dict.no_questions
+            : "Soal tidak valid atau jawaban benar belum dikonfigurasi."}
+        </p>
+      </div>
+    );
+  }
+
   if (finished && !singleQuestionMode) {
     const percent =
-      totalQuestions > 0
-        ? Math.round((correctCount / totalQuestions) * 100)
-        : 0;
+      totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     return (
-      <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl">
+      <div className="rounded-[2rem] border border-sage-100 bg-white p-8 text-center shadow-sm">
         <div className="text-6xl">
-          {percent >= 90
-            ? "🏆"
-            : percent >= 70
-              ? "🥈"
-              : percent >= 50
-                ? "🥉"
-                : "📚"}
+          {percent >= 90 ? "🏆" : percent >= 70 ? "🥈" : percent >= 50 ? "🥉" : "📚"}
         </div>
         <h1 className="font-display mt-4 text-2xl font-black text-teal-800">
           {dict.finish}
@@ -279,123 +367,142 @@ export function AnagramPlayer({
         <p className="mt-2 text-sm text-softslate/80">
           {dict.correct_count}: {correctCount} / {totalQuestions}
         </p>
-        <p className="mt-1 text-3xl font-black text-terracotta-600">
-          {percent}%
-        </p>
+        <p className="mt-1 text-3xl font-black text-terracotta-600">{percent}%</p>
       </div>
     );
   }
 
-  if (!activeQuestion || !correctOption) {
-    return (
-      <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl">
-        <p className="text-sm text-softslate/70">{dict.no_questions}</p>
-      </div>
-    );
-  }
+  const displayNumber = singleQuestionMode ? (questionNumber ?? 1) : currentIndex + 1;
+  const progress =
+    totalQuestions > 0 ? Math.round((displayNumber / totalQuestions) * 100) : 0;
 
-  const displayNumber = singleQuestionMode
-    ? (questionNumber ?? 1)
-    : currentIndex + 1;
-
-  // ============ RENDER: soal ============
   return (
     <div className="space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-terracotta-100 px-3 py-1 text-xs font-black text-terracotta-700">
-            {dict.title}
-          </span>
-          <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-black text-teal-800">
-            {displayNumber} / {totalQuestions}
-          </span>
+      {/* Header + progress */}
+      <div className="rounded-2xl border border-sage-100 bg-white px-4 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-terracotta-50 px-3 py-1 text-xs font-black text-terracotta-700">
+              {dict.title}
+            </span>
+            <span className="rounded-full bg-sage-50 px-3 py-1 text-xs font-black text-teal-800">
+              {displayNumber} / {totalQuestions}
+            </span>
+          </div>
+          {!singleQuestionMode ? (
+            <span className="text-xs font-bold text-softslate/70">
+              {dict.correct_count}: {correctCount}
+            </span>
+          ) : null}
         </div>
-        {!singleQuestionMode ? (
-          <span className="text-xs font-bold text-softslate/70">
-            {dict.correct_count}: {correctCount}
-          </span>
-        ) : null}
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-sage-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+        >
+          <div
+            className="h-full rounded-full bg-terracotta-500 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
 
       {/* Kartu soal */}
-      <div className="rounded-[2rem] bg-white p-6 shadow-xl sm:p-8">
-        <p className="text-xs font-black uppercase tracking-widest text-softslate/60">
+      <div className="rounded-[2rem] border border-sage-100 bg-white p-6 shadow-sm sm:p-8">
+        <p className="text-center text-xs font-black uppercase tracking-[0.15em] text-softslate/60">
           {dict.hint_label}
         </p>
-        <h2 className="mt-2 text-center text-lg font-black leading-relaxed text-teal-800 sm:text-xl">
+        <h2
+          className="mt-2 text-center text-lg font-black leading-relaxed text-teal-800 sm:text-2xl"
+          dir={hasArabic(activeQuestion.question_text) ? "rtl" : "ltr"}
+        >
           {activeQuestion.question_text}
         </h2>
 
-        {/* Slot */}
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-4 flex justify-center">
+          <span className="rounded-full bg-sage-50 px-3 py-1 text-xs font-black text-teal-800">
+            ⏱ {dict.time_label}: {elapsedSeconds}s
+          </span>
+        </div>
+
+        {/* Slot jawaban */}
+        <div className="mt-6 flex min-h-16 flex-wrap justify-center gap-2" dir={answerDir}>
           {slots.map((s, i) => (
             <button
               key={`slot-${i}`}
               type="button"
               onClick={() => removeFromSlot(i)}
-              className={`flex h-14 w-12 items-center justify-center rounded-xl border-2 text-2xl font-black transition sm:h-16 sm:w-14 ${
+              disabled={submitting || feedback === "correct"}
+              aria-label={s ? `Hapus ${s.unit}` : `Posisi ${i + 1}`}
+              className={`flex h-14 min-w-12 items-center justify-center rounded-xl border-2 px-2 text-2xl font-black transition focus:outline-none focus:ring-2 focus:ring-terracotta-300 disabled:cursor-default sm:h-16 sm:min-w-14 ${
                 s
-                  ? "border-terracotta-500 bg-terracotta-50 text-terracotta-700"
-                  : "border-dashed border-sage-300 bg-sage-50/40 text-transparent"
+                  ? "border-terracotta-400 bg-terracotta-50 text-terracotta-700"
+                  : "border-dashed border-sage-300 bg-sage-50/40"
               }`}
-              aria-label={s ? s.char : ""}
             >
-              {s?.char ?? ""}
+              {s?.unit ?? ""}
             </button>
           ))}
         </div>
 
         {/* Feedback */}
-        {feedback === "wrong" ? (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-center text-sm font-bold text-red-700">
-            {fmt(dict.wrong, { answer: correctAnswerText })}
-          </div>
-        ) : null}
+        <div className="mt-4" aria-live="polite">
+          {feedback === "wrong" ? (
+            <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-center text-sm font-bold text-red-700">
+              {fmt(dict.wrong, { answer: correctAnswerText })}
+            </div>
+          ) : null}
+          {feedback === "correct" ? (
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-center text-sm font-black text-emerald-800">
+              ✅ {dict.correct}
+            </div>
+          ) : null}
+          {feedback === "error" ? (
+            <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-center text-sm font-bold text-red-700">
+              {saveError}
+            </div>
+          ) : null}
+          {wrongHint && feedback === null ? (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-center text-xs font-bold text-amber-800">
+              {dict.no_letters}
+            </div>
+          ) : null}
+        </div>
 
-        {feedback === "correct" ? (
-          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-center text-sm font-black text-emerald-800">
-            {dict.correct}
-          </div>
-        ) : null}
-
-        {wrongHint && feedback !== "wrong" ? (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-center text-xs font-bold text-amber-800">
-            {dict.no_letters}
-          </div>
-        ) : null}
-
-        {/* Huruf */}
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {tiles.map((tile) => (
+        {/* Huruf acak */}
+        <div className="mt-6 flex flex-wrap justify-center gap-2" dir={answerDir}>
+          {tiles.map((t) => (
             <button
-              key={tile.id}
+              key={t.id}
               type="button"
-              onClick={() => pickLetter(tile)}
-              disabled={tile.used || feedback === "correct"}
-              className={`flex h-14 w-12 items-center justify-center rounded-xl text-2xl font-black shadow-sm transition sm:h-16 sm:w-14 ${
-                tile.used
-                  ? "cursor-not-allowed bg-sage-100 text-sage-300"
-                  : "bg-teal-600 text-white hover:-translate-y-0.5 hover:bg-teal-500"
+              onClick={() => pickLetter(t)}
+              disabled={t.used || submitting || feedback === "correct"}
+              aria-label={`Pilih ${t.unit}`}
+              className={`flex h-14 min-w-12 items-center justify-center rounded-xl px-2 text-2xl font-black shadow-sm transition focus:outline-none focus:ring-2 focus:ring-teal-300 disabled:cursor-not-allowed sm:h-16 sm:min-w-14 ${
+                t.used
+                  ? "bg-sage-100 text-sage-300"
+                  : "bg-teal-700 text-white hover:-translate-y-0.5 hover:bg-teal-600"
               }`}
             >
-              {tile.char}
+              {t.unit}
             </button>
           ))}
         </div>
 
-        <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-wide text-softslate/50">
+        <p className="mt-4 text-center text-[10px] font-bold uppercase tracking-wide text-softslate/50">
           {dict.shuffled_hint}
         </p>
       </div>
 
-      {/* Tombol */}
+      {/* Tombol aksi */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <button
           type="button"
           onClick={backspace}
           disabled={submitting || feedback === "correct"}
-          className="rounded-2xl border-2 border-sage-200 bg-white px-4 py-3 text-sm font-black text-teal-800 transition hover:bg-sage-50 disabled:opacity-40"
+          className="rounded-2xl border border-sage-200 bg-white px-4 py-3 text-sm font-black text-teal-800 transition hover:bg-sage-50 disabled:opacity-40"
         >
           ⌫ {dict.backspace}
         </button>
@@ -403,7 +510,7 @@ export function AnagramPlayer({
           type="button"
           onClick={clearAll}
           disabled={submitting || feedback === "correct"}
-          className="rounded-2xl border-2 border-sage-200 bg-white px-4 py-3 text-sm font-black text-teal-800 transition hover:bg-sage-50 disabled:opacity-40"
+          className="rounded-2xl border border-sage-200 bg-white px-4 py-3 text-sm font-black text-teal-800 transition hover:bg-sage-50 disabled:opacity-40"
         >
           🗑 {dict.clear}
         </button>
@@ -411,7 +518,7 @@ export function AnagramPlayer({
           type="button"
           onClick={skip}
           disabled={submitting || feedback === "correct"}
-          className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-40"
+          className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-40"
         >
           ⏭ {dict.skip}
         </button>
@@ -419,26 +526,10 @@ export function AnagramPlayer({
           type="button"
           onClick={() => void submit()}
           disabled={submitting || feedback === "correct"}
-          className="rounded-2xl bg-gradient-to-br from-terracotta-500 to-terracotta-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 disabled:opacity-60"
+          className="rounded-2xl bg-terracotta-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-terracotta-600 disabled:opacity-60"
         >
-          ✓ {dict.submit}
+          {submitting ? "..." : `✓ ${dict.submit}`}
         </button>
-      </div>
-
-      {/* Waktu + next */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3 text-xs shadow-sm">
-        <span className="font-bold text-softslate/70">
-          {dict.time_label}: {Math.floor((Date.now() - timeStart) / 1000)}s
-        </span>
-        {feedback === "wrong" ? (
-          <button
-            type="button"
-            onClick={() => goNext(false)}
-            className="rounded-full bg-teal-700 px-4 py-2 font-black text-white transition hover:bg-teal-600"
-          >
-            {dict.next} {isRtl ? "←" : "→"}
-          </button>
-        ) : null}
       </div>
     </div>
   );
