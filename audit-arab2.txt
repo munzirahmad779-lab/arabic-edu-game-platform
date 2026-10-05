@@ -3,9 +3,6 @@
 14	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\reset-password\page.tsx
 4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\essays\[essayId]\page.tsx
 4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\ai-prompt-section.tsx
-3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\error.tsx
 3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\student\practice\[gameId]\practice-player.tsx
 3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\join\room\page.tsx
-2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\not-found.tsx
 1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\components\language-switcher.tsx
-1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\loading.tsx
