@@ -1178,6 +1178,23 @@
     "empty_classes": "Belum ada kelas. Mulai dengan membuat kelas pertama Anda.",
     "empty_activities": "Belum ada aktivitas."
   },
+    "student_home": {
+    "welcome_title": "Halo, {name} 👋",
+    "welcome_subtitle": "Siap belajar hari ini?",
+    "exam_card_title": "Ikut Ujian TOEFL / TOAFL",
+    "exam_card_desc": "Punya token dari guru? Masukkan di sini untuk mengerjakan ujian.",
+    "card_practice_title": "Latihan Mandiri",
+    "card_practice_desc": "Berlatih soal dari guru — tanpa waktu, bisa kapan saja.",
+    "card_essay_title": "Tugas Menulis",
+    "card_essay_desc": "Tulis jawaban Anda, dapat nilai AI instan.",
+    "card_guided_title": "Gabung Game Kelas",
+    "card_guided_desc": "Masukkan kode ruangan dari guru untuk ikut bermain.",
+    "materials_title": "📖 Materi Pembelajaran",
+    "materials_count_suffix": "materi",
+    "materials_empty": "Belum ada materi yang dipublikasikan.",
+    "materials_updated": "Diperbarui",
+    "logout": "Keluar"
+  },
   "widget": {
     "settings_title": "⚙️ Pengaturan Cepat",
     "settings_aria": "Pengaturan Cepat",

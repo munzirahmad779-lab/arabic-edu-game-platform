@@ -1178,6 +1178,23 @@
     "empty_classes": "No classes yet. Start by creating your first class.",
     "empty_activities": "No activity yet."
   },
+    "student_home": {
+    "welcome_title": "Hello, {name} 👋",
+    "welcome_subtitle": "Ready to learn today?",
+    "exam_card_title": "Take TOEFL / TOAFL Exam",
+    "exam_card_desc": "Have a token from your teacher? Enter it here to take the exam.",
+    "card_practice_title": "Self Practice",
+    "card_practice_desc": "Practice your teacher's questions — no time limit, anytime.",
+    "card_essay_title": "Writing Tasks",
+    "card_essay_desc": "Write your answer, get instant AI score.",
+    "card_guided_title": "Join Class Game",
+    "card_guided_desc": "Enter the room code from your teacher to play.",
+    "materials_title": "📖 Learning Materials",
+    "materials_count_suffix": "materials",
+    "materials_empty": "No published materials yet.",
+    "materials_updated": "Updated",
+    "logout": "Logout"
+  },
   "widget": {
     "settings_title": "⚙️ Quick Settings",
     "settings_aria": "Quick Settings",

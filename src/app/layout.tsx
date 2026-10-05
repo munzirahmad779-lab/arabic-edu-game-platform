@@ -14,7 +14,15 @@ const SITE_TITLE = "Magguru — Interactive Learning Platform";
 const SITE_DESC =
   "Platform pembelajaran interaktif untuk guru dan siswa. Kelola kelas, siswa, materi, dan permainan edukatif dalam satu tempat.";
 
+// URL production. Di Vercel otomatis pakai VERCEL_URL, di lokal pakai localhost.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://magguru.web.id");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: SITE_TITLE,
   description: SITE_DESC,
   openGraph: {

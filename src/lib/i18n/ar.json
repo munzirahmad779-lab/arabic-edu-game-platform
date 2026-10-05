@@ -1178,6 +1178,23 @@
     "empty_classes": "لا توجد فصول بعد. ابدأ بإنشاء فصلك الأول.",
     "empty_activities": "لا يوجد نشاط بعد."
   },
+    "student_home": {
+    "welcome_title": "مرحبًا، {name} 👋",
+    "welcome_subtitle": "هل أنت مستعد للتعلم اليوم؟",
+    "exam_card_title": "أدِّ اختبار TOEFL / TOAFL",
+    "exam_card_desc": "هل لديك رمز من معلمك؟ أدخله هنا لبدء الاختبار.",
+    "card_practice_title": "تدريب ذاتي",
+    "card_practice_desc": "تدرّب على أسئلة معلمك — بلا وقت، في أي وقت.",
+    "card_essay_title": "مهام الكتابة",
+    "card_essay_desc": "اكتب إجابتك واحصل على تقييم AI فوري.",
+    "card_guided_title": "انضم إلى لعبة الفصل",
+    "card_guided_desc": "أدخل كود الغرفة من معلمك للبدء في اللعب.",
+    "materials_title": "📖 المواد الدراسية",
+    "materials_count_suffix": "مادة",
+    "materials_empty": "لا توجد مواد منشورة بعد.",
+    "materials_updated": "آخر تحديث",
+    "logout": "تسجيل الخروج"
+  },
   "widget": {
     "settings_title": "⚙️ الإعدادات السريعة",
     "settings_aria": "الإعدادات السريعة",
