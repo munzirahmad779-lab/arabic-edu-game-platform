@@ -688,7 +688,7 @@
     "backsound_empty_hint": "لا توجد مقاطع محمّلة. اذهب إلى إعدادات الموسيقى لإضافة مقاطع.",
     "backsound_hint": "سيتم تشغيل هذه الموسيقى أثناء اللعب في هذه اللعبة تحديدًا."
   },
-  "questions_picker": {
+    "questions_picker": {
     "legend": "اختر الأسئلة",
     "selected_badge": "✓ تم اختيار {count} سؤال",
     "hint_open": "اضغط على اسم أي بنك لفتحه واختيار الأسئلة منه.",
@@ -701,7 +701,11 @@
     "no_text": "(سؤال بلا نص)",
     "difficulty_easy": "سهل",
     "difficulty_medium": "متوسط",
-    "difficulty_hard": "صعب"
+    "difficulty_hard": "صعب",
+    "select_all": "تحديد الكل",
+    "deselect_all": "إلغاء التحديد",
+    "select_all_bank": "✓ تحديد الكل في هذا البنك",
+    "deselect_all_bank": "✕ إلغاء تحديد هذا البنك"
   },
   "join_errors": {
     "incomplete": "بيانات الانضمام غير مكتملة.",

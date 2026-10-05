@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "Belum ada track. Buka Pengaturan Musik untuk menambah.",
     "backsound_hint": "Musik ini akan diputar selama bermain di permainan ini."
   },
-  "questions_picker": {
+    "questions_picker": {
     "legend": "Pilih Soal",
     "selected_badge": "✓ {count} soal dipilih",
     "hint_open": "Klik nama bank untuk membuka dan pilih soal.",
@@ -1019,7 +1019,11 @@
     "no_text": "(soal tanpa teks)",
     "difficulty_easy": "Mudah",
     "difficulty_medium": "Sedang",
-    "difficulty_hard": "Sulit"
+    "difficulty_hard": "Sulit",
+    "select_all": "Pilih Semua",
+    "deselect_all": "Kosongkan",
+    "select_all_bank": "✓ Pilih Semua di Bank Ini",
+    "deselect_all_bank": "✕ Kosongkan Bank Ini"
   },
   "join_errors": {
     "incomplete": "Data bergabung tidak lengkap.",

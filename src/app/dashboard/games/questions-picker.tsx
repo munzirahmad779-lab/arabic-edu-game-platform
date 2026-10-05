@@ -31,6 +31,10 @@ type QuestionsPickerDict = {
   difficulty_easy: string;
   difficulty_medium: string;
   difficulty_hard: string;
+  select_all: string;
+  deselect_all: string;
+  select_all_bank: string;
+  deselect_all_bank: string;
 };
 
 function fmt(template: string, count: number): string {
@@ -77,14 +81,76 @@ export function QuestionsPicker({
     setFilterByBank((prev) => ({ ...prev, [bankId]: catId }));
   }
 
+  /** Pilih semua pertanyaan yang lolos filter saat ini (bank + kategori). */
+  function selectAllFiltered(bankId: string, questions: Question[]) {
+    const activeCat = filterByBank[bankId] ?? "__all__";
+    const filtered =
+      activeCat === "__all__"
+        ? questions
+        : activeCat === "__none__"
+          ? questions.filter((q) => !q.category_id)
+          : questions.filter((q) => q.category_id === activeCat);
+
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const q of filtered) next.add(q.id);
+      return next;
+    });
+  }
+
+  /** Hapus centang dari semua pertanyaan yang lolos filter saat ini. */
+  function deselectAllFiltered(bankId: string, questions: Question[]) {
+    const activeCat = filterByBank[bankId] ?? "__all__";
+    const filtered =
+      activeCat === "__all__"
+        ? questions
+        : activeCat === "__none__"
+          ? questions.filter((q) => !q.category_id)
+          : questions.filter((q) => q.category_id === activeCat);
+
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const q of filtered) next.delete(q.id);
+      return next;
+    });
+  }
+
+  /** Pilih/lepas semua di bank (abaikan filter). */
+  function selectAllBank(questions: Question[]) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const q of questions) next.add(q.id);
+      return next;
+    });
+  }
+
+  function deselectAllBank(questions: Question[]) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const q of questions) next.delete(q.id);
+      return next;
+    });
+  }
+
+  function clearAll() {
+    setSelected(new Set());
+  }
+
   return (
     <div className="space-y-3">
       <fieldset>
         <legend className="text-sm font-medium">{qp.legend}</legend>
 
         {selected.size > 0 ? (
-          <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-800">
-            {fmt(qp.selected_badge, selected.size)}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-800">
+            <span>{fmt(qp.selected_badge, selected.size)}</span>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="rounded-full border border-violet-300 bg-white px-3 py-1 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+            >
+              {qp.deselect_all}
+            </button>
           </div>
         ) : (
           <p className="mt-2 text-xs text-neutral-500">{qp.hint_open}</p>
@@ -107,6 +173,15 @@ export function QuestionsPicker({
               selected.has(q.id),
             ).length;
 
+            // Berapa banyak dari filtered yang BELUM terpilih?
+            const filteredUnselected = filtered.filter(
+              (q) => !selected.has(q.id),
+            ).length;
+            // Berapa banyak dari filtered yang SUDAH terpilih?
+            const filteredSelected = filtered.filter((q) =>
+              selected.has(q.id),
+            ).length;
+
             return (
               <div
                 key={bank.id}
@@ -115,7 +190,7 @@ export function QuestionsPicker({
                 <button
                   type="button"
                   onClick={() => setOpenBank(open ? null : bank.id)}
-                  className="flex w-full items-center justify-between gap-3 p-4 text-right transition hover:bg-neutral-50"
+                  className="flex w-full items-center justify-between gap-3 p-4 text-start transition hover:bg-neutral-50"
                   aria-expanded={open}
                 >
                   <div className="min-w-0 flex-1">
@@ -156,6 +231,27 @@ export function QuestionsPicker({
                       </p>
                     ) : (
                       <>
+                        {/* Tombol massal untuk bank */}
+                        <div className="flex flex-wrap gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                          <button
+                            type="button"
+                            onClick={() => selectAllBank(questions)}
+                            disabled={selectedInBank === questions.length}
+                            className="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                          >
+                            {qp.select_all_bank}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deselectAllBank(questions)}
+                            disabled={selectedInBank === 0}
+                            className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50"
+                          >
+                            {qp.deselect_all_bank}
+                          </button>
+                        </div>
+
+                        {/* Filter kategori */}
                         {categories.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -213,6 +309,33 @@ export function QuestionsPicker({
                           </div>
                         ) : null}
 
+                        {/* Tombol massal untuk filter aktif */}
+                        {filtered.length > 0 ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                selectAllFiltered(bank.id, questions)
+                              }
+                              disabled={filteredUnselected === 0}
+                              className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 transition hover:bg-violet-100 disabled:opacity-50"
+                            >
+                              {qp.select_all} ({filtered.length})
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deselectAllFiltered(bank.id, questions)
+                              }
+                              disabled={filteredSelected === 0}
+                              className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50"
+                            >
+                              {qp.deselect_all} ({filteredSelected})
+                            </button>
+                          </div>
+                        ) : null}
+
+                        {/* Daftar soal */}
                         {filtered.length === 0 ? (
                           <p className="rounded-lg bg-neutral-50 p-4 text-center text-sm text-neutral-500">
                             {qp.no_match}

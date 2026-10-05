@@ -1006,7 +1006,7 @@
     "backsound_empty_hint": "No tracks yet. Go to Music Settings to add tracks.",
     "backsound_hint": "This music will play during gameplay for this specific game."
   },
-  "questions_picker": {
+    "questions_picker": {
     "legend": "Choose Questions",
     "selected_badge": "✓ {count} questions selected",
     "hint_open": "Click any bank name to open it and pick questions.",
@@ -1019,7 +1019,11 @@
     "no_text": "(question with no text)",
     "difficulty_easy": "Easy",
     "difficulty_medium": "Medium",
-    "difficulty_hard": "Hard"
+    "difficulty_hard": "Hard",
+    "select_all": "Select All",
+    "deselect_all": "Clear",
+    "select_all_bank": "✓ Select All in This Bank",
+    "deselect_all_bank": "✕ Clear This Bank"
   },
   "join_errors": {
     "incomplete": "Incomplete join data.",
