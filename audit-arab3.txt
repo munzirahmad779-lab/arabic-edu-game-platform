@@ -1,0 +1,5 @@
+﻿38	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\page.tsx
+4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\question-banks\ai-prompt-section.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\student\practice\[gameId]\practice-player.tsx
+3	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\join\room\page.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\components\language-switcher.tsx

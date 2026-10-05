@@ -1068,6 +1068,52 @@
       "confirm_empty": "هل أنت متأكد من حذف \"{name}\"؟"
     }
   },
+    "review_list": {
+    "empty_title": "لا توجد إجابات بعد",
+    "empty_desc": "في انتظار أن يسلم الطلاب إجاباتهم.",
+    "err_range": "الدرجة يجب أن تكون بين 0 و100.",
+    "err_prefix": "خطأ: ",
+    "err_conn": "تعذر الاتصال بالخادم.",
+    "edited_badge": "✏️ تم التعديل",
+    "initial_grade": "التقييم الأولي",
+    "student_answer_title": "إجابة الطالب",
+    "duration_prefix": "⏱ وقت الكتابة: ",
+    "minutes_suffix": "دقيقة",
+    "subscore_content": "المحتوى",
+    "subscore_grammar": "القواعد",
+    "subscore_vocab": "المفردات",
+    "ai_feedback_title": "📝 ملاحظات AI",
+    "teacher_feedback_title": "✏️ ملاحظات المعلم",
+    "final_score_label": "الدرجة النهائية (0-100)",
+    "teacher_feedback_label": "ملاحظات المعلم (اختياري)",
+    "save_btn": "💾 حفظ",
+    "cancel_btn": "إلغاء",
+    "saving": "...",
+    "edit_grade_btn": "✏️ تعديل الدرجة / إضافة ملاحظات"
+  },
+  "essay_review": {
+    "back_link": "العودة إلى الفصل",
+    "header_label": "مراجعة مهمة الكتابة",
+    "duration_suffix": "دقيقة",
+    "submissions_suffix": "إجابة",
+    "question_label": "السؤال"
+  },
+  "reset_pw": {
+    "checking": "جاري التحقق من الرابط...",
+    "invalid_link_title": "رابط غير صالح أو منتهي",
+    "invalid_link_desc": "الرابط غير صالح أو انتهت صلاحيته. يرجى طلب رابط جديد من صفحة تسجيل الدخول.",
+    "back_to_login": "العودة إلى تسجيل الدخول",
+    "title": "🔒 كلمة مرور جديدة",
+    "desc": "أدخل كلمة المرور الجديدة مرتين.",
+    "password_label": "كلمة المرور الجديدة",
+    "confirm_label": "تأكيد كلمة المرور",
+    "err_short": "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
+    "err_mismatch": "كلمتا المرور غير متطابقتين.",
+    "err_conn": "تعذر الاتصال بالخادم.",
+    "success_info": "✓ تم تغيير كلمة المرور بنجاح. جاري تحويلك...",
+    "save_btn": "حفظ كلمة المرور الجديدة",
+    "submitting": "..."
+  },
     "status": {
     "loading": "جارٍ التحميل...",
     "error_title": "حدث خطأ غير متوقع",
