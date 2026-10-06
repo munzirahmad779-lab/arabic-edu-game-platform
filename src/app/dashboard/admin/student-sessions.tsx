@@ -33,8 +33,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     setProcessing(s.session_id);
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).rpc(
+      const { error } = await supabase.rpc(
         "admin_force_logout_student",
         { p_session_id: s.session_id },
       );
@@ -63,8 +62,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     setBulkProcessing(true);
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc(
+      const { data, error } = await supabase.rpc(
         "admin_force_logout_all_students",
       );
       if (error) {
@@ -88,8 +86,7 @@ export function StudentSessions({ sessions }: { sessions: Session[] }) {
     setCleanMsg(null);
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc(
+      const { data, error } = await supabase.rpc(
         "admin_cleanup_expired_sessions",
       );
       if (error) {

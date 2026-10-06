@@ -45,13 +45,13 @@ export function TeacherList({ teachers }: { teachers: Teacher[] }) {
     setProcessing(t.id);
     try {
       const supabase = createClient();
-      const rpcName = t.is_active
-        ? "admin_deactivate_teacher"
-        : "admin_activate_teacher";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).rpc(rpcName, {
-        p_teacher_id: t.id,
-      });
+      const { error } = t.is_active
+        ? await supabase.rpc("admin_deactivate_teacher", {
+            p_teacher_id: t.id,
+          })
+        : await supabase.rpc("admin_activate_teacher", {
+            p_teacher_id: t.id,
+          });
       if (error) {
         alert(`خطأ: ${error.message}`);
       } else {

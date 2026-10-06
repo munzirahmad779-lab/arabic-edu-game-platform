@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { todayWib, yesterdayWib, toWibTime } from "@/lib/format-wib";
 
@@ -114,6 +114,55 @@ export function ReportView({
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(date);
 
+  const analytics = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        student_name: string;
+        totalCorrect: number;
+        totalQuestions: number;
+        sessionsCount: number;
+      }
+    >();
+    for (const r of [...roomRows, ...practiceRows]) {
+      const prev = map.get(r.student_name) ?? {
+        student_name: r.student_name,
+        totalCorrect: 0,
+        totalQuestions: 0,
+        sessionsCount: 0,
+      };
+      prev.totalCorrect += r.correct_count;
+      prev.totalQuestions += r.total_questions;
+      prev.sessionsCount += 1;
+      map.set(r.student_name, prev);
+    }
+    const students = Array.from(map.values()).map((s) => ({
+      ...s,
+      pct:
+        s.totalQuestions > 0
+          ? Math.round((s.totalCorrect / s.totalQuestions) * 100)
+          : 0,
+    }));
+    const totalQ = students.reduce((acc, s) => acc + s.totalQuestions, 0);
+    const totalC = students.reduce((acc, s) => acc + s.totalCorrect, 0);
+    const classAvg = totalQ > 0 ? Math.round((totalC / totalQ) * 100) : 0;
+    const top = students
+      .filter((s) => s.pct >= 75)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5);
+    const needsSupport = students
+      .filter((s) => s.pct < 60)
+      .sort((a, b) => a.pct - b.pct);
+    return {
+      students,
+      classAvg,
+      top,
+      needsSupport,
+      totalSessions: roomRows.length + practiceRows.length,
+      activeCount: students.length,
+    };
+  }, [roomRows, practiceRows]);
+
   const mdText = buildMarkdown(date, roomRows, practiceRows);
 
   async function copyMd() {
@@ -147,8 +196,7 @@ export function ReportView({
     setCleanMsg(null);
     try {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc("cleanup_old_history");
+      const { data, error } = await supabase.rpc("cleanup_old_history");
       if (error) {
         setCleanMsg(`خطأ: ${error.message}`);
       } else {
@@ -256,6 +304,92 @@ export function ReportView({
           </li>
         </ul>
       </section>
+
+      {/* Performance Summary & Weakness Detection */}
+      {analytics.totalSessions > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Summary Card */}
+          <section className="rounded-[2rem] border border-violet-100 bg-white p-5 shadow-lg">
+            <h2 className="text-base font-black text-neutral-900">
+              📊 ملخص الأداء العام
+            </h2>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-2xl bg-violet-50 p-3">
+                <div className="text-xs font-bold text-violet-700">متوسط الدقة</div>
+                <div className="mt-1 text-2xl font-black text-violet-950">
+                  {analytics.classAvg}%
+                </div>
+              </div>
+              <div className="rounded-2xl bg-fuchsia-50 p-3">
+                <div className="text-xs font-bold text-fuchsia-700">الطلاب النشطون</div>
+                <div className="mt-1 text-2xl font-black text-fuchsia-950">
+                  {analytics.activeCount}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 p-3">
+                <div className="text-xs font-bold text-emerald-700">إجمالي الجلسات</div>
+                <div className="mt-1 text-2xl font-black text-emerald-950">
+                  {analytics.totalSessions}
+                </div>
+              </div>
+            </div>
+
+            {analytics.top.length > 0 ? (
+              <div className="mt-4 rounded-2xl bg-emerald-50/70 p-3">
+                <p className="text-xs font-black text-emerald-800">
+                  ⭐ الطلاب المتميزون (≥75%):
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {analytics.top.map((s) => (
+                    <span
+                      key={s.student_name}
+                      className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-900"
+                    >
+                      {s.student_name} ({s.pct}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          {/* Weakness Detection Card */}
+          <section className="rounded-[2rem] border border-rose-100 bg-white p-5 shadow-lg">
+            <h2 className="text-base font-black text-neutral-900">
+              🎯 كشف الضعف والدعم التعليمي
+            </h2>
+            {analytics.needsSupport.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-bold text-rose-700">
+                  ⚠️ الطلاب الذين يحتاجون إلى متابعة (&lt;60%):
+                </p>
+                <div className="space-y-1.5">
+                  {analytics.needsSupport.map((s) => (
+                    <div
+                      key={s.student_name}
+                      className="flex items-center justify-between rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900"
+                    >
+                      <span>{s.student_name}</span>
+                      <span className="rounded-full bg-rose-200 px-2 py-0.5 font-black text-rose-950">
+                        {s.pct}% ({s.totalCorrect}/{s.totalQuestions})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-neutral-500">
+                  💡 توصية: تخصيص تمارين مراجعة إضافية لهؤلاء الطلاب قبل الاختبار القادم.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center">
+                <p className="text-sm font-bold text-emerald-800">
+                  🎉 أداء ممتاز! لا يوجد طلاب أقل من 60% اليوم.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      ) : null}
 
       {/* Room table */}
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">

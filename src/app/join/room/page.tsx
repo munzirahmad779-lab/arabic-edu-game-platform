@@ -67,16 +67,6 @@ type LeaderboardRow = {
   rnk: number;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 const DIFFICULTY_AR: Record<string, string> = {
   easy: "سهل",
   medium: "متوسط",
@@ -134,8 +124,8 @@ export default function JoinRoomPage({
       return;
     }
     try {
-      const supabase = createClient() as unknown as RpcClient;
-      const { data, error: rpcError } = await supabase.rpc<Session>(
+      const supabase = createClient();
+      const { data, error: rpcError } = await supabase.rpc(
         "get_game_session",
         { p_join_token: token },
       );
@@ -157,7 +147,13 @@ export default function JoinRoomPage({
         return;
       }
 
-      const incoming = data[0];
+      const raw = data[0];
+      const incoming: Session = {
+        ...raw,
+        room_state: raw.room_state as Session["room_state"],
+        participant_name: raw.participant_name ?? "",
+        question: raw.question as unknown as Question | null,
+      };
       const serverMs = new Date(incoming.server_time).getTime();
       if (Number.isFinite(serverMs)) {
         skewRef.current = serverMs - Date.now();
@@ -173,8 +169,8 @@ export default function JoinRoomPage({
   const loadLeaderboard = useCallback(async () => {
     if (!token) return;
     try {
-      const supabase = createClient() as unknown as RpcClient;
-      const { data, error: rpcError } = await supabase.rpc<LeaderboardRow>(
+      const supabase = createClient();
+      const { data, error: rpcError } = await supabase.rpc(
         "get_room_leaderboard_student",
         { p_join_token: token },
       );
@@ -189,7 +185,7 @@ export default function JoinRoomPage({
   const sendHeartbeat = useCallback(async () => {
     if (!token) return;
     try {
-      const supabase = createClient() as unknown as RpcClient;
+      const supabase = createClient();
       await supabase.rpc("heartbeat_room_participant", {
         p_join_token: token,
       });
@@ -300,7 +296,7 @@ export default function JoinRoomPage({
     setSubmitError("");
 
     try {
-      const supabase = createClient() as unknown as RpcClient;
+      const supabase = createClient();
       const { error: submitErr } = await supabase.rpc("submit_game_answer", {
         p_join_token: token,
         p_question_id: session.question.id,

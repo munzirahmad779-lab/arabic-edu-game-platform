@@ -1,8 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createGame, createRoom, deleteGame } from "./actions";
+import { createGame } from "./actions";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
+import { GameCardActions } from "./game-card-actions";
 
 type SearchParams = {
   error?: string;
@@ -260,34 +261,12 @@ export default async function GamesPage({
                     </p>
                   ) : null}
 
-                  <div className="mt-4 flex gap-2 pt-2">
-                    {isRoomMode ? (
-                      <form action={createRoom} className="flex-1">
-                        <input type="hidden" name="game_id" value={game.id} />
-                        <button
-                          type="submit"
-                          className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
-                        >
-                          ▶ تشغيل اللعبة
-                        </button>
-                      </form>
-                    ) : (
-                      <div className="flex-1 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2.5 text-center text-xs font-bold text-blue-700">
-                        بدون غرفة
-                      </div>
-                    )}
-
-                    <form action={deleteGame}>
-                      <input type="hidden" name="game_id" value={game.id} />
-                      <button
-                        type="submit"
-                        title="حذف اللعبة"
-                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
-                      >
-                        🗑
-                      </button>
-                    </form>
-                  </div>
+                  <GameCardActions
+                    gameId={game.id}
+                    gameName={game.name}
+                    gameModeAr={modeInfo.ar}
+                    isRoomMode={isRoomMode}
+                  />
                 </article>
               );
             })}

@@ -6,6 +6,7 @@ import RoomLobby from "./room-lobby";
 import StartGameButton from "./start-game-button";
 import ArchiveButton from "./archive-button";
 import SessionHistory from "./session-history";
+import { TeacherLiveControls } from "./teacher-live-controls";
 
 type SearchParams = { roomId?: string; archived?: string; error?: string };
 
@@ -266,9 +267,10 @@ export default async function RoomPage({
             ) : null}
 
             {room.state === "running" ? (
-              <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-800">
-                اللعبة جارية الآن.
-              </div>
+              <TeacherLiveControls
+                roomId={room.id}
+                questionCount={questionCount}
+              />
             ) : null}
 
             {room.state === "ended" ? (

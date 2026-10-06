@@ -22,16 +22,6 @@ type EssayData = {
   submitted_at: string | null;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 function formatTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -122,8 +112,8 @@ export function EssayPlayer({
       startedAt !== null ? Math.floor((Date.now() - startedAt) / 1000) : 0;
 
     try {
-      const supabase = createClient() as unknown as RpcClient;
-      const { data, error: subErr } = await supabase.rpc<string>(
+      const supabase = createClient();
+      const { data, error: subErr } = await supabase.rpc(
         "student_submit_essay",
         {
           p_token: token,
@@ -133,12 +123,12 @@ export function EssayPlayer({
         },
       );
 
-      if (subErr || !data || !data[0]) {
+      if (subErr || !data) {
         setError("تعذر تسليم الإجابة. حاول مرة أخرى.");
         return;
       }
 
-      const submissionId = data[0];
+      const submissionId = data;
       setPhase("grading");
 
       const res = await fetch("/api/grade-essay", {

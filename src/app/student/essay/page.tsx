@@ -18,8 +18,7 @@ export default async function StudentEssayListPage() {
   if (!token) redirect("/student/login");
 
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("student_list_essays", {
+  const { data, error } = await supabase.rpc("student_list_essays", {
     p_token: token,
   });
 

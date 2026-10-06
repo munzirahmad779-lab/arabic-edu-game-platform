@@ -36,13 +36,11 @@ export default async function AdminPage() {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: teachersData } = await (supabase as any).rpc(
+  const { data: teachersData } = await supabase.rpc(
     "admin_list_teachers",
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: sessionsData } = await (supabase as any).rpc(
+  const { data: sessionsData } = await supabase.rpc(
     "admin_list_student_sessions",
   );
 

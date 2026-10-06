@@ -263,6 +263,93 @@ export async function deleteGame(formData: FormData) {
   redirect("/dashboard/games");
 }
 
+export async function cloneGame(formData: FormData) {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (e) {
+    console.error("[cloneGame] createClient failed:", e);
+    redirect("/dashboard/games?error=client_failed");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const gameId = normalizeName(formData.get("game_id"));
+  if (!gameId) redirect("/dashboard/games?error=invalid");
+
+  const { data: sourceGame, error: gameError } = await supabase
+    .from("games")
+    .select("*")
+    .eq("id", gameId)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (gameError || !sourceGame) {
+    redirect("/dashboard/games?error=game_not_found");
+  }
+
+  const { data: sourceQuestions, error: qError } = await supabase
+    .from("game_questions")
+    .select("question_id, position, explanation_timing")
+    .eq("game_id", gameId)
+    .order("position", { ascending: true });
+
+  if (qError || !sourceQuestions || sourceQuestions.length === 0) {
+    redirect("/dashboard/games?error=invalid_questions");
+  }
+
+  const clonedName = `${sourceGame.name} (نسخة)`.slice(0, MAX_GAME_NAME_LENGTH);
+
+  const { data: clonedGame, error: insertError } = await supabase
+    .from("games")
+    .insert({
+      teacher_id: user.id,
+      class_id: sourceGame.class_id,
+      name: clonedName,
+      game_type: sourceGame.game_type,
+      mode: sourceGame.mode,
+      duration_seconds: sourceGame.duration_seconds,
+      ranking_visibility: sourceGame.ranking_visibility,
+      backsound_track_id: sourceGame.backsound_track_id,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !clonedGame) {
+    console.error("[cloneGame] insert failed:", insertError);
+    redirect("/dashboard/games?error=create_failed");
+  }
+
+  const newQuestions = sourceQuestions.map((sq) => ({
+    game_id: clonedGame.id,
+    question_id: sq.question_id,
+    position: sq.position,
+    explanation_timing: sq.explanation_timing,
+  }));
+
+  const { error: relError } = await supabase
+    .from("game_questions")
+    .insert(newQuestions);
+
+  if (relError) {
+    console.error("[cloneGame] game_questions insert failed:", relError);
+    await supabase
+      .from("games")
+      .delete()
+      .eq("id", clonedGame.id)
+      .eq("teacher_id", user.id);
+    redirect("/dashboard/games?error=create_failed");
+  }
+
+  revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/games");
+}
+
 const ROOM_CODE_LENGTH = 6;
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 

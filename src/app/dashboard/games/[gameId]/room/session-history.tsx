@@ -22,16 +22,6 @@ type DetailRow = {
   avg_response_ms: number;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 export default function SessionHistory({
   sessions,
 }: {
@@ -56,8 +46,8 @@ export default function SessionHistory({
 
     setLoading(true);
     try {
-      const supabase = createClient() as unknown as RpcClient;
-      const { data, error } = await supabase.rpc<DetailRow>(
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc(
         "get_room_session_detail",
         { p_session_id: sessionId },
       );

@@ -37,8 +37,7 @@ export async function createStudent(formData: FormData) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).rpc("create_student", {
+  const { error } = await supabase.rpc("create_student", {
     p_class_id: classId,
     p_name: name,
     p_pin: pin,
@@ -75,8 +74,7 @@ export async function resetStudentPin(formData: FormData) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).rpc("reset_student_pin", {
+  const { error } = await supabase.rpc("reset_student_pin", {
     p_student_id: studentId,
     p_pin: pin,
   });
@@ -89,9 +87,7 @@ export async function resetStudentPin(formData: FormData) {
     );
   }
 
-  // Update pin_plain juga (kalau kolomnya ada)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await supabase
     .from("students")
     .update({ pin_plain: pin })
     .eq("id", studentId)
@@ -117,8 +113,7 @@ export async function deleteStudent(formData: FormData) {
     redirect("/dashboard/students?error=failed");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).rpc("delete_student", {
+  const { error } = await supabase.rpc("delete_student", {
     p_student_id: studentId,
   });
 
@@ -159,8 +154,7 @@ export async function importStudents(
     return { ok: false, message: "Jumlah siswa harus antara 1 dan 200." };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc(
+  const { data, error } = await supabase.rpc(
     "import_students_to_class",
     {
       p_class_id: classId,

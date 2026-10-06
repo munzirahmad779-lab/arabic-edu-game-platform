@@ -33,8 +33,7 @@ const MODE_COLOR: Record<string, string> = {
 export async function ClassHistoryTab({ classId }: { classId: string }) {
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("teacher_class_history", {
+  const { data, error } = await supabase.rpc("teacher_class_history", {
     p_class_id: classId,
   });
 

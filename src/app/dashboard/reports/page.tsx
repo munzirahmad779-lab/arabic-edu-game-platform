@@ -23,8 +23,7 @@ export default async function ReportsPage({
 
   const date = isValidDate(searchParams.date) ? searchParams.date : todayWib();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("teacher_daily_report", {
+  const { data, error } = await supabase.rpc("teacher_daily_report", {
     p_date: date,
   });
 

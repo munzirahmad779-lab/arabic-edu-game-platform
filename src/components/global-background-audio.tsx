@@ -84,8 +84,7 @@ export function GlobalBackgroundAudio() {
     const supabase = createClient();
     (async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase as any).rpc("get_active_audio_tracks");
+        const { data } = await supabase.rpc("get_active_audio_tracks");
         if (!alive) return;
         if (Array.isArray(data)) setTracks(data as Track[]);
       } catch {

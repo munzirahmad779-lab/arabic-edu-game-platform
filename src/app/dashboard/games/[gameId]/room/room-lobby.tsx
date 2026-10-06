@@ -25,16 +25,6 @@ type LeaderboardRow = {
   rnk: number;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 // Peserta dianggap masih aktif kalau heartbeat < 60 detik lalu
 const ACTIVE_WINDOW_MS = 60_000;
 
@@ -74,8 +64,7 @@ export default function RoomLobby({
         setLoadError("");
       }
 
-      const client = supabase as unknown as RpcClient;
-      const { data: lData, error: lErr } = await client.rpc<LeaderboardRow>(
+      const { data: lData, error: lErr } = await supabase.rpc(
         "get_room_leaderboard_teacher",
         { p_room_id: roomId },
       );

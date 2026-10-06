@@ -54,16 +54,6 @@ type AnswerState = {
   explanation: string | null;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 const MODE_AR: Record<string, string> = {
   endless: "بلا نهاية",
   practice: "تمرين",
@@ -162,18 +152,16 @@ export function PracticePlayer({
     setSubmitError("");
 
     try {
-      const supabase = createClient() as unknown as RpcClient;
-      const { data, error } = await supabase.rpc<{
-        accepted: boolean;
-        is_correct: boolean;
-        correct_option_key: string;
-        explanation: string | null;
-      }>("student_submit_practice_answer", {
-        p_token: token,
-        p_game_id: game.game_id,
-        p_question_id: currentQuestion.id,
-        p_selected_option_key: optionKey,
-      });
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc(
+        "student_submit_practice_answer",
+        {
+          p_token: token,
+          p_game_id: game.game_id,
+          p_question_id: currentQuestion.id,
+          p_selected_option_key: optionKey,
+        },
+      );
 
       if (error || !data || !data[0]) {
         setSubmitError("تعذر تسجيل الإجابة. حاول مرة أخرى.");
@@ -222,7 +210,7 @@ export function PracticePlayer({
     setResetting(true);
 
     try {
-      const supabase = createClient() as unknown as RpcClient;
+      const supabase = createClient();
       await supabase.rpc("student_reset_practice", {
         p_token: token,
         p_game_id: game.game_id,

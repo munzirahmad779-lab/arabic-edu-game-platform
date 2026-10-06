@@ -3,11 +3,11 @@
 # PLATFORM GAME EDUKASI BAHASA ARAB
 ## Canonical Project Context — Master Specification
 
-> Dokumen ini adalah sumber konteks utama proyek. Chat baru tidak boleh mengandalkan riwayat chat lama. Gunakan dokumen ini sebagai baseline arsitektur, scope MVP, keputusan teknis, dan roadmap.
+> Dokumen ini adalah sumber konteks utama proyek. Gunakan dokumen ini sebagai baseline arsitektur, keputusan teknis, dan roadmap.
 >
-> Status dokumen: **Blueprint/Architecture completed; implementation not yet started.**
+> Status dokumen: **Production Architecture & Implementation Active (57 Migrations Applied, Multi-Mode Games, Question Banks, Essay AI, Student Practice, Live Room Controls, and Admin Suite).**
 >
-> Prinsip: jangan mengubah keputusan yang sudah dikunci tanpa persetujuan eksplisit pemilik proyek.
+> Prinsip: jangan mengubah keputusan yang sudah dikunci tanpa persetujuan eksplisit pemilik proyek. Source of truth teknis adalah source code aktual dan database migrations aktif.
 
 ---
 

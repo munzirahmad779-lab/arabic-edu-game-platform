@@ -13,16 +13,6 @@ type Row = {
   is_correct: boolean;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 export function RoomReview({ token }: { token: string }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +23,20 @@ export function RoomReview({ token }: { token: string }) {
     let alive = true;
     (async () => {
       try {
-        const supabase = createClient() as unknown as RpcClient;
-        const { data, error } = await supabase.rpc<Row>(
+        const supabase = createClient();
+        const { data, error } = await supabase.rpc(
           "student_get_my_room_answers",
           { p_join_token: token },
         );
         if (!alive) return;
-        if (!error && data) setRows(data);
+        if (!error && data) {
+          setRows(
+            data.map((r) => ({
+              ...r,
+              options: (Array.isArray(r.options) ? r.options : []) as Row["options"],
+            })),
+          );
+        }
       } catch {
         // ignore
       } finally {

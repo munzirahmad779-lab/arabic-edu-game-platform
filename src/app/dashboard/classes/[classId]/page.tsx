@@ -117,8 +117,7 @@ export default async function ClassDetailPage({
   if (gamesError) throw new Error("تعذر تحميل الألعاب.");
   if (materialsError) throw new Error("تعذر تحميل المواد.");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: essaysData } = await (supabase as any).rpc("teacher_list_essays", {
+  const { data: essaysData } = await supabase.rpc("teacher_list_essays", {
     p_class_id: classRow.id,
   });
   const essays = (essaysData ?? []) as EssayRow[];

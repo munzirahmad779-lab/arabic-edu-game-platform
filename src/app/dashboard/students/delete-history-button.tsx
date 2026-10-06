@@ -43,15 +43,13 @@ export function DeleteHistoryButton({
       let error: { message: string } | null = null;
 
       if (mode) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const res = await (supabase as any).rpc(
+        const res = await supabase.rpc(
           "teacher_delete_student_history_by_mode",
           { p_student_id: studentId, p_mode: mode },
         );
         error = res.error;
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const res = await (supabase as any).rpc(
+        const res = await supabase.rpc(
           "teacher_delete_student_history",
           { p_student_id: studentId },
         );

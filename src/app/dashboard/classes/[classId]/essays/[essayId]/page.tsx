@@ -44,8 +44,7 @@ export default async function EssayReviewPage({
     notFound();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: subsData } = await (supabase as any).rpc(
+  const { data: subsData } = await supabase.rpc(
     "teacher_essay_submissions",
     { p_essay_id: params.essayId },
   );

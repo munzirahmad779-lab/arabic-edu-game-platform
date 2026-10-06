@@ -17,16 +17,6 @@ type StatsRow = {
   selected_d_count: number;
 };
 
-type RpcClient = {
-  rpc<TResult>(
-    functionName: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: TResult[] | null;
-    error: { message: string } | null;
-  }>;
-};
-
 export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
   const [rows, setRows] = useState<StatsRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +25,20 @@ export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
     let alive = true;
     (async () => {
       try {
-        const supabase = createClient() as unknown as RpcClient;
-        const { data, error } = await supabase.rpc<StatsRow>(
+        const supabase = createClient();
+        const { data, error } = await supabase.rpc(
           "get_session_question_stats",
           { p_session_id: sessionId },
         );
         if (!alive) return;
-        if (!error && data) setRows(data);
+        if (!error && data) {
+          setRows(
+            data.map((r) => ({
+              ...r,
+              options: (Array.isArray(r.options) ? r.options : []) as StatsRow["options"],
+            })),
+          );
+        }
       } catch {
         // ignore
       } finally {
