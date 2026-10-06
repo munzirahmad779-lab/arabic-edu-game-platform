@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type PracticeGame = {
   id: string;
@@ -10,20 +12,25 @@ type PracticeGame = {
   question_count: number;
 };
 
-const MODE_LABEL: Record<string, string> = {
-  endless: "بلا نهاية",
-  practice: "تمرين",
-};
-
-const MODE_COLOR: Record<string, string> = {
-  endless: "bg-emerald-100 text-emerald-800",
-  practice: "bg-violet-100 text-violet-800",
-};
-
 export default async function StudentPracticePage() {
   const session = await requireStudent();
   const token = await getStudentToken();
   if (!token) redirect("/student/login");
+
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.student;
+
+  const MODE_LABEL: Record<string, string> = {
+    endless: t.mode_endless,
+    practice: t.mode_practice,
+  };
+
+  const MODE_COLOR: Record<string, string> = {
+    endless: "bg-emerald-100 text-emerald-800",
+    practice: "bg-violet-100 text-violet-800",
+  };
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("student_list_practice_games", {
@@ -39,7 +46,7 @@ export default async function StudentPracticePage() {
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl space-y-6">
         <nav>
@@ -48,21 +55,23 @@ export default async function StudentPracticePage() {
             className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
           >
             <span>→</span>
-            <span>رجوع إلى الصفحة الرئيسية</span>
+            <span>{t.practice_back_home}</span>
           </Link>
         </nav>
 
         <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl sm:p-8">
-          <p className="text-xs font-bold text-white/75">بوابة الطالب</p>
+          <p className="text-xs font-bold text-white/75">
+            {t.practice_header_label}
+          </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            🎯 التدريب الذاتي
+            {t.practice_header_title}
           </h1>
           <p className="mt-3 text-sm text-white/85">
-            تدرّب على أسئلة معلمك بحرية. لا يوجد وقت، ويمكنك مراجعة كل سؤال
-            وإجابته في أي وقت.
+            {t.practice_header_desc}
           </p>
           <p className="mt-2 text-xs text-white/70">
-            الصف: <span className="font-bold">{session.class_name}</span>
+            {t.class_label}{" "}
+            <span className="font-bold">{session.class_name}</span>
           </p>
         </header>
 
@@ -70,20 +79,20 @@ export default async function StudentPracticePage() {
           <section className="rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white p-12 text-center shadow-lg">
             <div className="text-6xl">📚</div>
             <p className="mt-4 font-bold text-neutral-700">
-              لا يوجد تدريب متاح بعد
+              {t.practice_empty_title}
             </p>
             <p className="mt-2 text-sm text-neutral-500">
-              في انتظار أن يضيف معلمك تدريبات (بلا نهاية أو تمرين).
+              {t.practice_empty_desc}
             </p>
           </section>
         ) : (
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-black text-neutral-900">
-                التدريبات المتاحة
+                {t.practice_available_title}
               </h2>
               <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-                {games.length} تدريب
+                {games.length} {t.practice_count_suffix}
               </span>
             </div>
 
@@ -112,7 +121,7 @@ export default async function StudentPracticePage() {
                             {MODE_LABEL[game.mode] ?? game.mode}
                           </span>
                           <span className="text-xs text-neutral-500">
-                            {game.question_count} سؤال
+                            {game.question_count} {t.practice_question_suffix}
                           </span>
                         </div>
                       </div>
@@ -128,18 +137,12 @@ export default async function StudentPracticePage() {
         )}
 
         <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
-          <p className="font-black">💡 كيف يعمل التدريب الذاتي؟</p>
-          <ul className="mt-2 list-disc space-y-1 pr-5">
-            <li>اختر تدريبًا من القائمة أعلاه.</li>
-            <li>ستظهر الأسئلة واحدًا تلو الآخر — بدون وقت.</li>
-            <li>
-              بعد كل إجابة، سترى إن كانت صحيحة أو خاطئة، ويمكنك عرض سبب
-              الإجابة.
-            </li>
-            <li>
-              تقدمك محفوظ — يمكنك العودة لاحقًا ومراجعة جميع إجاباتك، أو
-              البدء من جديد.
-            </li>
+          <p className="font-black">{t.practice_help_title}</p>
+          <ul className="mt-2 list-disc space-y-1 pr-5 ps-5">
+            <li>{t.practice_help_1}</li>
+            <li>{t.practice_help_2}</li>
+            <li>{t.practice_help_3}</li>
+            <li>{t.practice_help_4}</li>
           </ul>
         </section>
       </div>

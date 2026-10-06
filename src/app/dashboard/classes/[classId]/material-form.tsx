@@ -5,10 +5,63 @@ import MaterialEditor from "@/components/material-editor";
 
 type Mode = "create" | "edit";
 
+type EditorDict = {
+  placeholder: string;
+  loading: string;
+  bold: string;
+  italic: string;
+  underline: string;
+  h1: string;
+  h2: string;
+  h3: string;
+  bullet: string;
+  bullet_title: string;
+  numbered: string;
+  numbered_title: string;
+  quote: string;
+  quote_title: string;
+  align_right: string;
+  align_right_title: string;
+  align_center: string;
+  align_center_title: string;
+  align_left: string;
+  align_left_title: string;
+  hr: string;
+  hr_title: string;
+  undo: string;
+  undo_title: string;
+  redo: string;
+  redo_title: string;
+};
+
+type MaterialFormDict = {
+  editor: EditorDict;
+  title_label: string;
+  title_placeholder: string;
+  content_label: string;
+  youtube_label: string;
+  image_label: string;
+  image_hint: string;
+  image_exists: string;
+  remove: string;
+  will_remove_image: string;
+  undo: string;
+  pdf_label: string;
+  pdf_hint: string;
+  pdf_exists: string;
+  will_remove_pdf: string;
+  saving: string;
+  add: string;
+  save_edit: string;
+  cancel: string;
+};
+
 type MaterialFormProps = {
   mode: Mode;
   classId: string;
   action: (formData: FormData) => void | Promise<void>;
+  mf: MaterialFormDict;
+  isRtl?: boolean;
   initialData?: {
     id: string;
     title: string;
@@ -24,6 +77,8 @@ export default function MaterialForm({
   mode,
   classId,
   action,
+  mf,
+  isRtl = false,
   initialData,
   onCancel,
 }: MaterialFormProps) {
@@ -60,7 +115,7 @@ export default function MaterialForm({
           htmlFor={`material-title-${initialData?.id ?? "new"}`}
           className="block text-sm font-bold text-neutral-800"
         >
-          عنوان المادة
+          {mf.title_label}
         </label>
         <input
           id={`material-title-${initialData?.id ?? "new"}`}
@@ -69,17 +124,22 @@ export default function MaterialForm({
           required
           maxLength={200}
           defaultValue={initialData?.title ?? ""}
-          placeholder="مثال: مقدمة في النحو"
+          placeholder={mf.title_placeholder}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
 
       <div>
         <label className="block text-sm font-bold text-neutral-800">
-          محتوى المادة
+          {mf.content_label}
         </label>
         <div className="mt-2">
-          <MaterialEditor value={contentJson} onChange={setContentJson} />
+          <MaterialEditor
+            value={contentJson}
+            onChange={setContentJson}
+            me={mf.editor}
+            isRtl={isRtl}
+          />
         </div>
       </div>
 
@@ -88,7 +148,7 @@ export default function MaterialForm({
           htmlFor={`material-yt-${initialData?.id ?? "new"}`}
           className="block text-sm font-bold text-neutral-800"
         >
-          🎬 رابط يوتيوب (اختياري)
+          {mf.youtube_label}
         </label>
         <input
           id={`material-yt-${initialData?.id ?? "new"}`}
@@ -107,34 +167,32 @@ export default function MaterialForm({
             htmlFor={`material-image-${initialData?.id ?? "new"}`}
             className="block text-sm font-bold text-neutral-800"
           >
-            🖼️ صورة توضيحية (اختياري)
+            {mf.image_label}
           </label>
-          <p className="mt-1 text-xs text-neutral-500">
-            PNG / JPG / WEBP — الحد الأقصى 1MB
-          </p>
+          <p className="mt-1 text-xs text-neutral-500">{mf.image_hint}</p>
 
           {hasExistingImage ? (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
-              <span>✓ صورة موجودة</span>
+              <span>{mf.image_exists}</span>
               <button
                 type="button"
                 onClick={() => setRemoveImage(true)}
                 className="rounded-md border border-red-200 bg-white px-2 py-1 text-red-700 hover:bg-red-50"
               >
-                حذف
+                {mf.remove}
               </button>
             </div>
           ) : null}
 
           {removeImage ? (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
-              <span>سيتم حذف الصورة عند الحفظ</span>
+              <span>{mf.will_remove_image}</span>
               <button
                 type="button"
                 onClick={() => setRemoveImage(false)}
                 className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-neutral-700 hover:bg-neutral-50"
               >
-                تراجع
+                {mf.undo}
               </button>
             </div>
           ) : null}
@@ -153,34 +211,32 @@ export default function MaterialForm({
             htmlFor={`material-pdf-${initialData?.id ?? "new"}`}
             className="block text-sm font-bold text-neutral-800"
           >
-            📄 ملف PDF (اختياري)
+            {mf.pdf_label}
           </label>
-          <p className="mt-1 text-xs text-neutral-500">
-            ملف PDF فقط — الحد الأقصى 1MB
-          </p>
+          <p className="mt-1 text-xs text-neutral-500">{mf.pdf_hint}</p>
 
           {hasExistingPdf ? (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
-              <span>✓ ملف PDF موجود</span>
+              <span>{mf.pdf_exists}</span>
               <button
                 type="button"
                 onClick={() => setRemovePdf(true)}
                 className="rounded-md border border-red-200 bg-white px-2 py-1 text-red-700 hover:bg-red-50"
               >
-                حذف
+                {mf.remove}
               </button>
             </div>
           ) : null}
 
           {removePdf ? (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
-              <span>سيتم حذف الملف عند الحفظ</span>
+              <span>{mf.will_remove_pdf}</span>
               <button
                 type="button"
                 onClick={() => setRemovePdf(false)}
                 className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-neutral-700 hover:bg-neutral-50"
               >
-                تراجع
+                {mf.undo}
               </button>
             </div>
           ) : null}
@@ -201,11 +257,7 @@ export default function MaterialForm({
           disabled={submitting}
           className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting
-            ? "جاري الحفظ..."
-            : mode === "create"
-              ? "إضافة المادة"
-              : "حفظ التعديلات"}
+          {submitting ? mf.saving : mode === "create" ? mf.add : mf.save_edit}
         </button>
         {onCancel ? (
           <button
@@ -213,7 +265,7 @@ export default function MaterialForm({
             onClick={onCancel}
             className="rounded-xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50"
           >
-            إلغاء
+            {mf.cancel}
           </button>
         ) : null}
       </div>

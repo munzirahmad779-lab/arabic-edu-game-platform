@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Confetti } from "@/components/confetti";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
+type Locale = "id" | "en" | "ar";
 
 type EssayData = {
   id: string;
@@ -33,12 +37,18 @@ export function EssayPlayer({
   essay,
   studentName,
   className,
+  dict,
+  locale,
 }: {
   token: string;
   essay: EssayData;
   studentName: string;
   className: string;
+  dict: Dict;
+  locale: Locale;
 }) {
+  const t = dict.student;
+  const isRtl = locale === "ar";
   const alreadySubmitted = Boolean(essay.my_answer);
 
   const [phase, setPhase] = useState<"intro" | "writing" | "grading" | "result">(
@@ -96,11 +106,11 @@ export function EssayPlayer({
     if (submitting) return;
     const cleanAnswer = answer.trim();
     if (!auto && cleanAnswer.length < 10) {
-      setError("الإجابة قصيرة جدًا (10 أحرف على الأقل).");
+      setError(t.essay_player_err_short);
       return;
     }
     if (cleanAnswer.length < 10 && auto) {
-      setError("انتهى الوقت — لم يتم تسليم أي إجابة.");
+      setError(t.essay_player_err_timeout);
       setPhase("intro");
       return;
     }
@@ -124,7 +134,7 @@ export function EssayPlayer({
       );
 
       if (subErr || !data) {
-        setError("تعذر تسليم الإجابة. حاول مرة أخرى.");
+        setError(t.essay_player_err_submit);
         return;
       }
 
@@ -146,13 +156,11 @@ export function EssayPlayer({
       };
 
       if (!json.ok) {
-        setError(
-          `تم التسليم، لكن فشل التقييم التلقائي. سيقوم المعلم بتقييمها يدويًا.`,
-        );
+        setError(t.essay_player_err_grading);
         setPhase("result");
         setResult({
           score: 0,
-          feedback: "لم يتم التقييم بعد.",
+          feedback: t.essay_player_not_graded,
           subscores: { content: 0, grammar: 0, vocabulary: 0 },
         });
         return;
@@ -165,7 +173,7 @@ export function EssayPlayer({
       });
       setPhase("result");
     } catch {
-      setError("تعذر الاتصال بالخادم.");
+      setError(t.essay_player_err_connect);
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +184,7 @@ export function EssayPlayer({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-4 py-8 sm:p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl space-y-5">
           <nav>
@@ -185,7 +193,7 @@ export function EssayPlayer({
               className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
             >
               <span>→</span>
-              <span>رجوع إلى المهام</span>
+              <span>{t.essay_player_back_essay}</span>
             </Link>
           </nav>
 
@@ -205,27 +213,25 @@ export function EssayPlayer({
               </p>
             ) : null}
             <p className="mt-3 text-sm leading-7 text-neutral-500">
-              سيظهر السؤال الكامل بمجرد أن تبدأ الكتابة.
+              {t.essay_player_intro_question_hint}
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-center">
               <div className="text-xs font-bold text-amber-700">
-                المدة المخصصة
+                {t.essay_player_duration_label}
               </div>
               <div className="mt-1 text-2xl font-black text-amber-900">
-                {essay.duration_minutes} دقيقة
+                {essay.duration_minutes} {t.essay_player_duration_suffix}
               </div>
             </div>
 
             <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
-              <p className="font-black">⚠️ تنبيهات مهمة</p>
-              <ul className="mt-2 list-disc space-y-1 pr-5">
-                <li>
-                  <b>السؤال الكامل لن يظهر</b> إلا بعد الضغط على «ابدأ الكتابة».
-                </li>
-                <li>سيبدأ العد التنازلي بمجرد بدء الكتابة.</li>
-                <li>سيتم التسليم تلقائيًا عند انتهاء الوقت.</li>
-                <li>لديك تسليم واحد فقط — لا يمكن التعديل بعد التسليم.</li>
+              <p className="font-black">{t.essay_player_notice_title}</p>
+              <ul className="mt-2 list-disc space-y-1 ps-5">
+                <li>{t.essay_player_notice_1}</li>
+                <li>{t.essay_player_notice_2}</li>
+                <li>{t.essay_player_notice_3}</li>
+                <li>{t.essay_player_notice_4}</li>
               </ul>
             </div>
 
@@ -238,7 +244,7 @@ export function EssayPlayer({
               }}
               className="mt-6 w-full rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
             >
-              ✏️ ابدأ الكتابة وعرض السؤال
+              {t.essay_player_start_btn}
             </button>
           </section>
         </div>
@@ -251,12 +257,14 @@ export function EssayPlayer({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-4 py-6 sm:p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-3xl space-y-4">
           <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-lg">
             <div>
-              <p className="text-xs font-bold text-violet-600">مهمة كتابة</p>
+              <p className="text-xs font-bold text-violet-600">
+                {t.essay_list_header_title}
+              </p>
               <h1 className="mt-0.5 text-lg font-black text-neutral-900">
                 {essay.title}
               </h1>
@@ -268,7 +276,9 @@ export function EssayPlayer({
                   : "bg-amber-100 text-amber-800"
               }`}
             >
-              <div className="text-xs font-bold">الوقت المتبقي</div>
+              <div className="text-xs font-bold">
+                {t.essay_player_time_left}
+              </div>
               <div className="text-xl font-black tabular-nums" dir="ltr">
                 {formatTime(secondsLeft)}
               </div>
@@ -277,7 +287,9 @@ export function EssayPlayer({
 
           {essay.theme ? (
             <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
-              <p className="text-xs font-black text-violet-700">الموضوع</p>
+              <p className="text-xs font-black text-violet-700">
+                {t.essay_player_theme_label}
+              </p>
               <p className="mt-1 text-sm font-bold text-violet-900">
                 {essay.theme}
               </p>
@@ -285,7 +297,9 @@ export function EssayPlayer({
           ) : null}
 
           <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <h2 className="text-xs font-black text-violet-700">السؤال</h2>
+            <h2 className="text-xs font-black text-violet-700">
+              {t.essay_player_question_label}
+            </h2>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-neutral-800">
               {essay.question_text}
             </p>
@@ -296,7 +310,7 @@ export function EssayPlayer({
               htmlFor="essay-answer"
               className="block text-sm font-black text-neutral-800"
             >
-              إجابتك
+              {t.essay_player_answer_label}
             </label>
             <textarea
               id="essay-answer"
@@ -304,12 +318,14 @@ export function EssayPlayer({
               onChange={(e) => setAnswer(e.target.value)}
               rows={14}
               maxLength={20000}
-              placeholder="اكتب إجابتك هنا..."
+              placeholder={t.essay_player_answer_placeholder}
               className="mt-3 w-full rounded-2xl border border-neutral-300 px-4 py-3 text-sm leading-8 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
             />
             <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
-              <span>{answer.trim().length} حرف</span>
-              <span>الحد الأقصى 20000</span>
+              <span>
+                {answer.trim().length} {t.essay_player_char_suffix}
+              </span>
+              <span>{t.essay_player_char_max}</span>
             </div>
 
             {error ? (
@@ -324,7 +340,7 @@ export function EssayPlayer({
               disabled={submitting || answer.trim().length < 10}
               className="mt-4 w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "..." : "✓ تسليم الإجابة"}
+              {submitting ? "..." : t.essay_player_submit_btn}
             </button>
           </section>
         </div>
@@ -337,15 +353,15 @@ export function EssayPlayer({
     return (
       <main
         className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="w-full max-w-md rounded-[2rem] bg-white p-10 text-center shadow-2xl">
           <div className="text-6xl">📝</div>
           <h1 className="mt-5 text-2xl font-black text-neutral-900">
-            جاري التقييم...
+            {t.essay_player_grading_title}
           </h1>
           <p className="mt-3 text-sm text-neutral-600">
-            يتم تقييم إجابتك. قد يستغرق هذا 5-15 ثانية.
+            {t.essay_player_grading_desc}
           </p>
           <div className="mt-6 flex justify-center">
             <div className="h-2 w-48 overflow-hidden rounded-full bg-neutral-100">
@@ -371,7 +387,7 @@ export function EssayPlayer({
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-4 py-8 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       {showConfetti ? (
         <Confetti particleCount={140} originY={0.9} />
@@ -384,7 +400,7 @@ export function EssayPlayer({
             className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
           >
             <span>→</span>
-            <span>رجوع إلى المهام</span>
+            <span>{t.essay_player_back_essay}</span>
           </Link>
         </nav>
 
@@ -393,25 +409,29 @@ export function EssayPlayer({
             {className} — {studentName}
           </p>
           <h1 className="mt-2 text-2xl font-black sm:text-3xl">
-            ✅ تم التسليم
+            {t.essay_player_result_title}
           </h1>
           <p className="mt-2 text-sm text-white/85">{essay.title}</p>
         </header>
 
         {result ? (
           <section className="rounded-[2rem] bg-white p-8 text-center shadow-lg">
-            <p className="text-xs font-bold text-neutral-500">نتيجتك</p>
+            <p className="text-xs font-bold text-neutral-500">
+              {t.essay_player_score_label}
+            </p>
             <div
               className={`mt-2 text-6xl font-black tabular-nums ${scoreColor}`}
             >
               {result.score}
             </div>
-            <p className="mt-1 text-xs font-bold text-neutral-500">من 100</p>
+            <p className="mt-1 text-xs font-bold text-neutral-500">
+              {t.essay_player_score_of}
+            </p>
 
             <div className="mt-6 grid grid-cols-3 gap-3">
               <div className="rounded-xl bg-violet-50 p-3">
                 <div className="text-[10px] font-bold text-violet-700">
-                  المحتوى
+                  {t.essay_player_sub_content}
                 </div>
                 <div className="mt-0.5 text-lg font-black text-violet-900">
                   {s.content}
@@ -419,7 +439,7 @@ export function EssayPlayer({
               </div>
               <div className="rounded-xl bg-amber-50 p-3">
                 <div className="text-[10px] font-bold text-amber-700">
-                  القواعد
+                  {t.essay_player_sub_grammar}
                 </div>
                 <div className="mt-0.5 text-lg font-black text-amber-900">
                   {s.grammar}
@@ -427,7 +447,7 @@ export function EssayPlayer({
               </div>
               <div className="rounded-xl bg-emerald-50 p-3">
                 <div className="text-[10px] font-bold text-emerald-700">
-                  المفردات
+                  {t.essay_player_sub_vocab}
                 </div>
                 <div className="mt-0.5 text-lg font-black text-emerald-900">
                   {s.vocabulary}
@@ -436,9 +456,9 @@ export function EssayPlayer({
             </div>
 
             {result.feedback ? (
-              <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50/60 p-4 text-right">
+              <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50/60 p-4 text-start">
                 <p className="text-xs font-black text-violet-800">
-                  📝 ملاحظات
+                  {t.essay_player_feedback_label}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-violet-950">
                   {result.feedback}

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { createAudioTrack, updateAudioTrack } from "./actions";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
 
 type Track = {
   id: string;
@@ -17,38 +20,41 @@ type Props = {
   mode: "create" | "edit";
   track?: Track;
   onCancel?: () => void;
+  dict: Dict;
 };
-
-const PAGE_OPTIONS = [
-  { key: "dashboard", label: "لوحة المعلم" },
-  { key: "login", label: "صفحة تسجيل الدخول" },
-  { key: "student", label: "بوابة الطالب" },
-  { key: "game", label: "صفحة اللعبة (الطالب)" },
-  { key: "final", label: "صفحة النتيجة النهائية" },
-] as const;
 
 const MAX_FILE_MB = 3;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
-export function AudioTrackForm({ mode, track, onCancel }: Props) {
+export function AudioTrackForm({ mode, track, onCancel, dict }: Props) {
+  const t = dict.audio_settings;
   const isEdit = mode === "edit" && track;
+
+  const PAGE_OPTIONS = [
+    { key: "dashboard", label: t.page_dashboard },
+    { key: "login", label: t.page_login },
+    { key: "student", label: t.page_student },
+    { key: "game", label: t.page_game },
+    { key: "final", label: t.page_final },
+  ] as const;
+
   const [volume, setVolume] = useState(isEdit ? track.volume : 50);
   const [submitting, setSubmitting] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
 
   function checkFile(file: File | null): boolean {
     if (!file) {
-      setFileError(isEdit ? null : "الرجاء اختيار ملف صوتي.");
+      setFileError(isEdit ? null : t.form_err_file_required);
       return false;
     }
     if (!file.type.startsWith("audio/")) {
-      setFileError("الملف يجب أن يكون بصيغة صوتية (MP3).");
+      setFileError(t.form_err_file_type);
       return false;
     }
     if (file.size > MAX_FILE_BYTES) {
       const mb = (file.size / (1024 * 1024)).toFixed(2);
       setFileError(
-        `حجم الملف ${mb} ميجابايت — يجب أن يكون أقل من ${MAX_FILE_MB} ميجابايت. الرجاء ضغط الملف أولاً.`,
+        `${t.form_err_file_size_prefix} ${mb} ${t.form_err_file_size_mid} ${MAX_FILE_MB} ${t.form_err_file_size_suffix}`,
       );
       return false;
     }
@@ -65,7 +71,7 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
           return;
         }
         if (!isEdit && !isFileReal) {
-          setFileError("الرجاء اختيار ملف صوتي.");
+          setFileError(t.form_err_file_required);
           return;
         }
         setSubmitting(true);
@@ -83,7 +89,7 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
 
       <div>
         <label className="block text-sm font-bold text-neutral-800">
-          اسم المقطع
+          {t.form_label_name}
         </label>
         <input
           name="name"
@@ -91,18 +97,18 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
           required
           maxLength={100}
           defaultValue={isEdit ? track.name : ""}
-          placeholder="مثال: موسيقى لوحة المعلم"
+          placeholder={t.form_placeholder_name}
           className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
         <label className="block text-sm font-bold text-neutral-800">
-          🎵 ملف MP3 (الحد الأقصى {MAX_FILE_MB} ميجابايت)
+          {t.form_label_file} {MAX_FILE_MB} {t.form_label_file_suffix}
         </label>
         {isEdit ? (
           <p className="mt-1 text-xs text-neutral-500">
-            اتركه فارغًا لإبقاء الملف الحالي.
+            {t.form_hint_keep_file}
           </p>
         ) : null}
         <input
@@ -118,14 +124,13 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
           </div>
         ) : null}
         <p className="mt-2 text-xs text-neutral-500">
-          💡 نصيحة: الملفات الكبيرة قد لا تعمل. استخدم موقع ضغط MP3 لتقليل
-          الحجم مع الحفاظ على الجودة.
+          {t.form_hint_compress}
         </p>
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
         <label className="block text-sm font-bold text-neutral-800">
-          🔊 مستوى الصوت: {volume}%
+          {t.form_label_volume} {volume}%
         </label>
         <input
           type="range"
@@ -140,7 +145,7 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
 
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
         <p className="text-sm font-bold text-neutral-800">
-          📍 أين تعمل هذه الموسيقى؟
+          {t.form_label_pages}
         </p>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {PAGE_OPTIONS.map((opt) => {
@@ -175,8 +180,8 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
           {submitting
             ? "..."
             : isEdit
-              ? "💾 حفظ التعديلات"
-              : "➕ إضافة المقطع"}
+              ? t.form_btn_update
+              : t.form_btn_create}
         </button>
         {isEdit && onCancel ? (
           <button
@@ -184,7 +189,7 @@ export function AudioTrackForm({ mode, track, onCancel }: Props) {
             onClick={onCancel}
             className="rounded-xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
           >
-            إلغاء
+            {t.form_btn_cancel}
           </button>
         ) : null}
       </div>

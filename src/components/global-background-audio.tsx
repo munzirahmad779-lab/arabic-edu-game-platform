@@ -20,18 +20,74 @@ type Track = {
 
 type PageKey = "dashboard" | "login" | "student" | "game" | "final";
 
+type Locale = "id" | "en" | "ar";
+
 const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
 
-const THEMES: { key: string; label: string; color: string }[] = [
-  { key: "violet", label: "بنفسجي", color: "#7c3aed" },
-  { key: "rose", label: "وردي", color: "#e11d48" },
-  { key: "emerald", label: "زمردي", color: "#059669" },
-  { key: "sky", label: "سماوي", color: "#0284c7" },
-  { key: "amber", label: "عسلي", color: "#d97706" },
-  { key: "indigo", label: "نيلي", color: "#4f46e5" },
-  { key: "slate", label: "رمادي", color: "#334155" },
-  { key: "teal", label: "أزرق مخضر", color: "#0d9488" },
+// Label tema diambil dari dictionary (widget.theme_*).
+// THEMES hanya menyimpan key & warna.
+const THEMES: { key: string; color: string }[] = [
+  { key: "violet", color: "#7c3aed" },
+  { key: "rose", color: "#e11d48" },
+  { key: "emerald", color: "#059669" },
+  { key: "sky", color: "#0284c7" },
+  { key: "amber", color: "#d97706" },
+  { key: "indigo", color: "#4f46e5" },
+  { key: "slate", color: "#334155" },
+  { key: "teal", color: "#0d9488" },
 ];
+
+const DICT_LOADERS: Record<Locale, () => Promise<unknown>> = {
+  id: () => import("@/lib/i18n/id.json").then((m) => m.default),
+  en: () => import("@/lib/i18n/en.json").then((m) => m.default),
+  ar: () => import("@/lib/i18n/ar.json").then((m) => m.default),
+};
+
+function readLocaleCookie(): Locale {
+  if (typeof document === "undefined") return "id";
+  const m = document.cookie.match(/(?:^|;\s*)app_locale=([^;]+)/);
+  const v = m ? decodeURIComponent(m[1]) : "id";
+  return v === "en" || v === "ar" ? v : "id";
+}
+
+type WidgetDict = {
+  settings_title: string;
+  settings_aria: string;
+  close: string;
+  mute_on: string;
+  mute_off: string;
+  theme_title: string;
+  theme_violet: string;
+  theme_rose: string;
+  theme_emerald: string;
+  theme_sky: string;
+  theme_amber: string;
+  theme_indigo: string;
+  theme_slate: string;
+  theme_teal: string;
+  link_music: string;
+  link_students: string;
+  link_reports: string;
+  link_account: string;
+  link_admin: string;
+  copy_portal: string;
+  copied: string;
+  gesture_hint: string;
+};
+
+function themeLabel(w: WidgetDict, key: string): string {
+  const map: Record<string, string> = {
+    violet: w.theme_violet,
+    rose: w.theme_rose,
+    emerald: w.theme_emerald,
+    sky: w.theme_sky,
+    amber: w.theme_amber,
+    indigo: w.theme_indigo,
+    slate: w.theme_slate,
+    teal: w.theme_teal,
+  };
+  return map[key] ?? key;
+}
 
 function pageOf(pathname: string): PageKey | null {
   if (pathname.startsWith("/dashboard/question-banks")) return null;
@@ -63,12 +119,16 @@ export function GlobalBackgroundAudio() {
   const [themeLoading, setThemeLoading] = useState(false);
   const [portalCopied, setPortalCopied] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [locale, setLocale] = useState<Locale>("id");
+  const [w, setW] = useState<WidgetDict | null>(null);
 
   const isDashboard = pathname.startsWith("/dashboard");
   const isSuperAdmin = userEmail === SUPER_ADMIN_EMAIL;
+  const isRtl = locale === "ar";
 
   useEffect(() => {
     setMounted(true);
+    setLocale(readLocaleCookie());
     try {
       const saved = window.localStorage.getItem("bg-audio-muted");
       if (saved === "true") setUserMuted(true);
@@ -76,6 +136,24 @@ export function GlobalBackgroundAudio() {
       // ignore
     }
   }, []);
+
+  // Load dictionary widget section
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const mod = (await DICT_LOADERS[locale]()) as {
+          widget?: WidgetDict;
+        };
+        if (alive && mod?.widget) setW(mod.widget);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [locale]);
 
   // Fetch tracks
   useEffect(() => {
@@ -96,7 +174,7 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted]);
 
-  // Fetch user email (sekali saja saat mount)
+  // Fetch user email
   useEffect(() => {
     if (!mounted) return;
     let alive = true;
@@ -117,7 +195,7 @@ export function GlobalBackgroundAudio() {
     };
   }, [mounted]);
 
-  // Fetch theme saat drawer dibuka (khusus dashboard)
+  // Fetch theme saat drawer dibuka
   useEffect(() => {
     if (!mounted || !isDashboard || !settingsOpen) return;
     let alive = true;
@@ -297,23 +375,26 @@ export function GlobalBackgroundAudio() {
 
   const audioPlaying = audioRef.current ? !audioRef.current.paused : false;
 
+  // Jangan render drawer sebelum dictionary siap
+  const dictReady = w !== null;
+
   return (
     <>
       <audio ref={audioRef} loop preload="auto" playsInline />
 
-      {settingsOpen ? (
+      {settingsOpen && dictReady ? (
         <div
           ref={drawerRef}
           className="fixed bottom-20 left-4 z-50 max-h-[75vh] w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
-          dir="rtl"
+          dir={isRtl ? "rtl" : "ltr"}
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
-            <span className="text-sm font-black">⚙️ الإعدادات السريعة</span>
+            <span className="text-sm font-black">{w.settings_title}</span>
             <button
               type="button"
               onClick={() => setSettingsOpen(false)}
               className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-sm font-black transition hover:bg-white/30"
-              aria-label="إغلاق"
+              aria-label={w.close}
             >
               ✕
             </button>
@@ -328,7 +409,7 @@ export function GlobalBackgroundAudio() {
             >
               <span className="flex items-center gap-2 text-sm font-bold text-neutral-800">
                 <span className="text-lg">{userMuted ? "🔇" : "🔊"}</span>
-                <span>{userMuted ? "الصوت مكتوم" : "الصوت مفعّل"}</span>
+                <span>{userMuted ? w.mute_off : w.mute_on}</span>
               </span>
               <span
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
@@ -347,18 +428,19 @@ export function GlobalBackgroundAudio() {
             {isDashboard ? (
               <div className="rounded-xl border border-neutral-200 bg-white p-3">
                 <p className="mb-3 text-xs font-black text-neutral-700">
-                  🎨 ثيم لوحة التحكم
+                  {w.theme_title}
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   {THEMES.map((t) => {
                     const active = currentTheme === t.key;
+                    const label = themeLabel(w, t.key);
                     return (
                       <button
                         key={t.key}
                         type="button"
                         onClick={() => void selectTheme(t.key)}
                         disabled={themeLoading}
-                        title={t.label}
+                        title={label}
                         className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-60 ${
                           active
                             ? "border-neutral-900 bg-neutral-50"
@@ -370,7 +452,7 @@ export function GlobalBackgroundAudio() {
                           style={{ backgroundColor: t.color }}
                         />
                         <span className="text-[10px] font-bold text-neutral-600">
-                          {t.label}
+                          {label}
                         </span>
                       </button>
                     );
@@ -389,7 +471,7 @@ export function GlobalBackgroundAudio() {
                     className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">🎵</span>
-                    <span>الموسيقى</span>
+                    <span>{w.link_music}</span>
                   </Link>
                   <Link
                     href="/dashboard/students"
@@ -397,7 +479,7 @@ export function GlobalBackgroundAudio() {
                     className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">👥</span>
-                    <span>الطلاب</span>
+                    <span>{w.link_students}</span>
                   </Link>
                   <Link
                     href="/dashboard/reports"
@@ -405,7 +487,7 @@ export function GlobalBackgroundAudio() {
                     className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">📄</span>
-                    <span>التقارير</span>
+                    <span>{w.link_reports}</span>
                   </Link>
                   <Link
                     href="/dashboard/account"
@@ -413,7 +495,7 @@ export function GlobalBackgroundAudio() {
                     className="flex flex-col items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2 py-3 text-xs font-bold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                   >
                     <span className="text-lg">⚙️</span>
-                    <span>الحساب</span>
+                    <span>{w.link_account}</span>
                   </Link>
                 </div>
 
@@ -424,7 +506,7 @@ export function GlobalBackgroundAudio() {
                     className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm font-black text-slate-800 transition hover:border-slate-500 hover:bg-slate-200"
                   >
                     <span className="text-lg">🛡️</span>
-                    <span>لوحة الإدارة</span>
+                    <span>{w.link_admin}</span>
                   </Link>
                 ) : null}
 
@@ -435,7 +517,7 @@ export function GlobalBackgroundAudio() {
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-lg">🔗</span>
-                    <span>نسخ رابط بوابة الطالب</span>
+                    <span>{w.copy_portal}</span>
                   </span>
                   <span className="text-xs">{portalCopied ? "✓" : "📋"}</span>
                 </button>
@@ -449,15 +531,15 @@ export function GlobalBackgroundAudio() {
         type="button"
         onClick={() => setSettingsOpen((v) => !v)}
         className="fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-xl text-white shadow-lg transition hover:bg-violet-700"
-        title="الإعدادات السريعة"
-        aria-label="الإعدادات السريعة"
+        title={w?.settings_aria ?? "Settings"}
+        aria-label={w?.settings_aria ?? "Settings"}
       >
         ⚙️
       </button>
 
-      {needsGesture && !audioPlaying && !pausedByEvent && activeTrack ? (
+      {needsGesture && !audioPlaying && !pausedByEvent && activeTrack && w ? (
         <div className="fixed bottom-4 left-20 z-40 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
-          👆 انقر في أي مكان لتشغيل الموسيقى
+          {w.gesture_hint}
         </div>
       ) : null}
     </>

@@ -1,0 +1,4 @@
+﻿4	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\essay-form.tsx
+2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\classes\[classId]\material-form.tsx
+2	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\dashboard\assessments\[id]\ai\ai-generator.tsx
+1	C:\Users\munzi\Documents\Codex\2026-09-11\create-an-image-of\work\phase1-regression\project\src\app\join\page.tsx

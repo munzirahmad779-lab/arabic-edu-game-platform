@@ -4,9 +4,61 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  isLocale,
+  type Locale,
+} from "@/lib/i18n/dictionaries";
+
+type ResetDict = {
+  checking: string;
+  invalid_link_title: string;
+  invalid_link_desc: string;
+  back_to_login: string;
+  title: string;
+  desc: string;
+  password_label: string;
+  confirm_label: string;
+  err_short: string;
+  err_mismatch: string;
+  err_conn: string;
+  success_info: string;
+  save_btn: string;
+  submitting: string;
+};
+
+const DICT_LOADERS: Record<
+  Locale,
+  () => Promise<{ reset_pw: ResetDict }>
+> = {
+  id: () =>
+    import("@/lib/i18n/id.json").then(
+      (m) => m.default as unknown as { reset_pw: ResetDict },
+    ),
+  en: () =>
+    import("@/lib/i18n/en.json").then(
+      (m) => m.default as unknown as { reset_pw: ResetDict },
+    ),
+  ar: () =>
+    import("@/lib/i18n/ar.json").then(
+      (m) => m.default as unknown as { reset_pw: ResetDict },
+    ),
+};
+
+function readLocale(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const m = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  const v = m ? decodeURIComponent(m[1]) : DEFAULT_LOCALE;
+  return isLocale(v) ? v : DEFAULT_LOCALE;
+}
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [t, setT] = useState<ResetDict | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +68,16 @@ export default function ResetPasswordPage() {
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
+    const l = readLocale();
+    setLocale(l);
+    (async () => {
+      try {
+        const mod = await DICT_LOADERS[l]();
+        setT(mod.reset_pw);
+      } catch {
+        // ignore
+      }
+    })();
     (async () => {
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
@@ -24,17 +86,20 @@ export default function ResetPasswordPage() {
     })();
   }, []);
 
+  const isRtl = locale === "ar";
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!t) return;
     setError(null);
     setInfo(null);
 
     if (password.length < 6) {
-      setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+      setError(t.err_short);
       return;
     }
     if (password !== confirm) {
-      setError("كلمتا المرور غير متطابقتين.");
+      setError(t.err_mismatch);
       return;
     }
 
@@ -46,27 +111,27 @@ export default function ResetPasswordPage() {
       if (updErr) {
         setError(updErr.message);
       } else {
-        setInfo("✓ تم تغيير كلمة المرور بنجاح. جاري تحويلك...");
+        setInfo(t.success_info);
         window.setTimeout(() => {
           router.replace("/dashboard");
           router.refresh();
         }, 1500);
       }
     } catch {
-      setError("تعذر الاتصال بالخادم.");
+      setError(t.err_conn);
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (checking) {
+  if (checking || !t) {
     return (
       <main
         className="flex min-h-screen items-center justify-center p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="rounded-2xl bg-white p-8 shadow-xl">
-          <p className="text-sm text-neutral-500">جاري التحقق من الرابط...</p>
+          <p className="text-sm text-neutral-500">{t?.checking ?? "..."}</p>
         </div>
       </main>
     );
@@ -76,22 +141,21 @@ export default function ResetPasswordPage() {
     return (
       <main
         className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-rose-50 p-6"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
           <div className="text-5xl">⛔</div>
           <h1 className="mt-4 text-xl font-black text-red-700">
-            رابط غير صالح أو منتهي
+            {t.invalid_link_title}
           </h1>
           <p className="mt-2 text-sm text-neutral-600">
-            الرابط غير صالح أو انتهت صلاحيته. يرجى طلب رابط جديد من صفحة تسجيل
-            الدخول.
+            {t.invalid_link_desc}
           </p>
           <Link
             href="/login"
             className="mt-6 inline-flex rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white"
           >
-            العودة إلى تسجيل الدخول
+            {t.back_to_login}
           </Link>
         </div>
       </main>
@@ -101,16 +165,12 @@ export default function ResetPasswordPage() {
   return (
     <main
       className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="w-full max-w-sm space-y-5">
         <div className="text-center">
-          <h1 className="text-2xl font-black text-neutral-900">
-            🔒 كلمة مرور جديدة
-          </h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            أدخل كلمة المرور الجديدة مرتين.
-          </p>
+          <h1 className="text-2xl font-black text-neutral-900">{t.title}</h1>
+          <p className="mt-2 text-sm text-neutral-500">{t.desc}</p>
         </div>
 
         <form
@@ -122,7 +182,7 @@ export default function ResetPasswordPage() {
               htmlFor="password"
               className="block text-sm font-bold text-neutral-700"
             >
-              كلمة المرور الجديدة
+              {t.password_label}
             </label>
             <input
               id="password"
@@ -142,7 +202,7 @@ export default function ResetPasswordPage() {
               htmlFor="confirm"
               className="block text-sm font-bold text-neutral-700"
             >
-              تأكيد كلمة المرور
+              {t.confirm_label}
             </label>
             <input
               id="confirm"
@@ -180,7 +240,7 @@ export default function ResetPasswordPage() {
             disabled={submitting}
             className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 disabled:opacity-50"
           >
-            {submitting ? "..." : "حفظ كلمة المرور الجديدة"}
+            {submitting ? t.submitting : t.save_btn}
           </button>
         </form>
       </div>

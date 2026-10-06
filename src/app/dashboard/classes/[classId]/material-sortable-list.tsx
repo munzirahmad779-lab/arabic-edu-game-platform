@@ -32,12 +32,45 @@ type Material = {
   has_pdf: boolean;
 };
 
+type MaterialListDict = {
+  empty_title: string;
+  add_first: string;
+  saving_order: string;
+  saved_order: string;
+  save_failed_prefix: string;
+  conn_failed: string;
+  drag_hint: string;
+  drag_title: string;
+  published: string;
+  draft: string;
+  has_youtube: string;
+  has_image: string;
+  has_pdf: string;
+  preview: string;
+  preview_title: string;
+  edit: string;
+  unpublish: string;
+  publish: string;
+  delete: string;
+  delete_confirm: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 export function MaterialSortableList({
   materials: initial,
   classId,
+  ml,
 }: {
   materials: Material[];
   classId: string;
+  ml: MaterialListDict;
 }) {
   const [materials, setMaterials] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -71,14 +104,14 @@ export function MaterialSortableList({
         reordered.map((m) => m.id),
       );
       if (res.ok) {
-        setSavedMsg("✓ تم حفظ الترتيب");
+        setSavedMsg(ml.saved_order);
         window.setTimeout(() => setSavedMsg(null), 2500);
       } else {
-        setSavedMsg(`⚠️ ${res.message}`);
+        setSavedMsg(`${ml.save_failed_prefix}${res.message}`);
         setMaterials(initial);
       }
     } catch {
-      setSavedMsg("⚠️ تعذر الاتصال");
+      setSavedMsg(ml.conn_failed);
       setMaterials(initial);
     } finally {
       setSaving(false);
@@ -89,14 +122,12 @@ export function MaterialSortableList({
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
         <div className="text-4xl">📖</div>
-        <p className="mt-3 font-bold text-neutral-700">
-          لا توجد مواد دراسية بعد
-        </p>
+        <p className="mt-3 font-bold text-neutral-700">{ml.empty_title}</p>
         <Link
           href={`/dashboard/classes/${classId}?add_material=1`}
           className="mt-4 inline-flex rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700"
         >
-          إضافة أول مادة
+          {ml.add_first}
         </Link>
       </div>
     );
@@ -114,12 +145,12 @@ export function MaterialSortableList({
                 : "border-amber-200 bg-amber-50 text-amber-800"
           }`}
         >
-          {saving ? "💾 جاري حفظ الترتيب..." : savedMsg}
+          {saving ? ml.saving_order : savedMsg}
         </div>
       ) : null}
 
       <p className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
-        💡 اسحب البطاقة من أيقونة ⋮⋮ لإعادة ترتيب المواد.
+        {ml.drag_hint}
       </p>
 
       <DndContext
@@ -138,6 +169,7 @@ export function MaterialSortableList({
                 material={material}
                 index={index}
                 classId={classId}
+                ml={ml}
               />
             ))}
           </div>
@@ -151,10 +183,12 @@ function SortableItem({
   material,
   index,
   classId,
+  ml,
 }: {
   material: Material;
   index: number;
   classId: string;
+  ml: MaterialListDict;
 }) {
   const {
     attributes,
@@ -186,8 +220,8 @@ function SortableItem({
           {...attributes}
           {...listeners}
           className="mt-1 flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 active:cursor-grabbing"
-          title="اسحب لإعادة الترتيب"
-          aria-label="اسحب لإعادة الترتيب"
+          title={ml.drag_title}
+          aria-label={ml.drag_title}
         >
           ⋮⋮
         </button>
@@ -203,17 +237,17 @@ function SortableItem({
             </div>
             {material.is_published ? (
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                منشورة
+                {ml.published}
               </span>
             ) : (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                مسودة
+                {ml.draft}
               </span>
             )}
             {material.has_youtube ? (
               <span
                 className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700"
-                title="يحتوي فيديو يوتيوب"
+                title={ml.has_youtube}
               >
                 🎬
               </span>
@@ -221,7 +255,7 @@ function SortableItem({
             {material.has_image ? (
               <span
                 className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700"
-                title="يحتوي صورة"
+                title={ml.has_image}
               >
                 🖼️
               </span>
@@ -229,7 +263,7 @@ function SortableItem({
             {material.has_pdf ? (
               <span
                 className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700"
-                title="يحتوي PDF"
+                title={ml.has_pdf}
               >
                 📄
               </span>
@@ -247,16 +281,16 @@ function SortableItem({
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
-          title="معاينة كطالب"
+          title={ml.preview_title}
         >
-          👁️ معاينة
+          {ml.preview}
         </Link>
 
         <Link
           href={`/dashboard/classes/${classId}?edit_material=${material.id}`}
           className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-bold hover:bg-neutral-50"
         >
-          تعديل
+          {ml.edit}
         </Link>
 
         <form action={materialAction}>
@@ -276,7 +310,7 @@ function SortableItem({
                 : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             }`}
           >
-            {material.is_published ? "إلغاء النشر" : "نشر"}
+            {material.is_published ? ml.unpublish : ml.publish}
           </button>
         </form>
 
@@ -287,13 +321,15 @@ function SortableItem({
           <button
             type="submit"
             onClick={(e) => {
-              if (!window.confirm(`حذف "${material.title}"؟`)) {
+              if (
+                !window.confirm(fmt(ml.delete_confirm, { title: material.title }))
+              ) {
                 e.preventDefault();
               }
             }}
             className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
           >
-            حذف
+            {ml.delete}
           </button>
         </form>
       </div>

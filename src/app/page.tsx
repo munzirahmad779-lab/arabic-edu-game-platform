@@ -1,6 +1,16 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { Hero3D } from "@/components/three/hero-3d";
+import { Marquee } from "@/components/marquee";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { LanguageSwitcher } from "@/components/language-switcher";
+
+type Feature = {
+  icon: string;
+  title: string;
+  desc: string;
+};
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -10,218 +20,370 @@ export default async function HomePage() {
 
   const isLoggedIn = Boolean(user);
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const t = dict.home;
+  const c = dict.common;
+  const isRtl = locale === "ar";
+
+  const features: Feature[] = [
+    { icon: "🎮", title: t.feat_modes_title, desc: "Kompetitif & kooperatif" },
+    { icon: "📊", title: t.feat_reports_title, desc: "Siap analisis dengan AI" },
+    { icon: "🎯", title: t.feat_practice_title, desc: "Bebas berlatih & evaluasi" },
+    { icon: "📚", title: t.feat_bank_title, desc: "Template Excel siap pakai" },
+    { icon: "🔊", title: t.feat_audio_title, desc: "Musik latar per halaman" },
+    { icon: "🎨", title: t.feat_themes_title, desc: "Sesuaikan warna dashboard" },
+  ];
+
+  const row1 = features.slice(0, 3);
+  const row2 = features.slice(3, 6);
+
+  const marqueeItems = features.map((f) => ({
+    icon: f.icon,
+    title: f.title,
+    desc: f.desc,
+  }));
+
+  // Stats kecil di samping kanan hero
+  const heroStats = [
+    { icon: "📖", label: "Materi Interaktif" },
+    { icon: "🎮", label: "4 Mode Game" },
+    { icon: "✍️", label: "Esai + AI" },
+    { icon: "📊", label: "Laporan Harian" },
+  ];
+
   return (
-    <main
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-violet-50 via-white to-fuchsia-50"
-      dir="rtl"
+    <div
+      className="relative flex min-h-screen flex-col overflow-hidden bg-warmwhite"
+      dir={isRtl ? "rtl" : "ltr"}
     >
-      {/* Background decorative blobs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-200/40 blur-3xl" />
+      {/* CSS marquee fitur */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes marquee-feature-left {
+              from { transform: translateX(0); }
+              to   { transform: translateX(-50%); }
+            }
+            @keyframes marquee-feature-right {
+              from { transform: translateX(-50%); }
+              to   { transform: translateX(0); }
+            }
+            .marquee-row {
+              display: flex;
+              width: max-content;
+              gap: 1rem;
+              animation-duration: 40s;
+              animation-timing-function: linear;
+              animation-iteration-count: infinite;
+            }
+            .marquee-row--left  { animation-name: marquee-feature-left; }
+            .marquee-row--right { animation-name: marquee-feature-right; }
+            .marquee-row:hover  { animation-play-state: paused; }
+            @media (max-width: 640px) {
+              .marquee-row { animation-duration: 28s; }
+            }
+          `,
+        }}
+      />
+
+      {/* Blob background */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] animate-blob-breathe rounded-full bg-sage-500/20 blur-3xl" />
+        <div
+          className="absolute -bottom-40 -left-40 h-[30rem] w-[30rem] animate-blob-breathe rounded-full bg-terracotta-500/15 blur-3xl"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-        {/* Top bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl text-white shadow-md">
-              ✦
-            </span>
-            <div>
-              <p className="text-xs font-bold text-violet-600">
-                منصة التعليم العربية
-              </p>
-              <p className="text-sm font-black text-neutral-900">
-                Arabic Edu Game
-              </p>
-              <p className="text-[10px] font-bold text-neutral-500">
-                by Yusuf
-              </p>
-            </div>
-          </div>
+      {/* NAVBAR */}
+      <header className="relative z-20 mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <Link href="/" className="flex items-center" aria-label={c.brand_main}>
+          <Image
+            src="/logo-horizontal.png"
+            alt={c.brand_main}
+            width={400}
+            height={175}
+            className="h-11 w-auto sm:h-12"
+            priority
+          />
+        </Link>
 
-          <nav className="flex flex-wrap items-center gap-2">
-            {isLoggedIn ? (
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher current={locale} />
+          {isLoggedIn ? (
+            <Link href="/dashboard" className="btn-primary">
+              {c.nav_dashboard} →
+            </Link>
+          ) : (
+            <>
               <Link
-                href="/dashboard"
-                className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-violet-700"
+                href="/student/login"
+                className="hidden sm:inline-flex btn-secondary"
               >
-                لوحة التحكم →
+                👥 {c.nav_student}
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/student/login"
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-800 transition hover:-translate-y-0.5 hover:bg-emerald-100"
-                >
-                  👥 دخول الطالب
-                </Link>
-                <Link
-                  href="/login"
-                  className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-violet-700"
-                >
-                  دخول المعلم
-                </Link>
-              </>
-            )}
-          </nav>
-        </header>
-
-        {/* Audio hint */}
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 shadow-sm sm:text-sm">
-          <span className="text-xl">🔊</span>
-          <p className="flex-1">
-            <b>تنبيه:</b> الموسيقى الخلفية ستبدأ بعد أول نقرة على الصفحة (قيد
-            المتصفح). اضغط في أي مكان لتشغيلها.
-          </p>
+              <Link href="/login" className="btn-primary">
+                {c.nav_teacher}
+              </Link>
+            </>
+          )}
         </div>
+      </header>
 
-        {/* Hero */}
-        <section className="mt-8 grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:mt-12">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-1.5 text-xs font-bold text-violet-700 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              نسخة محدّثة · دعم TOAFL كامل
+      {/* ============ HERO (kiri teks, kanan stats) ============ */}
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 lg:pb-14 lg:pt-8">
+        <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-12">
+          {/* KIRI */}
+          <div className="animate-fade-up flex w-full flex-col gap-5 lg:w-3/5">
+            <div className="inline-flex w-max items-center gap-2 rounded-full border border-sage-200 bg-white/70 px-3 py-1 text-[11px] font-bold text-sage-600 shadow-sm backdrop-blur-md">
+              <span className="h-2 w-2 rounded-full bg-terracotta-500" />
+              {t.badge_updated}
             </div>
 
-            <h1 className="text-4xl font-black leading-tight text-neutral-900 sm:text-5xl lg:text-6xl">
-              تعلّم العربية
-              <br />
-              <span className="bg-gradient-to-l from-violet-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-                بطريقة تفاعلية ممتعة
+            <h1 className="font-display text-3xl font-black leading-tight text-teal-700 sm:text-4xl lg:text-5xl">
+              {t.hero_line1}{" "}
+              <span className="italic text-terracotta-500">
+                {t.hero_line2}
               </span>
             </h1>
 
-            <p className="max-w-xl text-base leading-8 text-neutral-600 sm:text-lg">
-              منصة تعليمية عربية متكاملة: ألعاب تنافسية وتعاونية، تدريب ذاتي،
-              مواد دراسية غنية، وبنك أسئلة جاهز لاستيراد 140 سؤال.
+            <p className="max-w-lg text-sm leading-7 text-softslate sm:text-base">
+              {t.hero_desc}
             </p>
 
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/login"
-                className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-6 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
-              >
-                🎓 دخول المعلم
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/login" className="btn-primary">
+                🎓 {t.cta_teacher}
               </Link>
               <Link
                 href="/student/login"
-                className="rounded-2xl border-2 border-violet-200 bg-white px-6 py-4 text-base font-black text-violet-700 shadow-md transition hover:-translate-y-0.5 hover:bg-violet-50"
+                className="text-sm font-black text-teal-700 underline-offset-4 transition hover:text-terracotta-500 hover:underline"
               >
-                👥 دخول الطالب
+                {t.cta_student} →
               </Link>
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2 pt-2">
-              {[
-                "🎮 4 أوضاع لعب",
-                "📖 مواد تفاعلية",
-                "🎯 تدريب ذاتي",
-                "📊 تقارير يومية",
-                "🔊 صوت محيطي",
-              ].map((label) => (
-                <span
-                  key={label}
-                  className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-700 shadow-sm"
-                >
-                  {label}
+          {/* KANAN — Stats card kecil */}
+          <div className="w-full animate-soft-float lg:w-2/5">
+            <div className="rounded-[1.75rem] border border-sage-200/70 bg-white/85 p-5 shadow-lg backdrop-blur-md">
+              {/* Grid 4 mini fitur */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {heroStats.map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex items-center gap-2 rounded-xl border border-sage-200/60 bg-warmwhite/60 px-3 py-2.5"
+                  >
+                    <span className="text-lg">{s.icon}</span>
+                    <span className="text-[11px] font-black leading-tight text-teal-800">
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className="my-4 h-px bg-sage-200/60" />
+
+              {/* Identitas guru */}
+              <div className="flex items-center gap-3 rounded-xl bg-terracotta-50/70 p-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-terracotta-500 to-terracotta-600 text-lg text-white shadow-sm">
+                  👤
                 </span>
-              ))}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-teal-800">
+                    Ahmad Yusuf
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-bold text-softslate/70">
+                    Guru · 12 kelas
+                  </p>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="my-4 h-px bg-sage-200/60" />
+
+              {/* Statistik siswa */}
+              <div className="flex items-center gap-3 rounded-xl bg-teal-50/70 p-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-lg text-white shadow-sm">
+                  ⭐
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-teal-800">
+                    200+ Siswa
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-bold text-softslate/70">
+                    aktif belajar
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </main>
 
-          {/* 3D Hero */}
-          <div className="relative">
-            <div className="absolute inset-0 -z-10 rounded-[3rem] bg-gradient-to-br from-violet-200/50 to-fuchsia-200/50 blur-2xl" />
-            <Hero3D />
-          </div>
-        </section>
+      {/* ============ TOEFL / TOAFL (UNGGULAN, langsung setelah hero) ============ */}
+      <section
+        id="ujian"
+        className="relative z-10 mx-auto w-full max-w-6xl scroll-mt-20 px-4 pb-12 sm:px-6"
+      >
+        <div className="relative overflow-hidden rounded-[2rem] border border-terracotta-500/30 bg-gradient-to-br from-terracotta-50 via-white to-teal-50 p-6 shadow-lg sm:p-8">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-terracotta-500/20 blur-3xl" />
 
-        {/* Features grid */}
-        <section className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard
-            icon="🎮"
-            title="4 أوضاع لعب"
-            desc="تنافسي، تعاوني، بلا نهاية، وتمرين — كل وضع مصمّم لهدف تعليمي مختلف."
-          />
-          <FeatureCard
-            icon="📊"
-            title="تقارير ذكية"
-            desc="انسخ التقرير اليومي إلى ChatGPT أو Meta AI، واحصل على تحليل جاهز."
-          />
-          <FeatureCard
-            icon="🎯"
-            title="تدريب ذاتي"
-            desc="الطالب يتدرّب بحرية، يرى الإجابة الصحيحة وسببها فورًا."
-          />
-          <FeatureCard
-            icon="📚"
-            title="بنك أسئلة 140"
-            desc="قالب Excel جاهز بمعيار TOAFL، مع مساعد ذكاء اصطناعي لتوليد الأسئلة."
-          />
-          <FeatureCard
-            icon="🔊"
-            title="موسيقى محيطية"
-            desc="كل معلم يخصص موسيقاه الخاصة لكل صفحة، مع كتم فوري."
-          />
-          <FeatureCard
-            icon="🎨"
-            title="ثيمات للمعلم"
-            desc="8 ألوان مختلفة لتخصيص لوحة التحكم — دون التأثير على صفحات الطالب."
-          />
-        </section>
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black tracking-widest text-terracotta-500">
+                {isRtl ? "ميزة" : locale === "en" ? "FEATURED" : "UNGGULAN"}
+              </p>
+              <h2 className="font-display mt-2 text-2xl font-black text-teal-700 sm:text-3xl">
+                📝{" "}
+                {isRtl
+                  ? "اختبار TOEFL Prediction و TOAFL"
+                  : locale === "en"
+                    ? "TOEFL Prediction & TOAFL Exam"
+                    : "Ujian TOEFL Prediction & TOAFL"}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-softslate/80">
+                {isRtl
+                  ? "محاكاة رسمية — الاستماع، التركيب، القراءة، مع تحويل النتيجة تلقائيًا 310-677."
+                  : locale === "en"
+                    ? "Official simulation — Listening, Structure, Reading, with auto score conversion 310-677."
+                    : "Simulasi resmi — Listening, Structure, Reading, dengan konversi skor otomatis 310-677."}
+              </p>
 
-        {/* CTA bottom */}
-        <section className="mt-16 rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-8 text-white shadow-2xl sm:p-12">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="text-2xl font-black sm:text-3xl">جاهز للبدء؟</h2>
-            <p className="max-w-xl text-sm text-white/85 sm:text-base">
-              أنشئ فصلك الأول، أضف طلابك بالـ PIN، وابدأ بتشغيل أول لعبة خلال
-              دقيقتين.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold">
+                <span className="rounded-full bg-white/80 px-3 py-1 text-teal-700 shadow-sm">
+                  🎧 Listening
+                </span>
+                <span className="rounded-full bg-white/80 px-3 py-1 text-teal-700 shadow-sm">
+                  📖 Structure
+                </span>
+                <span className="rounded-full bg-white/80 px-3 py-1 text-teal-700 shadow-sm">
+                  📚 Reading
+                </span>
+                <span className="rounded-full bg-white/80 px-3 py-1 text-teal-700 shadow-sm">
+                  🏆 310–677
+                </span>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap gap-2">
               <Link
                 href="/login"
-                className="rounded-2xl bg-white px-6 py-3.5 text-base font-black text-violet-700 shadow-lg transition hover:-translate-y-0.5"
+                className="rounded-full bg-teal-700 px-5 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-teal-600"
               >
-                ابدأ الآن →
+                🎓 {c.nav_teacher} →
+              </Link>
+              <Link
+                href="/assessment"
+                className="rounded-full bg-terracotta-500 px-5 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-terracotta-600"
+              >
+                📝{" "}
+                {isRtl
+                  ? "ابدأ الاختبار"
+                  : locale === "en"
+                    ? "Take Exam"
+                    : "Ikut Ujian"}{" "}
+                →
               </Link>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Footer */}
-        <footer className="mt-12 border-t border-neutral-200 pt-6 text-center text-xs text-neutral-500">
-          <p>
-            <span className="font-black text-neutral-700">
-              Arabic Edu Game
-            </span>{" "}
-            by <span className="font-black text-violet-700">Yusuf</span>
+      {/* ============ FITUR BERGERAK (2 baris berlawanan arah) ============ */}
+      <section id="fitur" className="relative z-10 w-full overflow-hidden py-8">
+        <div className="mx-auto mb-6 max-w-6xl px-4 text-center sm:px-6">
+          <p className="text-[10px] font-black tracking-widest text-terracotta-500">
+            {isRtl ? "الميزات" : locale === "en" ? "FEATURES" : "FITUR"}
           </p>
-          <p className="mt-1">منصة التعليم العربية · 2026</p>
-        </footer>
-      </div>
-    </main>
+          <h2 className="font-display mt-2 text-2xl font-black text-teal-700 sm:text-3xl">
+            {isRtl
+              ? "كل ما تحتاجه"
+              : locale === "en"
+                ? "Everything You Need"
+                : "Semua yang Anda Butuhkan"}
+          </h2>
+        </div>
+
+        {/* Baris 1 — kiri */}
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-warmwhite to-transparent sm:w-24" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-warmwhite to-transparent sm:w-24" />
+
+          <div className="marquee-row marquee-row--left py-2">
+            {[...row1, ...row1].map((f, i) => (
+              <FeatureCard key={`r1-${i}`} feature={f} />
+            ))}
+          </div>
+        </div>
+
+        {/* Baris 2 — kanan */}
+        <div className="relative mt-4">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-warmwhite to-transparent sm:w-24" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-warmwhite to-transparent sm:w-24" />
+
+          <div className="marquee-row marquee-row--right py-2">
+            {[...row2, ...row2].map((f, i) => (
+              <FeatureCard key={`r2-${i}`} feature={f} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ CTA ============ */}
+      <section className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-teal-500 to-teal-700 p-8 text-white shadow-xl sm:p-10">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-terracotta-500/40 blur-3xl" />
+          <div className="relative flex flex-col items-center gap-4 text-center">
+            <h2 className="font-display text-2xl font-black sm:text-3xl">
+              {t.cta_ready}
+            </h2>
+            <p className="max-w-xl text-sm text-white/85">{t.cta_ready_desc}</p>
+            <Link
+              href="/login"
+              className="mt-1 inline-flex items-center justify-center rounded-full bg-terracotta-500 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-terracotta-600"
+            >
+              {t.cta_start} →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ MARQUEE BAWAH ============ */}
+      <Marquee items={marqueeItems} />
+
+      {/* ============ FOOTER ============ */}
+      <footer className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-4 py-8 text-center text-xs text-softslate/70 sm:px-6">
+        <Image
+          src="/logo-horizontal.png"
+          alt={c.brand_main}
+          width={240}
+          height={105}
+          className="h-9 w-auto opacity-90"
+        />
+        <p>{t.footer_by}</p>
+        <p>{t.footer_sub}</p>
+      </footer>
+    </div>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  desc,
-}: {
-  icon: string;
-  title: string;
-  desc: string;
-}) {
+function FeatureCard({ feature }: { feature: Feature }) {
   return (
-    <article className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl text-white shadow-md">
-        {icon}
-      </span>
-      <h3 className="mt-4 font-black text-neutral-900">{title}</h3>
-      <p className="mt-1 text-sm leading-7 text-neutral-600">{desc}</p>
+    <article className="w-[280px] shrink-0 rounded-3xl border border-sage-200/60 bg-white p-5 shadow-md sm:w-[320px]">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-terracotta-500 text-xl text-white shadow-md">
+          {feature.icon}
+        </span>
+        <h3 className="font-display text-base font-black leading-tight text-teal-700">
+          {feature.title}
+        </h3>
+      </div>
+      <p className="mt-3 text-xs leading-6 text-softslate/80">
+        {feature.desc}
+      </p>
     </article>
   );
 }

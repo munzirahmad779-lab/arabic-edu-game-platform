@@ -8,14 +8,45 @@ import {
   type QuestionImportPreview,
 } from "@/lib/question-bank/excel";
 
-function formatError(error: QuestionImportPreview["errors"][number]) {
-  return `Baris ${error.row} â€” ${error.field}: ${error.message}`;
+type ImportDict = {
+  file_label: string;
+  file_selected: string;
+  rejected: string;
+  preview_title: string;
+  preview_note: string;
+  th_no: string;
+  th_question: string;
+  th_topic: string;
+  th_difficulty: string;
+  th_media: string;
+  confirm_import: string;
+  importing: string;
+  row_prefix: string;
+  read_fail: string;
+  success: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
+function formatError(
+  error: QuestionImportPreview["errors"][number],
+  qi: ImportDict,
+) {
+  return `${qi.row_prefix} ${error.row} — ${error.field}: ${error.message}`;
 }
 
 export function QuestionBankImportForm({
   questionBankId,
+  qi,
 }: {
   questionBankId: string;
+  qi: ImportDict;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +73,7 @@ export function QuestionBankImportForm({
           {
             row: 1,
             field: "file",
-            message: "File Excel tidak dapat dibaca sebagai workbook yang valid.",
+            message: qi.read_fail,
           },
         ],
       });
@@ -50,7 +81,12 @@ export function QuestionBankImportForm({
   }
 
   async function handleImport() {
-    if (!preview || preview.errors.length > 0 || preview.rows.length === 0 || busy) {
+    if (
+      !preview ||
+      preview.errors.length > 0 ||
+      preview.rows.length === 0 ||
+      busy
+    ) {
       return;
     }
 
@@ -66,14 +102,12 @@ export function QuestionBankImportForm({
       return;
     }
 
-    setSuccess(`${result.imported} soal berhasil diimpor secara atomik.`);
+    setSuccess(fmt(qi.success, { n: result.imported }));
     setPreview(null);
     setFileName("");
     if (inputRef.current) inputRef.current.value = "";
     setBusy(false);
 
-    // Refresh server data without remounting this client component.
-    // The success state above remains visible.
     router.refresh();
   }
 
@@ -84,7 +118,7 @@ export function QuestionBankImportForm({
           htmlFor={`question-bank-file-${questionBankId}`}
           className="block text-sm font-medium text-neutral-700"
         >
-          File Excel
+          {qi.file_label}
         </label>
         <input
           ref={inputRef}
@@ -99,7 +133,7 @@ export function QuestionBankImportForm({
 
       {fileName ? (
         <p className="text-sm text-neutral-600">
-          File dipilih: <span className="font-medium">{fileName}</span>
+          {qi.file_selected} <span className="font-medium">{fileName}</span>
         </p>
       ) : null}
 
@@ -110,11 +144,11 @@ export function QuestionBankImportForm({
               role="alert"
               className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
             >
-              <p className="font-semibold">Import ditolak</p>
+              <p className="font-semibold">{qi.rejected}</p>
               <ul className="mt-2 list-disc space-y-1 pr-5">
                 {preview.errors.map((error, index) => (
                   <li key={`${error.row}-${error.field}-${index}`}>
-                    {formatError(error)}
+                    {formatError(error, qi)}
                   </li>
                 ))}
               </ul>
@@ -123,10 +157,10 @@ export function QuestionBankImportForm({
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="font-semibold">
-                  Preview: {preview.rows.length} soal
+                  {fmt(qi.preview_title, { n: preview.rows.length })}
                 </p>
                 <span className="text-xs text-neutral-500">
-                  Tidak ada data yang disimpan sampai Anda mengonfirmasi.
+                  {qi.preview_note}
                 </span>
               </div>
 
@@ -134,11 +168,11 @@ export function QuestionBankImportForm({
                 <table className="min-w-full text-right text-sm">
                   <thead>
                     <tr className="border-b border-neutral-200">
-                      <th className="px-3 py-2">No</th>
-                      <th className="px-3 py-2">Pertanyaan</th>
-                      <th className="px-3 py-2">Topik</th>
-                      <th className="px-3 py-2">Kesulitan</th>
-                      <th className="px-3 py-2">Media</th>
+                      <th className="px-3 py-2">{qi.th_no}</th>
+                      <th className="px-3 py-2">{qi.th_question}</th>
+                      <th className="px-3 py-2">{qi.th_topic}</th>
+                      <th className="px-3 py-2">{qi.th_difficulty}</th>
+                      <th className="px-3 py-2">{qi.th_media}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -149,7 +183,7 @@ export function QuestionBankImportForm({
                         <td className="px-3 py-2">{row.topic}</td>
                         <td className="px-3 py-2">{row.difficulty}</td>
                         <td className="px-3 py-2">
-                          {row.hasMedia ? row.mediaType : "â€”"}
+                          {row.hasMedia ? row.mediaType : "—"}
                         </td>
                       </tr>
                     ))}
@@ -163,7 +197,7 @@ export function QuestionBankImportForm({
                 disabled={busy}
                 className="mt-4 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {busy ? "Mengimpor..." : "Konfirmasi import"}
+                {busy ? qi.importing : qi.confirm_import}
               </button>
             </>
           )}
@@ -190,7 +224,3 @@ export function QuestionBankImportForm({
     </div>
   );
 }
-
-
-
-

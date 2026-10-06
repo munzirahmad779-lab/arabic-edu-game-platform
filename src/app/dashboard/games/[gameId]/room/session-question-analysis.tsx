@@ -17,7 +17,22 @@ type StatsRow = {
   selected_d_count: number;
 };
 
-export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
+type GameRoomDict = {
+  loading: string;
+  no_analysis: string;
+  question_prefix: string;
+  correct_word: string;
+  question_no_text: string;
+  explanation_label: string;
+};
+
+export function SessionQuestionAnalysis({
+  sessionId,
+  gr,
+}: {
+  sessionId: string;
+  gr: GameRoomDict;
+}) {
   const [rows, setRows] = useState<StatsRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,15 +67,13 @@ export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
 
   if (loading) {
     return (
-      <p className="text-center text-sm text-slate-500">جاري التحميل...</p>
+      <p className="text-center text-sm text-slate-500">{gr.loading}</p>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <p className="text-center text-sm text-slate-500">
-        لا توجد بيانات تحليل لهذه الجلسة.
-      </p>
+      <p className="text-center text-sm text-slate-500">{gr.no_analysis}</p>
     );
   }
 
@@ -86,7 +99,7 @@ export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
-                سؤال {idx + 1}
+                {gr.question_prefix} {idx + 1}
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-black ${
@@ -97,12 +110,13 @@ export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
                       : "bg-rose-100 text-rose-800"
                 }`}
               >
-                {r.total_correct}/{r.total_answered} صحيح ({correctPct}%)
+                {r.total_correct}/{r.total_answered} {gr.correct_word} (
+                {correctPct}%)
               </span>
             </div>
 
             <p className="mt-2 text-sm font-bold leading-7 text-slate-900">
-              {r.question_text ?? "(سؤال بلا نص)"}
+              {r.question_text ?? gr.question_no_text}
             </p>
 
             <div className="mt-3 space-y-1.5">
@@ -151,7 +165,7 @@ export function SessionQuestionAnalysis({ sessionId }: { sessionId: string }) {
 
             {r.explanation && r.explanation.trim().length > 0 ? (
               <div className="mt-2 rounded-lg border border-violet-100 bg-violet-50/50 p-2 text-xs leading-6 text-violet-900">
-                💡 <b>الشرح:</b> {r.explanation}
+                💡 <b>{gr.explanation_label}</b> {r.explanation}
               </div>
             ) : null}
           </article>

@@ -12,7 +12,7 @@ export type Json =
   | Json[];
 
 export type ExplanationTiming = "after_each_question" | "after_game_only" | "never";
-export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning";
+export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning" | "anagram" | "matching";
 export type GameType = "arabic_chase_race";
 export type QuestionType = "mcq";
 export type RankingVisibility = "full" | "hidden" | "self_only";
@@ -223,7 +223,22 @@ export interface Database {
       import_students_to_class: { Args: { p_class_id: string; p_names: Json }; Returns: Array<{ student_name: string; student_pin: string }>; };
       join_room: { Args: { p_code: string; p_name: string; p_pin?: string | null }; Returns: Array<{ room_id: string; room_code: string; game_name: string; class_id: string | null; participant_id: string; participant_name: string; join_token: string; participant_count: number; capacity: number }>; };
       get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string }>; };
-      submit_game_answer: { Args: { p_join_token: string; p_question_id: string; p_selected_option_id: string }; Returns: Array<{ accepted: boolean; is_correct: boolean; score_awarded: number; response_time_ms: number; room_state: string; next_question_index: number }>; };
+      submit_game_answer: {
+        Args: {
+          p_join_token: string;
+          p_question_id: string;
+          p_selected_option_id?: string | null;
+          p_answer_text?: string | null;
+        };
+        Returns: Array<{
+          accepted: boolean;
+          is_correct: boolean;
+          score_awarded: number;
+          response_time_ms: number;
+          room_state: string;
+          next_question_index: number;
+        }>;
+      };
       get_room_leaderboard_student: { Args: { p_join_token: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number }>; };
       get_room_leaderboard_teacher: { Args: { p_room_id: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number }>; };
       heartbeat_room_participant: { Args: { p_join_token: string }; Returns: undefined; };
@@ -245,8 +260,8 @@ export interface Database {
       admin_list_teachers: { Args: Record<string, never>; Returns: Array<{ id: string; email: string; full_name: string | null; is_active: boolean; created_at: string; class_count: number; student_count: number }>; };
       admin_deactivate_teacher: { Args: { p_teacher_id: string }; Returns: undefined; };
       admin_activate_teacher: { Args: { p_teacher_id: string }; Returns: undefined; };
-      admin_list_student_sessions: { Args: Record<string, never>; Returns: Array<{ session_id: string; student_id: string; student_name: string; class_name: string; expires_at: string; last_seen_at: string; created_at: string }>; };
-      admin_force_logout_student: { Args: { p_session_id: string }; Returns: undefined; };
+      admin_list_student_sessions: { Args: Record<string, never>; Returns: Array<{ student_id: string; student_name: string; class_name: string; expires_at: string; last_seen_at: string; created_at: string }>; };
+      admin_force_logout_student: { Args: { p_student_id: string }; Returns: number; };
       admin_force_logout_all_students: { Args: Record<string, never>; Returns: number; };
       admin_cleanup_expired_sessions: { Args: Record<string, never>; Returns: number; };
       student_list_materials: { Args: { p_token: string; p_class_id: string }; Returns: Array<{ id: string; title: string; position: number; updated_at: string }>; };

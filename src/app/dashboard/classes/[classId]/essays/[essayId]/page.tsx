@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewList } from "./review-list";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type Submission = {
   submission_id: string;
@@ -32,6 +34,11 @@ export default async function EssayReviewPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+  const t = dict.essay_review;
+
   const { data: essay } = await supabase
     .from("essay_assignments")
     .select("id, title, question_text, duration_minutes, is_published")
@@ -52,30 +59,33 @@ export default async function EssayReviewPage({
   const submissions = (subsData ?? []) as Submission[];
 
   return (
-    <main className="space-y-6" dir="rtl">
+    <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div>
         <Link
           href={`/dashboard/classes/${params.classId}`}
           className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
         >
-          ← العودة إلى الفصل
+          ← {t.back_link}
         </Link>
       </div>
 
       <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl">
         <p className="text-sm font-semibold text-white/75">
-          مراجعة مهمة الكتابة
+          {t.header_label}
         </p>
         <h1 className="mt-1 text-2xl font-black sm:text-3xl">
           ✍️ {essay.title}
         </h1>
         <p className="mt-2 text-sm text-white/85">
-          ⏱ {essay.duration_minutes} دقيقة · 📥 {submissions.length} إجابة
+          ⏱ {essay.duration_minutes} {t.duration_suffix} · 📥{" "}
+          {submissions.length} {t.submissions_suffix}
         </p>
       </header>
 
       <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-        <h2 className="text-xs font-black text-violet-700">السؤال</h2>
+        <h2 className="text-xs font-black text-violet-700">
+          {t.question_label}
+        </h2>
         <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-neutral-800">
           {essay.question_text}
         </p>

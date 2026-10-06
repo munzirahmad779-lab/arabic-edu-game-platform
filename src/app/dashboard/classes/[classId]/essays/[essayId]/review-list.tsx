@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  isLocale,
+  type Locale,
+} from "@/lib/i18n/dictionaries";
 
 type Submission = {
   submission_id: string;
@@ -21,17 +27,85 @@ type Submission = {
   submitted_at: string;
 };
 
+type ReviewDict = {
+  empty_title: string;
+  empty_desc: string;
+  err_range: string;
+  err_prefix: string;
+  err_conn: string;
+  edited_badge: string;
+  initial_grade: string;
+  student_answer_title: string;
+  duration_prefix: string;
+  minutes_suffix: string;
+  subscore_content: string;
+  subscore_grammar: string;
+  subscore_vocab: string;
+  ai_feedback_title: string;
+  teacher_feedback_title: string;
+  final_score_label: string;
+  teacher_feedback_label: string;
+  save_btn: string;
+  cancel_btn: string;
+  saving: string;
+  edit_grade_btn: string;
+};
+
+const DICT_LOADERS: Record<
+  Locale,
+  () => Promise<{ review_list: ReviewDict }>
+> = {
+  id: () =>
+    import("@/lib/i18n/id.json").then(
+      (m) => m.default as unknown as { review_list: ReviewDict },
+    ),
+  en: () =>
+    import("@/lib/i18n/en.json").then(
+      (m) => m.default as unknown as { review_list: ReviewDict },
+    ),
+  ar: () =>
+    import("@/lib/i18n/ar.json").then(
+      (m) => m.default as unknown as { review_list: ReviewDict },
+    ),
+};
+
+function readLocale(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const m = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  const v = m ? decodeURIComponent(m[1]) : DEFAULT_LOCALE;
+  return isLocale(v) ? v : DEFAULT_LOCALE;
+}
+
 export function ReviewList({ submissions }: { submissions: Submission[] }) {
+  const [rl, setRl] = useState<ReviewDict | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const mod = await DICT_LOADERS[readLocale()]();
+        if (alive) setRl(mod.review_list);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!rl) return null;
+
   if (submissions.length === 0) {
     return (
       <section className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center">
         <div className="text-4xl">📭</div>
         <p className="mt-3 text-sm font-bold text-neutral-700">
-          لا توجد إجابات بعد
+          {rl.empty_title}
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
-          في انتظار أن يسلم الطلاب إجاباتهم.
-        </p>
+        <p className="mt-1 text-xs text-neutral-500">{rl.empty_desc}</p>
       </section>
     );
   }
@@ -39,13 +113,13 @@ export function ReviewList({ submissions }: { submissions: Submission[] }) {
   return (
     <section className="space-y-4">
       {submissions.map((s) => (
-        <SubmissionCard key={s.submission_id} sub={s} />
+        <SubmissionCard key={s.submission_id} sub={s} rl={rl} />
       ))}
     </section>
   );
 }
 
-function SubmissionCard({ sub }: { sub: Submission }) {
+function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [score, setScore] = useState(String(sub.teacher_override_score ?? ""));
@@ -56,7 +130,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
   async function saveOverride() {
     const numScore = Number(score);
     if (!Number.isFinite(numScore) || numScore < 0 || numScore > 100) {
-      alert("الدرجة يجب أن تكون بين 0 و100.");
+      alert(rl.err_range);
       return;
     }
 
@@ -74,7 +148,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
         .eq("id", current.submission_id);
 
       if (error) {
-        alert(`خطأ: ${error.message}`);
+        alert(`${rl.err_prefix}${error.message}`);
       } else {
         setCurrent((prev) => ({
           ...prev,
@@ -84,7 +158,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
         setEditing(false);
       }
     } catch {
-      alert("تعذر الاتصال بالخادم.");
+      alert(rl.err_conn);
     } finally {
       setSaving(false);
     }
@@ -105,18 +179,18 @@ function SubmissionCard({ sub }: { sub: Submission }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 p-4 text-right transition hover:bg-neutral-50"
+        className="flex w-full items-center justify-between gap-3 p-4 text-start transition hover:bg-neutral-50"
       >
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-lg font-black text-white">
-            {current.student_name.charAt(0) || "ط"}
+            {current.student_name.charAt(0) || "?"}
           </span>
           <div className="min-w-0">
             <p className="truncate font-black text-neutral-900">
               {current.student_name}
             </p>
             <p className="mt-0.5 text-xs text-neutral-500">
-              {hasOverride ? "✏️ تم التعديل" : "التقييم الأولي"} —{" "}
+              {hasOverride ? rl.edited_badge : rl.initial_grade} —{" "}
               <span className="font-black">{finalScore}/100</span>
             </p>
           </div>
@@ -126,27 +200,26 @@ function SubmissionCard({ sub }: { sub: Submission }) {
 
       {open ? (
         <div className="space-y-4 border-t border-neutral-100 p-4">
-          {/* Jawaban siswa */}
           <div>
             <h4 className="text-xs font-black text-neutral-700">
-              إجابة الطالب
+              {rl.student_answer_title}
             </h4>
             <div className="mt-2 whitespace-pre-wrap rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm leading-7 text-neutral-800">
               {current.answer_text}
             </div>
             {current.duration_seconds !== null ? (
               <p className="mt-1 text-xs text-neutral-500">
-                ⏱ وقت الكتابة: {Math.floor(current.duration_seconds / 60)}{" "}
-                دقيقة
+                {rl.duration_prefix}
+                {Math.floor(current.duration_seconds / 60)}{" "}
+                {rl.minutes_suffix}
               </p>
             ) : null}
           </div>
 
-          {/* Sub-skor */}
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-violet-50 p-2 text-center">
               <div className="text-[10px] font-bold text-violet-700">
-                المحتوى
+                {rl.subscore_content}
               </div>
               <div className="text-lg font-black text-violet-900">
                 {subscores.content}
@@ -154,7 +227,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
             <div className="rounded-xl bg-amber-50 p-2 text-center">
               <div className="text-[10px] font-bold text-amber-700">
-                القواعد
+                {rl.subscore_grammar}
               </div>
               <div className="text-lg font-black text-amber-900">
                 {subscores.grammar}
@@ -162,7 +235,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
             <div className="rounded-xl bg-emerald-50 p-2 text-center">
               <div className="text-[10px] font-bold text-emerald-700">
-                المفردات
+                {rl.subscore_vocab}
               </div>
               <div className="text-lg font-black text-emerald-900">
                 {subscores.vocabulary}
@@ -170,11 +243,10 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
           </div>
 
-          {/* Feedback awal */}
           {current.ai_feedback ? (
             <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
               <p className="text-xs font-black text-violet-800">
-                📝 ملاحظات
+                {rl.ai_feedback_title}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-violet-950">
                 {current.ai_feedback}
@@ -182,11 +254,10 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
           ) : null}
 
-          {/* Override guru */}
           {current.teacher_override_feedback ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
               <p className="text-xs font-black text-amber-800">
-                ✏️ ملاحظات المعلم
+                {rl.teacher_feedback_title}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-amber-950">
                 {current.teacher_override_feedback}
@@ -194,12 +265,11 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             </div>
           ) : null}
 
-          {/* Action */}
           {editing ? (
             <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3">
               <div>
                 <label className="block text-xs font-bold text-neutral-700">
-                  الدرجة النهائية (0-100)
+                  {rl.final_score_label}
                 </label>
                 <input
                   type="number"
@@ -212,7 +282,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-700">
-                  ملاحظات المعلم (اختياري)
+                  {rl.teacher_feedback_label}
                 </label>
                 <textarea
                   value={feedback}
@@ -228,14 +298,14 @@ function SubmissionCard({ sub }: { sub: Submission }) {
                   disabled={saving}
                   className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-black text-white hover:bg-violet-700 disabled:opacity-60"
                 >
-                  {saving ? "..." : "💾 حفظ"}
+                  {saving ? rl.saving : rl.save_btn}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
                   className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700"
                 >
-                  إلغاء
+                  {rl.cancel_btn}
                 </button>
               </div>
             </div>
@@ -245,7 +315,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
               onClick={() => setEditing(true)}
               className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100"
             >
-              ✏️ تعديل الدرجة / إضافة ملاحظات
+              {rl.edit_grade_btn}
             </button>
           )}
         </div>

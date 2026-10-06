@@ -2,36 +2,36 @@
 
 import { useState } from "react";
 
-const AI_PROMPT = `أنت مساعد لإعداد أسئلة اختبار TOAFL بصيغة Excel جاهزة للاستيراد.
+const AI_PROMPT = `Kamu adalah asisten untuk membuat soal pilihan ganda (MCQ) dalam format Excel siap impor.
 
-التنسيق الرسمي للقالب: 14 عمودًا بالترتيب الآتي (يجب أن تكون العناوين مطابقة تمامًا، حرفًا بحرف):
+Format template resmi: 14 kolom dengan urutan berikut (judul kolom HARUS sama persis):
 No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar | Topik | Tingkat Kesulitan | Ada Media? | Jenis Media | Nama Media | Maks. Pemutaran | Alasan
 
-القواعد الصارمة:
-1. الإخراج: جدول Markdown أو TSV (مفصول بـ Tab) — حتى يمكن نسخه مباشرة إلى Excel.
-2. عمود "No": رقم متسلسل يبدأ من 1 بدون فراغات.
-3. عمود "Pertanyaan": نص السؤال بالعربية.
-4. أعمدة Pilihan A/B/C/D: أربعة خيارات، خيار واحد فقط صحيح.
-5. عمود "Jawaban Benar": حرف واحد فقط (A أو B أو C أو D).
-6. عمود "Topik": موضوع السؤال بالعربية (مثل: النحو، الصرف، البلاغة، المفردات، القراءة).
-7. عمود "Tingkat Kesulitan": أحد هذه القيم بالضبط: Mudah / Sedang / Sulit.
-8. عمود "Ada Media?": Ya / Tidak.
-9. عمود "Jenis Media": إذا Ada Media? = Ya، اكتب: Audio / Gambar / Video. إذا Tidak، اتركه فارغًا.
-10. عمود "Nama Media": إذا Ada Media? = Ya، اكتب اسم الملف فقط (مثل: listening_01.mp3). بدون مسار. إذا Tidak، اتركه فارغًا.
-11. عمود "Maks. Pemutaran": للـ Audio/Video رقم بين 1 و20. للـ Gambar فارغ. إذا Tidak، فارغ.
-12. عمود "Alasan": اشرح بالعربية الفصحى المبسطة لماذا الإجابة الصحيحة صحيحة (2-4 أسطر). إذا لم تكن متأكدًا، اكتب: لا يوجد شرح
+Aturan ketat:
+1. Output: tabel Markdown atau TSV (dipisah Tab) — supaya bisa langsung di-copy ke Excel.
+2. Kolom "No": nomor urut mulai dari 1, tanpa lompatan.
+3. Kolom "Pertanyaan": teks soal dalam bahasa Arab.
+4. Kolom Pilihan A/B/C/D: empat pilihan, hanya satu yang benar.
+5. Kolom "Jawaban Benar": satu huruf saja (A, B, C, atau D).
+6. Kolom "Topik": nama topik dalam bahasa Arab (misal: النحو، الصرف، البلاغة، المفردات، القراءة).
+7. Kolom "Tingkat Kesulitan": salah satu dari: Mudah / Sedang / Sulit.
+8. Kolom "Ada Media?": Ya / Tidak.
+9. Kolom "Jenis Media": kalau Ada Media? = Ya, tulis: Audio / Gambar / Video. Kalau Tidak, kosongkan.
+10. Kolom "Nama Media": kalau Ada Media? = Ya, tulis nama file saja (misal: listening_01.mp3). Tanpa path. Kalau Tidak, kosongkan.
+11. Kolom "Maks. Pemutaran": untuk Audio/Video angka 1-20. Untuk Gambar kosong. Kalau Tidak, kosong.
+12. Kolom "Alasan": jelaskan dalam bahasa Arab fusha sederhana mengapa jawaban benar (2-4 baris). Kalau tidak yakin, tulis: لا يوجد شرح
 
-مثال صف واحد (TSV):
+Contoh satu baris (TSV):
 1	ما وزن كلمة كاتب؟	فاعل	مفعول	فعيل	فعّال	A	الصرف	Mudah	Tidak			الوزن "فاعل" يدل على من قام بالفعل، وكلمة "كاتب" تعني من يكتب.
 
-المهمة:
-- سأكتب أدناه عدد الأسئلة والموضوع المطلوب.
-- املأ جميع الأعمدة الـ 14 لكل سؤال.
-- حافظ على الترقيم المتسلسل.
-- أعد النتيجة في جدول واحد فقط، بدون شرح إضافي قبله أو بعده.
-- إذا طلبت أسئلة جديدة، اتبع التنسيق أعلاه دائمًا.
+Tugas:
+- Saya akan menulis jumlah soal dan topik yang diminta di bawah.
+- Isi semua 14 kolom untuk setiap soal.
+- Pertahankan penomoran berurutan.
+- Kembalikan hasil dalam satu tabel saja, tanpa penjelasan tambahan sebelum atau sesudahnya.
+- Jika saya minta soal baru, selalu ikuti format di atas.
 
-[اكتب طلبك هنا: عدد الأسئلة + الموضوع + مستوى الصعوبة المطلوب]`;
+[Tulis permintaanmu di sini: jumlah soal + topik + tingkat kesulitan yang diinginkan]`;
 
 export function AiPromptSection() {
   const [copied, setCopied] = useState(false);
@@ -51,11 +51,12 @@ export function AiPromptSection() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">
-            🤖 مساعدة الذكاء الاصطناعي لإنشاء الأسئلة
+            🤖 Bantuan AI untuk Membuat Soal
           </h2>
           <p className="mt-1 text-sm text-neutral-700">
-            انسخ الطلب أدناه والصقه في ChatGPT أو Meta AI أو أي مساعد آخر.
-            سيولّد لك جدولًا جاهزًا للاستيراد بعمود «Alasan» مملوء تلقائيًا.
+            Copy prompt di bawah, lalu paste ke ChatGPT / Meta AI / asisten AI
+            lain. AI akan menghasilkan tabel siap impor dengan kolom
+            &quot;Alasan&quot; yang sudah terisi.
           </p>
         </div>
         <button
@@ -63,54 +64,56 @@ export function AiPromptSection() {
           onClick={() => void copyPrompt()}
           className="shrink-0 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
         >
-          {copied ? "✓ تم النسخ" : "📋 نسخ الطلب"}
+          {copied ? "✓ Tersalin" : "📋 Copy Prompt"}
         </button>
       </div>
 
       <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-        <p className="font-black">⚠️ قبل استخدام الطلب</p>
+        <p className="font-black">⚠️ Sebelum memakai prompt</p>
         <ul className="mt-1.5 list-disc space-y-1 pr-5">
           <li>
-            عمود «Alasan» <b>اختياري</b>. إذا تركه الذكاء الاصطناعي فارغًا
-            أو كتب «لا يوجد شرح»، سيظهر للطالب &quot;لا يوجد شرح&quot;
-            عند مراجعته.
+            Kolom &quot;Alasan&quot; <b>opsional</b>. Kalau AI mengosongkan
+            atau menulis &quot;لا يوجد شرح&quot;, siswa akan melihat
+            &quot;Tidak ada penjelasan&quot; saat review.
           </li>
           <li>
-            إذا أردت إدخال الأسئلة <b>يدويًا</b>، تخطَّ هذا القسم واملأ القالب
-            مباشرة. كل شيء يعمل بدون AI.
+            Kalau mau isi soal <b>manual</b>, lewati bagian ini dan isi
+            template langsung. Semua tetap berfungsi tanpa AI.
           </li>
           <li>
-            تأكد من أن الذكاء الاصطناعي استخدم القيم:
-            <code className="mx-1 rounded bg-amber-100 px-1">Mudah/Sedang/Sulit</code>
-            للصعوبة، و
-            <code className="mx-1 rounded bg-amber-100 px-1">Ya/Tidak</code>
-            للميديا.
+            Pastikan AI memakai nilai:{" "}
+            <code className="mx-1 rounded bg-amber-100 px-1">
+              Mudah/Sedang/Sulit
+            </code>{" "}
+            untuk kesulitan, dan{" "}
+            <code className="mx-1 rounded bg-amber-100 px-1">Ya/Tidak</code>{" "}
+            untuk media.
           </li>
         </ul>
       </div>
 
       <details className="mt-4 rounded-lg border border-emerald-200 bg-white p-3">
         <summary className="cursor-pointer text-sm font-bold text-emerald-900">
-          عرض الطلب كاملاً قبل النسخ
+          Lihat prompt lengkap sebelum copy
         </summary>
         <pre
           className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-6 text-slate-800"
-          dir="rtl"
+          dir="ltr"
         >
-{AI_PROMPT}
+          {AI_PROMPT}
         </pre>
       </details>
 
       <ol className="mt-4 list-decimal space-y-1.5 pr-5 text-sm text-emerald-900">
-        <li>انقر «📋 نسخ الطلب» أعلاه.</li>
-        <li>افتح ChatGPT / Meta AI / أي مساعد آخر، والصق الطلب.</li>
+        <li>Klik &quot;📋 Copy Prompt&quot; di atas.</li>
         <li>
-          في نهاية الطلب، اكتب: عدد الأسئلة + الموضوع + مستوى الصعوبة.
+          Buka ChatGPT / Meta AI / asisten AI lain, lalu paste prompt.
         </li>
         <li>
-          انسخ الجدول الناتج، والصقه في Excel في الأعمدة الـ 14.
+          Di akhir prompt, tulis: jumlah soal + topik + tingkat kesulitan.
         </li>
-        <li>ارفع الملف من قسم الاستيراد داخل البنك.</li>
+        <li>Copy tabel hasilnya, lalu paste ke Excel di 14 kolom.</li>
+        <li>Upload file di bagian impor di dalam bank.</li>
       </ol>
     </section>
   );

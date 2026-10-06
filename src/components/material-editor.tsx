@@ -8,10 +8,40 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect } from "react";
 
+type MaterialEditorDict = {
+  placeholder: string;
+  loading: string;
+  bold: string;
+  italic: string;
+  underline: string;
+  h1: string;
+  h2: string;
+  h3: string;
+  bullet: string;
+  bullet_title: string;
+  numbered: string;
+  numbered_title: string;
+  quote: string;
+  quote_title: string;
+  align_right: string;
+  align_right_title: string;
+  align_center: string;
+  align_center_title: string;
+  align_left: string;
+  align_left_title: string;
+  hr: string;
+  hr_title: string;
+  undo: string;
+  undo_title: string;
+  redo: string;
+  redo_title: string;
+};
+
 type MaterialEditorProps = {
   value: string;
   onChange: (value: string) => void;
-  placeholder?: string;
+  me: MaterialEditorDict;
+  isRtl?: boolean;
 };
 
 const EDITOR_CSS = `
@@ -75,7 +105,8 @@ const EDITOR_CSS = `
 export default function MaterialEditor({
   value,
   onChange,
-  placeholder = "اكتب محتوى المادة هنا...",
+  me,
+  isRtl = false,
 }: MaterialEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -95,7 +126,7 @@ export default function MaterialEditor({
         },
       }),
       Placeholder.configure({
-        placeholder,
+        placeholder: me.placeholder,
       }),
     ],
     content: value ? safeParse(value) : "",
@@ -106,13 +137,12 @@ export default function MaterialEditor({
       attributes: {
         class:
           "prose prose-sm max-w-none focus:outline-none min-h-[300px] px-4 py-3",
-        dir: "rtl",
+        dir: isRtl ? "rtl" : "ltr",
       },
     },
     immediatelyRender: false,
   });
 
-  // Sinkronisasi kalau value dari luar berubah (mis. saat edit materi lama)
   useEffect(() => {
     if (!editor) return;
     const current = JSON.stringify(editor.getJSON());
@@ -127,7 +157,7 @@ export default function MaterialEditor({
   if (!editor) {
     return (
       <div className="rounded-xl border border-neutral-300 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
-        جاري تحميل المحرر...
+        {me.loading}
       </div>
     );
   }
@@ -135,7 +165,7 @@ export default function MaterialEditor({
   return (
     <div className="rounded-xl border border-neutral-300 bg-white">
       <style dangerouslySetInnerHTML={{ __html: EDITOR_CSS }} />
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} me={me} isRtl={isRtl} />
       <div className="material-editor-content">
         <EditorContent editor={editor} />
       </div>
@@ -151,31 +181,39 @@ function safeParse(value: string): object | string {
   }
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({
+  editor,
+  me,
+  isRtl,
+}: {
+  editor: Editor;
+  me: MaterialEditorDict;
+  isRtl: boolean;
+}) {
   return (
     <div
       className="flex flex-wrap items-center gap-1 border-b border-neutral-200 bg-neutral-50 p-2"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
         isActive={editor.isActive("bold")}
         label="B"
-        title="غامق"
+        title={me.bold}
         className="font-bold"
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
         isActive={editor.isActive("italic")}
         label="I"
-        title="مائل"
+        title={me.italic}
         className="italic"
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleUnderline().run()}
         isActive={editor.isActive("underline")}
         label="U"
-        title="تحته خط"
+        title={me.underline}
         className="underline"
       />
 
@@ -187,7 +225,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         }
         isActive={editor.isActive("heading", { level: 1 })}
         label="H1"
-        title="عنوان 1"
+        title={me.h1}
       />
       <ToolbarButton
         onClick={() =>
@@ -195,7 +233,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         }
         isActive={editor.isActive("heading", { level: 2 })}
         label="H2"
-        title="عنوان 2"
+        title={me.h2}
       />
       <ToolbarButton
         onClick={() =>
@@ -203,7 +241,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         }
         isActive={editor.isActive("heading", { level: 3 })}
         label="H3"
-        title="عنوان 3"
+        title={me.h3}
       />
 
       <div className="mx-1 h-6 w-px bg-neutral-300" />
@@ -211,20 +249,20 @@ function Toolbar({ editor }: { editor: Editor }) {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         isActive={editor.isActive("bulletList")}
-        label="• قائمة"
-        title="قائمة نقطية"
+        label={me.bullet}
+        title={me.bullet_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         isActive={editor.isActive("orderedList")}
-        label="1. قائمة"
-        title="قائمة رقمية"
+        label={me.numbered}
+        title={me.numbered_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive("blockquote")}
-        label="❝"
-        title="اقتباس"
+        label={me.quote}
+        title={me.quote_title}
       />
 
       <div className="mx-1 h-6 w-px bg-neutral-300" />
@@ -232,38 +270,38 @@ function Toolbar({ editor }: { editor: Editor }) {
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("right").run()}
         isActive={editor.isActive({ textAlign: "right" })}
-        label="⬅"
-        title="محاذاة يمين"
+        label={me.align_right}
+        title={me.align_right_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("center").run()}
         isActive={editor.isActive({ textAlign: "center" })}
-        label="⬌"
-        title="توسيط"
+        label={me.align_center}
+        title={me.align_center_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
         isActive={editor.isActive({ textAlign: "left" })}
-        label="➡"
-        title="محاذاة يسار"
+        label={me.align_left}
+        title={me.align_left_title}
       />
 
       <div className="mx-1 h-6 w-px bg-neutral-300" />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        label="―"
-        title="خط فاصل"
+        label={me.hr}
+        title={me.hr_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}
-        label="↶"
-        title="تراجع"
+        label={me.undo}
+        title={me.undo_title}
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().redo().run()}
-        label="↷"
-        title="إعادة"
+        label={me.redo}
+        title={me.redo_title}
       />
     </div>
   );

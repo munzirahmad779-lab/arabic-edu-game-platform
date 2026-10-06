@@ -8,6 +8,36 @@ import {
 } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
 import { RoomReview } from "./room-review";
+import {
+  AnagramPlayer,
+  type AnswerPayload,
+  type AnswerResult,
+} from "@/components/game-players/anagram-player";
+import idDict from "@/lib/i18n/id.json";
+import enDict from "@/lib/i18n/en.json";
+import arDict from "@/lib/i18n/ar.json";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  isLocale,
+  type Locale,
+} from "@/lib/i18n/dictionaries";
+
+type Dict = typeof idDict;
+const DICTS: Record<Locale, Dict> = {
+  id: idDict,
+  en: enDict as unknown as Dict,
+  ar: arDict as unknown as Dict,
+};
+
+function readLocale(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const m = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  const v = m ? decodeURIComponent(m[1]) : DEFAULT_LOCALE;
+  return isLocale(v) ? v : DEFAULT_LOCALE;
+}
 
 type Option = {
   id: string;
@@ -32,6 +62,7 @@ type Question = {
   time_limit_seconds?: number;
   options: Option[];
   media?: Media[];
+  correct_option_key?: string;
 };
 
 type Session = {
@@ -67,27 +98,16 @@ type LeaderboardRow = {
   rnk: number;
 };
 
-const DIFFICULTY_AR: Record<string, string> = {
-  easy: "سهل",
-  medium: "متوسط",
-  hard: "صعب",
+type SubmitRow = {
+  accepted: boolean;
+  is_correct: boolean;
+  score_awarded: number;
+  response_time_ms: number;
+  room_state: string;
+  next_question_index: number;
 };
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: "bg-emerald-100 text-emerald-800",
-  medium: "bg-amber-100 text-amber-800",
-  hard: "bg-rose-100 text-rose-800",
-};
-
-const MODE_AR: Record<string, string> = {
-  competitive: "تنافسي",
-  cooperative: "تعاوني",
-  endless: "بلا نهاية",
-  practice: "تمرين",
-  learning: "تعليمي",
-};
-
-const HEARTBEAT_INTERVAL_MS = 5000;
+const HEARTBEAT_INTERVAL_MS = 10000;
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -102,6 +122,37 @@ export default function JoinRoomPage({
   searchParams: { token?: string };
 }) {
   const token = searchParams.token ?? "";
+
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => {
+    setLocale(readLocale());
+  }, []);
+  const dict = DICTS[locale];
+  const t = dict.join;
+  const isRtl = locale === "ar";
+
+  const MODE_LABEL: Record<string, string> = {
+    competitive: dict.reports.mode_competitive,
+    cooperative: dict.reports.mode_cooperative,
+    endless: dict.reports.mode_endless,
+    practice: dict.reports.mode_practice,
+    learning: dict.reports.mode_learning,
+    anagram: dict.anagram.title,
+    matching: dict.matching.title,
+  };
+
+  const DIFFICULTY_LABEL: Record<string, string> = {
+    easy: locale === "ar" ? "سهل" : locale === "en" ? "Easy" : "Mudah",
+    medium: locale === "ar" ? "متوسط" : locale === "en" ? "Medium" : "Sedang",
+    hard: locale === "ar" ? "صعب" : locale === "en" ? "Hard" : "Sulit",
+  };
+
+  const DIFFICULTY_COLOR: Record<string, string> = {
+    easy: "bg-emerald-100 text-emerald-800",
+    medium: "bg-amber-100 text-amber-800",
+    hard: "bg-rose-100 text-rose-800",
+  };
+
   const [session, setSession] = useState<Session | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loadError, setLoadError] = useState("");
@@ -112,6 +163,7 @@ export default function JoinRoomPage({
 
   const skewRef = useRef(0);
   const lastHeartbeatRef = useRef(0);
+  const lastPollRef = useRef(0);
   const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
 
   useEffect(() => {
@@ -120,7 +172,7 @@ export default function JoinRoomPage({
 
   const loadSession = useCallback(async () => {
     if (!token) {
-      setLoadError("رابط الغرفة غير صحيح.");
+      setLoadError(t.room_err_invalid_token);
       return;
     }
     try {
@@ -138,12 +190,12 @@ export default function JoinRoomPage({
           setSessionEnded(true);
           return;
         }
-        setLoadError("تعذر تحميل حالة اللعبة.");
+        setLoadError(t.room_err_load);
         return;
       }
 
       if (!data || !data[0]) {
-        setLoadError("تعذر تحميل حالة اللعبة.");
+        setLoadError(t.room_err_load);
         return;
       }
 
@@ -162,9 +214,9 @@ export default function JoinRoomPage({
       setSession(incoming);
       setLoadError("");
     } catch {
-      setLoadError("تعذر الاتصال بالخادم.");
+      setLoadError(t.room_err_connect);
     }
-  }, [token]);
+  }, [token, t]);
 
   const loadLeaderboard = useCallback(async () => {
     if (!token) return;
@@ -203,7 +255,12 @@ export default function JoinRoomPage({
       const nowTs = Date.now();
       setNow(nowTs);
 
-      if (roomStateRef.current !== "ended" && !sessionEnded) {
+      const state = roomStateRef.current;
+      if (state === "ended" || sessionEnded) return;
+
+      const pollInterval = state === "waiting" ? 2500 : 1500;
+      if (nowTs - lastPollRef.current > pollInterval) {
+        lastPollRef.current = nowTs;
         void loadSession();
         void loadLeaderboard();
       }
@@ -235,6 +292,7 @@ export default function JoinRoomPage({
 
   const adjustedNow = now + skewRef.current;
   const isCooperative = session?.game_mode === "cooperative";
+  const isAnagram = session?.game_mode === "anagram";
 
   const countdown = useMemo(() => {
     if (
@@ -249,7 +307,6 @@ export default function JoinRoomPage({
     return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
   }, [adjustedNow, session]);
 
-  // Competitive: timer per soal. Cooperative: tidak ada per-soal.
   const timeLimitSec = session?.question?.time_limit_seconds ?? 20;
 
   const answerSecondsLeft = useMemo(() => {
@@ -267,7 +324,6 @@ export default function JoinRoomPage({
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
   }, [countdown, adjustedNow, session, timeLimitSec, isCooperative]);
 
-  // Cooperative: timer total.
   const totalSecondsLeft = useMemo(() => {
     if (!isCooperative) return null;
     if (!session || session.room_state !== "running" || !session.started_at) {
@@ -279,17 +335,27 @@ export default function JoinRoomPage({
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
   }, [adjustedNow, session, isCooperative]);
 
-  async function submitAnswer(optionId: string) {
+  /**
+   * Submit jawaban ke server.
+   * Mendukung 2 tipe:
+   * - Option-based (quiz biasa): p_selected_option_id diisi, p_answer_text null
+   * - Text-based (anagram): p_answer_text diisi, p_selected_option_id optional
+   */
+  async function submitAnswer(payload: {
+    questionId: string;
+    selectedOptionId: string | null;
+    answerText: string | null;
+  }): Promise<AnswerResult> {
     if (
-      !session?.question ||
+      !session ||
       submitting ||
       session.answer_submitted ||
       session.room_state !== "running" ||
-      countdown !== 0 ||
+      (countdown !== null && countdown !== 0) ||
       (totalSecondsLeft !== null && totalSecondsLeft === 0) ||
       (!isCooperative && answerSecondsLeft === 0)
     ) {
-      return;
+      return { accepted: false, isCorrect: false };
     }
 
     setSubmitting(true);
@@ -297,31 +363,45 @@ export default function JoinRoomPage({
 
     try {
       const supabase = createClient();
-      const { error: submitErr } = await supabase.rpc("submit_game_answer", {
-        p_join_token: token,
-        p_question_id: session.question.id,
-        p_selected_option_id: optionId,
-      });
+      const { data, error: submitErr } = await supabase.rpc(
+        "submit_game_answer",
+        {
+          p_join_token: token,
+          p_question_id: payload.questionId,
+          p_selected_option_id: payload.selectedOptionId,
+          p_answer_text: payload.answerText,
+        },
+      );
 
       if (submitErr) {
         const msg = submitErr.message;
         if (msg === "ALREADY_SUBMITTED") {
-          setSubmitError("تم تسجيل إجابتك.");
+          setSubmitError(t.room_err_already);
         } else if (msg === "QUESTION_TIMEOUT") {
-          setSubmitError("انتهى وقت السؤال.");
+          setSubmitError(t.room_err_q_timeout);
         } else if (msg === "GAME_TIMEOUT") {
-          setSubmitError("انتهى وقت اللعبة.");
+          setSubmitError(t.room_err_game_timeout);
         } else if (msg === "QUESTION_NOT_STARTED") {
-          setSubmitError("لم يبدأ السؤال بعد.");
+          setSubmitError(t.room_err_not_started);
         } else {
-          setSubmitError("تعذر تسجيل الإجابة.");
+          setSubmitError(t.room_err_submit);
         }
+        return { accepted: false, isCorrect: false };
       }
 
-      await loadSession();
-      await loadLeaderboard();
+      const row = data?.[0];
+
+      // Refresh session di background — jangan blok return
+      void loadSession();
+      void loadLeaderboard();
+
+      return {
+        accepted: row?.accepted ?? false,
+        isCorrect: row?.is_correct ?? false,
+      };
     } catch {
-      setSubmitError("تعذر الاتصال بالخادم.");
+      setSubmitError(t.room_err_connect);
+      return { accepted: false, isCorrect: false };
     } finally {
       setSubmitting(false);
     }
@@ -329,9 +409,12 @@ export default function JoinRoomPage({
 
   if (!token) {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 text-white" dir="rtl">
+      <main
+        className="min-h-screen bg-slate-950 p-4 text-white"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
         <div className="mx-auto max-w-2xl rounded-3xl bg-red-900/40 p-8">
-          رابط الغرفة غير صحيح.
+          {t.error_invalid}
         </div>
       </main>
     );
@@ -341,22 +424,22 @@ export default function JoinRoomPage({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-4 text-white"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl py-16 text-center">
           <div className="rounded-[2rem] bg-white/10 p-8 shadow-2xl backdrop-blur">
             <div className="text-6xl">🔁</div>
             <h1 className="mt-4 text-2xl font-black">
-              تم إغلاق هذه الجلسة
+              {t.room_session_closed_title}
             </h1>
             <p className="mt-3 text-white/80">
-              بدأ المعلم جلسة جديدة في نفس الغرفة. يمكنك الانضمام من جديد.
+              {t.room_session_closed_desc}
             </p>
             <a
               href="/join"
               className="mt-6 inline-flex rounded-2xl bg-white px-6 py-3 font-black text-slate-900 shadow-lg transition hover:bg-slate-100"
             >
-              العودة إلى صفحة الانضمام
+              {t.room_back_join}
             </a>
           </div>
         </div>
@@ -368,11 +451,11 @@ export default function JoinRoomPage({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 text-white"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl py-16 text-center">
           <div className="text-5xl">🎮</div>
-          <h1 className="mt-4 text-2xl font-black">جاري تحميل اللعبة...</h1>
+          <h1 className="mt-4 text-2xl font-black">{t.room_loading}</h1>
           {loadError ? (
             <>
               <p className="mt-3 text-sm text-white/80">{loadError}</p>
@@ -381,7 +464,7 @@ export default function JoinRoomPage({
                 onClick={() => void loadSession()}
                 className="mt-6 rounded-2xl bg-white px-6 py-3 font-black text-violet-800 shadow-lg transition hover:bg-violet-50"
               >
-                إعادة المحاولة
+                {t.room_retry}
               </button>
             </>
           ) : null}
@@ -402,7 +485,7 @@ export default function JoinRoomPage({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         {showConfetti ? (
           <Confetti
@@ -414,13 +497,13 @@ export default function JoinRoomPage({
         <div className="relative mx-auto max-w-3xl space-y-6 py-8">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🏁</div>
-            <h1 className="mt-4 text-3xl font-black">انتهت اللعبة</h1>
+            <h1 className="mt-4 text-3xl font-black">{t.room_ended_title}</h1>
             <p className="mt-2 text-white/80">{session.game_name}</p>
 
             {me ? (
               <div className="mt-8 rounded-3xl bg-white p-6 text-slate-900 shadow-xl">
                 <p className="text-xs font-bold text-slate-500">
-                  نتيجتك النهائية
+                  {t.room_final_score}
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-6">
                   <div className="text-center">
@@ -428,7 +511,7 @@ export default function JoinRoomPage({
                       {me.final_score}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
-                      من 100
+                      {t.room_of_100}
                     </div>
                   </div>
                   <div className="h-16 w-px bg-slate-200" />
@@ -437,25 +520,25 @@ export default function JoinRoomPage({
                       #{me.rnk}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
-                      من {leaderboard.length}
+                      {t.room_rank_of_prefix} {leaderboard.length}
                     </div>
                   </div>
                 </div>
 
                 {onPodium ? (
                   <p className="mt-4 text-sm font-black text-emerald-700">
-                    🎉 مبروك! وصلت إلى منصة التتويج
+                    {t.room_podium_congrats}
                   </p>
                 ) : highScore ? (
                   <p className="mt-4 text-sm font-black text-violet-700">
-                    ⭐ نتيجة رائعة! واصل التقدم
+                    {t.room_high_score}
                   </p>
                 ) : null}
 
                 <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-xl bg-emerald-50 p-3 text-center">
                     <div className="text-xs font-bold text-emerald-700">
-                      إجابات صحيحة
+                      {t.room_correct_label}
                     </div>
                     <div className="mt-1 text-lg font-black text-emerald-900">
                       {me.correct_count} / {session.question_count}
@@ -463,10 +546,11 @@ export default function JoinRoomPage({
                   </div>
                   <div className="rounded-xl bg-amber-50 p-3 text-center">
                     <div className="text-xs font-bold text-amber-700">
-                      متوسط سرعة الإجابة
+                      {t.room_avg_speed_label}
                     </div>
                     <div className="mt-1 text-lg font-black text-amber-900">
-                      {(me.avg_response_ms / 1000).toFixed(1)} ث
+                      {(me.avg_response_ms / 1000).toFixed(1)}{" "}
+                      {t.room_seconds_suffix}
                     </div>
                   </div>
                 </div>
@@ -476,7 +560,7 @@ export default function JoinRoomPage({
 
           <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
             <h2 className="text-lg font-black text-white">
-              🏆 لوحة المتصدرين
+              {t.room_leaderboard_title}
             </h2>
 
             {podium.length > 0 ? (
@@ -505,17 +589,17 @@ export default function JoinRoomPage({
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-100">
                   <tr>
-                    <th className="px-3 py-2 text-right font-bold text-slate-600">
-                      #
+                    <th className="px-3 py-2 text-start font-bold text-slate-600">
+                      {t.room_th_rank}
                     </th>
-                    <th className="px-3 py-2 text-right font-bold text-slate-600">
-                      الاسم
+                    <th className="px-3 py-2 text-start font-bold text-slate-600">
+                      {t.room_th_name}
                     </th>
-                    <th className="px-3 py-2 text-right font-bold text-slate-600">
-                      صحيح
+                    <th className="px-3 py-2 text-start font-bold text-slate-600">
+                      {t.room_th_correct}
                     </th>
-                    <th className="px-3 py-2 text-right font-bold text-slate-600">
-                      النقاط
+                    <th className="px-3 py-2 text-start font-bold text-slate-600">
+                      {t.room_th_score}
                     </th>
                   </tr>
                 </thead>
@@ -533,8 +617,8 @@ export default function JoinRoomPage({
                       <td className="px-3 py-2">
                         {row.participant_name}
                         {row.is_self ? (
-                          <span className="ml-2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-black text-white">
-                            أنت
+                          <span className="ms-2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-black text-white">
+                            {t.room_you_badge}
                           </span>
                         ) : null}
                       </td>
@@ -551,13 +635,13 @@ export default function JoinRoomPage({
             </div>
           </div>
 
-          <RoomReview token={token} />
+          <RoomReview token={token} dict={dict as never} />
           <div className="text-center">
             <a
               href="/join"
               className="inline-flex rounded-2xl bg-white px-6 py-3 font-black text-emerald-800 shadow-lg transition hover:bg-emerald-50"
             >
-              الخروج من الغرفة
+              {t.room_exit_btn}
             </a>
           </div>
         </div>
@@ -569,15 +653,15 @@ export default function JoinRoomPage({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black p-4 text-white"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl py-12">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🔒</div>
-            <h1 className="mt-4 text-3xl font-black">الغرفة مقفلة</h1>
-            <p className="mt-3 text-white/80">
-              لا يمكن الانضمام إلى هذه الغرفة حالياً.
-            </p>
+            <h1 className="mt-4 text-3xl font-black">
+              {t.room_locked_title}
+            </h1>
+            <p className="mt-3 text-white/80">{t.room_locked_desc}</p>
           </div>
         </div>
       </main>
@@ -588,35 +672,39 @@ export default function JoinRoomPage({
     return (
       <main
         className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-8 text-white"
-        dir="rtl"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl">
           <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-violet-100">غرفة اللعب</p>
+              <p className="text-sm font-bold text-violet-100">
+                {t.room_label}
+              </p>
               <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-black">
-                {MODE_AR[session.game_mode] ?? session.game_mode}
+                {MODE_LABEL[session.game_mode] ?? session.game_mode}
               </span>
             </div>
             <h1 className="mt-2 text-3xl font-black">{session.game_name}</h1>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">
-                  كود الغرفة
+                  {dict.join.code_label}
                 </div>
                 <div className="mt-2 text-xl font-black tracking-[0.12em]">
                   {session.room_code}
                 </div>
               </div>
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
-                <div className="text-xs font-bold text-slate-500">أنت</div>
+                <div className="text-xs font-bold text-slate-500">
+                  {t.room_you_label}
+                </div>
                 <div className="mt-2 font-black">
                   {session.participant_name}
                 </div>
               </div>
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">
-                  المشاركون
+                  {t.room_participants_label}
                 </div>
                 <div className="mt-2 text-2xl font-black">
                   {session.participant_count}
@@ -625,9 +713,11 @@ export default function JoinRoomPage({
             </div>
             <div className="mt-8 rounded-3xl bg-white/95 p-8 text-center text-slate-900">
               <div className="text-5xl">⏳</div>
-              <h2 className="mt-4 text-2xl font-black">أنت في الغرفة</h2>
+              <h2 className="mt-4 text-2xl font-black">
+                {t.room_waiting_title}
+              </h2>
               <p className="mt-2 text-sm text-slate-600">
-                بانتظار بدء المعلم للعبة.
+                {t.room_waiting_desc}
               </p>
             </div>
           </div>
@@ -642,7 +732,7 @@ export default function JoinRoomPage({
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-6 text-white"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-3xl">
         <header className="rounded-[2rem] bg-white/10 p-5 shadow-2xl backdrop-blur">
@@ -650,16 +740,18 @@ export default function JoinRoomPage({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-bold text-white/70">
-                  سباق الكلمات العربية
+                  {t.room_race_label}
                 </p>
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-black">
-                  {MODE_AR[session.game_mode] ?? session.game_mode}
+                  {MODE_LABEL[session.game_mode] ?? session.game_mode}
                 </span>
               </div>
               <h1 className="mt-1 text-2xl font-black">{session.game_name}</h1>
             </div>
             <div className="rounded-2xl bg-white/15 px-4 py-3 text-center">
-              <div className="text-xs text-white/70">السؤال</div>
+              <div className="text-xs text-white/70">
+                {t.room_question_label}
+              </div>
               <div className="text-lg font-black">
                 {Math.min(session.question_index + 1, session.question_count)}{" "}
                 / {session.question_count}
@@ -667,7 +759,6 @@ export default function JoinRoomPage({
             </div>
           </div>
 
-          {/* Timer total untuk cooperative */}
           {isCooperative && totalSecondsLeft !== null ? (
             <div
               className={`mt-3 flex items-center justify-between rounded-2xl px-4 py-2 text-sm font-black transition ${
@@ -676,7 +767,7 @@ export default function JoinRoomPage({
                   : "bg-white/20 text-white"
               }`}
             >
-              <span>⏱ الوقت المتبقي</span>
+              <span>{t.room_total_time}</span>
               <span className="tabular-nums" dir="ltr">
                 {formatDuration(totalSecondsLeft)}
               </span>
@@ -686,10 +777,11 @@ export default function JoinRoomPage({
           {myRow ? (
             <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/15 px-4 py-2 text-xs">
               <span className="font-bold">
-                ترتيبك: #{myRow.rnk} من {leaderboard.length}
+                {t.room_your_rank} #{myRow.rnk} {t.room_rank_of_prefix}{" "}
+                {leaderboard.length}
               </span>
               <span className="font-black tabular-nums">
-                {myRow.final_score} نقطة
+                {myRow.final_score} {t.room_points_suffix}
               </span>
             </div>
           ) : null}
@@ -697,148 +789,193 @@ export default function JoinRoomPage({
 
         {countdown !== null && countdown > 0 ? (
           <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
-            <div className="text-sm font-bold text-white/70">استعد!</div>
+            <div className="text-sm font-bold text-white/70">
+              {t.room_get_ready}
+            </div>
             <div className="mt-3 text-8xl font-black tabular-nums">
               {countdown}
             </div>
-            <p className="mt-3 text-white/80">
-              سيظهر السؤال بعد العد التنازلي
-            </p>
+            <p className="mt-3 text-white/80">{t.room_countdown_hint}</p>
           </div>
         ) : session.question ? (
-          <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between gap-3">
-              <div
-                className={`rounded-full px-4 py-2 text-xs font-black ${
-                  DIFFICULTY_COLOR[session.question.difficulty] ??
-                  "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {DIFFICULTY_AR[session.question.difficulty] ??
-                  session.question.difficulty}
-              </div>
+          isAnagram ? (
+            /* ============ MODE ANAGRAM ============ */
+            <div className="mt-6">
+<AnagramPlayer
+  key={session.question.id}
+  questions={[session.question]}
+  dict={dict.anagram}
+  onAnswer={async (payload: AnswerPayload) => {
+    return await submitAnswer({
+      questionId: payload.questionId,
+      selectedOptionId: payload.selectedOptionId,
+      answerText: payload.answerText,
+    });
+  }}
+  onFinish={() => {
+    // no-op — server yang menaikkan soal
+  }}
+  isRtl={isRtl}
+  singleQuestionMode
+  questionNumber={session.question_index + 1}
+  totalQuestions={session.question_count}
+  timeLimitSeconds={session.question.time_limit_seconds}
+/>
 
-              {/* Competitive: per-question timer. Cooperative: badge saja. */}
-              {isCooperative ? (
-                <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
-                  وضع تعاوني — بلا مؤقت لكل سؤال
+              {session.answer_submitted ? (
+                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
+                  {t.room_answer_recorded}
                 </div>
-              ) : (
+              ) : null}
+
+              {submitError ? (
+                <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
+                  {submitError}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            /* ============ MODE QUIZ BIASA ============ */
+            <section className="mt-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl sm:p-8">
+              <div className="flex items-center justify-between gap-3">
                 <div
-                  className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
-                    (answerSecondsLeft ?? timeLimitSec) <= 5
-                      ? "animate-pulse bg-rose-100 text-rose-800"
-                      : "bg-amber-100 text-amber-800"
+                  className={`rounded-full px-4 py-2 text-xs font-black ${
+                    DIFFICULTY_COLOR[session.question.difficulty] ??
+                    "bg-slate-100 text-slate-700"
                   }`}
                 >
-                  ⏱ {answerSecondsLeft ?? timeLimitSec} ث
+                  {DIFFICULTY_LABEL[session.question.difficulty] ??
+                    session.question.difficulty}
                 </div>
-              )}
-            </div>
 
-            {session.question.media && session.question.media.length > 0 ? (
-              <div className="mt-6 space-y-4">
-                {session.question.media.map((m) => {
-                  if (!m.public_url) return null;
-                  if (m.media_type === "image") {
-                    return (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={m.id}
-                        src={m.public_url}
-                        alt=""
-                        className="mx-auto max-h-80 rounded-2xl border-2 border-slate-200 object-contain"
-                      />
-                    );
-                  }
-                  if (m.media_type === "audio") {
-                    return (
-                      <div key={m.id} className="space-y-2">
-                        <p className="text-center text-xs font-bold text-violet-600">
-                          🎧 استمع للصوت بعناية
-                        </p>
-                        <audio
+                {isCooperative ? (
+                  <div className="rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">
+                    {t.room_coop_no_timer}
+                  </div>
+                ) : (
+                  <div
+                    className={`rounded-full px-4 py-2 text-xs font-black tabular-nums transition ${
+                      (answerSecondsLeft ?? timeLimitSec) <= 5
+                        ? "animate-pulse bg-rose-100 text-rose-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    ⏱ {answerSecondsLeft ?? timeLimitSec}{" "}
+                    {t.room_seconds_suffix}
+                  </div>
+                )}
+              </div>
+
+              {session.question.media && session.question.media.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {session.question.media.map((m) => {
+                    if (!m.public_url) return null;
+                    if (m.media_type === "image") {
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={m.id}
                           src={m.public_url}
-                          controls
-                          controlsList={
-                            m.max_play_count === 1
-                              ? "nodownload noplaybackrate"
-                              : undefined
-                          }
-                          onPlay={() => pauseBackgroundAudio()}
-                          onEnded={() => resumeBackgroundAudio()}
-                          className="mx-auto w-full max-w-md"
+                          alt=""
+                          className="mx-auto max-h-80 rounded-2xl border-2 border-slate-200 object-contain"
                         />
-                      </div>
-                    );
-                  }
-                  if (m.media_type === "video") {
-                    return (
-                      <div key={m.id} className="space-y-2">
-                        <p className="text-center text-xs font-bold text-violet-600">
-                          🎬 شاهد الفيديو بعناية
-                        </p>
-                        <video
-                          src={m.public_url}
-                          controls
-                          controlsList={
-                            m.max_play_count === 1
-                              ? "nodownload noplaybackrate"
-                              : undefined
-                          }
-                          onPlay={() => pauseBackgroundAudio()}
-                          onEnded={() => resumeBackgroundAudio()}
-                          className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                      );
+                    }
+                    if (m.media_type === "audio") {
+                      return (
+                        <div key={m.id} className="space-y-2">
+                          <p className="text-center text-xs font-bold text-violet-600">
+                            {t.room_listen}
+                          </p>
+                          <audio
+                            src={m.public_url}
+                            controls
+                            controlsList={
+                              m.max_play_count === 1
+                                ? "nodownload noplaybackrate"
+                                : undefined
+                            }
+                            onPlay={() => pauseBackgroundAudio()}
+                            onEnded={() => resumeBackgroundAudio()}
+                            className="mx-auto w-full max-w-md"
+                          />
+                        </div>
+                      );
+                    }
+                    if (m.media_type === "video") {
+                      return (
+                        <div key={m.id} className="space-y-2">
+                          <p className="text-center text-xs font-bold text-violet-600">
+                            {t.room_watch}
+                          </p>
+                          <video
+                            src={m.public_url}
+                            controls
+                            controlsList={
+                              m.max_play_count === 1
+                                ? "nodownload noplaybackrate"
+                                : undefined
+                            }
+                            onPlay={() => pauseBackgroundAudio()}
+                            onEnded={() => resumeBackgroundAudio()}
+                            className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              ) : null}
+
+              <h2 className="mt-8 text-center text-3xl font-black leading-relaxed sm:text-4xl">
+                {session.question.question_text}
+              </h2>
+
+              <div className="mt-8 grid gap-4">
+                {session.question.options.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={
+                      submitting ||
+                      session.answer_submitted ||
+                      (!isCooperative && answerSecondsLeft === 0) ||
+                      (isCooperative && totalSecondsLeft === 0)
+                    }
+                    onClick={() =>
+                      void submitAnswer({
+                        questionId: session.question!.id,
+                        selectedOptionId: option.id,
+                        answerText: null,
+                      })
+                    }
+                    className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-start text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="me-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white">
+                      {option.option_key}
+                    </span>
+                    {option.option_text}
+                  </button>
+                ))}
               </div>
-            ) : null}
 
-            <h2 className="mt-8 text-center text-3xl font-black leading-relaxed sm:text-4xl">
-              {session.question.question_text}
-            </h2>
+              {session.answer_submitted ? (
+                <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
+                  {t.room_answer_recorded}
+                </div>
+              ) : null}
 
-            <div className="mt-8 grid gap-4">
-              {session.question.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={
-                    submitting ||
-                    session.answer_submitted ||
-                    (!isCooperative && answerSecondsLeft === 0) ||
-                    (isCooperative && totalSecondsLeft === 0)
-                  }
-                  onClick={() => void submitAnswer(option.id)}
-                  className="rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-5 text-right text-lg font-black shadow-sm transition hover:border-violet-400 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="ml-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white">
-                    {option.option_key}
-                  </span>
-                  {option.option_text}
-                </button>
-              ))}
-            </div>
-
-            {session.answer_submitted ? (
-              <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">
-                تم تسجيل إجابتك. بانتظار بقية المشاركين...
-              </div>
-            ) : null}
-
-            {submitError ? (
-              <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
-                {submitError}
-              </div>
-            ) : null}
-          </section>
+              {submitError ? (
+                <div className="mt-4 rounded-2xl bg-red-50 p-4 text-center font-bold text-red-700">
+                  {submitError}
+                </div>
+              ) : null}
+            </section>
+          )
         ) : (
           <div className="mt-6 rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
-            <h2 className="text-2xl font-black">جاري تجهيز السؤال...</h2>
+            <h2 className="text-2xl font-black">{t.room_preparing}</h2>
             {loadError ? (
               <p className="mt-3 text-sm text-white/80">{loadError}</p>
             ) : null}
@@ -848,7 +985,7 @@ export default function JoinRoomPage({
         {top3.length > 0 ? (
           <section className="mt-4 rounded-2xl bg-white/10 p-4 shadow-xl backdrop-blur">
             <p className="text-xs font-bold text-white/70">
-              🏆 المتصدرون الآن
+              {t.room_top_now}
             </p>
             <div className="mt-2 space-y-1">
               {top3.map((row) => (
@@ -860,7 +997,7 @@ export default function JoinRoomPage({
                 >
                   <span className="truncate">
                     #{row.rnk} {row.participant_name}
-                    {row.is_self ? " (أنت)" : ""}
+                    {row.is_self ? ` ${t.room_you_suffix}` : ""}
                   </span>
                   <span className="font-black tabular-nums">
                     {row.final_score}

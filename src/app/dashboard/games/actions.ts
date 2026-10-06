@@ -8,7 +8,7 @@ import type { ExplanationTiming } from "@/types/database";
 const MAX_GAME_NAME_LENGTH = 120;
 const MEDIA_BUCKET = "question-media";
 
-type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning";
+type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning" | "anagram" | "matching";
 type RankingVisibility = "full" | "hidden" | "self_only";
 
 function normalizeName(value: FormDataEntryValue | null) {
@@ -21,6 +21,8 @@ function parseGameMode(value: FormDataEntryValue | null): GameMode | null {
   if (value === "endless") return "endless";
   if (value === "practice") return "practice";
   if (value === "learning") return "learning";
+  if (value === "anagram") return "anagram";
+  if (value === "matching") return "matching";
   return null;
 }
 

@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type idDict from "@/lib/i18n/id.json";
+
+type Dict = typeof idDict;
 
 export function ResetPasswordButton({
   email,
   name,
+  dict,
 }: {
   email: string;
   name: string;
+  dict: Dict;
 }) {
+  const t = dict.admin;
   const [sending, setSending] = useState(false);
 
   async function handleSend() {
@@ -17,7 +23,7 @@ export function ResetPasswordButton({
 
     if (
       !window.confirm(
-        `إرسال رابط إعادة تعيين كلمة المرور إلى "${name || email}"؟\nسيستلم المعلم رسالة على بريده.`,
+        `${t.reset_confirm_prefix} "${name || email}"${t.reset_confirm_suffix}`,
       )
     ) {
       return;
@@ -31,14 +37,14 @@ export function ResetPasswordButton({
       });
 
       if (error) {
-        alert(`خطأ: ${error.message}`);
+        alert(`${t.error_prefix} ${error.message}`);
       } else {
         alert(
-          `✓ تم إرسال رابط إعادة التعيين إلى ${email}.\nاطلب من المعلم التحقق من بريده.`,
+          `${t.reset_success_prefix} ${email}${t.reset_success_suffix}`,
         );
       }
     } catch {
-      alert("تعذر الاتصال بالخادم.");
+      alert(t.connection_error);
     } finally {
       setSending(false);
     }
@@ -50,9 +56,9 @@ export function ResetPasswordButton({
       onClick={() => void handleSend()}
       disabled={sending}
       className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
-      title="إرسال رابط إعادة تعيين كلمة المرور"
+      title={t.reset_title}
     >
-      {sending ? "..." : "🔑 إعادة تعيين"}
+      {sending ? "..." : t.reset_btn}
     </button>
   );
 }

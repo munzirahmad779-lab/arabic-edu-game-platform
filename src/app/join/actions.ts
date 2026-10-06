@@ -19,9 +19,7 @@ export async function joinRoom(formData: FormData) {
       : "";
 
   if (!code || !name) {
-    redirect(
-      `/join?error=${encodeURIComponent("بيانات الانضمام غير مكتملة.")}`,
-    );
+    redirect(`/join?error=${encodeURIComponent("incomplete")}`);
   }
 
   const { data, error } = await supabase.rpc("join_room", {
@@ -31,21 +29,25 @@ export async function joinRoom(formData: FormData) {
   });
 
   if (error || !data?.[0]) {
-    const message = error?.message.includes("ROOM_NOT_FOUND")
-      ? "رمز الغرفة غير صحيح."
-      : error?.message.includes("ROOM_NOT_OPEN")
-        ? "هذه الغرفة لم تعد مفتوحة للانضمام."
-        : error?.message.includes("ROOM_FULL")
-          ? "الغرفة ممتلئة."
-          : error?.message.includes("INVALID_PIN")
-            ? "رمز PIN غير صحيح."
-            : error?.message.includes("STUDENT_NOT_FOUND")
-              ? "لم يتم العثور على هذا الطالب في الفصل."
-              : error?.message.includes("ALREADY_JOINED")
-                ? "هذا الطالب موجود بالفعل في الغرفة."
-                : "تعذر الانضمام إلى الغرفة.";
-    redirect(`/join?error=${encodeURIComponent(message)}`);
-  }
+    const msg = error?.message ?? "";
 
+    console.error("[joinRoom] RPC error:", msg);
+
+    const codeKey =
+      msg.includes("ROOM_NOT_FOUND") ? "room_not_found"
+      : msg.includes("ROOM_NOT_OPEN") ? "room_not_open"
+      : msg.includes("ROOM_FULL") ? "room_full"
+      : msg.includes("PIN_REQUIRED") ? "pin_required"
+      : msg.includes("INVALID_PIN") ? "invalid_pin"
+      : msg.includes("STUDENT_NOT_FOUND") ? "student_not_found"
+      : msg.includes("ALREADY_JOINED") ? "already_joined"
+      : msg.includes("INVALID_NAME") ? "invalid_name"
+      : msg.includes("INVALID_ROOM_CODE") ? "room_not_found"
+      : "generic";
+
+    redirect(
+      `/join?error=${encodeURIComponent(codeKey)}&debug=${encodeURIComponent(msg.slice(0, 120))}`,
+    );
+  }
   redirect(`/join/room?token=${encodeURIComponent(data[0].join_token)}`);
 }

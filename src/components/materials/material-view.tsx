@@ -76,12 +76,23 @@ export type MaterialViewProps = {
   };
   imageUrl: string | null;
   pdfUrl: string | null;
+  mv: {
+    video_title: string;
+    image_title: string;
+    no_content: string;
+    pdf_title: string;
+  };
+  pdf: {
+    download: string;
+  };
 };
 
 export function MaterialView({
   material,
   imageUrl,
   pdfUrl,
+  mv,
+  pdf,
 }: MaterialViewProps) {
   const hasContent = hasTiptapContent(material.content_json);
   const hasVideo = hasYouTube(material.youtube_url);
@@ -92,7 +103,9 @@ export function MaterialView({
 
       {hasVideo && material.youtube_url ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-neutral-700">🎬 فيديو</h2>
+          <h2 className="text-sm font-bold text-neutral-700">
+            {mv.video_title}
+          </h2>
           <MaterialYouTube url={material.youtube_url} />
         </section>
       ) : null}
@@ -100,7 +113,7 @@ export function MaterialView({
       {imageUrl ? (
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-neutral-700">
-            🖼️ صورة توضيحية
+            {mv.image_title}
           </h2>
           <MaterialImage url={imageUrl} alt={material.title} />
         </section>
@@ -111,7 +124,7 @@ export function MaterialView({
           renderTiptap(material.content_json)
         ) : (
           <p className="text-center text-sm text-neutral-500">
-            لا يوجد محتوى نصي في هذه المادة بعد.
+            {mv.no_content}
           </p>
         )}
       </article>
@@ -119,9 +132,9 @@ export function MaterialView({
       {pdfUrl ? (
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-neutral-700">
-            📄 ملف PDF مرفق
+            {mv.pdf_title}
           </h2>
-          <MaterialPdf url={pdfUrl} title={material.title} />
+          <MaterialPdf url={pdfUrl} title={material.title} pdf={pdf} />
         </section>
       ) : null}
     </>

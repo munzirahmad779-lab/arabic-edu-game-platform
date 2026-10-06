@@ -2,14 +2,31 @@
 
 import { deleteQuestionBank } from "./actions";
 
+type DeleteDict = {
+  button: string;
+  title: string;
+  confirm_with_questions: string;
+  confirm_empty: string;
+};
+
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
+
 export function DeleteBankForm({
   bankId,
   bankName,
   questionCount,
+  qd,
 }: {
   bankId: string;
   bankName: string;
   questionCount: number;
+  qd: DeleteDict;
 }) {
   return (
     <form action={deleteQuestionBank}>
@@ -19,16 +36,19 @@ export function DeleteBankForm({
         onClick={(e) => {
           const message =
             questionCount > 0
-              ? `هل أنت متأكد من حذف "${bankName}"؟\nسيتم حذف ${questionCount} سؤالًا مع كل بياناتها (الخيارات، الوسائط، والإجابات المرتبطة بها).\nلا يمكن التراجع.`
-              : `هل أنت متأكد من حذف "${bankName}"؟`;
+              ? fmt(qd.confirm_with_questions, {
+                  name: bankName,
+                  n: questionCount,
+                })
+              : fmt(qd.confirm_empty, { name: bankName });
           if (!window.confirm(message)) {
             e.preventDefault();
           }
         }}
         className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50"
-        title="حذف بنك الأسئلة"
+        title={qd.title}
       >
-        🗑️ حذف البنك
+        {qd.button}
       </button>
     </form>
   );

@@ -7,6 +7,8 @@ import { ClassCard } from "./class-card";
 import { ClassTabs } from "./class-tabs";
 import { ClassHistoryTab } from "./class-history-tab";
 import { PortalLinkBox } from "./portal-link-box";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type SearchParams = {
   classId?: string;
@@ -15,43 +17,6 @@ type SearchParams = {
   updated?: string;
   deleted?: string;
 };
-
-function getMessage(searchParams: SearchParams) {
-  if (searchParams.created === "1") {
-    return { type: "success" as const, text: "✓ تمت إضافة الطالب." };
-  }
-  if (searchParams.updated === "1") {
-    return { type: "success" as const, text: "✓ تم تحديث PIN الطالب." };
-  }
-  if (searchParams.deleted === "1") {
-    return { type: "success" as const, text: "✓ تم حذف الطالب." };
-  }
-  switch (searchParams.error) {
-    case "invalid":
-      return {
-        type: "error" as const,
-        text: "أدخل اسم الطالب وPIN صحيحًا من 4 إلى 6 أرقام.",
-      };
-    case "invalid_name":
-      return { type: "error" as const, text: "اسم الطالب غير صحيح." };
-    case "invalid_pin":
-      return { type: "error" as const, text: "يجب أن يكون PIN من 4 إلى 6 أرقام." };
-    case "duplicate":
-      return {
-        type: "error" as const,
-        text: "يوجد طالب بهذا الاسم في هذا الفصل.",
-      };
-    case "invalid_class":
-      return {
-        type: "error" as const,
-        text: "الفصل غير موجود أو لا تملك صلاحية الوصول إليه.",
-      };
-    case "student_not_found":
-      return { type: "error" as const, text: "الطالب غير موجود." };
-    default:
-      return null;
-  }
-}
 
 type StudentRow = {
   id: string;
@@ -73,30 +38,26 @@ export default async function StudentsPage({
 
   if (!user) return null;
 
-  const { data: classes, error: classesError } = await supabase
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+  const isRtl = locale === "ar";
+
+  const { data: classes } = await supabase
     .from("classes")
     .select("id, name, subject")
     .eq("teacher_id", user.id)
     .order("name");
 
-  if (classesError) {
-    throw new Error("تعذر تحميل الفصول.");
-  }
-
   const classList = classes ?? [];
-  const classIds = classList.map((c) => c.id);
+  const classIds = classList.map((cls) => cls.id);
 
   let allStudents: StudentRow[] = [];
   if (classIds.length > 0) {
-    const { data: sData, error: sError } = await supabase
+    const { data: sData } = await supabase
       .from("students")
       .select("id, name, pin_plain, class_id, created_at")
       .in("class_id", classIds)
       .order("name");
-
-    if (sError) {
-      throw new Error("تعذر تحميل الطلاب.");
-    }
     allStudents = (sData ?? []) as StudentRow[];
   }
 
@@ -127,74 +88,62 @@ export default async function StudentsPage({
       : "http://localhost:3000/student/login";
   }
 
-  const message = getMessage(searchParams);
   const activeClassId = searchParams.classId ?? null;
   const refreshKey = `${searchParams.created ?? ""}${searchParams.updated ?? ""}${searchParams.deleted ?? ""}`;
 
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-sky-50 p-4 sm:p-6"
-      dir="rtl"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-5xl space-y-5">
         <header className="rounded-[2rem] bg-gradient-to-l from-indigo-700 via-violet-700 to-fuchsia-600 p-6 text-white shadow-2xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm font-semibold text-white/75">
-                إدارة الطلاب
+                {dict.dashboard.students_mgmt}
               </div>
-              <h1 className="mt-1 text-3xl font-black">طلاب الفصول</h1>
+              <h1 className="mt-1 text-3xl font-black">
+                {dict.dashboard.stat_students}
+              </h1>
               <p className="mt-2 text-sm text-white/80">
-                أنشئ هوية الطالب داخل الفصل، وشارك بوابة الطالب معه.
+                {dict.dashboard.students_mgmt_desc}
               </p>
             </div>
             <Link
               href="/dashboard/classes"
               className="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
             >
-              العودة إلى الفصول
+              {dict.class_detail.back_classes}
             </Link>
           </div>
         </header>
 
-        {message ? (
-          <div
-            className={
-              message.type === "success"
-                ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800"
-                : "rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-800"
-            }
-          >
-            {message.text}
-          </div>
-        ) : null}
-
         {classList.length === 0 ? (
           <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-8 text-center">
             <h2 className="text-xl font-black text-amber-950">
-              أنشئ فصلًا أولًا
+              {dict.classes.empty_title}
             </h2>
             <p className="mt-2 text-sm text-amber-800">
-              يجب أن يكون لديك فصل دراسي قبل إضافة الطلاب.
+              {dict.classes.empty_desc}
             </p>
             <Link
               href="/dashboard/classes"
               className="mt-5 inline-flex rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white"
             >
-              الذهاب إلى الفصول
+              {dict.classes.create_title}
             </Link>
           </section>
         ) : (
           <>
-            {/* Portal Link Banner */}
             <section className="rounded-2xl border border-emerald-100 bg-gradient-to-l from-emerald-50 to-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-emerald-700">
-                    👥 رابط دخول الطلاب
+                    👥 {dict.login_student.portal_title}
                   </p>
                   <p className="mt-1 text-xs text-emerald-800">
-                    شارك هذا الرابط — يدخل الطلاب بأسمائهم وأرقام PIN.
+                    {dict.login_student.hero_desc}
                   </p>
                   <code
                     dir="ltr"
@@ -207,17 +156,18 @@ export default async function StudentsPage({
               </div>
             </section>
 
-            {/* Classes list */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">الفصول</h2>
+                <h2 className="text-lg font-semibold">
+                  {dict.classes.title}
+                </h2>
                 <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-                  {classList.length} فصل
+                  {classList.length} {dict.classes.my_classes_count}
                 </span>
               </div>
 
-              {classList.map((c) => {
-                const students = studentsByClass.get(c.id) ?? [];
+              {classList.map((cls) => {
+                const students = studentsByClass.get(cls.id) ?? [];
 
                 const header = (
                   <div className="flex flex-wrap items-center gap-3">
@@ -226,14 +176,16 @@ export default async function StudentsPage({
                     </span>
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate text-base font-black text-neutral-900">
-                        {c.name}
+                        {cls.name}
                       </h3>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                        <span>{students.length} طالب</span>
-                        {c.subject ? (
+                        <span>
+                          {students.length} {dict.dashboard.stat_students}
+                        </span>
+                        {cls.subject ? (
                           <>
                             <span className="text-neutral-300">·</span>
-                            <span>{c.subject}</span>
+                            <span>{cls.subject}</span>
                           </>
                         ) : null}
                       </div>
@@ -241,28 +193,26 @@ export default async function StudentsPage({
                   </div>
                 );
 
-                // Tab: Students list
                 const studentsTab = (
                   <div className="space-y-4">
-                    {/* Add student */}
                     <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
                       <h4 className="text-sm font-bold text-violet-700">
-                        ➕ إضافة طالب
+                        + {dict.dashboard.stat_students}
                       </h4>
                       <form
                         action={createStudent}
                         className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
                       >
-                        <input type="hidden" name="class_id" value={c.id} />
+                        <input type="hidden" name="class_id" value={cls.id} />
                         <div>
                           <label
-                            htmlFor={`name-${c.id}`}
+                            htmlFor={`name-${cls.id}`}
                             className="block text-xs font-bold text-neutral-700"
                           >
-                            اسم الطالب
+                            {dict.login_student.label_name}
                           </label>
                           <input
-                            id={`name-${c.id}`}
+                            id={`name-${cls.id}`}
                             name="name"
                             type="text"
                             maxLength={100}
@@ -272,13 +222,13 @@ export default async function StudentsPage({
                         </div>
                         <div>
                           <label
-                            htmlFor={`pin-${c.id}`}
+                            htmlFor={`pin-${cls.id}`}
                             className="block text-xs font-bold text-neutral-700"
                           >
-                            PIN
+                            {dict.login_student.label_pin}
                           </label>
                           <input
-                            id={`pin-${c.id}`}
+                            id={`pin-${cls.id}`}
                             name="pin"
                             type="text"
                             inputMode="numeric"
@@ -293,19 +243,18 @@ export default async function StudentsPage({
                           type="submit"
                           className="h-fit self-end rounded-xl bg-gradient-to-l from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-black text-white shadow transition hover:-translate-y-0.5"
                         >
-                          إضافة
+                          {dict.common.save}
                         </button>
                       </form>
                     </div>
 
-                    {/* Students list */}
                     <div className="rounded-2xl border border-neutral-200 bg-white p-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-neutral-800">
-                          قائمة الطلاب
+                          {dict.dashboard.stat_students}
                         </h4>
                         <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
-                          {students.length} طالب
+                          {students.length}
                         </span>
                       </div>
 
@@ -313,7 +262,7 @@ export default async function StudentsPage({
                         <div className="mt-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
                           <div className="text-4xl">👤</div>
                           <p className="mt-2 text-sm font-bold text-neutral-700">
-                            لا يوجد طلاب بعد
+                            {dict.common.no_data}
                           </p>
                         </div>
                       ) : (
@@ -331,7 +280,7 @@ export default async function StudentsPage({
                                   {s.pin_plain ? (
                                     <p className="mt-1 text-xs">
                                       <span className="text-slate-500">
-                                        PIN:
+                                        {dict.login_student.label_pin}:
                                       </span>{" "}
                                       <span
                                         dir="ltr"
@@ -340,11 +289,7 @@ export default async function StudentsPage({
                                         {s.pin_plain}
                                       </span>
                                     </p>
-                                  ) : (
-                                    <p className="mt-1 text-[10px] text-slate-400">
-                                      PIN مخزن بشكل آمن
-                                    </p>
-                                  )}
+                                  ) : null}
                                 </div>
                                 <form action={deleteStudent}>
                                   <input
@@ -355,13 +300,13 @@ export default async function StudentsPage({
                                   <input
                                     type="hidden"
                                     name="class_id"
-                                    value={c.id}
+                                    value={cls.id}
                                   />
                                   <button
                                     type="submit"
                                     className="rounded-lg bg-red-100 px-3 py-1.5 text-[10px] font-black text-red-700 transition hover:bg-red-200"
                                   >
-                                    حذف
+                                    {dict.common.delete}
                                   </button>
                                 </form>
                               </div>
@@ -378,7 +323,7 @@ export default async function StudentsPage({
                                 <input
                                   type="hidden"
                                   name="class_id"
-                                  value={c.id}
+                                  value={cls.id}
                                 />
                                 <input
                                   name="pin"
@@ -388,14 +333,14 @@ export default async function StudentsPage({
                                   minLength={4}
                                   maxLength={6}
                                   required
-                                  placeholder="PIN baru"
+                                  placeholder={dict.login_student.label_pin}
                                   className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-center text-xs tracking-[0.2em]"
                                 />
                                 <button
                                   type="submit"
                                   className="rounded-lg bg-cyan-500 px-3 py-1.5 text-[10px] font-black text-white transition hover:bg-cyan-600"
                                 >
-                                  تغيير PIN
+                                  {dict.common.save}
                                 </button>
                               </form>
                             </div>
@@ -406,47 +351,41 @@ export default async function StudentsPage({
                   </div>
                 );
 
-                // Tab: Import
                 const importTab = (
                   <div className="rounded-2xl border border-emerald-100 bg-white p-4">
                     <h4 className="text-sm font-bold text-emerald-700">
-                      📥 إضافة جماعية
+                      📥 Import
                     </h4>
-                    <p className="mt-1 text-xs text-emerald-600">
-                      الصق أسماء الطلاب (اسم واحد لكل سطر)، وسيُنشئ النظام PIN
-                      تلقائيًا لكل طالب.
-                    </p>
-                    <StudentImportForm classId={c.id} />
+                    <StudentImportForm classId={cls.id} />
                   </div>
                 );
 
-                // Tab: History
-                const historyTab = <ClassHistoryTab classId={c.id} />;
+                const historyTab = <ClassHistoryTab classId={cls.id} />;
 
                 return (
                   <ClassCard
-                    key={`${c.id}-${refreshKey}`}
-                    classId={c.id}
+                    key={`${cls.id}-${refreshKey}`}
+                    classId={cls.id}
                     header={header}
-                    defaultOpen={activeClassId === c.id}
+                    defaultOpen={activeClassId === cls.id}
                   >
                     <ClassTabs
                       tabs={[
                         {
                           key: "students",
-                          label: "الطلاب",
+                          label: dict.dashboard.stat_students,
                           icon: "👥",
                           content: studentsTab,
                         },
                         {
                           key: "import",
-                          label: "استيراد",
+                          label: "Import",
                           icon: "📥",
                           content: importTab,
                         },
                         {
                           key: "history",
-                          label: "السجل",
+                          label: dict.dashboard.stat_games,
                           icon: "📊",
                           content: historyTab,
                         },
