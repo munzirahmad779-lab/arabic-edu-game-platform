@@ -805,25 +805,26 @@ export default function JoinRoomPage({
           isAnagram ? (
             /* ============ MODE ANAGRAM ============ */
             <div className="mt-6">
-              <AnagramPlayer
-                key={session.question.id}
-                questions={[session.question]}
-                dict={dict.anagram}
-                onAnswer={async (payload: AnswerPayload) => {
-                  return await submitAnswer({
-                    questionId: payload.questionId,
-                    selectedOptionId: payload.selectedOptionId,
-                    answerText: payload.answerText,
-                  });
-                }}
-                onFinish={() => {
-                  // no-op — server yang menaikkan soal
-                }}
-                isRtl={isRtl}
-                singleQuestionMode
-                questionNumber={session.question_index + 1}
-                totalQuestions={session.question_count}
-              />
+<AnagramPlayer
+  key={session.question.id}
+  questions={[session.question]}
+  dict={dict.anagram}
+  onAnswer={async (payload: AnswerPayload) => {
+    return await submitAnswer({
+      questionId: payload.questionId,
+      selectedOptionId: payload.selectedOptionId,
+      answerText: payload.answerText,
+    });
+  }}
+  onFinish={() => {
+    // no-op — server yang menaikkan soal
+  }}
+  isRtl={isRtl}
+  singleQuestionMode
+  questionNumber={session.question_index + 1}
+  totalQuestions={session.question_count}
+  timeLimitSeconds={session.question.time_limit_seconds}
+/>
 
               {session.answer_submitted ? (
                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center font-black text-emerald-800">

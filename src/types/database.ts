@@ -218,7 +218,22 @@ export interface Database {
       delete_question_bank: { Args: { p_bank_id: string; }; Returns: undefined; };
       import_students_to_class: { Args: { p_class_id: string; p_names: Json; }; Returns: Array<{ student_name: string; student_pin: string; }>; };
       get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string; }>; };
-      submit_game_answer: { Args: { p_join_token: string; p_question_id: string; p_selected_option_id: string; }; Returns: Array<{ accepted: boolean; is_correct: boolean; score_awarded: number; response_time_ms: number; room_state: string; next_question_index: number; }>; };
+      submit_game_answer: {
+  Args: {
+    p_join_token: string;
+    p_question_id: string;
+    p_selected_option_id: string | null;
+    p_answer_text?: string | null;
+  };
+  Returns: Array<{
+    accepted: boolean;
+    is_correct: boolean;
+    score_awarded: number;
+    response_time_ms: number;
+    room_state: string;
+    next_question_index: number;
+  }>;
+};
       get_room_leaderboard_student: { Args: { p_join_token: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number; }>; };
       get_room_leaderboard_teacher: { Args: { p_room_id: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number; }>; };
       heartbeat_room_participant: { Args: { p_join_token: string }; Returns: undefined; };
