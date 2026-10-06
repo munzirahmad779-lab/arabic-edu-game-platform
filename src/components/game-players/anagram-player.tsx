@@ -258,6 +258,7 @@ export function AnagramPlayer({
     setSlots(
       new Array(units.length).fill(null),
     );
+    setCorrectAnswerText(answerText);
 
     setFeedback(null);
     setWrongHint(false);

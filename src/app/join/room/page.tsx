@@ -98,15 +98,6 @@ type LeaderboardRow = {
   rnk: number;
 };
 
-type SubmitRow = {
-  accepted: boolean;
-  is_correct: boolean;
-  score_awarded: number;
-  response_time_ms: number;
-  room_state: string;
-  next_question_index: number;
-};
-
 const HEARTBEAT_INTERVAL_MS = 10000;
 
 function formatDuration(seconds: number): string {

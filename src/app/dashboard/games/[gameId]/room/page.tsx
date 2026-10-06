@@ -114,6 +114,7 @@ export default async function RoomPage({
   };
 
   const gameName = snapshot.game?.name ?? gr.game_fallback;
+  const gameMode = snapshot.game?.mode ?? "competitive";
   const modeLookupKey = (MODE_KEY[gameMode] ?? "mode_competitive") as keyof typeof gr;
   const modeLabel = gr[modeLookupKey] ?? gameMode;
   const backsoundId = snapshot.game?.backsound_track_id ?? null;
