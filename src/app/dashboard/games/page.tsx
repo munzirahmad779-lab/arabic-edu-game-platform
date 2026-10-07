@@ -248,6 +248,15 @@ export default async function GamesPage({
                       </div>
                     )}
 
+                    {/* Mode Proyektor Hot Seat */}
+                    <Link
+                      href={`/dashboard/games/${game.id}/projector`}
+                      title="Mode Proyektor (Hot Seat Kelas)"
+                      className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 shadow-sm"
+                    >
+                      📽️
+                    </Link>
+
                     <form action={cloneGame}>
                       <input type="hidden" name="game_id" value={game.id} />
                       <button

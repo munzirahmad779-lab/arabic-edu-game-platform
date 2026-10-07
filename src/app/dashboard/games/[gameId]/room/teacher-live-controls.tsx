@@ -62,16 +62,69 @@ export function TeacherLiveControls({
         { p_room_id: roomId },
       );
 
-      if (error) {
-        setErrorMsg(`${errPrefix} ${error.message}`);
-      } else {
+      if (!error) {
         if (data?.[0]?.room_state === "ended") {
           router.refresh();
         } else {
           router.refresh();
         }
+        return;
       }
-    } catch {
+
+      console.warn(
+        "[TeacherLiveControls] advance RPC unavailable, trying direct update fallback:",
+        error.message,
+      );
+
+      const { data: roomRow, error: fetchErr } = await supabase
+        .from("rooms")
+        .select("current_question_index, snapshot")
+        .eq("id", roomId)
+        .maybeSingle();
+
+      if (fetchErr || !roomRow) {
+        setErrorMsg(`${errPrefix} ${error.message}`);
+        return;
+      }
+
+      const qList =
+        (roomRow.snapshot as { questions?: unknown[] } | null)?.questions ?? [];
+      const nextIdx = (roomRow.current_question_index ?? 0) + 1;
+      const isEnded = nextIdx >= qList.length;
+
+      if (isEnded) {
+        const { error: directErr } = await supabase
+          .from("rooms")
+          .update({
+            state: "ended",
+            ended_at: new Date().toISOString(),
+          })
+          .eq("id", roomId);
+
+        if (directErr) {
+          console.error("[TeacherLiveControls] Direct advance end failed:", directErr);
+          setErrorMsg(`${errPrefix} ${error.message}`);
+        } else {
+          router.refresh();
+        }
+      } else {
+        const { error: directErr } = await supabase
+          .from("rooms")
+          .update({
+            current_question_index: nextIdx,
+            question_started_at: new Date(Date.now() + 3000).toISOString(),
+          })
+          .eq("id", roomId);
+
+        if (directErr) {
+          console.error("[TeacherLiveControls] Direct advance index failed:", directErr);
+          setErrorMsg(`${errPrefix} ${error.message}`);
+        } else {
+          router.refresh();
+        }
+      }
+    } catch (e) {
+      console.error("[TeacherLiveControls] Exception during advance:", e);
       setErrorMsg(connError);
     } finally {
       setAdvancing(false);
@@ -93,12 +146,32 @@ export function TeacherLiveControls({
         p_room_id: roomId,
       });
 
-      if (error) {
+      if (!error) {
+        router.refresh();
+        return;
+      }
+
+      console.warn(
+        "[TeacherLiveControls] end_game RPC unavailable, trying direct update fallback:",
+        error.message,
+      );
+
+      const { error: directError } = await supabase
+        .from("rooms")
+        .update({
+          state: "ended",
+          ended_at: new Date().toISOString(),
+        })
+        .eq("id", roomId);
+
+      if (directError) {
+        console.error("[TeacherLiveControls] Direct end failed:", directError);
         setErrorMsg(`${errPrefix} ${error.message}`);
       } else {
         router.refresh();
       }
-    } catch {
+    } catch (e) {
+      console.error("[TeacherLiveControls] Exception during end game:", e);
       setErrorMsg(connError);
     } finally {
       setEnding(false);

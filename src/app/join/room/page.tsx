@@ -200,6 +200,7 @@ export default function JoinRoomPage({
       );
 
       if (rpcError) {
+        console.error("[loadSession] get_game_session failed:", rpcError);
         if (
           rpcError.message === "INVALID_JOIN_TOKEN" ||
           rpcError.message.includes("INVALID")
@@ -207,11 +208,12 @@ export default function JoinRoomPage({
           setSessionEnded(true);
           return;
         }
-        setLoadError(t.room_err_load);
+        setLoadError(`${t.room_err_load} (${rpcError.message})`);
         return;
       }
 
       if (!data || !data[0]) {
+        console.warn("[loadSession] get_game_session returned empty array");
         setLoadError(t.room_err_load);
         return;
       }

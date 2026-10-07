@@ -69,6 +69,7 @@ if (!fs.existsSync(MIGRATIONS_DIR)) {
     "0061_game_engine_foundation.sql",
     "0062_legacy_game_type_resolution.sql",
     "0063_self_paced_gameplay.sql",
+    "0064_fix_room_controls_and_self_paced.sql",
   ];
 
   for (const req of requiredMigrations) {
