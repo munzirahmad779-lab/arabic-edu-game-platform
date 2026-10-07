@@ -127,9 +127,9 @@ export interface Database {
         ];
       };
       submissions: {
-        Row: { id: string; room_id: string; room_participant_id: string; question_id: string; selected_option_id: string; is_correct: boolean; response_time_ms: number; score_awarded: number; submitted_at: string; };
-        Insert: { id?: string; room_id: string; room_participant_id: string; question_id: string; selected_option_id: string; is_correct: boolean; response_time_ms: number; score_awarded: number; submitted_at?: string; };
-        Update: { id?: string; room_id?: string; room_participant_id?: string; question_id?: string; selected_option_id?: string; is_correct?: boolean; response_time_ms?: number; score_awarded?: number; submitted_at?: string; };
+        Row: { id: string; room_id: string; room_participant_id: string; question_id: string; selected_option_id: string | null; answer_text: string | null; is_correct: boolean; response_time_ms: number; score_awarded: number; submitted_at: string; };
+        Insert: { id?: string; room_id: string; room_participant_id: string; question_id: string; selected_option_id?: string | null; answer_text?: string | null; is_correct: boolean; response_time_ms: number; score_awarded: number; submitted_at?: string; };
+        Update: { id?: string; room_id?: string; room_participant_id?: string; question_id?: string; selected_option_id?: string | null; answer_text?: string | null; is_correct?: boolean; response_time_ms?: number; score_awarded?: number; submitted_at?: string; };
         Relationships: [
           { foreignKeyName: "submissions_room_id_fkey"; columns: ["room_id"]; isOneToOne: false; referencedRelation: "rooms"; referencedColumns: ["id"]; },
           { foreignKeyName: "submissions_room_participant_id_fkey"; columns: ["room_participant_id"]; isOneToOne: false; referencedRelation: "room_participants"; referencedColumns: ["id"]; },

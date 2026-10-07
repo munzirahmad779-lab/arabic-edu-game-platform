@@ -1,0 +1,65 @@
+name: CI Quality Gate & Automated Testing
+
+on:
+  push:
+    branches:
+      - main
+      - audit-harden-magguru
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-gate:
+    name: Verify Typecheck, Lint, Tests, Doctor, Build & E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: "https://test-ci.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ci-testing-key-magguru"
+      E2E_TEST: "true"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Gate 1 - TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Gate 2 - ESLint Code Quality
+        run: npm run lint
+
+      - name: Gate 3 - Database Doctor & Schema Validation
+        run: npm run test:doctor
+
+      - name: Gate 4 - Regression & Concurrency Tests
+        run: npm run test
+
+      - name: Gate 5 - Production Next.js Build
+        run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Gate 6 - Automated Playwright E2E Suite
+        run: npm run test:e2e
+
+      - name: Upload Test Report Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-and-traces
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

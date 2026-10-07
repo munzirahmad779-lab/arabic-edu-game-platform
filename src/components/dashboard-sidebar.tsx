@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n/dictionaries";
+import { DashboardHealthIndicator } from "@/components/dashboard-health-indicator";
 
 type SidebarDict = {
   group_data: string;
@@ -127,6 +128,7 @@ export function DashboardSidebar({
           onLink={() => setOpen(false)}
         />
       </nav>
+      <DashboardHealthIndicator />
     </>
   );
 
