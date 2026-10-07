@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createGame, createRoom, deleteGame } from "./actions";
+import { createGame, createRoom, deleteGame, cloneGame } from "./actions";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
 import { getLocale } from "@/lib/i18n/server";
@@ -247,6 +247,17 @@ export default async function GamesPage({
                         {t.no_room}
                       </div>
                     )}
+
+                    <form action={cloneGame}>
+                      <input type="hidden" name="game_id" value={game.id} />
+                      <button
+                        type="submit"
+                        title={t.clone_title}
+                        className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100"
+                      >
+                        📋
+                      </button>
+                    </form>
 
                     <form action={deleteGame}>
                       <input type="hidden" name="game_id" value={game.id} />

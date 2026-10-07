@@ -959,7 +959,15 @@
     "student_plural": "siswa",
     "archive_confirm_with_participants": "Sesi saat ini akan diarsipkan dengan hasil dan peringkat yang tersimpan, lalu ruangan akan direset untuk sesi baru (kode ruangan sama).\n\nPeserta saat ini: {count}\n\nLanjutkan?",
     "archive_confirm_no_participants": "Ruangan akan direset untuk sesi baru (kode ruangan sama).",
-    "archive_btn": "🔄 Arsipkan Sesi & Mulai Baru"
+    "archive_btn": "🔄 Arsipkan Sesi & Mulai Baru",
+    "live_controls_title": "Kontrol Permainan Berjalan",
+    "live_controls_desc": "Anda dapat melompati soal secara manual jika ada siswa yang tertunda, atau mengakhiri permainan kapan saja.",
+    "next_question_btn": "⏭️ Soal Berikutnya",
+    "next_question_loading": "Sedang beralih...",
+    "end_game_btn": "🛑 Akhiri Permainan Sekarang",
+    "end_game_loading": "Sedang mengakhiri...",
+    "end_game_confirm": "Apakah Anda yakin ingin mengakhiri permainan sekarang untuk semua siswa dan memindahkan ruangan ke hasil akhir?",
+    "total_questions_badge": "Total soal: {count}"
   },
   "games_page": {
     "title": "Permainan",
@@ -984,6 +992,7 @@
     "no_class_warn": "Buat kelas dulu sebelum membuat permainan.",
     "no_bank_warn": "Buat bank soal dulu sebelum membuat permainan.",
     "delete_title": "Hapus permainan",
+    "clone_title": "Duplikat permainan",
     "duration_min": "mnt",
     "mode_competitive": "Kompetitif",
     "mode_cooperative": "Kooperatif",

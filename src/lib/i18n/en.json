@@ -959,7 +959,15 @@
     "student_plural": "students",
     "archive_confirm_with_participants": "The current session will be archived with saved results and rankings, then the room will be reset for a new session (same room code).\n\nCurrent participants: {count}\n\nContinue?",
     "archive_confirm_no_participants": "The room will be reset for a new session (same room code).",
-    "archive_btn": "🔄 Archive Session & Start New One"
+    "archive_btn": "🔄 Archive Session & Start New One",
+    "live_controls_title": "Live Game Controls",
+    "live_controls_desc": "You can manually advance questions if a student is delayed, or end the game anytime.",
+    "next_question_btn": "⏭️ Next Question",
+    "next_question_loading": "Advancing...",
+    "end_game_btn": "🛑 End Game Now",
+    "end_game_loading": "Ending...",
+    "end_game_confirm": "Are you sure you want to end the game now for all students and move the room to final results?",
+    "total_questions_badge": "Total questions: {count}"
   },
   "games_page": {
     "title": "Games",
@@ -984,6 +992,7 @@
     "no_class_warn": "Create a class first before creating a game.",
     "no_bank_warn": "Create a question bank first before creating a game.",
     "delete_title": "Delete game",
+    "clone_title": "Duplicate game",
     "duration_min": "min",
     "mode_competitive": "Competitive",
     "mode_cooperative": "Cooperative",

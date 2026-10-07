@@ -277,6 +277,8 @@ export default async function RoomPage({
               <TeacherLiveControls
                 roomId={room.id}
                 questionCount={questionCount}
+                gr={gr}
+                isRtl={isRtl}
               />
             ) : null}
 
