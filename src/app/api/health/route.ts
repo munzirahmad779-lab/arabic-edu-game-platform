@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 
       latency.database = probe.latencyMs;
 
-      if (!probe.error && probe.result && (probe.result.status === 200 || probe.result.status === 404)) {
+      if (!probe.error && probe.result && probe.result.status < 500) {
         checks.database = "ok";
       } else {
         checks.database = "degraded";

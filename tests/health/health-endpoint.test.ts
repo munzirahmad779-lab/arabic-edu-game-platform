@@ -58,4 +58,16 @@ describe("Health Check Endpoint Test Suite", () => {
 
     assert.ok(cacheControl?.includes("no-store"));
   });
+
+  test("Database and storage probes treat non-5xx responses as reachable", async () => {
+    // If Supabase credentials are configured in environment, status must be ok rather than degraded
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      const request = new NextRequest("http://localhost:3000/api/health");
+      const response = await GET(request);
+      const body = await response.json();
+      assert.equal(body.checks.database, "ok");
+      assert.equal(body.checks.rpc, "ok");
+      assert.equal(body.status, "ok");
+    }
+  });
 });
