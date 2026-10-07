@@ -68,6 +68,7 @@ if (!fs.existsSync(MIGRATIONS_DIR)) {
     "0060_room_controls_and_cooperative_hardening.sql",
     "0061_game_engine_foundation.sql",
     "0062_legacy_game_type_resolution.sql",
+    "0063_self_paced_gameplay.sql",
   ];
 
   for (const req of requiredMigrations) {

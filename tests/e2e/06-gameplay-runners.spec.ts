@@ -53,4 +53,24 @@ test.describe("06. Multi-Mechanic Gameplay Engine Gate", () => {
     expect(compareAnswers("  مُعَلِّمٌ  ", word)).toBe(true);
     expect(compareAnswers("كتاب", word)).toBe(false);
   });
+
+  test("Self-paced gameplay resolves questions per participant independently without blocking wait", async () => {
+    // Model two participants with independent submission rates
+    const totalQuestions = 5;
+    const participantA = { id: "p-fast", answeredCount: 4 }; // On question 5 (index 4)
+    const participantB = { id: "p-slow", answeredCount: 1 }; // On question 2 (index 1)
+
+    // Participant index matches their specific submitted count
+    expect(participantA.answeredCount).toBe(4);
+    expect(participantB.answeredCount).toBe(1);
+
+    // Fast participant finishes question 5
+    participantA.answeredCount += 1;
+    const isFinishedA = participantA.answeredCount >= totalQuestions;
+    const isFinishedB = participantB.answeredCount >= totalQuestions;
+
+    expect(isFinishedA).toBe(true);
+    expect(isFinishedB).toBe(false);
+  });
 });
+

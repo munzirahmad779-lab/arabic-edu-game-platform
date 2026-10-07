@@ -21,7 +21,6 @@ interface GameShellProps {
   readonly countdown?: number | null;
   readonly isCooperative?: boolean;
   readonly isRtl?: boolean;
-  readonly answerSubmitted?: boolean;
   readonly submitError?: string | null;
   readonly feedback?: {
     readonly isVisible: boolean;
@@ -59,7 +58,6 @@ export function GameShell({
   countdown = null,
   isCooperative = false,
   isRtl = false,
-  answerSubmitted = false,
   submitError = null,
   feedback,
   children,
@@ -123,12 +121,6 @@ export function GameShell({
           /* Active Gameplay Player */
           <div className="transition-opacity duration-300">
             {children}
-
-            {answerSubmitted && (
-              <div className="mt-4 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 p-3.5 text-center font-black text-emerald-200">
-                ✓ Jawaban tercatat — menunggu giliran/soal berikutnya...
-              </div>
-            )}
 
             {submitError && (
               <div className="mt-4 rounded-2xl bg-rose-500/20 border border-rose-400/40 p-3.5 text-center font-bold text-rose-200">

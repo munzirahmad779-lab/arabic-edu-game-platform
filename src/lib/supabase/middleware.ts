@@ -24,6 +24,30 @@ function isProtectedPath(pathname: string): boolean {
  * request/response cycle.
  */
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isProtected = isProtectedPath(pathname);
+
+  // Fast path 1: If accessing a protected route without any Supabase auth cookies,
+  // redirect immediately to login without incurring an expensive network round-trip.
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookie = allCookies.some(
+    (c) => c.name.startsWith("sb-") && c.name.includes("-auth-token")
+  );
+
+  if (isProtected && !hasAuthCookie) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirectTo", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Fast path 2: For public/student/gameplay routes, do not block navigation
+  // with a remote auth.getUser() network call.
+  if (!isProtected) {
+    return NextResponse.next({
+      request: { headers: request.headers },
+    });
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
@@ -32,13 +56,8 @@ export async function updateSession(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    // Fail safe: without config we cannot verify a session, so protected
-    // routes are not reachable rather than silently allowed through.
-    if (isProtectedPath(request.nextUrl.pathname)) {
-      const loginUrl = new URL("/login", request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-    return response;
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   const supabase = createServerClient(url, anonKey, {
@@ -62,9 +81,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && isProtectedPath(request.nextUrl.pathname)) {
+  if (!user && isProtected) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
   }
 

@@ -382,10 +382,11 @@ export function GlobalBackgroundAudio() {
     <>
       <audio ref={audioRef} loop preload="auto" playsInline />
 
+      {/* Floating Settings Drawer */}
       {settingsOpen && dictReady ? (
         <div
           ref={drawerRef}
-          className="fixed bottom-20 left-4 z-50 max-h-[75vh] w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+          className="fixed bottom-20 right-4 sm:right-6 z-50 max-h-[75vh] w-[calc(100vw-2rem)] sm:w-80 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-2xl"
           dir={isRtl ? "rtl" : "ltr"}
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-100 bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
@@ -527,18 +528,21 @@ export function GlobalBackgroundAudio() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setSettingsOpen((v) => !v)}
-        className="fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-xl text-white shadow-lg transition hover:bg-violet-700"
-        title={w?.settings_aria ?? "Settings"}
-        aria-label={w?.settings_aria ?? "Settings"}
-      >
-        ⚙️
-      </button>
+      {/* Hide floating trigger during active gameplay room where GameHud has its own audio button */}
+      {!pathname.startsWith("/join/room") && (
+        <button
+          type="button"
+          onClick={() => setSettingsOpen((v) => !v)}
+          className="fixed bottom-4 right-4 sm:right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-violet-600/90 text-lg text-white shadow-lg backdrop-blur transition hover:bg-violet-700 active:scale-95"
+          title={w?.settings_aria ?? "Settings"}
+          aria-label={w?.settings_aria ?? "Settings"}
+        >
+          ⚙️
+        </button>
+      )}
 
-      {needsGesture && !audioPlaying && !pausedByEvent && activeTrack && w ? (
-        <div className="fixed bottom-4 left-20 z-40 max-w-[60%] rounded-2xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 shadow-lg">
+      {needsGesture && !audioPlaying && !pausedByEvent && activeTrack && w && !pathname.startsWith("/join/room") ? (
+        <div className="fixed bottom-4 right-16 z-40 max-w-[65%] rounded-2xl bg-amber-100 px-3.5 py-1.5 text-xs font-bold text-amber-900 shadow-md">
           {w.gesture_hint}
         </div>
       ) : null}

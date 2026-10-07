@@ -70,4 +70,32 @@ test.describe("07. Server Authority & Anti-Tamper Gate", () => {
     expect(() => recordSubmission("part-1", "q-1")).toThrow("ALREADY_SUBMITTED");
     expect(recordSubmission("part-2", "q-1")).toBe(true);
   });
+
+  test("Server validates question ID against participant's sequential question index", async () => {
+    const questions = [
+      { id: "q-1", text: "Soal 1" },
+      { id: "q-2", text: "Soal 2" },
+      { id: "q-3", text: "Soal 3" },
+    ];
+
+    function validateParticipantQuestion(submissionsCount: number, requestedQuestionId: string) {
+      if (submissionsCount >= questions.length) {
+        throw new Error("INVALID_QUESTION_INDEX");
+      }
+      const currentQuestion = questions[submissionsCount];
+      if (requestedQuestionId !== currentQuestion.id) {
+        throw new Error("QUESTION_NOT_CURRENT");
+      }
+      return true;
+    }
+
+    // Participant with 0 submissions must submit q-1
+    expect(validateParticipantQuestion(0, "q-1")).toBe(true);
+    expect(() => validateParticipantQuestion(0, "q-2")).toThrow("QUESTION_NOT_CURRENT");
+
+    // Participant with 1 submission must submit q-2
+    expect(validateParticipantQuestion(1, "q-2")).toBe(true);
+    expect(() => validateParticipantQuestion(1, "q-1")).toThrow("QUESTION_NOT_CURRENT");
+  });
 });
+

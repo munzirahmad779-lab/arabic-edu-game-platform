@@ -176,6 +176,7 @@ export default function JoinRoomPage({
   const lastHeartbeatRef = useRef(0);
   const lastPollRef = useRef(0);
   const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
+  const transitioningUntilRef = useRef(0);
 
   useEffect(() => {
     roomStateRef.current = session?.room_state;
@@ -184,6 +185,9 @@ export default function JoinRoomPage({
   const loadSession = useCallback(async () => {
     if (!token) {
       setLoadError(t.room_err_invalid_token);
+      return;
+    }
+    if (Date.now() < transitioningUntilRef.current) {
       return;
     }
     try {
@@ -402,9 +406,12 @@ export default function JoinRoomPage({
 
       const row = data?.[0];
 
-      // Refresh session di background — jangan blok return
-      void loadSession();
-      void loadLeaderboard();
+      // Delay briefly (~1.2s) so student sees instant feedback overlay before transitioning
+      transitioningUntilRef.current = Date.now() + 1200;
+      setTimeout(() => {
+        void loadSession();
+        void loadLeaderboard();
+      }, 1200);
 
       return {
         accepted: row?.accepted ?? false,
@@ -485,7 +492,12 @@ export default function JoinRoomPage({
     );
   }
 
-  if (session.room_state === "ended") {
+  if (
+    session.room_state === "ended" ||
+    (session.room_state === "running" &&
+      session.question_count > 0 &&
+      session.question_index >= session.question_count)
+  ) {
     const me = leaderboard.find((r) => r.is_self);
     const podium = leaderboard.slice(0, 3);
     const onPodium = me ? me.rnk <= 3 : false;
@@ -778,7 +790,6 @@ export default function JoinRoomPage({
       countdown={countdown}
       isCooperative={isCooperative}
       isRtl={isRtl}
-      answerSubmitted={session.answer_submitted}
       submitError={submitError}
       feedback={gameFeedback}
     >
