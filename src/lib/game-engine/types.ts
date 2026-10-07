@@ -130,7 +130,7 @@ export interface GamePlayerProps<TQuestion = RawQuestion> {
   readonly session: GameSessionContext;
   readonly onSubmitAnswer: (submission: AnswerSubmission) => Promise<AnswerResult>;
   readonly isRtl: boolean;
-  readonly dict: Record<string, unknown>;
+  readonly dict?: Record<string, unknown>;
   readonly singleQuestionMode?: boolean;
   readonly questionNumber?: number;
   readonly totalQuestions?: number;

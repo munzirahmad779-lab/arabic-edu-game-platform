@@ -647,7 +647,7 @@ export default function JoinRoomPage({
             </div>
           </div>
 
-          <RoomReview token={token} dict={dict as never} />
+          <RoomReview token={token} dict={dict} />
           <div className="text-center">
             <a
               href="/join"
@@ -740,14 +740,19 @@ export default function JoinRoomPage({
 
   const myRow = leaderboard.find((r) => r.is_self);
   const top3 = leaderboard.slice(0, 3);
-  const gameType = GameRegistry.resolve(session.game_type || session.game_mode);
+  const gameType = GameRegistry.resolve(session.game_type, session.game_mode);
+
+  const validGameModes: readonly GameMode[] = ["competitive", "cooperative", "endless", "practice", "learning"];
+  const resolvedGameMode: GameMode = validGameModes.includes(session.game_mode as GameMode)
+    ? (session.game_mode as GameMode)
+    : "competitive";
 
   const gameSessionContext: GameSessionContext = {
     roomId: session.room_id,
     roomCode: session.room_code,
     gameName: session.game_name,
     gameType,
-    gameMode: (session.game_mode as GameMode) || "competitive",
+    gameMode: resolvedGameMode,
     durationSeconds: session.game_duration_seconds,
     participantId: session.participant_id,
     participantName: session.participant_name,
@@ -791,7 +796,7 @@ export default function JoinRoomPage({
               });
             }}
             isRtl={isRtl}
-            dict={dict.runner as never}
+            dict={dict.runner}
             onGameEvent={handleGameEvent}
           />
         ) : gameType === "matching" ? (
@@ -807,7 +812,7 @@ export default function JoinRoomPage({
               });
             }}
             isRtl={isRtl}
-            dict={dict.matching as never}
+            dict={dict.matching}
             onGameEvent={handleGameEvent}
           />
         ) : gameType === "penalty" ? (
@@ -823,7 +828,7 @@ export default function JoinRoomPage({
               });
             }}
             isRtl={isRtl}
-            dict={dict.penalty as never}
+            dict={dict.penalty}
             onGameEvent={handleGameEvent}
           />
         ) : gameType === "anagram" ? (
@@ -858,7 +863,7 @@ export default function JoinRoomPage({
               });
             }}
             isRtl={isRtl}
-            dict={dict as never}
+            dict={dict}
             onGameEvent={handleGameEvent}
           />
         )

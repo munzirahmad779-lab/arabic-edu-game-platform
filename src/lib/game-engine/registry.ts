@@ -102,25 +102,33 @@ export class GameRegistry {
   /**
    * Resolves raw game_type or legacy game_mode string into a standard NormalizedGameType.
    */
-  public static resolve(raw: string | null | undefined): NormalizedGameType {
-    if (!raw) return "quiz";
-    const clean = raw.trim().toLowerCase();
+  public static resolve(
+    rawType?: string | null,
+    rawMode?: string | null,
+  ): NormalizedGameType {
+    const cleanType = (rawType ?? "").trim().toLowerCase();
+    const cleanMode = (rawMode ?? "").trim().toLowerCase();
 
-    if (clean === "runner" || clean === "arabic_chase_race") {
+    // Legacy compatibility: In historical schema (0001 to 0060),
+    // public.games.game_type was constrained exclusively to 'arabic_chase_race'.
+    // Historical games designated their true mechanic in `mode`.
+    if (cleanType === "arabic_chase_race") {
+      if (cleanMode === "anagram") return "anagram";
+      if (cleanMode === "matching") return "matching";
       return "runner";
     }
-    if (clean === "matching") {
-      return "matching";
-    }
-    if (clean === "penalty") {
-      return "penalty";
-    }
-    if (clean === "anagram") {
-      return "anagram";
-    }
-    if (clean === "quiz") {
-      return "quiz";
-    }
+
+    // Canonical modern game types
+    if (cleanType === "runner") return "runner";
+    if (cleanType === "matching") return "matching";
+    if (cleanType === "penalty") return "penalty";
+    if (cleanType === "anagram") return "anagram";
+    if (cleanType === "quiz") return "quiz";
+
+    // Fallback when game_type is null or empty, inspecting mode
+    if (cleanMode === "anagram") return "anagram";
+    if (cleanMode === "matching") return "matching";
+    if (cleanMode === "speed_run") return "runner";
 
     return "quiz";
   }

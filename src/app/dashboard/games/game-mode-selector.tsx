@@ -50,7 +50,7 @@ export function GameModeSelector({ tracks, gm, gt }: Props) {
   function handleGameTypeChange(newType: NormalizedGameType) {
     setGameType(newType);
     const newSupported = GameRegistry.get(newType).capabilities.supportedModes;
-    if (!newSupported.includes(mode as never)) {
+    if (!newSupported.some((m) => m === mode)) {
       setMode(newSupported[0] || "competitive");
     }
   }

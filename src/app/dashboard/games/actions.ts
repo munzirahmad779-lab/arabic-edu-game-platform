@@ -140,9 +140,7 @@ const durationMinutes = isTimedMode
   }
 
   const gameTypeRaw = normalizeName(formData.get("game_type"));
-  const gameType = GameRegistry.resolve(
-    gameTypeRaw || (mode === "anagram" ? "anagram" : "quiz"),
-  );
+  const gameType = GameRegistry.resolve(gameTypeRaw, mode);
 
   const isEngineMode =
     mode === "competitive" ||
