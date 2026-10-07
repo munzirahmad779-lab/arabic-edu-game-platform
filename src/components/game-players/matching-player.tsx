@@ -23,7 +23,14 @@ export function MatchingPlayer({
   const [hasFinished, setHasFinished] = useState(false);
 
   async function handleCardClick(card: MatchingCard) {
-    if (submitting || hasFinished || matchedPairIds.has(card.pairId)) return;
+    if (
+      submitting ||
+      hasFinished ||
+      selectedCards.length >= 2 ||
+      matchedPairIds.has(card.pairId)
+    ) {
+      return;
+    }
     if (selectedCards.some((c) => c.id === card.id)) return;
 
     playSfx("click");
@@ -57,18 +64,14 @@ export function MatchingPlayer({
       });
 
       // Check if all pairs are solved or submit correct answer option
-      const totalPairs = matchingQuestion.cards.length / 2;
+      const totalPairs = matchingQuestion.targetPairsCount;
       if (nextMatched.size >= totalPairs && !hasFinished) {
         setHasFinished(true);
         setSubmitting(true);
 
-        const correctOpt =
-          question.options.find((o) => o.option_key === question.correct_option_key) ??
-          question.options[0];
-
         await onSubmitAnswer({
           questionId: question.id,
-          selectedOptionId: correctOpt?.id ?? null,
+          selectedOptionId: matchingQuestion.correctOptionId,
           answerText: null,
           responseTimeMs: 2000,
         });
@@ -94,7 +97,7 @@ export function MatchingPlayer({
     }
   }
 
-  const totalPairs = matchingQuestion.cards.length / 2;
+  const totalPairs = matchingQuestion.targetPairsCount;
 
   return (
     <section

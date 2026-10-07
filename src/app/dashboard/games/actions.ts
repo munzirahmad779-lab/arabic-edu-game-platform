@@ -141,8 +141,21 @@ const durationMinutes = isTimedMode
 
   const gameTypeRaw = normalizeName(formData.get("game_type"));
   const gameType = GameRegistry.resolve(
-    gameTypeRaw || (mode === "anagram" ? "anagram" : "runner"),
+    gameTypeRaw || (mode === "anagram" ? "anagram" : "quiz"),
   );
+
+  const isEngineMode =
+    mode === "competitive" ||
+    mode === "cooperative" ||
+    mode === "endless" ||
+    mode === "practice" ||
+    mode === "learning";
+
+  if (isEngineMode && !GameRegistry.isModeSupported(gameType, mode)) {
+    redirect(
+      `/dashboard/games?error=invalid_mode_for_game_type&msg=${encodeURIComponent(`Mode "${mode}" tidak didukung untuk tipe game "${gameType}"`)}`,
+    );
+  }
 
   const { data: game, error: gameError } = await supabase
     .from("games")

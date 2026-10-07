@@ -22,9 +22,21 @@ export function isArabicDiacritic(code: number): boolean {
 export function splitIntoGraphemes(value: string): string[] {
   if (!value) return [];
   const normalized = value.normalize("NFC");
-  const result: string[] = [];
 
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = new Intl.Segmenter("ar", { granularity: "grapheme" });
+    const segments: string[] = [];
+    for (const seg of segmenter.segment(normalized)) {
+      if (seg.segment.trim().length > 0) {
+        segments.push(seg.segment);
+      }
+    }
+    return segments;
+  }
+
+  const result: string[] = [];
   for (const char of Array.from(normalized)) {
+    if (char.trim().length === 0) continue;
     const code = char.codePointAt(0) ?? 0;
 
     if (isArabicDiacritic(code) && result.length > 0) {

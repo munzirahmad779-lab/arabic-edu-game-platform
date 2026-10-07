@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GameRegistry } from "@/lib/game-engine/registry";
 import type { NormalizedGameType } from "@/lib/game-engine/types";
 
 type Track = {
@@ -44,6 +45,16 @@ export function GameModeSelector({ tracks, gm, gt }: Props) {
   const [gameType, setGameType] = useState<NormalizedGameType>("runner");
   const [mode, setMode] = useState("competitive");
 
+  const supportedModes = GameRegistry.get(gameType).capabilities.supportedModes;
+
+  function handleGameTypeChange(newType: NormalizedGameType) {
+    setGameType(newType);
+    const newSupported = GameRegistry.get(newType).capabilities.supportedModes;
+    if (!newSupported.includes(mode as never)) {
+      setMode(newSupported[0] || "competitive");
+    }
+  }
+
   const isTimed =
     mode === "competitive" ||
     mode === "cooperative" ||
@@ -61,7 +72,7 @@ export function GameModeSelector({ tracks, gm, gt }: Props) {
           id="game_type"
           name="game_type"
           value={gameType}
-          onChange={(e) => setGameType(e.target.value as NormalizedGameType)}
+          onChange={(e) => handleGameTypeChange(e.target.value as NormalizedGameType)}
           className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800"
         >
           <option value="runner">
@@ -83,6 +94,11 @@ export function GameModeSelector({ tracks, gm, gt }: Props) {
         <p className="mt-1 text-xs text-neutral-500">
           {gt?.hint ?? "Pilih mekanik permainan yang akan dimainkan siswa."}
         </p>
+        {gameType === "matching" && (
+          <p className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 p-2.5 text-xs text-indigo-900 font-medium">
+            💡 <strong>Tips Soal Matching:</strong> Buat pilihan jawaban dengan format pasangan kata (contoh: <code>كِتَابٌ : Buku</code>) agar sistem dapat membentuk kartu pasangan secara otomatis.
+          </p>
+        )}
       </div>
 
       <div className="lg:col-span-2">
@@ -96,10 +112,18 @@ export function GameModeSelector({ tracks, gm, gt }: Props) {
           onChange={(e) => setMode(e.target.value)}
           className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
         >
-          <option value="competitive">{gm.competitive}</option>
-          <option value="cooperative">{gm.cooperative}</option>
-          <option value="endless">{gm.endless}</option>
-          <option value="practice">{gm.practice}</option>
+          {supportedModes.includes("competitive") && (
+            <option value="competitive">{gm.competitive}</option>
+          )}
+          {supportedModes.includes("cooperative") && (
+            <option value="cooperative">{gm.cooperative}</option>
+          )}
+          {supportedModes.includes("endless") && (
+            <option value="endless">{gm.endless}</option>
+          )}
+          {supportedModes.includes("practice") && (
+            <option value="practice">{gm.practice}</option>
+          )}
         </select>
       </div>
 

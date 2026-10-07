@@ -18,7 +18,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     icon: "🏃‍♂️",
     accentColor: "emerald",
     capabilities: {
-      supportedModes: ["competitive", "cooperative", "practice", "endless"],
+      supportedModes: ["competitive", "practice"],
       hasLanes: true,
       hasTimer: true,
       supportsTouch: true,
@@ -35,7 +35,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     icon: "🧩",
     accentColor: "indigo",
     capabilities: {
-      supportedModes: ["competitive", "cooperative", "practice"],
+      supportedModes: ["competitive", "practice"],
       hasLanes: false,
       hasTimer: true,
       supportsTouch: true,
@@ -69,7 +69,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     icon: "🔤",
     accentColor: "violet",
     capabilities: {
-      supportedModes: ["competitive", "cooperative", "practice"],
+      supportedModes: ["competitive", "practice"],
       hasLanes: false,
       hasTimer: true,
       supportsTouch: true,
@@ -86,7 +86,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     icon: "📝",
     accentColor: "sky",
     capabilities: {
-      supportedModes: ["competitive", "cooperative", "practice", "endless", "learning"],
+      supportedModes: ["competitive", "cooperative", "practice", "endless"],
       hasLanes: false,
       hasTimer: true,
       supportsTouch: true,

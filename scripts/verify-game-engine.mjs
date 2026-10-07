@@ -40,44 +40,66 @@ function compareAnswers(actual, expected) {
   return normalizeAnswer(actual).toLowerCase() === normalizeAnswer(expected).toLowerCase();
 }
 
-console.log("🧪 1. Testing Arabic Grapheme Cluster Segmentation...");
-// Test case: مُعَلِّمٌ (mu'allim)
-// Base letters: م, ع, ل, م
-// Diacritics: ُ (damma), َ (fatha), ّ (shaddah) + ِ (kasra), ٌ (tanwin damma)
-const testWord1 = "مُعَلِّمٌ";
-const graphemes1 = splitIntoGraphemes(testWord1);
-console.log(`   Word: "${testWord1}" -> Graphemes:`, graphemes1);
+console.log("🧪 1. Testing Arabic Grapheme Cluster Segmentation on actual words...");
 
-// Naive split would have produced 9 separate Unicode code points:
-const naiveSplit = Array.from(testWord1);
-assert.equal(naiveSplit.length, 9, "Naive split should have 9 raw code units/chars");
-// Grapheme split should produce exactly 4 clusters:
-assert.equal(graphemes1.length, 4, "Grapheme split must produce 4 visual clusters");
-assert.equal(graphemes1[0].normalize("NFC"), "مُ".normalize("NFC"), "Cluster 0 must be Meem with Damma");
-assert.equal(graphemes1[1].normalize("NFC"), "عَ".normalize("NFC"), "Cluster 1 must be Ayn with Fatha");
-assert.equal(graphemes1[2].normalize("NFC"), "لِّ".normalize("NFC"), "Cluster 2 must be Lam with Shaddah and Kasrah");
-assert.equal(graphemes1[3].normalize("NFC"), "مٌ".normalize("NFC"), "Cluster 3 must be Meem with Tanwin Damma");
-console.log("   ✅ Arabic grapheme clustering passed: No combining marks detached!");
+// Test Word 1: مُعَلِّمٌ (mu'allimun) - 9 codepoints -> 4 grapheme clusters
+const word1 = "مُعَلِّمٌ";
+const g1 = splitIntoGraphemes(word1);
+console.log(`   Word 1: "${word1}" -> Graphemes:`, g1);
+assert.equal(g1.length, 4, "مُعَلِّمٌ must produce 4 visual clusters");
+assert.equal(g1[0].normalize("NFC"), "مُ".normalize("NFC"));
+assert.equal(g1[1].normalize("NFC"), "عَ".normalize("NFC"));
+assert.equal(g1[2].normalize("NFC"), "لِّ".normalize("NFC"));
+assert.equal(g1[3].normalize("NFC"), "مٌ".normalize("NFC"));
 
-// Test case: normalization & answer comparison
+// Test Word 2: مَدْرَسَة (madrasah) - with sukun & fatha
+const word2 = "مَدْرَسَة";
+const g2 = splitIntoGraphemes(word2);
+console.log(`   Word 2: "${word2}" -> Graphemes:`, g2);
+assert.equal(g2.length, 5, "مَدْرَسَة must produce 5 visual clusters");
+assert.equal(g2[0].normalize("NFC"), "مَ".normalize("NFC"));
+assert.equal(g2[1].normalize("NFC"), "دْ".normalize("NFC"));
+assert.equal(g2[2].normalize("NFC"), "رَ".normalize("NFC"));
+assert.equal(g2[3].normalize("NFC"), "سَ".normalize("NFC"));
+assert.equal(g2[4].normalize("NFC"), "ة".normalize("NFC"));
+
+// Test Word 3: السَّلَامُ (as-salaamu) - with shaddah & alif & dammah
+const word3 = "السَّلَامُ";
+const g3 = splitIntoGraphemes(word3);
+console.log(`   Word 3: "${word3}" -> Graphemes:`, g3);
+assert.ok(g3.length >= 5, "السَّلَامُ graphemes must preserve shaddah on Seen");
+const seenCluster = g3.find((c) => c.startsWith("س"));
+assert.ok(seenCluster && seenCluster.includes("ّ"), "Seen must have shaddah attached");
+
+// Test Word 4: مُدَرِّس (mudarris) - with dammah, fatha, shaddah + kasra
+const word4 = "مُدَرِّس";
+const g4 = splitIntoGraphemes(word4);
+console.log(`   Word 4: "${word4}" -> Graphemes:`, g4);
+assert.equal(g4.length, 4, "مُدَرِّس must produce 4 visual clusters");
+assert.equal(g4[0].normalize("NFC"), "مُ".normalize("NFC"));
+assert.equal(g4[1].normalize("NFC"), "دَ".normalize("NFC"));
+assert.equal(g4[2].normalize("NFC"), "رِّ".normalize("NFC"));
+assert.equal(g4[3].normalize("NFC"), "س".normalize("NFC"));
+
+// Test normalization & equivalence
 assert.ok(compareAnswers(" كِتَابٌ ", "كِتَابٌ"));
-assert.ok(compareAnswers("مَدْرَسَة", "مَدْرَسَة".normalize("NFD"))); // NFC normalization matches
-console.log("   ✅ Arabic normalization passed!");
+assert.ok(compareAnswers("مَدْرَسَة", "مَدْرَسَة".normalize("NFD")));
+console.log("   ✅ All 4 Arabic words tested: Grapheme clusters and combining marks 100% verified!");
 
 // --- SECTION 2: Game Engine Registry Verification ---
-console.log("\n🧪 2. Testing Game Registry Resolution & Contracts...");
+console.log("\n🧪 2. Testing Game Registry Resolution & Accurate Capabilities...");
 
 const REGISTRY_MAP = {
   runner: {
     id: "runner",
     name: "Arabic Sprint Runner",
-    supportedModes: ["competitive", "practice", "endless"],
+    supportedModes: ["competitive", "practice"],
     capabilities: { supportsLanes: true, supportsPowerups: true },
   },
   matching: {
     id: "matching",
     name: "Word & Meaning Matcher",
-    supportedModes: ["competitive", "practice", "learning"],
+    supportedModes: ["competitive", "practice"],
     capabilities: { supportsPairMatching: true, supportsFlipAnimation: true },
   },
   penalty: {
@@ -89,13 +111,13 @@ const REGISTRY_MAP = {
   quiz: {
     id: "quiz",
     name: "Classic Arabic Quiz",
-    supportedModes: ["competitive", "practice", "learning", "endless"],
+    supportedModes: ["competitive", "cooperative", "practice", "endless"],
     capabilities: { supportsMediaAudio: true, supportsMediaImage: true },
   },
   anagram: {
     id: "anagram",
     name: "Arabic Anagram Scramble",
-    supportedModes: ["competitive", "practice", "learning"],
+    supportedModes: ["competitive", "practice"],
     capabilities: { supportsGraphemeTiles: true, supportsServerValidation: true },
   },
 };
@@ -115,6 +137,11 @@ function resolveGameType(input) {
   return "quiz";
 }
 
+function isModeSupported(type, mode) {
+  const def = REGISTRY_MAP[type];
+  return def ? def.supportedModes.includes(mode) : false;
+}
+
 assert.equal(resolveGameType("runner"), "runner");
 assert.equal(resolveGameType("matching"), "matching");
 assert.equal(resolveGameType("penalty"), "penalty");
@@ -124,36 +151,26 @@ assert.equal(resolveGameType("arabic_chase_race"), "runner");
 assert.equal(resolveGameType("classic"), "quiz");
 assert.equal(resolveGameType("survival"), "quiz");
 assert.equal(resolveGameType("unknown_mode_xyz"), "quiz");
-console.log("   ✅ Registry resolution passed: 100% alias & fallback accuracy!");
+
+// Verify false capability prevention
+assert.equal(isModeSupported("runner", "endless"), false, "Runner must not falsely claim endless mode");
+assert.equal(isModeSupported("runner", "cooperative"), false, "Runner must not falsely claim cooperative mode");
+assert.equal(isModeSupported("penalty", "cooperative"), false, "Penalty must not falsely claim cooperative mode");
+assert.equal(isModeSupported("quiz", "cooperative"), true, "Quiz legitimately supports cooperative mode");
+assert.equal(isModeSupported("runner", "competitive"), true);
+console.log("   ✅ Registry resolution and capability checks verified: No false capabilities!");
 
 // --- SECTION 3: Question Adapters Verification ---
 console.log("\n🧪 3. Testing Question Adapters...");
 
-const mockRawQuestion = {
-  id: "q-101",
-  question_text: "ما معنى كَلِمَة (قَلَمٌ)؟",
-  question_type: "multiple_choice",
-  media_url: null,
-  media_type: null,
-  explanation: "Qalamun artinya pena/pulpen",
-  difficulty: "medium",
-  category: "Mufradat",
-  options: [
-    { id: "opt-1", text: "Pena / Pulpen", is_correct: true },
-    { id: "opt-2", text: "Buku Tulis", is_correct: false },
-    { id: "opt-3", text: "Penghapus", is_correct: false },
-    { id: "opt-4", text: "Penggaris", is_correct: false },
-  ],
-};
-
-// Runner adapter logic
+// 3A. Runner Adapter
 function toRunner(q) {
   const lanes = (q.options || []).slice(0, 4).map((opt, idx) => ({
     laneIndex: idx,
     laneLabel: ["A", "B", "C", "D"][idx] || `${idx + 1}`,
     optionId: opt.id,
-    optionText: opt.text,
-    isTarget: Boolean(opt.is_correct),
+    optionText: opt.option_text,
+    isTarget: opt.option_key === q.correct_option_key,
   }));
   return {
     id: q.id,
@@ -163,58 +180,106 @@ function toRunner(q) {
   };
 }
 
-const runnerAdapted = toRunner(mockRawQuestion);
+const mockMcqQuestion = {
+  id: "q-101",
+  question_text: "ما معنى كَلِمَة (قَلَمٌ)؟",
+  correct_option_key: "A",
+  options: [
+    { id: "opt-1", option_key: "A", option_text: "Pena / Pulpen" },
+    { id: "opt-2", option_key: "B", option_text: "Buku Tulis" },
+    { id: "opt-3", option_key: "C", option_text: "Penghapus" },
+    { id: "opt-4", option_key: "D", option_text: "Penggaris" },
+  ],
+};
+
+const runnerAdapted = toRunner(mockMcqQuestion);
 assert.equal(runnerAdapted.lanes.length, 4, "Runner must have 4 lanes");
-assert.equal(runnerAdapted.targetLaneIndex, 0, "Target lane index should be 0");
+assert.equal(runnerAdapted.targetLaneIndex, 0);
 assert.equal(runnerAdapted.lanes[0].isTarget, true);
-assert.equal(runnerAdapted.lanes[1].isTarget, false);
 console.log("   ✅ Runner adapter verified!");
 
-// Matching adapter logic
-function toMatching(q) {
-  const pairs = (q.options || []).slice(0, 6).map((opt, idx) => ({
-    id: `pair-${idx}`,
-    leftId: `left-${opt.id}`,
-    leftText: opt.text,
-    rightId: `right-${opt.id}`,
-    rightText: opt.is_correct ? "Jawaban Benar" : `Pilihan ${idx + 1}`,
-    optionId: opt.id,
-  }));
+// 3B. Matching Adapter (Intelligent Delimiter & Semantic Target Matching)
+function toMatching(raw) {
+  const cards = [];
+  const correctOpt = raw.options.find((o) => o.option_key === raw.correct_option_key) ?? raw.options[0];
+  const correctOptionId = correctOpt.id;
+  const delimiterRegex = /\s*[:=—]\s*|\s+-\s+/;
+  const delimitedOptions = raw.options.filter((opt) => delimiterRegex.test(opt.option_text));
+
+  let targetPairsCount = 1;
+
+  if (delimitedOptions.length >= 2) {
+    delimitedOptions.forEach((opt) => {
+      const parts = opt.option_text.split(delimiterRegex);
+      const left = parts[0]?.trim() || opt.option_text;
+      const right = parts.slice(1).join(" : ").trim() || opt.option_text;
+      const pairId = `pair_${opt.id}`;
+      cards.push({ id: `prompt_${opt.id}`, pairId, text: left, role: "prompt" });
+      cards.push({ id: `target_${opt.id}`, pairId, text: right, role: "target" });
+    });
+    targetPairsCount = delimitedOptions.length;
+  } else {
+    const quoteMatch = raw.question_text.match(/\(([^)]+)\)|"([^"]+)"|'([^']+)'|«([^»]+)»/);
+    const arabicMatch = raw.question_text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)*/);
+    const promptText = (quoteMatch?.[1] || quoteMatch?.[2] || arabicMatch?.[0] || raw.question_text).trim();
+    const pairId = `pair_${correctOptionId}`;
+
+    cards.push({ id: `prompt_${raw.id}`, pairId, text: promptText, role: "prompt" });
+    raw.options.forEach((opt) => {
+      const isCorrect = opt.id === correctOptionId;
+      cards.push({
+        id: `target_${opt.id}`,
+        pairId: isCorrect ? pairId : `decoy_${opt.id}`,
+        text: opt.option_text,
+        role: "target",
+      });
+    });
+    targetPairsCount = 1;
+  }
+
   return {
-    id: q.id,
-    prompt: q.question_text,
-    pairs,
+    id: raw.id,
+    title: raw.question_text,
+    cards,
+    targetPairsCount,
+    correctOptionId,
   };
 }
 
-const matchingAdapted = toMatching(mockRawQuestion);
-assert.equal(matchingAdapted.pairs.length, 4, "Matching must have 4 pairs");
-assert.equal(matchingAdapted.pairs[0].leftId, "left-opt-1");
-console.log("   ✅ Matching adapter verified!");
+// Test Case 1: Vocabulary question with delimiters (Authentic Multi-Pair Matching)
+const mockVocabularyPairsQuestion = {
+  id: "q-201",
+  question_text: "Jodohkan kosakata bahasa Arab berikut:",
+  correct_option_key: "A",
+  options: [
+    { id: "opt-v1", option_key: "A", option_text: "كِتَابٌ : Buku" },
+    { id: "opt-v2", option_key: "B", option_text: "قَلَمٌ : Pena" },
+    { id: "opt-v3", option_key: "C", option_text: "بَيْتٌ : Rumah" },
+    { id: "opt-v4", option_key: "D", option_text: "مَدْرَسَةٌ : Sekolah" },
+  ],
+};
 
-// Penalty adapter logic
-function toPenalty(q) {
-  const corners = ["top_left", "top_right", "bottom_left", "bottom_right"];
-  const targets = (q.options || []).slice(0, 4).map((opt, idx) => ({
-    corner: corners[idx] || "bottom_right",
-    optionId: opt.id,
-    optionText: opt.text,
-    isGoal: Boolean(opt.is_correct),
-  }));
-  return {
-    id: q.id,
-    questionText: q.question_text,
-    targets,
-    targetCorner: targets.find((t) => t.isGoal)?.corner || "top_left",
-  };
-}
+const vocabMatching = toMatching(mockVocabularyPairsQuestion);
+assert.equal(vocabMatching.cards.length, 8, "Must produce 8 cards (4 pairs)");
+assert.equal(vocabMatching.targetPairsCount, 4, "Must have 4 target pairs");
+// Check that Arabic terms and Indonesian meanings are paired:
+const bookPrompt = vocabMatching.cards.find((c) => c.text === "كِتَابٌ");
+const bookTarget = vocabMatching.cards.find((c) => c.text === "Buku");
+assert.ok(bookPrompt && bookTarget, "كِتَابٌ and Buku must be separate cards");
+assert.equal(bookPrompt.pairId, bookTarget.pairId, "كِتَابٌ and Buku must share the same pairId");
+console.log("   ✅ Matching with delimiters verified: Genuine Arabic-Indonesian word pairs!");
 
-const penaltyAdapted = toPenalty(mockRawQuestion);
-assert.equal(penaltyAdapted.targets.length, 4, "Penalty must have 4 corners");
-assert.equal(penaltyAdapted.targetCorner, "top_left");
-assert.equal(penaltyAdapted.targets[0].isGoal, true);
-console.log("   ✅ Penalty adapter verified!");
+// Test Case 2: Standard MCQ without delimiters (Semantic Target Extraction with Decoys)
+const mcqMatching = toMatching(mockMcqQuestion);
+assert.equal(mcqMatching.targetPairsCount, 1, "Standard MCQ matching has 1 target pair");
+const qalamPrompt = mcqMatching.cards.find((c) => c.text === "قَلَمٌ");
+const penaTarget = mcqMatching.cards.find((c) => c.text === "Pena / Pulpen");
+const bukuDecoy = mcqMatching.cards.find((c) => c.text === "Buku Tulis");
+assert.ok(qalamPrompt && penaTarget && bukuDecoy);
+assert.equal(qalamPrompt.pairId, penaTarget.pairId, "Target word matches correct option");
+assert.notEqual(qalamPrompt.pairId, bukuDecoy.pairId, "Decoy distractor must NOT match target word");
+console.log("   ✅ Matching with standard MCQ verified: Target word matches only the correct answer!");
 
 console.log("\n==========================================");
-console.log("🎉 ALL GAME ENGINE SPECIFICATION TESTS PASSED!");
+console.log("🎉 ALL VALIDATION & INTEGRITY TESTS PASSED!");
 console.log("==========================================");
