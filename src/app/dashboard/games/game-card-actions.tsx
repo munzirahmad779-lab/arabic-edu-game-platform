@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createRoom, deleteGame, cloneGame } from "./actions";
 import { GamePreviewModal } from "./game-preview-modal";
 
@@ -36,6 +37,15 @@ export function GameCardActions({
             تدريب ذاتي
           </div>
         )}
+
+        {/* Projector Hot Seat Mode Link */}
+        <Link
+          href={`/dashboard/games/${gameId}/projector`}
+          title="Mode Proyektor / Hot Seat Kelas"
+          className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 shadow-sm"
+        >
+          📽️ بروجكتور
+        </Link>
 
         {/* Preview Button */}
         <button

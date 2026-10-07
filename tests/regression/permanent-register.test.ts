@@ -285,15 +285,31 @@ describe("Permanent Regression Test Register", () => {
   describe("14. Invalid game_type x mode prevention", () => {
     test("Rejects unsupported modes for Runner", () => {
       const runnerDef = GameRegistry.get("runner");
-      assert.equal(runnerDef.capabilities.supportedModes.includes("cooperative" as any), false);
+      assert.equal(runnerDef.capabilities.supportedModes.includes("cooperative"), false);
       assert.equal(runnerDef.capabilities.supportedModes.includes("competitive"), true);
     });
 
     test("Rejects unsupported modes for Penalty", () => {
       const penaltyDef = GameRegistry.get("penalty");
-      assert.equal(penaltyDef.capabilities.supportedModes.includes("cooperative" as any), false);
-      assert.equal(penaltyDef.capabilities.supportedModes.includes("endless" as any), false);
+      assert.equal(penaltyDef.capabilities.supportedModes.includes("cooperative"), false);
+      assert.equal(penaltyDef.capabilities.supportedModes.includes("endless"), false);
       assert.equal(penaltyDef.capabilities.supportedModes.includes("competitive"), true);
+    });
+  });
+
+  // 15. Sesi 2: Canvas Runner & Projector Hotseat Contracts
+  describe("15. Sesi 2: Canvas Runner & Projector Hotseat Contracts", () => {
+    test("Runner capabilities support touch, keyboard, and lanes", () => {
+      const runnerDef = GameRegistry.get("runner");
+      assert.equal(runnerDef.capabilities.hasLanes, true);
+      assert.equal(runnerDef.capabilities.supportsTouch, true);
+      assert.equal(runnerDef.capabilities.supportsKeyboard, true);
+    });
+
+    test("Anagram engine supports word slicer mechanics", () => {
+      const anagramDef = GameRegistry.get("anagram");
+      assert.equal(anagramDef.capabilities.supportsArabicRTL, true);
+      assert.equal(anagramDef.capabilities.supportsTouch, true);
     });
   });
 });

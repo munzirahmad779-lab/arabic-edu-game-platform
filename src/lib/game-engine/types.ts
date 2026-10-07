@@ -78,6 +78,7 @@ export interface RawQuestion {
   readonly options: RawOption[];
   readonly media?: RawMedia[];
   readonly correct_option_key?: string;
+  readonly explanation?: string;
 }
 
 export interface AnswerSubmission {

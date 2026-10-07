@@ -16,6 +16,7 @@ import { RunnerPlayer } from "@/components/game-players/runner-player";
 import { MatchingPlayer } from "@/components/game-players/matching-player";
 import { PenaltyPlayer } from "@/components/game-players/penalty-player";
 import { QuizPlayer } from "@/components/game-players/quiz-player";
+import { SlicerPlayer } from "@/components/game-players/slicer-player";
 import type {
   ScoreEvent,
   GameSessionContext,
@@ -144,6 +145,7 @@ export default function JoinRoomPage({
   const [submitting, setSubmitting] = useState(false);
   const [streak, setStreak] = useState(0);
   const [comboMultiplier, setComboMultiplier] = useState(1);
+  const [anagramStyle, setAnagramStyle] = useState<"tiles" | "slicer">("tiles");
   const [gameFeedback, setGameFeedback] = useState<{
     isVisible: boolean;
     isCorrect: boolean;
@@ -843,24 +845,68 @@ export default function JoinRoomPage({
             onGameEvent={handleGameEvent}
           />
         ) : gameType === "anagram" ? (
-          <AnagramPlayer
-            key={session.question.id}
-            questions={[session.question]}
-            dict={dict.anagram}
-            onAnswer={async (payload: AnswerPayload) => {
-              return await submitAnswer({
-                questionId: payload.questionId,
-                selectedOptionId: payload.selectedOptionId,
-                answerText: payload.answerText,
-              });
-            }}
-            onFinish={() => {}}
-            isRtl={isRtl}
-            singleQuestionMode
-            questionNumber={session.question_index + 1}
-            totalQuestions={session.question_count}
-            timeLimitSeconds={session.question.time_limit_seconds}
-          />
+          <div className="space-y-4">
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAnagramStyle("tiles")}
+                className={`rounded-full px-4 py-1.5 text-xs font-black transition ${
+                  anagramStyle === "tiles"
+                    ? "bg-violet-600 text-white shadow"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                🔤 Susun Huruf (Tiles)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnagramStyle("slicer")}
+                className={`rounded-full px-4 py-1.5 text-xs font-black transition ${
+                  anagramStyle === "slicer"
+                    ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                🗡️ Tebas Kata (Fruit Ninja)
+              </button>
+            </div>
+
+            {anagramStyle === "slicer" ? (
+              <SlicerPlayer
+                key={session.question.id}
+                question={session.question}
+                session={gameSessionContext}
+                onSubmitAnswer={async (payload) => {
+                  return await submitAnswer({
+                    questionId: payload.questionId,
+                    selectedOptionId: payload.selectedOptionId,
+                    answerText: payload.answerText,
+                  });
+                }}
+                isRtl={isRtl}
+                onGameEvent={handleGameEvent}
+              />
+            ) : (
+              <AnagramPlayer
+                key={session.question.id}
+                questions={[session.question]}
+                dict={dict.anagram}
+                onAnswer={async (payload: AnswerPayload) => {
+                  return await submitAnswer({
+                    questionId: payload.questionId,
+                    selectedOptionId: payload.selectedOptionId,
+                    answerText: payload.answerText,
+                  });
+                }}
+                onFinish={() => {}}
+                isRtl={isRtl}
+                singleQuestionMode
+                questionNumber={session.question_index + 1}
+                totalQuestions={session.question_count}
+                timeLimitSeconds={session.question.time_limit_seconds}
+              />
+            )}
+          </div>
         ) : (
           <QuizPlayer
             key={session.question.id}
