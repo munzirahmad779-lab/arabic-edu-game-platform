@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { GameRegistry } from "@/lib/game-engine/registry";
 import type { ExplanationTiming } from "@/types/database";
 
 const MAX_GAME_NAME_LENGTH = 120;
@@ -138,13 +139,18 @@ const durationMinutes = isTimedMode
     backsoundTrackId = track.id;
   }
 
+  const gameTypeRaw = normalizeName(formData.get("game_type"));
+  const gameType = GameRegistry.resolve(
+    gameTypeRaw || (mode === "anagram" ? "anagram" : "runner"),
+  );
+
   const { data: game, error: gameError } = await supabase
     .from("games")
     .insert({
       teacher_id: user.id,
       class_id: classId,
       name,
-      game_type: "arabic_chase_race",
+      game_type: gameType,
       mode,
       duration_seconds: durationSeconds,
       ranking_visibility: rankingVisibility,

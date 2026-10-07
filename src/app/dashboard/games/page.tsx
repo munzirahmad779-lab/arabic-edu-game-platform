@@ -360,6 +360,7 @@ export default async function GamesPage({
               <GameModeSelector
                 tracks={tracks.map((tr) => ({ id: tr.id, name: tr.name }))}
                 gm={dict.game_mode}
+                gt={dict.game_type}
               />
             </div>
 

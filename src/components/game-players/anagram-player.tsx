@@ -46,6 +46,7 @@ export type AnswerPayload = {
 export type AnswerResult = {
   accepted: boolean;
   isCorrect: boolean;
+  scoreAwarded?: number;
 };
 
 type Props = {

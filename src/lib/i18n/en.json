@@ -1262,5 +1262,39 @@
     "copy_portal": "Copy Student Portal Link",
     "copied": "✓ Copied",
     "gesture_hint": "👆 Click anywhere to start music"
+  },
+  "game_type": {
+    "label": "Game Type (Mechanics)",
+    "hint": "Choose the gameplay mechanics for students.",
+    "runner": "🏃‍♂️ Magguru Runner — Multi-lane sprint race",
+    "matching": "🧩 Magguru Matching — Match pairs of cards",
+    "penalty": "⚽ Magguru Penalty — Penalty shootout on goal",
+    "anagram": "🔤 Anagram — Reorder scrambled letters",
+    "quiz": "📝 Classic Quiz — Multiple choice questions"
+  },
+  "runner": {
+    "title": "Magguru Runner",
+    "instruction": "Choose the correct lane to dash forward and avoid obstacles",
+    "lane_label": "Lane",
+    "distance_label": "Distance",
+    "boost_msg": "SUPER DASH! Maximum Speed ⚡🚀",
+    "stumble_msg": "Stumbled on obstacle! Slowing down ⚠️🏃",
+    "gate_label": "Gate",
+    "finish": "Finish Line",
+    "no_questions": "No questions available for this mode.",
+    "score_label": "Score",
+    "time_label": "Time"
+  },
+  "penalty": {
+    "title": "Magguru Penalty",
+    "instruction": "Aim your shot at the goal corner with the correct answer",
+    "target_label": "Goal Corner",
+    "goal_msg": "GOAAAL! Perfect shot into the net! ⚽🥅",
+    "saved_msg": "Goalkeeper Saved! Shot blocked 🧤⚽",
+    "striker_label": "Striker",
+    "finish": "Finish",
+    "no_questions": "No questions available for this mode.",
+    "score_label": "Score",
+    "time_label": "Time"
   }
 }

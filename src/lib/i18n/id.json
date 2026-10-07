@@ -1042,11 +1042,9 @@
     "invalid_pin": "PIN salah.",
     "student_not_found": "Siswa tidak ditemukan di kelas ini.",
     "already_joined": "Siswa ini sudah ada di ruangan.",
-        "pin_required": "PIN wajib diisi untuk kelas ini.",
-    "invalid_name": "Nama tidak valid.",
-    "generic": "Gagal bergabung ke ruangan.",
     "pin_required": "PIN wajib diisi untuk kelas ini.",
-    "invalid_name": "Nama tidak valid."
+    "invalid_name": "Nama tidak valid.",
+    "generic": "Gagal bergabung ke ruangan."
   },
   "class_history": {
     "load_error_prefix": "Gagal memuat riwayat: ",
@@ -1264,5 +1262,39 @@
     "copy_portal": "Salin Link Portal Siswa",
     "copied": "✓ Tersalin",
     "gesture_hint": "👆 Klik di mana saja untuk memulai musik"
+  },
+  "game_type": {
+    "label": "Tipe Permainan (Mekanik)",
+    "hint": "Pilih mekanik permainan yang akan dimainkan siswa.",
+    "runner": "🏃‍♂️ Magguru Runner — Balapan cepat multi-jalur",
+    "matching": "🧩 Magguru Matching — Cocokkan pasangan kata",
+    "penalty": "⚽ Magguru Penalty — Tendangan penalti ke gawang",
+    "anagram": "🔤 Susun Huruf (Anagram) — Susun huruf acak",
+    "quiz": "📝 Kuis Klasik — Pilihan ganda standard"
+  },
+  "runner": {
+    "title": "Magguru Runner",
+    "instruction": "Pilih jalur yang benar untuk melaju kencang dan hindari rintangan",
+    "lane_label": "Jalur",
+    "distance_label": "Jarak Tempuh",
+    "boost_msg": "SUPER DASH! Kecepatan Maksimal ⚡🚀",
+    "stumble_msg": "Terpeleset Hambatan! Pelan sejenak ⚠️🏃",
+    "gate_label": "Gerbang",
+    "finish": "Garis Akhir",
+    "no_questions": "Tidak ada soal untuk mode ini.",
+    "score_label": "Skor",
+    "time_label": "Waktu"
+  },
+  "penalty": {
+    "title": "Magguru Penalty",
+    "instruction": "Arahkan tembakan ke sudut gawang dengan jawaban yang benar",
+    "target_label": "Sudut Gawang",
+    "goal_msg": "GOAAAL! Tembakan Akurat Merobek Gawang! ⚽🥅",
+    "saved_msg": "Tepisan Kiper! Tendangan Berhasil Dihalau 🧤⚽",
+    "striker_label": "Penendang",
+    "finish": "Selesai",
+    "no_questions": "Tidak ada soal untuk mode ini.",
+    "score_label": "Skor",
+    "time_label": "Waktu"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { NormalizedGameType } from "@/lib/game-engine/types";
 
 type Track = {
   id: string;
@@ -23,13 +24,26 @@ type GameModeDict = {
   backsound_hint: string;
 };
 
+type GameTypeDict = {
+  label: string;
+  hint: string;
+  runner: string;
+  matching: string;
+  penalty: string;
+  anagram: string;
+  quiz: string;
+};
+
 type Props = {
   tracks: Track[];
   gm: GameModeDict;
+  gt?: GameTypeDict;
 };
 
-export function GameModeSelector({ tracks, gm }: Props) {
+export function GameModeSelector({ tracks, gm, gt }: Props) {
+  const [gameType, setGameType] = useState<NormalizedGameType>("runner");
   const [mode, setMode] = useState("competitive");
+
   const isTimed =
     mode === "competitive" ||
     mode === "cooperative" ||
@@ -39,6 +53,38 @@ export function GameModeSelector({ tracks, gm }: Props) {
 
   return (
     <>
+      <div className="lg:col-span-2">
+        <label htmlFor="game_type" className="block text-sm font-medium">
+          {gt?.label ?? "Tipe Permainan (Mekanik)"}
+        </label>
+        <select
+          id="game_type"
+          name="game_type"
+          value={gameType}
+          onChange={(e) => setGameType(e.target.value as NormalizedGameType)}
+          className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800"
+        >
+          <option value="runner">
+            {gt?.runner ?? "🏃‍♂️ Magguru Runner — Balapan cepat multi-jalur"}
+          </option>
+          <option value="matching">
+            {gt?.matching ?? "🧩 Magguru Matching — Cocokkan pasangan kata"}
+          </option>
+          <option value="penalty">
+            {gt?.penalty ?? "⚽ Magguru Penalty — Tendangan penalti ke gawang"}
+          </option>
+          <option value="anagram">
+            {gt?.anagram ?? "🔤 Susun Huruf (Anagram) — Susun huruf acak"}
+          </option>
+          <option value="quiz">
+            {gt?.quiz ?? "📝 Kuis Klasik — Pilihan ganda"}
+          </option>
+        </select>
+        <p className="mt-1 text-xs text-neutral-500">
+          {gt?.hint ?? "Pilih mekanik permainan yang akan dimainkan siswa."}
+        </p>
+      </div>
+
       <div className="lg:col-span-2">
         <label htmlFor="mode" className="block text-sm font-medium">
           {gm.label}
@@ -52,9 +98,6 @@ export function GameModeSelector({ tracks, gm }: Props) {
         >
           <option value="competitive">{gm.competitive}</option>
           <option value="cooperative">{gm.cooperative}</option>
-          <option value="anagram">
-            ✨ Susun Huruf (Anagram) — main di game room
-          </option>
           <option value="endless">{gm.endless}</option>
           <option value="practice">{gm.practice}</option>
         </select>

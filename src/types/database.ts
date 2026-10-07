@@ -1,6 +1,6 @@
 /**
  * Hand-written Supabase Database type.
- * Synchronized with all migrations up to 0057_room_controls_and_hardening.sql.
+ * Synchronized with all migrations up to 0061_game_engine_foundation.sql.
  */
 
 export type Json =
@@ -13,7 +13,7 @@ export type Json =
 
 export type ExplanationTiming = "after_each_question" | "after_game_only" | "never";
 export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning" | "anagram" | "matching";
-export type GameType = "arabic_chase_race";
+export type GameType = "arabic_chase_race" | "quiz" | "runner" | "matching" | "penalty" | "anagram";
 export type QuestionType = "mcq";
 export type RankingVisibility = "full" | "hidden" | "self_only";
 export type RoomState = "waiting" | "running" | "ended" | "locked";
@@ -222,7 +222,7 @@ export interface Database {
       delete_student: { Args: { p_student_id: string }; Returns: boolean; };
       import_students_to_class: { Args: { p_class_id: string; p_names: Json }; Returns: Array<{ student_name: string; student_pin: string }>; };
       join_room: { Args: { p_code: string; p_name: string; p_pin?: string | null }; Returns: Array<{ room_id: string; room_code: string; game_name: string; class_id: string | null; participant_id: string; participant_name: string; join_token: string; participant_count: number; capacity: number }>; };
-      get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string }>; };
+      get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_type: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string }>; };
       submit_game_answer: {
         Args: {
           p_join_token: string;
