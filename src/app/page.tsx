@@ -5,6 +5,7 @@ import { Marquee } from "@/components/marquee";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { HeroDualEntry } from "@/components/hero-dual-entry";
 
 type Feature = {
   icon: string;
@@ -43,14 +44,6 @@ export default async function HomePage() {
     title: f.title,
     desc: f.desc,
   }));
-
-  // Stats kecil di samping kanan hero
-  const heroStats = [
-    { icon: "📖", label: "Materi Interaktif" },
-    { icon: "🎮", label: "4 Mode Game" },
-    { icon: "✍️", label: "Esai + AI" },
-    { icon: "📊", label: "Laporan Harian" },
-  ];
 
   return (
     <div
@@ -131,14 +124,14 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* ============ HERO (kiri teks, kanan stats) ============ */}
+      {/* ============ HERO (kiri teks, kanan Dual-Hero Entry) ============ */}
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 lg:pb-14 lg:pt-8">
         <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-12">
           {/* KIRI */}
-          <div className="animate-fade-up flex w-full flex-col gap-5 lg:w-3/5">
-            <div className="inline-flex w-max items-center gap-2 rounded-full border border-sage-200 bg-white/70 px-3 py-1 text-[11px] font-bold text-sage-600 shadow-sm backdrop-blur-md">
-              <span className="h-2 w-2 rounded-full bg-terracotta-500" />
-              {t.badge_updated}
+          <div className="animate-fade-up flex w-full flex-col gap-5 lg:w-1/2">
+            <div className="inline-flex w-max items-center gap-2 rounded-full border border-sage-200 bg-white/80 px-3.5 py-1.5 text-xs font-black text-teal-800 shadow-sm backdrop-blur-md">
+              <span className="h-2.5 w-2.5 rounded-full bg-terracotta-500 animate-pulse" />
+              <span>Belajar • Bermain • Berkembang</span>
             </div>
 
             <h1 className="font-display text-3xl font-black leading-tight text-teal-700 sm:text-4xl lg:text-5xl">
@@ -152,73 +145,22 @@ export default async function HomePage() {
               {t.hero_desc}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/login" className="btn-primary">
-                🎓 {t.cta_teacher}
-              </Link>
-              <Link
-                href="/student/login"
-                className="text-sm font-black text-teal-700 underline-offset-4 transition hover:text-terracotta-500 hover:underline"
-              >
-                {t.cta_student} →
-              </Link>
+            <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-bold text-softslate">
+              <div className="flex items-center gap-1.5 rounded-xl bg-warmwhite/80 px-3 py-1.5 border border-sage-200/60">
+                <span className="text-terracotta-500 text-sm">🎮</span> 5 Mode Permainan
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl bg-warmwhite/80 px-3 py-1.5 border border-sage-200/60">
+                <span className="text-teal-600 text-sm">🕌</span> Bahasa Arab & Kurikulum
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl bg-warmwhite/80 px-3 py-1.5 border border-sage-200/60">
+                <span className="text-sage-600 text-sm">⚡</span> Akses Instan Tanpa Ribet
+              </div>
             </div>
           </div>
 
-          {/* KANAN — Stats card kecil */}
-          <div className="w-full animate-soft-float lg:w-2/5">
-            <div className="rounded-[1.75rem] border border-sage-200/70 bg-white/85 p-5 shadow-lg backdrop-blur-md">
-              {/* Grid 4 mini fitur */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {heroStats.map((s) => (
-                  <div
-                    key={s.label}
-                    className="flex items-center gap-2 rounded-xl border border-sage-200/60 bg-warmwhite/60 px-3 py-2.5"
-                  >
-                    <span className="text-lg">{s.icon}</span>
-                    <span className="text-[11px] font-black leading-tight text-teal-800">
-                      {s.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Divider */}
-              <div className="my-4 h-px bg-sage-200/60" />
-
-              {/* Identitas guru */}
-              <div className="flex items-center gap-3 rounded-xl bg-terracotta-50/70 p-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-terracotta-500 to-terracotta-600 text-lg text-white shadow-sm">
-                  👤
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-teal-800">
-                    Ahmad Yusuf
-                  </p>
-                  <p className="mt-0.5 text-[10px] font-bold text-softslate/70">
-                    Guru · 12 kelas
-                  </p>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="my-4 h-px bg-sage-200/60" />
-
-              {/* Statistik siswa */}
-              <div className="flex items-center gap-3 rounded-xl bg-teal-50/70 p-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-lg text-white shadow-sm">
-                  ⭐
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-teal-800">
-                    200+ Siswa
-                  </p>
-                  <p className="mt-0.5 text-[10px] font-bold text-softslate/70">
-                    aktif belajar
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* KANAN — Dual-Hero 1-Klik Entry Box */}
+          <div className="w-full lg:w-1/2">
+            <HeroDualEntry locale={locale} dict={t} />
           </div>
         </div>
       </main>
