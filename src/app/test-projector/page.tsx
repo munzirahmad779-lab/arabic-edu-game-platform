@@ -34,6 +34,34 @@ const MOCK_QUESTIONS: RawQuestion[] = [
       { id: "opt-8", option_key: "D", option_text: "فِي الْمَسْجِدِ (Di Masjid)" },
     ],
   },
+  {
+    id: "q-3",
+    position: 2,
+    question_text: "مَنْ هُوَ؟ (Siapa dia?)",
+    difficulty: "easy",
+    correct_option_key: "C",
+    explanation: "هُوَ مُدَرِّسٌ artinya dia adalah seorang guru.",
+    options: [
+      { id: "opt-9", option_key: "A", option_text: "طَبِيْبٌ (Dokter)" },
+      { id: "opt-10", option_key: "B", option_text: "فَلَّاحٌ (Petani)" },
+      { id: "opt-11", option_key: "C", option_text: "مُدَرِّسٌ (Guru)" },
+      { id: "opt-12", option_key: "D", option_text: "شُرْطِيٌّ (Polisi)" },
+    ],
+  },
+  {
+    id: "q-4",
+    position: 3,
+    question_text: "مَا لَوْنُ السَّمَاءِ؟ (Apa warna langit?)",
+    difficulty: "easy",
+    correct_option_key: "A",
+    explanation: "أَزْرَقُ artinya biru.",
+    options: [
+      { id: "opt-13", option_key: "A", option_text: "أَزْرَقُ (Biru)" },
+      { id: "opt-14", option_key: "B", option_text: "أَحْمَرُ (Merah)" },
+      { id: "opt-15", option_key: "C", option_text: "أَخْضَرُ (Hijau)" },
+      { id: "opt-16", option_key: "D", option_text: "أَصْفَرُ (Kuning)" },
+    ],
+  },
 ];
 
 // Mock 30 students matching Kelas Mangkoso

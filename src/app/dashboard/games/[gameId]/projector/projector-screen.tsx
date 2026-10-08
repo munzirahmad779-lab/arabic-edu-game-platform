@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
@@ -95,7 +95,7 @@ export function ProjectorScreen({
   );
 
   // Layout mode: "focus" (1 full arena with turn switcher) or "split" (4 quadrants arena)
-  const [layoutMode, setLayoutMode] = useState<"focus" | "split">("focus");
+  const [layoutMode, setLayoutMode] = useState<"focus" | "split">("split");
 
   // Selected class filter for assigning students
   const [selectedClassId, setSelectedClassId] = useState<string>(
@@ -116,12 +116,24 @@ export function ProjectorScreen({
 
   // Current turn indices
   const [currentTurnIdx, setCurrentTurnIdx] = useState(0);
-  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [currentRoundOffset, setCurrentRoundOffset] = useState(0);
+
+  // Speed Bonus tracking: List of teams that answered correctly in the current round, in order of arrival
+  const [correctAnswersOrder, setCorrectAnswersOrder] = useState<string[]>([]);
 
   // Track which teams have answered the CURRENT question
-  // Record<teamId, { isCorrect: boolean; score: number; optionKey: string }>
+  // Record<teamId, { isCorrect: boolean; score: number; speedBonus: number; bonusTitle: string; optionKey: string }>
   const [questionAnswers, setQuestionAnswers] = useState<
-    Record<string, { isCorrect: boolean; score: number; optionKey: string }>
+    Record<
+      string,
+      {
+        isCorrect: boolean;
+        score: number;
+        speedBonus: number;
+        bonusTitle: string;
+        optionKey: string;
+      }
+    >
   >({});
 
   // Single focus turn UI states
@@ -134,14 +146,26 @@ export function ProjectorScreen({
   const [gameFinished, setGameFinished] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showTeamStudioModal, setShowTeamStudioModal] = useState(false);
+  const [showRemoteInfoModal, setShowRemoteInfoModal] = useState(false);
   const [newStudentNameInput, setNewStudentNameInput] = useState("");
   const [targetTeamForNewStudent, setTargetTeamForNewStudent] = useState("team-1");
+
+  // Wireless Phone Controller sync state
+  const roomCode = useMemo(() => {
+    return gameId ? gameId.slice(0, 6).toUpperCase() : "HOTSEAT";
+  }, [gameId]);
+
+  const [activeControllers, setActiveControllers] = useState<string[]>([]);
+  const lastEventTimestampRef = useRef<number>(Date.now());
 
   // Filter students based on selected class
   const classStudents = useMemo(() => {
     if (!selectedClassId) return allStudents;
     return allStudents.filter((s) => s.class_id === selectedClassId);
   }, [allStudents, selectedClassId]);
+
+  // Minimum 4 questions rule check
+  const hasMinimumQuestions = questions.length >= 4;
 
   // Auto-distribute / shuffle students evenly across active teams
   const handleAutoDistributeStudents = useCallback(() => {
@@ -214,29 +238,6 @@ export function ProjectorScreen({
     setNewStudentNameInput("");
   };
 
-  // Move student to another team
-  const handleMoveStudent = (studentId: string, toTeamId: string) => {
-    let studentToMove: StudentMember | null = null;
-    setTeams((prev) => {
-      const cleaned = prev.map((t) => {
-        const found = t.members.find((m) => m.id === studentId);
-        if (found) studentToMove = found;
-        return {
-          ...t,
-          members: t.members.filter((m) => m.id !== studentId),
-        };
-      });
-
-      if (!studentToMove) return prev;
-
-      return cleaned.map((t) =>
-        t.id === toTeamId
-          ? { ...t, members: [...t.members, studentToMove!] }
-          : t,
-      );
-    });
-  };
-
   // Remove student from team
   const handleRemoveStudent = (studentId: string) => {
     setTeams((prev) =>
@@ -266,48 +267,77 @@ export function ProjectorScreen({
     }
   };
 
-  const activeQuestion = questions[currentQIndex];
+  // Resolve question for a specific team: Each team gets a DIFFERENT question!
+  const getQuestionForTeam = useCallback(
+    (teamIdx: number): RawQuestion => {
+      if (questions.length === 0) return { id: "empty", position: 0, question_text: "", difficulty: "easy", correct_option_key: "A", explanation: "", options: [] };
+      const index = (currentRoundOffset * teams.length + teamIdx) % questions.length;
+      return questions[index] ?? questions[0]!;
+    },
+    [currentRoundOffset, teams.length, questions],
+  );
+
+  const activeQuestion = getQuestionForTeam(currentTurnIdx);
   const activeTeam = teams[currentTurnIdx] ?? teams[0];
   const activeStudentName =
     activeTeam?.members[activeTeam.currentMemberIndex % (activeTeam.members.length || 1)]
-      ?.name || "Perwakilan Tim";
+      ?.name || "Pemain Tim";
 
-  // Check how many teams have answered current question
+  // Check how many teams have answered current question round
   const answeredTeamCount = useMemo(() => {
     return Object.keys(questionAnswers).length;
   }, [questionAnswers]);
 
   const allTeamsAnsweredCurrentQ = answeredTeamCount >= teams.length;
 
-  // Handle answering for a specific team (used both in Focus Turn & 4-Quadrant Split mode)
+  // Handle answering for a specific team (with SPEED BONUS and DIFFERENT questions!)
   const handleAnswerForTeam = useCallback(
-    (teamId: string, optionId: string | null, answerText: string | null) => {
-      if (!activeQuestion) return;
-      if (questionAnswers[teamId]) return; // already answered this question
+    (teamId: string, optionId: string | null, optionKeyInput: string | null) => {
+      const teamIdx = teams.findIndex((t) => t.id === teamId);
+      if (teamIdx === -1) return;
 
-      const correctOpt = activeQuestion.options.find(
-        (o) => o.option_key === activeQuestion.correct_option_key,
-      );
+      const teamQ = getQuestionForTeam(teamIdx);
+      if (!teamQ) return;
+      if (questionAnswers[teamId]) return; // already answered this round
 
       let isCorrect = false;
       let chosenKey = "";
 
       if (optionId) {
-        const picked = activeQuestion.options.find((o) => o.id === optionId);
+        const picked = teamQ.options.find((o) => o.id === optionId);
         chosenKey = picked?.option_key ?? "";
-        isCorrect = picked?.option_key === activeQuestion.correct_option_key;
-      } else if (answerText && correctOpt) {
-        isCorrect =
-          answerText.trim().toLowerCase() === correctOpt.option_text.trim().toLowerCase();
-        chosenKey = correctOpt.option_key;
+        isCorrect = picked?.option_key === teamQ.correct_option_key;
+      } else if (optionKeyInput) {
+        const keyUpper = optionKeyInput.toUpperCase().trim();
+        const picked = teamQ.options.find((o) => o.option_key === keyUpper);
+        chosenKey = keyUpper;
+        isCorrect = keyUpper === teamQ.correct_option_key;
       }
 
-      const score = isCorrect ? 100 : 0;
+      // SPEED BONUS CALCULATION:
+      // First team to get it correct gets +50 speed bonus!
+      // Second gets +25 speed bonus!
+      let speedBonus = 0;
+      let bonusTitle = isCorrect ? "✅ Tepat (+100 Pts)" : "❌ Kurang Tepat (0 Pts)";
+
+      if (isCorrect) {
+        const orderRank = correctAnswersOrder.length + 1;
+        if (orderRank === 1) {
+          speedBonus = 50;
+          bonusTitle = "⚡ TERCEPAT #1! (+50 Bonus)";
+        } else if (orderRank === 2) {
+          speedBonus = 25;
+          bonusTitle = "⚡ TERCEPAT #2! (+25 Bonus)";
+        }
+        setCorrectAnswersOrder((prev) => [...prev, teamId]);
+      }
+
+      const totalScore = isCorrect ? 100 + speedBonus : 0;
 
       // Update questionAnswers registry
       setQuestionAnswers((prev) => ({
         ...prev,
-        [teamId]: { isCorrect, score, optionKey: chosenKey },
+        [teamId]: { isCorrect, score: totalScore, speedBonus, bonusTitle, optionKey: chosenKey },
       }));
 
       // Update team score & rotate student inside the team
@@ -316,9 +346,9 @@ export function ProjectorScreen({
           if (t.id === teamId) {
             return {
               ...t,
-              score: t.score + score,
+              score: t.score + totalScore,
               correctCount: t.correctCount + (isCorrect ? 1 : 0),
-              currentMemberIndex: t.currentMemberIndex + 1, // Auto-rotate to next student in team!
+              currentMemberIndex: t.currentMemberIndex + 1, // Auto-rotate student!
             };
           }
           return t;
@@ -326,7 +356,11 @@ export function ProjectorScreen({
       );
 
       if (isCorrect) {
-        playSfx("correct");
+        if (speedBonus > 0) {
+          playSfx("boost");
+        } else {
+          playSfx("correct");
+        }
       } else {
         playSfx("wrong");
       }
@@ -338,15 +372,48 @@ export function ProjectorScreen({
         setShowAnswerFeedback(true);
       }
     },
-    [activeQuestion, questionAnswers, activeTeam.id],
+    [teams, getQuestionForTeam, questionAnswers, correctAnswersOrder, activeTeam.id],
   );
 
-  // Advance to next team's turn on current question
+  // Wireless Phone Controller Poller (Acts like PS3 wireless console controllers)
+  useEffect(() => {
+    if (!gameStarted || gameFinished) return;
+
+    const interval = window.setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/projector/controller?roomCode=${roomCode}&since=${lastEventTimestampRef.current}`,
+        );
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (Array.isArray(data.activeControllers)) {
+          setActiveControllers(data.activeControllers);
+        }
+
+        if (Array.isArray(data.events) && data.events.length > 0) {
+          for (const ev of data.events) {
+            if (ev.timestamp > lastEventTimestampRef.current) {
+              lastEventTimestampRef.current = ev.timestamp;
+            }
+            if (ev.action === "press" && ev.teamId && ev.optionKey) {
+              handleAnswerForTeam(ev.teamId, null, ev.optionKey);
+            }
+          }
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 300);
+
+    return () => window.clearInterval(interval);
+  }, [gameStarted, gameFinished, roomCode, handleAnswerForTeam]);
+
+  // Advance to next team's turn on turn mode
   const handleNextTeamTurn = useCallback(() => {
     setSelectedOptionId(null);
     setShowAnswerFeedback(false);
 
-    // Find next team that hasn't answered this question yet
     const nextIdx = teams.findIndex(
       (t, i) => i > currentTurnIdx && !questionAnswers[t.id],
     );
@@ -354,41 +421,41 @@ export function ProjectorScreen({
     if (nextIdx !== -1) {
       setCurrentTurnIdx(nextIdx);
     } else {
-      // Loop from start if any unfulfilled
       const firstUnanswered = teams.findIndex((t) => !questionAnswers[t.id]);
       if (firstUnanswered !== -1) {
         setCurrentTurnIdx(firstUnanswered);
       } else {
-        // All answered! Advance question
         handleNextQuestion();
       }
     }
   }, [currentTurnIdx, teams, questionAnswers]);
 
-  // Advance to next question (clears questionAnswers and resets turn)
+  // Advance to next question round (resets questionAnswers, speed bonus, and shifts round offset)
   const handleNextQuestion = useCallback(() => {
     setSelectedOptionId(null);
     setShowAnswerFeedback(false);
     setQuestionAnswers({});
+    setCorrectAnswersOrder([]);
 
-    if (currentQIndex + 1 < questions.length) {
-      setCurrentQIndex((q) => q + 1);
-      // Start next question with first team or round-robin rotation
+    const totalRounds = Math.ceil(questions.length / teams.length);
+    if (currentRoundOffset + 1 < totalRounds) {
+      setCurrentRoundOffset((r) => r + 1);
       setCurrentTurnIdx(0);
       playSfx("click");
     } else {
       setGameFinished(true);
       playSfx("boost");
     }
-  }, [currentQIndex, questions.length]);
+  }, [currentRoundOffset, questions.length, teams.length]);
 
   const handleRestart = () => {
     setTeams((prev) =>
       prev.map((t) => ({ ...t, score: 0, correctCount: 0, currentMemberIndex: 0 })),
     );
-    setCurrentQIndex(0);
+    setCurrentRoundOffset(0);
     setCurrentTurnIdx(0);
     setQuestionAnswers({});
+    setCorrectAnswersOrder([]);
     setGameFinished(false);
     setShowAnswerFeedback(false);
     setSelectedOptionId(null);
@@ -411,16 +478,17 @@ export function ProjectorScreen({
         return;
       }
 
-      if (!activeQuestion) return;
+      const currentQ = getQuestionForTeam(currentTurnIdx);
+      if (!currentQ) return;
 
       const key = e.key.toUpperCase();
       if (["1", "2", "3", "4"].includes(key)) {
         const idx = Number(key) - 1;
-        const opt = activeQuestion.options[idx];
-        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, null);
+        const opt = currentQ.options[idx];
+        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, opt.option_key);
       } else if (["A", "B", "C", "D"].includes(key)) {
-        const opt = activeQuestion.options.find((o) => o.option_key === key);
-        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, null);
+        const opt = currentQ.options.find((o) => o.option_key === key);
+        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, key);
       }
     }
 
@@ -431,8 +499,9 @@ export function ProjectorScreen({
     gameFinished,
     showAnswerFeedback,
     allTeamsAnsweredCurrentQ,
-    activeQuestion,
+    currentTurnIdx,
     activeTeam.id,
+    getQuestionForTeam,
     handleAnswerForTeam,
     handleNextQuestion,
     handleNextTeamTurn,
@@ -441,18 +510,18 @@ export function ProjectorScreen({
   const mockSessionContext: GameSessionContext = useMemo(
     () => ({
       roomId: "projector-local",
-      roomCode: "HOTSEAT",
+      roomCode,
       gameName,
       gameType: selectedMechanic === "slicer" ? "anagram" : selectedMechanic,
       gameMode: "competitive",
       durationSeconds: 600,
       participantId: activeTeam?.id ?? "team-1",
       participantName: `${activeTeam?.name} - ${activeStudentName}`,
-      questionIndex: currentQIndex,
+      questionIndex: currentRoundOffset,
       questionCount: questions.length,
       isRtl: Boolean(isRtl),
     }),
-    [gameName, selectedMechanic, activeTeam, activeStudentName, currentQIndex, questions.length, isRtl],
+    [gameName, selectedMechanic, activeTeam, activeStudentName, currentRoundOffset, questions.length, isRtl, roomCode],
   );
 
   // Winner podium calculation
@@ -496,7 +565,7 @@ export function ProjectorScreen({
               ← Kembali ke Dashboard
             </Link>
             <div className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-black text-emerald-300">
-              📽️ Mode Proyektor & Smartboard Kelas
+              📽️ Mode Proyektor & Console Smartboard
             </div>
           </div>
 
@@ -504,8 +573,20 @@ export function ProjectorScreen({
             <div className="text-6xl">📽️</div>
             <h1 className="mt-3 text-3xl font-black sm:text-4xl">{gameName}</h1>
             <p className="mt-2 text-slate-300 max-w-2xl mx-auto">
-              Tampilkan permainan di proyektor kelas. Kelola kelompok siswa, pilih mekanisme permainan, dan biarkan semua tim berlaga tanpa terkunci!
+              Layar proyektor berfungsi layaknya konsol game TV! Siswa dapat bermain langsung di smartboard atau menggunakan HP sebagai remote nirkabel (4 Stik Controller).
             </p>
+
+            {/* MINIMUM 4 QUESTIONS RULE VALIDATION BANNER */}
+            {!hasMinimumQuestions ? (
+              <div className="mt-6 rounded-2xl bg-amber-500/20 border-2 border-amber-400/80 p-4 text-start text-amber-200">
+                <div className="flex items-center gap-2 font-black text-sm">
+                  <span>⚠️ ATURAN GURU: SOAL KURANG DARI 4 BUTIR</span>
+                </div>
+                <p className="text-xs mt-1 text-amber-100">
+                  Mode 4 Tim / Kuadran mewajibkan <strong>minimal 4 soal</strong> agar setiap kelompok mendapatkan soal yang berbeda. Saat ini permainan hanya memiliki <strong>{questions.length} soal</strong>. Silakan tambahkan soal di editor sebelum memulai 4 tim.
+                </p>
+              </div>
+            ) : null}
 
             {/* Select Game Mechanic */}
             <div className="mt-8 text-start">
@@ -556,7 +637,7 @@ export function ProjectorScreen({
                   <div>
                     <div className="font-black text-sm">Mode Giliran Penuh (Fokus 1 Tim Bergantian)</div>
                     <div className="text-xs text-slate-300 mt-1">
-                      Layar menampilkan arena game penuh. Semua tim maju bergantian di setiap soal secara adil.
+                      Layar menampilkan arena game penuh. Semua tim maju bergantian dengan soal unik masing-masing.
                     </div>
                   </div>
                 </button>
@@ -574,7 +655,7 @@ export function ProjectorScreen({
                   <div>
                     <div className="font-black text-sm">Mode Layar Terbagi 4 Kuadran (Multi-Arena)</div>
                     <div className="text-xs text-slate-300 mt-1">
-                      Layar terbagi 4 kuadran. Ke-4 tim bisa menjawab bersamaan di kuadran masing-masing!
+                      Layar terbagi 4 kuadran dengan <strong>soal berbeda untuk masing-masing tim</strong>. Tim tercepat mendapat ⚡ Bonus Kecepatan!
                     </div>
                   </div>
                 </button>
@@ -594,7 +675,6 @@ export function ProjectorScreen({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Class Picker */}
                   {teacherClasses.length > 0 && (
                     <select
                       value={selectedClassId}
@@ -651,7 +731,6 @@ export function ProjectorScreen({
                       className={`rounded-2xl p-4 border bg-gradient-to-b from-white/10 to-slate-900/90 ${team.accentBorder} flex flex-col justify-between`}
                     >
                       <div>
-                        {/* Team Header & Renaming */}
                         <div className="flex items-center justify-between gap-2">
                           <input
                             type="text"
@@ -669,7 +748,6 @@ export function ProjectorScreen({
                           </span>
                         </div>
 
-                        {/* Active player indicator */}
                         <div className="mt-2 text-xs bg-white/5 p-2 rounded-xl border border-white/5">
                           <span className="text-[10px] text-slate-400 uppercase font-black block">
                             Pemain Pertama / Saat Ini:
@@ -679,7 +757,6 @@ export function ProjectorScreen({
                           </span>
                         </div>
 
-                        {/* Members Chips */}
                         <div className="mt-3">
                           <div className="text-[10px] font-bold uppercase text-slate-400 mb-1">
                             Anggota ({team.members.length} siswa):
@@ -720,7 +797,6 @@ export function ProjectorScreen({
                         </div>
                       </div>
 
-                      {/* Team quick actions */}
                       <div className="mt-3 pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-400">
                         <span>Total: {team.members.length} anak</span>
                       </div>
@@ -765,11 +841,12 @@ export function ProjectorScreen({
             {/* Launch Big Screen Button */}
             <button
               type="button"
+              disabled={!hasMinimumQuestions && teamCount === 4}
               onClick={() => {
                 setGameStarted(true);
                 playSfx("whistle");
               }}
-              className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-10 py-4 text-xl font-black text-white shadow-2xl transition hover:scale-105 active:scale-95"
+              className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-10 py-4 text-xl font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
             >
               <span>🚀 Mulai di Proyektor Sekarang</span>
             </button>
@@ -804,7 +881,7 @@ export function ProjectorScreen({
               </div>
               <div className="mt-2 text-3xl sm:text-4xl font-black">{winner.name}</div>
               <div className="mt-2 text-xl font-black">
-                {winner.score} Poin • {winner.correctCount} / {questions.length} Jawaban Benar
+                {winner.score} Poin • {winner.correctCount} Jawaban Benar
               </div>
               {winner.members.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/20 text-xs text-white/90">
@@ -873,15 +950,24 @@ export function ProjectorScreen({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black">
-              SOAL {currentQIndex + 1} / {questions.length}
+              PUTARAN {currentRoundOffset + 1} / {Math.ceil(questions.length / teams.length)}
             </span>
             <h1 className="text-base sm:text-lg font-black truncate max-w-xs sm:max-w-md">
               {gameName}
             </h1>
           </div>
 
-          {/* Layout Mode Toggle & Controls */}
+          {/* Remote HP Wireless Controllers Badge */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowRemoteInfoModal(true)}
+              className="rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-3 py-1.5 text-xs font-black text-white shadow hover:scale-105 transition flex items-center gap-1.5"
+            >
+              <span>🎮</span>
+              <span>Stik Remote HP ({activeControllers.length}/4)</span>
+            </button>
+
             <div className="flex rounded-xl bg-white/10 p-1">
               <button
                 type="button"
@@ -943,6 +1029,7 @@ export function ProjectorScreen({
             const ans = questionAnswers[t.id];
             const isTurn = currentTurnIdx === idx;
             const currentMem = t.members[t.currentMemberIndex % (t.members.length || 1)];
+            const isControllerActive = activeControllers.includes(t.id);
 
             return (
               <button
@@ -962,7 +1049,14 @@ export function ProjectorScreen({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-xs truncate">{t.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-xs truncate">{t.name}</span>
+                    {isControllerActive && (
+                      <span className="text-[10px]" title="Stik HP Terhubung">
+                        🎮
+                      </span>
+                    )}
+                  </div>
                   <span className="font-mono text-xs font-black">
                     {t.score} pts
                   </span>
@@ -974,7 +1068,9 @@ export function ProjectorScreen({
                   <span>
                     {hasAnswered ? (
                       ans?.isCorrect ? (
-                        <span className="text-emerald-400 font-bold">✅ Benar</span>
+                        <span className="text-emerald-400 font-bold">
+                          {ans.speedBonus > 0 ? "⚡ Tercepat" : "✅ Benar"}
+                        </span>
                       ) : (
                         <span className="text-rose-400 font-bold">❌ Salah</span>
                       )
@@ -996,22 +1092,20 @@ export function ProjectorScreen({
         {layoutMode === "split" ? (
           /* =====================================================================
              MODE B: 4-QUADRANT SPLIT SCREEN ARENA
-             Each team has its own quadrant card where students can answer simultaneously!
+             Each team has its own DIFFERENT question & options, with SPEED BONUS!
              ===================================================================== */
           <div className="space-y-4">
-            {/* Big Question Banner for All 4 Teams */}
-            <div className="rounded-2xl bg-white/10 p-4 text-center border border-white/20 shadow-xl backdrop-blur">
-              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                SOAL #{currentQIndex + 1} • SEMUA TIM MENJAWAB DI KUADRAN MASING-MASING
+            {/* Speed Bonus Announcement Banner */}
+            <div className="rounded-2xl bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 p-3 text-center border border-amber-500/40 shadow-xl backdrop-blur">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center justify-center gap-2">
+                <span>⚡ MODE 4 KUADRAN: SOAL BERBEDA UNTUK TIAP KELOMPOK • TERCEPAT DAPAT BONUS +50 POIN!</span>
               </span>
-              <h2 className="mt-1 text-2xl sm:text-3xl font-black text-white" dir={isRtl ? "rtl" : "ltr"}>
-                {activeQuestion?.question_text}
-              </h2>
             </div>
 
             {/* 4 Quadrants Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {teams.map((t) => {
+              {teams.map((t, tIdx) => {
+                const teamQ = getQuestionForTeam(tIdx);
                 const ans = questionAnswers[t.id];
                 const hasAnswered = Boolean(ans);
                 const currentMem = t.members[t.currentMemberIndex % (t.members.length || 1)];
@@ -1028,7 +1122,7 @@ export function ProjectorScreen({
                     }`}
                   >
                     {/* Quadrant Header */}
-                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <span className={`h-3 w-3 rounded-full ${t.badgeBg}`} />
                         <span className="font-black text-sm text-white">{t.name}</span>
@@ -1043,45 +1137,55 @@ export function ProjectorScreen({
                       </div>
                     </div>
 
+                    {/* Question Headline for this specific team */}
+                    <div className="my-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                        Soal Tim #{tIdx + 1}:
+                      </span>
+                      <h3 className="font-black text-base sm:text-lg text-white leading-snug mt-0.5">
+                        {teamQ?.question_text}
+                      </h3>
+                    </div>
+
                     {/* Quadrant Game Interface */}
-                    <div className="py-3">
+                    <div className="py-2">
                       {hasAnswered ? (
-                        /* Outcome Banner in Quadrant */
+                        /* Outcome Banner in Quadrant with Speed Bonus */
                         <div
-                          className={`rounded-2xl p-6 text-center animate-in zoom-in-95 duration-200 ${
+                          className={`rounded-2xl p-5 text-center animate-in zoom-in-95 duration-200 ${
                             ans?.isCorrect ? "bg-emerald-600/30 text-white" : "bg-rose-600/30 text-white"
                           }`}
                         >
-                          <div className="text-4xl">{ans?.isCorrect ? "🎉 ⚽" : "💥 🧤"}</div>
-                          <div className="text-xl font-black mt-2">
-                            {ans?.isCorrect ? "JAWABAN TEPAT! (+100)" : "JAWABAN SALAH! (0)"}
+                          <div className="text-3xl">{ans?.isCorrect ? "🎉 ⚡" : "💥 🧤"}</div>
+                          <div className="text-lg font-black mt-1">
+                            {ans?.bonusTitle}
                           </div>
                           <div className="text-xs opacity-80 mt-1">
-                            Pilihan: {ans?.optionKey} • Menunggu tim lainnya...
+                            Pilihan: {ans?.optionKey} • Skor Putaran: +{ans?.score}
                           </div>
                         </div>
                       ) : selectedMechanic === "penalty" ? (
                         /* Mini Penalty Shootout in Quadrant */
-                        <div className="space-y-3">
-                          <div className="text-xs font-bold text-center text-emerald-300">
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-center text-emerald-300">
                             ⚽ Pilih Bola untuk Menendang ke Gawang:
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            {activeQuestion?.options.map((opt) => (
+                            {teamQ?.options.map((opt) => (
                               <button
                                 key={opt.id}
                                 type="button"
-                                onClick={() => handleAnswerForTeam(t.id, opt.id, null)}
-                                className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-emerald-600/40 p-3 text-start border border-white/20 transition active:scale-95 cursor-pointer"
+                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                                className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-emerald-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
                               >
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 font-black text-sm shadow group-hover:scale-110">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 font-black text-xs shadow group-hover:scale-110">
                                   ⚽
                                 </span>
                                 <div className="truncate flex-1">
                                   <span className="text-[10px] font-mono text-emerald-300 block">
                                     Bola {opt.option_key}
                                   </span>
-                                  <span className="text-sm font-bold text-white truncate block">
+                                  <span className="text-xs font-bold text-white truncate block">
                                     {opt.option_text}
                                   </span>
                                 </div>
@@ -1091,28 +1195,28 @@ export function ProjectorScreen({
                         </div>
                       ) : selectedMechanic === "slicer" ? (
                         /* Mini Slicer in Quadrant */
-                        <div className="space-y-3">
-                          <div className="text-xs font-bold text-center text-amber-300">
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-center text-amber-300">
                             🍉 Tebas Buah Kata yang Benar (Awas Bom 💣!):
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            {activeQuestion?.options.map((opt) => {
-                              const isCorrect = opt.option_key === activeQuestion.correct_option_key;
+                            {teamQ?.options.map((opt) => {
+                              const isCorrect = opt.option_key === teamQ.correct_option_key;
                               return (
                                 <button
                                   key={opt.id}
                                   type="button"
-                                  onClick={() => handleAnswerForTeam(t.id, opt.id, null)}
-                                  className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-amber-600/40 p-3 text-start border border-white/20 transition active:scale-95 cursor-pointer"
+                                  onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                                  className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-amber-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
                                 >
-                                  <span className="text-2xl group-hover:scale-125 transition">
+                                  <span className="text-xl group-hover:scale-125 transition">
                                     {isCorrect ? "🍉" : "💣"}
                                   </span>
                                   <div className="truncate flex-1">
                                     <span className="text-[10px] font-mono text-amber-300 block">
                                       {opt.option_key}
                                     </span>
-                                    <span className="text-sm font-bold text-white truncate block">
+                                    <span className="text-xs font-bold text-white truncate block">
                                       {opt.option_text}
                                     </span>
                                   </div>
@@ -1122,19 +1226,19 @@ export function ProjectorScreen({
                           </div>
                         </div>
                       ) : (
-                        /* Standard Big Options in Quadrant */
+                        /* Standard MCQ in Quadrant */
                         <div className="grid grid-cols-2 gap-2">
-                          {activeQuestion?.options.map((opt) => (
+                          {teamQ?.options.map((opt) => (
                             <button
                               key={opt.id}
                               type="button"
-                              onClick={() => handleAnswerForTeam(t.id, opt.id, null)}
-                              className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-violet-600/40 p-3 text-start border border-white/20 transition active:scale-95"
+                              onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                              className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-violet-600/40 p-2.5 text-start border border-white/20 transition active:scale-95"
                             >
                               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 font-black text-xs text-white">
                                 {opt.option_key}
                               </span>
-                              <span className="text-sm font-bold text-white truncate flex-1">
+                              <span className="text-xs font-bold text-white truncate flex-1">
                                 {opt.option_text}
                               </span>
                             </button>
@@ -1173,7 +1277,7 @@ export function ProjectorScreen({
                 question={activeQuestion}
                 session={mockSessionContext}
                 onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, payload.answerText);
+                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
                   return { accepted: true, isCorrect: true, scoreAwarded: 100 };
                 }}
                 isRtl={Boolean(isRtl)}
@@ -1184,7 +1288,7 @@ export function ProjectorScreen({
                 question={activeQuestion}
                 session={mockSessionContext}
                 onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, payload.answerText);
+                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
                   return { accepted: true, isCorrect: true, scoreAwarded: 100 };
                 }}
                 isRtl={Boolean(isRtl)}
@@ -1195,7 +1299,7 @@ export function ProjectorScreen({
                 question={activeQuestion}
                 session={mockSessionContext}
                 onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, payload.answerText);
+                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
                   return { accepted: true, isCorrect: true, scoreAwarded: 100 };
                 }}
                 isRtl={Boolean(isRtl)}
@@ -1206,7 +1310,7 @@ export function ProjectorScreen({
                 question={activeQuestion}
                 session={mockSessionContext}
                 onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, payload.answerText);
+                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
                   return { accepted: true, isCorrect: true, scoreAwarded: 100 };
                 }}
                 isRtl={Boolean(isRtl)}
@@ -1216,7 +1320,7 @@ export function ProjectorScreen({
               <div className="space-y-6 max-w-4xl mx-auto w-full">
                 <div className="rounded-3xl bg-white/10 p-6 sm:p-10 text-center border border-white/20 shadow-2xl backdrop-blur">
                   <span className="inline-block rounded-full bg-violet-500/20 px-4 py-1 text-xs font-bold text-violet-300">
-                    Pertanyaan #{currentQIndex + 1}
+                    Pertanyaan Tim #{currentTurnIdx + 1}
                   </span>
                   <h2 className="mt-4 text-3xl sm:text-5xl font-black leading-relaxed text-white">
                     {activeQuestion?.question_text}
@@ -1244,7 +1348,7 @@ export function ProjectorScreen({
                         key={opt.id}
                         type="button"
                         disabled={showAnswerFeedback}
-                        onClick={() => handleAnswerForTeam(activeTeam.id, opt.id, null)}
+                        onClick={() => handleAnswerForTeam(activeTeam.id, opt.id, opt.option_key)}
                         className={`flex items-center gap-4 rounded-3xl p-5 text-start font-black text-xl transition-all border-2 active:scale-98 cursor-pointer ${cardStyle}`}
                       >
                         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black">
@@ -1272,11 +1376,11 @@ export function ProjectorScreen({
           <div className="text-xs">
             <span className="font-bold text-white block">
               {allTeamsAnsweredCurrentQ
-                ? "🎉 Seluruh Tim Telah Menjawab Soal Ini!"
-                : `Menunggu ${teams.length - answeredTeamCount} tim lagi pada soal ini`}
+                ? "🎉 Seluruh Tim Telah Menjawab Putaran Ini!"
+                : `Menunggu ${teams.length - answeredTeamCount} tim lagi pada putaran ini`}
             </span>
             <span className="text-slate-400 text-[11px]">
-              Guru dapat mengalihkan giliran tim kapan saja di tab atas.
+              Siswa dapat memencet tombol di layar atau lewat Remote HP (/controller).
             </span>
           </div>
         </div>
@@ -1302,14 +1406,71 @@ export function ProjectorScreen({
                 : "bg-white/20 hover:bg-white/30"
             }`}
           >
-            {currentQIndex + 1 < questions.length
-              ? "Lanjut Soal Berikutnya →"
+            {currentRoundOffset + 1 < Math.ceil(questions.length / teams.length)
+              ? "Lanjut Putaran Soal Berikutnya →"
               : "Selesaikan Pertandingan 🏆"}
           </button>
         </div>
       </footer>
 
-      {/* TEAM STUDIO MODAL (Can be opened anytime during live game) */}
+      {/* REMOTE HP INFORMATION MODAL */}
+      {showRemoteInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/20 p-6 shadow-2xl text-center">
+            <div className="text-5xl animate-bounce">📱🎮</div>
+            <h3 className="text-2xl font-black text-white mt-2">Remote Wireless HP Siswa</h3>
+            <p className="text-xs text-slate-300 mt-1">
+              Siswa atau perwakilan tim dapat membuka link berikut di HP masing-masing untuk bermain layaknya stik konsol game!
+            </p>
+
+            <div className="my-5 p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+              <span className="text-[11px] uppercase font-bold text-slate-400 block">Link Akses di Browser HP:</span>
+              <div className="mt-1 text-lg font-mono font-black text-emerald-400 select-all">
+                magguru.web.id/controller
+              </div>
+              <span className="text-[10px] text-slate-400 block mt-0.5">atau ketik /remote di browser</span>
+              <div className="mt-2 inline-block rounded-xl bg-violet-600/40 px-3 py-1 text-xs font-mono font-bold text-violet-200">
+                Kode Ruangan: <strong>{roomCode}</strong>
+              </div>
+            </div>
+
+            {/* Controller Connection Status */}
+            <div className="space-y-2 text-start">
+              <span className="text-xs font-bold text-slate-400 block">Status 4 Stik Nirkabel:</span>
+              <div className="grid grid-cols-2 gap-2">
+                {teams.map((t) => {
+                  const isConnected = activeControllers.includes(t.id);
+                  return (
+                    <div
+                      key={t.id}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between ${
+                        isConnected
+                          ? "border-emerald-400 bg-emerald-950/40 text-emerald-300"
+                          : "border-white/10 bg-white/5 text-slate-400"
+                      }`}
+                    >
+                      <span className="truncate">{t.name}</span>
+                      <span>{isConnected ? "✅ Tersambung" : "⏳ Menunggu"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRemoteInfoModal(false)}
+                className="rounded-xl bg-white px-6 py-2.5 text-xs font-black text-slate-900 hover:bg-slate-100"
+              >
+                Tutup & Kembali ke Game
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TEAM STUDIO MODAL */}
       {showTeamStudioModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-4xl rounded-3xl bg-slate-900 border border-white/20 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
