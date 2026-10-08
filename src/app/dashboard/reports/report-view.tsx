@@ -232,20 +232,128 @@ export function ReportView({
         </button>
       </form>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* DIAGNOSTIC KPI CARDS */}
+      {(() => {
+        const allRows = [...roomRows, ...practiceRows];
+        const scores = allRows
+          .filter((r) => r.total_questions > 0)
+          .map((r) => Math.round((r.correct_count / r.total_questions) * 100));
+        const avgAcc = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const struggling = allRows.filter((r) => r.total_questions > 0 && Math.round((r.correct_count / r.total_questions) * 100) < 60);
+
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm text-center">
+                <span className="text-xs font-bold text-neutral-500">Total Sesi Hari Ini</span>
+                <p className="mt-1 font-mono text-3xl font-black text-violet-700">{allRows.length}</p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm text-center">
+                <span className="text-xs font-bold text-neutral-500">Rata-rata Akurasi Kelas</span>
+                <p className="mt-1 font-mono text-3xl font-black text-emerald-700">{avgAcc}%</p>
+              </div>
+
+              <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm text-center">
+                <span className="text-xs font-bold text-neutral-500">Perlu Bimbingan (&lt;60%)</span>
+                <p className="mt-1 font-mono text-3xl font-black text-amber-600">{struggling.length}</p>
+              </div>
+            </div>
+
+            {struggling.length > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 shadow-sm flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <p className="font-black text-sm text-amber-950">Rekomendasi Tindak Lanjut Guru (Intervensi)</p>
+                  <p className="mt-0.5 leading-relaxed">
+                    Terdapat <strong>{struggling.length} sesi siswa</strong> yang memerlukan penguatan materi. Guru disarankan menugaskan latihan mandiri santai atau mengulang pembahasan sebelum penilaian berikutnya.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {Array.from(new Set(struggling.map((s) => s.student_name))).map((name) => (
+                      <span key={name} className="rounded-md border border-amber-300 bg-white px-2 py-0.5 font-bold text-amber-800">
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      <div className="grid gap-3 sm:grid-cols-3">
         <button
           type="button"
           onClick={() => void copyMd()}
-          className="rounded-2xl bg-gradient-to-l from-slate-700 to-slate-900 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
+          className="rounded-2xl bg-gradient-to-l from-slate-700 to-slate-900 px-4 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
         >
           {copiedMd ? t.btn_copied : t.btn_copy_md}
         </button>
+
         <button
           type="button"
           onClick={() => void copyAi()}
-          className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-5 py-4 text-base font-black text-white shadow-lg transition hover:-translate-y-0.5"
+          className="rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
         >
           {copiedAi ? t.btn_copied : t.btn_copy_ai}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const allRows = [
+              ...roomRows.map((r) => ({
+                Tipe: "Room",
+                Permainan: r.game_name,
+                Siswa: r.student_name,
+                Skor: r.final_score ?? 0,
+                Peringkat: r.rank_position ?? "-",
+                Benar: r.correct_count,
+                Total: r.total_questions,
+                Akurasi: r.total_questions > 0 ? Math.round((r.correct_count / r.total_questions) * 100) + "%" : "0%",
+                Waktu: toWibTime(r.recorded_at),
+              })),
+              ...practiceRows.map((r) => ({
+                Tipe: "Latihan",
+                Permainan: r.game_name,
+                Siswa: r.student_name,
+                Skor: "-",
+                Peringkat: "-",
+                Benar: r.correct_count,
+                Total: r.total_questions,
+                Akurasi: r.total_questions > 0 ? Math.round((r.correct_count / r.total_questions) * 100) + "%" : "0%",
+                Waktu: toWibTime(r.recorded_at),
+              })),
+            ];
+
+            if (allRows.length === 0) {
+              alert("Tidak ada data untuk diunduh pada tanggal ini.");
+              return;
+            }
+
+            const headers = Object.keys(allRows[0]!);
+            const csvContent =
+              "\uFEFF" +
+              [
+                headers.join(","),
+                ...allRows.map((row) =>
+                  headers.map((h) => `"${String((row as Record<string, unknown>)[h] ?? "").replace(/"/g, '""')}"`).join(","),
+                ),
+              ].join("\r\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `magguru-rekap-nilai-${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+          className="rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-700 px-4 py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+        >
+          📥 Unduh Rapor Excel (CSV)
         </button>
       </div>
 
@@ -254,6 +362,7 @@ export function ReportView({
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>{t.help_copy_md}</li>
           <li>{t.help_copy_ai}</li>
+          <li>Unduh Rapor Excel — Ekspor rekapan nilai siswa berformat CSV untuk diimpor ke e-Rapor madrasah/sekolah.</li>
         </ul>
       </section>
 

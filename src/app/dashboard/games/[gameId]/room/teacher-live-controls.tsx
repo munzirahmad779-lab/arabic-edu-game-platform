@@ -56,72 +56,16 @@ export function TeacherLiveControls({
     setErrorMsg(null);
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.rpc(
-        "teacher_advance_room_question",
-        { p_room_id: roomId },
-      );
-
-      if (!error) {
-        if (data?.[0]?.room_state === "ended") {
-          router.refresh();
-        } else {
-          router.refresh();
-        }
-        return;
-      }
-
-      console.warn(
-        "[TeacherLiveControls] advance RPC unavailable, trying direct update fallback:",
-        error.message,
-      );
-
-      const { data: roomRow, error: fetchErr } = await supabase
-        .from("rooms")
-        .select("current_question_index, snapshot")
-        .eq("id", roomId)
-        .maybeSingle();
-
-      if (fetchErr || !roomRow) {
-        setErrorMsg(`${errPrefix} ${error.message}`);
-        return;
-      }
-
-      const qList =
-        (roomRow.snapshot as { questions?: unknown[] } | null)?.questions ?? [];
-      const nextIdx = (roomRow.current_question_index ?? 0) + 1;
-      const isEnded = nextIdx >= qList.length;
-
-      if (isEnded) {
-        const { error: directErr } = await supabase
-          .from("rooms")
-          .update({
-            state: "ended",
-            ended_at: new Date().toISOString(),
-          })
-          .eq("id", roomId);
-
-        if (directErr) {
-          console.error("[TeacherLiveControls] Direct advance end failed:", directErr);
-          setErrorMsg(`${errPrefix} ${error.message}`);
-        } else {
-          router.refresh();
-        }
+      const res = await fetch("/api/rooms/control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, action: "advance" }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setErrorMsg(`${errPrefix} ${data.error || "Gagal memajukan soal"}`);
       } else {
-        const { error: directErr } = await supabase
-          .from("rooms")
-          .update({
-            current_question_index: nextIdx,
-            question_started_at: new Date(Date.now() + 3000).toISOString(),
-          })
-          .eq("id", roomId);
-
-        if (directErr) {
-          console.error("[TeacherLiveControls] Direct advance index failed:", directErr);
-          setErrorMsg(`${errPrefix} ${error.message}`);
-        } else {
-          router.refresh();
-        }
+        router.refresh();
       }
     } catch (e) {
       console.error("[TeacherLiveControls] Exception during advance:", e);
@@ -141,32 +85,14 @@ export function TeacherLiveControls({
     setErrorMsg(null);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.rpc("teacher_end_room_game", {
-        p_room_id: roomId,
+      const res = await fetch("/api/rooms/control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, action: "end" }),
       });
-
-      if (!error) {
-        router.refresh();
-        return;
-      }
-
-      console.warn(
-        "[TeacherLiveControls] end_game RPC unavailable, trying direct update fallback:",
-        error.message,
-      );
-
-      const { error: directError } = await supabase
-        .from("rooms")
-        .update({
-          state: "ended",
-          ended_at: new Date().toISOString(),
-        })
-        .eq("id", roomId);
-
-      if (directError) {
-        console.error("[TeacherLiveControls] Direct end failed:", directError);
-        setErrorMsg(`${errPrefix} ${error.message}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setErrorMsg(`${errPrefix} ${data.error || "Gagal mengakhiri permainan"}`);
       } else {
         router.refresh();
       }

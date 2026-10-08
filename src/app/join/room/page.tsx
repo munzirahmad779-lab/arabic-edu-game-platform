@@ -193,32 +193,18 @@ export default function JoinRoomPage({
       return;
     }
     try {
-      const supabase = createClient();
-      const { data, error: rpcError } = await supabase.rpc(
-        "get_game_session",
-        { p_join_token: token },
-      );
+      const res = await fetch(`/api/rooms/session?token=${encodeURIComponent(token)}`);
+      const raw = await res.json();
 
-      if (rpcError) {
-        console.error("[loadSession] get_game_session failed:", rpcError);
-        if (
-          rpcError.message === "INVALID_JOIN_TOKEN" ||
-          rpcError.message.includes("INVALID")
-        ) {
+      if (!res.ok || raw.error) {
+        if (raw.ended || raw.error === "INVALID_JOIN_TOKEN") {
           setSessionEnded(true);
           return;
         }
-        setLoadError(`${t.room_err_load} (${rpcError.message})`);
+        setLoadError(`${t.room_err_load} (${raw.error || "Gagal memuat status"})`);
         return;
       }
 
-      if (!data || !data[0]) {
-        console.warn("[loadSession] get_game_session returned empty array");
-        setLoadError(t.room_err_load);
-        return;
-      }
-
-      const raw = data[0];
       const incoming: Session = {
         ...raw,
         room_state: raw.room_state as Session["room_state"],
@@ -381,19 +367,21 @@ export default function JoinRoomPage({
     setSubmitError("");
 
     try {
-      const supabase = createClient();
-      const { data, error: submitErr } = await supabase.rpc(
-        "submit_game_answer",
-        {
-          p_join_token: token,
-          p_question_id: payload.questionId,
-          p_selected_option_id: payload.selectedOptionId,
-          p_answer_text: payload.answerText,
-        },
-      );
+      const res = await fetch("/api/rooms/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          joinToken: token,
+          questionId: payload.questionId,
+          selectedOptionId: payload.selectedOptionId,
+          answerText: payload.answerText,
+        }),
+      });
 
-      if (submitErr) {
-        const msg = submitErr.message;
+      const row = await res.json();
+
+      if (!res.ok || row.error) {
+        const msg = row.error || "";
         if (msg === "ALREADY_SUBMITTED") {
           setSubmitError(t.room_err_already);
         } else if (msg === "QUESTION_TIMEOUT") {
@@ -407,8 +395,6 @@ export default function JoinRoomPage({
         }
         return { accepted: false, isCorrect: false };
       }
-
-      const row = data?.[0];
 
       // Delay briefly (~1.2s) so student sees instant feedback overlay before transitioning
       transitioningUntilRef.current = Date.now() + 1200;

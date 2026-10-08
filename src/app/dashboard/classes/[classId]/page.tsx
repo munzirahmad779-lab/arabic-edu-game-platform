@@ -391,12 +391,23 @@ export default async function ClassDetailPage({
               {students?.length ?? 0} {t.students_count}
             </p>
           </div>
-          <Link
-            href={`/dashboard/students?classId=${classRow.id}`}
-            className="rounded-full border border-sage-200 bg-white px-3 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
-          >
-            {t.students_manage}
-          </Link>
+          <div className="flex items-center gap-2">
+            {(students?.length ?? 0) > 0 && (
+              <Link
+                href={`/dashboard/students/print?classId=${classRow.id}`}
+                target="_blank"
+                className="rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
+              >
+                🖨️ Cetak Kartu Siswa
+              </Link>
+            )}
+            <Link
+              href={`/dashboard/students?classId=${classRow.id}`}
+              className="rounded-full border border-sage-200 bg-white px-3 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
+            >
+              {t.students_manage}
+            </Link>
+          </div>
         </div>
 
         {!students || students.length === 0 ? (

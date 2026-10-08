@@ -84,6 +84,14 @@ export default async function StudentPracticePage() {
             <p className="mt-2 text-sm text-neutral-500">
               {t.practice_empty_desc}
             </p>
+            <div className="mt-6">
+              <Link
+                href="/practice"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-sm font-black text-white shadow-md hover:bg-teal-700 transition"
+              >
+                <span>📖 Buka Katalog Latihan Mandiri (5 Topik)</span>
+              </Link>
+            </div>
           </section>
         ) : (
           <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">

@@ -253,9 +253,20 @@ export default async function StudentsPage({
                         <h4 className="text-sm font-bold text-neutral-800">
                           {dict.dashboard.stat_students}
                         </h4>
-                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
-                          {students.length}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {students.length > 0 && (
+                            <Link
+                              href={`/dashboard/students/print?classId=${cls.id}`}
+                              target="_blank"
+                              className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800 shadow-sm transition hover:bg-emerald-100"
+                            >
+                              🖨️ Cetak Kartu Siswa
+                            </Link>
+                          )}
+                          <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
+                            {students.length}
+                          </span>
+                        </div>
                       </div>
 
                       {students.length === 0 ? (

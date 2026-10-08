@@ -177,12 +177,21 @@ export default async function RoomPage({
               </h1>
               <p className="mt-2 text-sm text-white/80">{gr.gather_students}</p>
             </div>
-            <Link
-              href="/dashboard/games"
-              className="inline-flex items-center justify-center rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
-            >
-              {gr.back_to_games}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/dashboard/games/${params.gameId}/projector`}
+                target="_blank"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg transition"
+              >
+                📽️ {isRtl ? "شاشة العرض (البروجكتور)" : "Layar Proyektor Kelas"}
+              </Link>
+              <Link
+                href="/dashboard/games"
+                className="inline-flex items-center justify-center rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
+              >
+                {gr.back_to_games}
+              </Link>
+            </div>
           </div>
         </header>
 

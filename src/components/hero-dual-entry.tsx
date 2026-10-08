@@ -138,30 +138,30 @@ export function HeroDualEntry({ locale, dict }: HeroDualEntryProps) {
 
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             <Link
-              href="/join?code=PRACTICE"
+              href="/practice/mufradat-dasar"
               className="flex items-center gap-2.5 rounded-xl border border-sage-200/80 bg-warmwhite/80 p-3 transition hover:border-terracotta-500 hover:bg-white"
             >
               <span className="text-xl">🏃</span>
               <div className="min-w-0">
-                <p className="truncate text-xs font-black text-teal-900">Mufradat Runner</p>
-                <p className="text-[10px] text-softslate/70">Aksi lari kata</p>
+                <p className="truncate text-xs font-black text-teal-900">Mufradat Dasar</p>
+                <p className="text-[10px] text-softslate/70">Latihan kosa kata</p>
               </div>
             </Link>
 
             <Link
-              href="/join?code=PRACTICE"
+              href="/practice/jam-waktu"
               className="flex items-center gap-2.5 rounded-xl border border-sage-200/80 bg-warmwhite/80 p-3 transition hover:border-teal-500 hover:bg-white"
             >
-              <span className="text-xl">🍉</span>
+              <span className="text-xl">⏰</span>
               <div className="min-w-0">
-                <p className="truncate text-xs font-black text-teal-900">Falak Slicer</p>
-                <p className="text-[10px] text-softslate/70">Potong kata Arab</p>
+                <p className="truncate text-xs font-black text-teal-900">Jam & Waktu</p>
+                <p className="text-[10px] text-softslate/70">Waktu bahasa Arab</p>
               </div>
             </Link>
           </div>
 
           <Link
-            href="/student/login"
+            href="/practice"
             className="block w-full rounded-2xl bg-teal-600 py-3.5 px-6 text-center text-sm font-black text-white shadow-md transition-all hover:bg-teal-700 active:scale-[0.98]"
           >
             {t.btn_solo}

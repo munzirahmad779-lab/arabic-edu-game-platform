@@ -5,7 +5,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 export default async function JoinPage({
   searchParams,
 }: {
-  searchParams: { error?: string; code?: string };
+  searchParams: { error?: string; code?: string; name?: string };
 }) {
   const locale = await getLocale();
   const dict = await getDictionary(locale);
@@ -13,6 +13,7 @@ export default async function JoinPage({
   const t = dict.join;
 
   const prefilledCode = (searchParams.code ?? "").trim().toUpperCase();
+  const prefilledName = (searchParams.name ?? "").trim();
 
   return (
     <main
@@ -78,9 +79,10 @@ export default async function JoinPage({
             <input
               id="join-name"
               name="name"
+              defaultValue={prefilledName}
               required
               maxLength={100}
-              autoFocus={Boolean(prefilledCode)}
+              autoFocus={Boolean(prefilledCode && !prefilledName)}
               className="mt-2 w-full rounded-2xl border border-neutral-300 px-4 py-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
             />
           </div>
