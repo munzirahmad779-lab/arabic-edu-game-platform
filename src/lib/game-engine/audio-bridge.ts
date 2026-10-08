@@ -15,7 +15,10 @@ type SfxType =
   | "mismatch"
   | "countdown"
   | "finish"
-  | "click";
+  | "click"
+  | "explosion"
+  | "kick"
+  | "whistle";
 
 let audioCtx: AudioContext | null = null;
 let sfxMuted = false;
@@ -186,6 +189,55 @@ export function playSfx(type: SfxType): void {
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.04);
+        break;
+      }
+
+      case "kick": {
+        // Heavy snappy thud of a ball being kicked
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+        break;
+      }
+
+      case "explosion": {
+        // Explosive blast rumble (detonation + low crunch)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.52);
+        break;
+      }
+
+      case "whistle": {
+        // High referee whistle chirp
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.setValueAtTime(2400, now + 0.06);
+        osc.frequency.setValueAtTime(2200, now + 0.12);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.26);
         break;
       }
     }

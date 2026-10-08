@@ -62,6 +62,15 @@ export function SlicerPlayer({
     answeredRef.current = hasAnswered;
   }, [hasAnswered]);
 
+  useEffect(() => {
+    setHasAnswered(false);
+    setSubmitting(false);
+    setScoreNotification(null);
+    answeredRef.current = false;
+    fruitsRef.current = [];
+    particlesRef.current = [];
+  }, [question.id]);
+
   const correctOption = useMemo(() => {
     return (
       question.options.find((o) => o.option_key === question.correct_option_key) ??
@@ -102,26 +111,23 @@ export function SlicerPlayer({
       };
 
       // Splash particles
-      const particleColors = fruit.isCorrect
-        ? ["#10b981", "#34d399", "#fbbf24", "#fef08a"]
-        : ["#f43f5e", "#fb7185", "#cbd5e1"];
-
-      for (let i = 0; i < 20; i++) {
-        const pAngle = Math.random() * Math.PI * 2;
-        const pSpeed = 60 + Math.random() * 180;
-        particlesRef.current.push({
-          x: fruit.x,
-          y: fruit.y,
-          vx: Math.cos(pAngle) * pSpeed,
-          vy: Math.sin(pAngle) * pSpeed,
-          color: particleColors[Math.floor(Math.random() * particleColors.length)] ?? "#10b981",
-          size: 3 + Math.random() * 5,
-          life: 0.8,
-          maxLife: 0.8,
-        });
-      }
-
       if (fruit.isCorrect) {
+        const particleColors = ["#10b981", "#34d399", "#fbbf24", "#fef08a", "#f43f5e"];
+        for (let i = 0; i < 25; i++) {
+          const pAngle = Math.random() * Math.PI * 2;
+          const pSpeed = 80 + Math.random() * 200;
+          particlesRef.current.push({
+            x: fruit.x,
+            y: fruit.y,
+            vx: Math.cos(pAngle) * pSpeed,
+            vy: Math.sin(pAngle) * pSpeed,
+            color: particleColors[Math.floor(Math.random() * particleColors.length)] ?? "#10b981",
+            size: 4 + Math.random() * 5,
+            life: 0.8,
+            maxLife: 0.8,
+          });
+        }
+
         setHasAnswered(true);
         setSubmitting(true);
         playSfx("correct");
@@ -145,9 +151,34 @@ export function SlicerPlayer({
 
         setSubmitting(false);
       } else {
-        playSfx("wrong");
-        setScoreNotification("KATA KURANG TEPAT! 💥");
-        setTimeout(() => setScoreNotification(null), 1200);
+        // EXPLOSION BLAST FOR BOMB! 💣💥
+        const explosionColors = ["#ef4444", "#f97316", "#eab308", "#ffffff", "#334155"];
+        for (let i = 0; i < 50; i++) {
+          const pAngle = Math.random() * Math.PI * 2;
+          const pSpeed = 100 + Math.random() * 320;
+          particlesRef.current.push({
+            x: fruit.x,
+            y: fruit.y,
+            vx: Math.cos(pAngle) * pSpeed,
+            vy: Math.sin(pAngle) * pSpeed,
+            color: explosionColors[Math.floor(Math.random() * explosionColors.length)] ?? "#ef4444",
+            size: 6 + Math.random() * 8,
+            life: 1.0,
+            maxLife: 1.0,
+          });
+        }
+
+        setHasAnswered(true);
+        setSubmitting(true);
+        playSfx("explosion");
+        setScoreNotification("BOOM! MELEDAK KARENA SALAH TEBAS! 💣💥");
+
+        await onSubmitAnswer({
+          questionId: question.id,
+          selectedOptionId: fruit.option.id,
+          answerText: fruit.option.option_text,
+          responseTimeMs: 1200,
+        });
 
         onGameEvent?.({
           isCorrect: false,
@@ -155,8 +186,10 @@ export function SlicerPlayer({
           comboMultiplier: 1,
           streak: 0,
           consequence: "stumble",
-          message: "Awas! Tebas kata yang sesuai ⚠️",
+          message: "BOOM! Kena Bom Kata Salah 💣💥",
         });
+
+        setSubmitting(false);
       }
     },
     [onSubmitAnswer, onGameEvent, question.id],
@@ -347,21 +380,47 @@ export function SlicerPlayer({
             ctx.arc(0, 8, f.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Fruit Body (Watermelon/Melon Disc)
-            const bodyGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
-            bodyGrad.addColorStop(0, f.isCorrect ? "#10b981" : "#0284c7");
-            bodyGrad.addColorStop(0.8, f.isCorrect ? "#047857" : "#0369a1");
-            bodyGrad.addColorStop(1, "#0f172a");
+            // Fruit vs Bomb Body
+            if (f.isCorrect) {
+              // Juicy Watermelon Disc
+              const bodyGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
+              bodyGrad.addColorStop(0, "#ec4899");
+              bodyGrad.addColorStop(0.7, "#be185d");
+              bodyGrad.addColorStop(0.9, "#10b981");
+              bodyGrad.addColorStop(1, "#047857");
 
-            ctx.fillStyle = bodyGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
-            ctx.fill();
+              ctx.fillStyle = bodyGrad;
+              ctx.beginPath();
+              ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+              ctx.fill();
 
-            // Neon Outer Ring
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = f.isCorrect ? "#34d399" : "#38bdf8";
-            ctx.stroke();
+              // Green Rind Outer Ring
+              ctx.lineWidth = 4;
+              ctx.strokeStyle = "#34d399";
+              ctx.stroke();
+            } else {
+              // Iron Bomb Body with Hazard Look
+              const bombGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
+              bombGrad.addColorStop(0, "#475569");
+              bombGrad.addColorStop(0.6, "#1e293b");
+              bombGrad.addColorStop(1, "#020617");
+
+              ctx.fillStyle = bombGrad;
+              ctx.beginPath();
+              ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Bomb Red Hazard Ring & Burning Fuse Spark
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = "#f87171";
+              ctx.stroke();
+
+              // Draw Fuse & Spark on top of bomb
+              ctx.fillStyle = "#fbbf24";
+              ctx.beginPath();
+              ctx.arc(0, -f.radius - 4, 4, 0, Math.PI * 2);
+              ctx.fill();
+            }
 
             // Option Key Badge
             ctx.fillStyle = "#ffffff";

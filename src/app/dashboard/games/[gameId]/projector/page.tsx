@@ -34,17 +34,32 @@ export default async function ProjectorPage({
     redirect("/dashboard/games");
   }
 
-  // 2. Fetch class students if class_id is linked
-  let classStudents: Array<{ id: string; name: string }> = [];
-  if (game.class_id) {
+  // 2. Fetch all classes and students for this teacher
+  const { data: classesData } = await supabase
+    .from("classes")
+    .select("id, name, subject")
+    .eq("teacher_id", user.id)
+    .order("name", { ascending: true });
+
+  const teacherClasses = classesData ?? [];
+  const classIds = teacherClasses.map((c) => c.id);
+
+  let allStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [];
+  if (classIds.length > 0) {
     const { data: studentsData } = await supabase
       .from("students")
-      .select("id, name")
-      .eq("class_id", game.class_id)
+      .select("id, name, class_id")
+      .in("class_id", classIds)
       .order("name", { ascending: true });
 
     if (studentsData) {
-      classStudents = studentsData;
+      const classNameMap = new Map(teacherClasses.map((c) => [c.id, c.name]));
+      allStudents = studentsData.map((s) => ({
+        id: s.id,
+        name: s.name,
+        class_id: s.class_id,
+        class_name: classNameMap.get(s.class_id) ?? "Kelas",
+      }));
     }
   }
 
@@ -110,7 +125,9 @@ export default async function ProjectorPage({
       gameName={game.name}
       initialGameType={initialGameType}
       questions={rawQuestions}
-      classStudents={classStudents}
+      allStudents={allStudents}
+      teacherClasses={teacherClasses}
+      defaultClassId={game.class_id || teacherClasses[0]?.id || ""}
     />
   );
 }
