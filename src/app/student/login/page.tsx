@@ -11,17 +11,8 @@ import {
   LOCALE_COOKIE,
   type Locale,
   isLocale,
+  getDictionary,
 } from "@/lib/i18n/dictionaries";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DICT_CACHE: Record<string, any> = {};
-
-async function loadDict(locale: Locale) {
-  if (DICT_CACHE[locale]) return DICT_CACHE[locale];
-  const mod = await import(`@/lib/i18n/${locale}.json`);
-  DICT_CACHE[locale] = mod.default;
-  return mod.default;
-}
 
 export default function StudentLoginPage() {
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +29,7 @@ export default function StudentLoginPage() {
       ?.split("=")[1];
     const loc: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
     setLocale(loc);
-    void loadDict(loc).then(setDict);
+    void getDictionary(loc).then(setDict);
   }, []);
 
   if (!dict) {
