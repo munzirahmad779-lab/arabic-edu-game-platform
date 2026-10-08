@@ -32,11 +32,11 @@ export default function ControllerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
-  // Send heartbeat every 5s
+  // Send heartbeat immediately on connect/select, then every 4s
   useEffect(() => {
     if (!selectedTeam) return;
 
-    const interval = window.setInterval(async () => {
+    const sendHeartbeat = async () => {
       try {
         await fetch("/api/projector/controller", {
           method: "POST",
@@ -51,8 +51,10 @@ export default function ControllerPage() {
       } catch {
         setIsConnected(false);
       }
-    }, 5000);
+    };
 
+    void sendHeartbeat();
+    const interval = window.setInterval(sendHeartbeat, 4000);
     return () => window.clearInterval(interval);
   }, [selectedTeam, roomCode]);
 

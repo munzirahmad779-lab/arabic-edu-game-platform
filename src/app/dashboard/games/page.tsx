@@ -159,6 +159,42 @@ export default async function GamesPage({
         </div>
       ) : null}
 
+      {/* BANNER PROYEKTOR & REMOTE HP SISWA */}
+      <div className="rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 p-6 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black backdrop-blur-sm">
+              <span>📽️</span>
+              <span>KONSOL KELAS & REMOTE HP SISWA</span>
+            </div>
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+              Mode Proyektor & Remote HP Nirkabel Siswa
+            </h2>
+            <p className="mt-2 text-sm text-emerald-100 leading-relaxed">
+              Tampilkan game di layar proyektor smartboard kelas! Siswa menjawab serentak menggunakan HP masing-masing sebagai <strong>Stik Kontroler (4 Tim / Stik PS3)</strong> lengkap dengan bonus kecepatan.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <a
+              href="/controller"
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-950 shadow-lg hover:bg-emerald-50 transition"
+            >
+              <span>📱</span>
+              <span>Buka Kontroler HP Siswa (/controller)</span>
+            </a>
+            <a
+              href="/test-projector"
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-950/70 border border-white/20 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-950/90 transition"
+            >
+              <span>📽️</span>
+              <span>Uji Layar (Kelas Mangkoso)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -231,53 +267,70 @@ export default async function GamesPage({
                     </p>
                   ) : null}
 
-                  <div className="mt-4 flex gap-2 pt-2">
-                    {isRoom ? (
-                      <form action={createRoom} className="flex-1">
+                  <div className="mt-4 space-y-2 pt-2">
+                    {/* Primary Button: Mode Proyektor & Remote HP */}
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/dashboard/games/${game.id}/projector`}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-black text-white shadow-md transition hover:from-emerald-700 hover:to-teal-700 hover:scale-101"
+                      >
+                        <span className="text-base">📽️</span>
+                        <span>Mode Proyektor & Remote HP</span>
+                      </Link>
+
+                      {/* Quick link to controller with game room code */}
+                      <a
+                        href={`/controller?room=${game.id.slice(0, 6).toUpperCase()}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Buka Stik Remote HP Siswa (/controller)"
+                        className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
+                      >
+                        <span>🎮</span>
+                        <span className="hidden sm:inline">Stik HP</span>
+                      </a>
+                    </div>
+
+                    {/* Secondary Actions: Room Online, Clone, Delete */}
+                    <div className="flex gap-2">
+                      {isRoom ? (
+                        <form action={createRoom} className="flex-1">
+                          <input type="hidden" name="game_id" value={game.id} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-xl bg-terracotta-500 hover:bg-terracotta-600 px-3 py-2 text-xs font-black text-white transition"
+                          >
+                            🎮 {t.play} (Room Online)
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="flex-1 rounded-xl border border-dashed border-teal-200 bg-teal-50 px-3 py-2 text-center text-[11px] font-bold text-teal-700">
+                          {t.no_room}
+                        </div>
+                      )}
+
+                      <form action={cloneGame}>
                         <input type="hidden" name="game_id" value={game.id} />
                         <button
                           type="submit"
-                          className="w-full rounded-full bg-terracotta-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-terracotta-600"
+                          title={t.clone_title}
+                          className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
                         >
-                          {t.play}
+                          📋
                         </button>
                       </form>
-                    ) : (
-                      <div className="flex-1 rounded-full border border-dashed border-teal-200 bg-teal-50 px-4 py-2.5 text-center text-xs font-bold text-teal-700">
-                        {t.no_room}
-                      </div>
-                    )}
 
-                    {/* Mode Proyektor Hot Seat */}
-                    <Link
-                      href={`/dashboard/games/${game.id}/projector`}
-                      title="Mode Proyektor (Hot Seat Kelas)"
-                      className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 shadow-sm"
-                    >
-                      📽️
-                    </Link>
-
-                    <form action={cloneGame}>
-                      <input type="hidden" name="game_id" value={game.id} />
-                      <button
-                        type="submit"
-                        title={t.clone_title}
-                        className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100"
-                      >
-                        📋
-                      </button>
-                    </form>
-
-                    <form action={deleteGame}>
-                      <input type="hidden" name="game_id" value={game.id} />
-                      <button
-                        type="submit"
-                        title={t.delete_title}
-                        className="rounded-full border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
-                      >
-                        🗑
-                      </button>
-                    </form>
+                      <form action={deleteGame}>
+                        <input type="hidden" name="game_id" value={game.id} />
+                        <button
+                          type="submit"
+                          title={t.delete_title}
+                          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                        >
+                          🗑
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </article>
               );

@@ -339,6 +339,42 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {/* QUICK LAUNCHER: MODE PROYEKTOR KELAS & REMOTE HP */}
+      <section className="rounded-[2rem] bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 p-6 text-white shadow-xl relative overflow-hidden">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black backdrop-blur-sm">
+              <span>📽️</span>
+              <span>KONSOL KELAS & SMARTBOARD</span>
+            </div>
+            <h2 className="mt-2 text-xl sm:text-2xl font-black">
+              Mode Proyektor & Remote HP Nirkabel Siswa
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-emerald-100 max-w-xl">
+              Ubah layar kelas menjadi arena interaktif 4 tim. Siswa bermain dari bangku masing-masing menggunakan HP sebagai stik kontroler (A, B, C, D) dengan bonus kecepatan!
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/dashboard/games"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-900 shadow-lg hover:bg-emerald-50 transition"
+            >
+              <span>📽️</span>
+              <span>Pilih Game & Buka Proyektor</span>
+            </Link>
+            <a
+              href="/controller"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-950/60 border border-white/20 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-950/90 transition"
+            >
+              <span>📱</span>
+              <span>Buka Stik HP Siswa (/controller)</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* KELAS SAYA */}
       <section className="rounded-[2rem] border border-sage-200/60 bg-white p-5 shadow-md sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-3">

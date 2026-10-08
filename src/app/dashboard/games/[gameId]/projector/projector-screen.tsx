@@ -71,6 +71,51 @@ const INITIAL_TEAMS_CONFIG: Array<Omit<ProjectorTeam, "members" | "currentMember
   },
 ];
 
+// Helper to deterministically scramble/rotate options so teams sharing the same base question have different keys!
+function getScrambledQuestionForTeam(
+  baseQuestion: RawQuestion,
+  teamIdx: number,
+  round: number,
+): RawQuestion {
+  if (!baseQuestion || !baseQuestion.options || baseQuestion.options.length <= 1) {
+    return baseQuestion;
+  }
+
+  // Find original correct option
+  const origCorrect = baseQuestion.options.find(
+    (o) => o.option_key === baseQuestion.correct_option_key,
+  );
+
+  // Deterministic rotation offset based on team and round
+  const shift = (teamIdx * 1 + round * 2) % baseQuestion.options.length;
+  if (shift === 0) return baseQuestion;
+
+  const rotatedOptions = [
+    ...baseQuestion.options.slice(shift),
+    ...baseQuestion.options.slice(0, shift),
+  ];
+
+  const keys = ["A", "B", "C", "D"];
+  let newCorrectKey = baseQuestion.correct_option_key;
+
+  const remappedOptions = rotatedOptions.map((opt, i) => {
+    const newKey = keys[i] || opt.option_key;
+    if (origCorrect && opt.id === origCorrect.id) {
+      newCorrectKey = newKey;
+    }
+    return {
+      ...opt,
+      option_key: newKey,
+    };
+  });
+
+  return {
+    ...baseQuestion,
+    correct_option_key: newCorrectKey,
+    options: remappedOptions,
+  };
+}
+
 export function ProjectorScreen({
   gameId,
   gameName,
@@ -117,6 +162,7 @@ export function ProjectorScreen({
   // Current turn indices
   const [currentTurnIdx, setCurrentTurnIdx] = useState(0);
   const [currentRoundOffset, setCurrentRoundOffset] = useState(0);
+  const [targetRounds, setTargetRounds] = useState<number>(5);
 
   // Speed Bonus tracking: List of teams that answered correctly in the current round, in order of arrival
   const [correctAnswersOrder, setCorrectAnswersOrder] = useState<string[]>([]);
@@ -152,20 +198,36 @@ export function ProjectorScreen({
 
   // Wireless Phone Controller sync state
   const roomCode = useMemo(() => {
-    return gameId ? gameId.slice(0, 6).toUpperCase() : "HOTSEAT";
+    if (!gameId || gameId.startsWith("test-")) return "HOTSEAT";
+    return gameId.slice(0, 6).toUpperCase();
   }, [gameId]);
+
+  // Scroll to top when game starts so header & HUD are immediately visible
+  useEffect(() => {
+    if (gameStarted && typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [gameStarted]);
 
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
+
+  const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setControllerOrigin(window.location.origin);
+    }
+  }, []);
+
+  const controllerFullUrl = `${controllerOrigin}/controller?room=${roomCode}`;
+  const controllerDisplayUrl = `${controllerOrigin.replace(/^https?:\/\//, "")}/controller`;
 
   // Filter students based on selected class
   const classStudents = useMemo(() => {
     if (!selectedClassId) return allStudents;
     return allStudents.filter((s) => s.class_id === selectedClassId);
   }, [allStudents, selectedClassId]);
-
-  // Minimum 4 questions rule check
-  const hasMinimumQuestions = questions.length >= 4;
 
   // Auto-distribute / shuffle students evenly across active teams
   const handleAutoDistributeStudents = useCallback(() => {
@@ -267,12 +329,23 @@ export function ProjectorScreen({
     }
   };
 
-  // Resolve question for a specific team: Each team gets a DIFFERENT question!
+  // Resolve question for a specific team: dynamically auto-shuffled & scrambled per team!
   const getQuestionForTeam = useCallback(
     (teamIdx: number): RawQuestion => {
-      if (questions.length === 0) return { id: "empty", position: 0, question_text: "", difficulty: "easy", correct_option_key: "A", explanation: "", options: [] };
+      if (questions.length === 0) {
+        return {
+          id: "empty",
+          position: 0,
+          question_text: "",
+          difficulty: "easy",
+          correct_option_key: "A",
+          explanation: "",
+          options: [],
+        };
+      }
       const index = (currentRoundOffset * teams.length + teamIdx) % questions.length;
-      return questions[index] ?? questions[0]!;
+      const baseQ = questions[index] ?? questions[0]!;
+      return getScrambledQuestionForTeam(baseQ, teamIdx, currentRoundOffset);
     },
     [currentRoundOffset, teams.length, questions],
   );
@@ -375,9 +448,9 @@ export function ProjectorScreen({
     [teams, getQuestionForTeam, questionAnswers, correctAnswersOrder, activeTeam.id],
   );
 
-  // Wireless Phone Controller Poller (Acts like PS3 wireless console controllers)
+  // Wireless Phone Controller Poller (Runs in both setup and gameplay stages)
   useEffect(() => {
-    if (!gameStarted || gameFinished) return;
+    if (gameFinished) return;
 
     const interval = window.setInterval(async () => {
       try {
@@ -391,7 +464,7 @@ export function ProjectorScreen({
           setActiveControllers(data.activeControllers);
         }
 
-        if (Array.isArray(data.events) && data.events.length > 0) {
+        if (gameStarted && Array.isArray(data.events) && data.events.length > 0) {
           for (const ev of data.events) {
             if (ev.timestamp > lastEventTimestampRef.current) {
               lastEventTimestampRef.current = ev.timestamp;
@@ -404,7 +477,7 @@ export function ProjectorScreen({
       } catch {
         // ignore polling errors
       }
-    }, 300);
+    }, 400);
 
     return () => window.clearInterval(interval);
   }, [gameStarted, gameFinished, roomCode, handleAnswerForTeam]);
@@ -437,8 +510,7 @@ export function ProjectorScreen({
     setQuestionAnswers({});
     setCorrectAnswersOrder([]);
 
-    const totalRounds = Math.ceil(questions.length / teams.length);
-    if (currentRoundOffset + 1 < totalRounds) {
+    if (currentRoundOffset + 1 < targetRounds) {
       setCurrentRoundOffset((r) => r + 1);
       setCurrentTurnIdx(0);
       playSfx("click");
@@ -446,7 +518,7 @@ export function ProjectorScreen({
       setGameFinished(true);
       playSfx("boost");
     }
-  }, [currentRoundOffset, questions.length, teams.length]);
+  }, [currentRoundOffset, targetRounds]);
 
   const handleRestart = () => {
     setTeams((prev) =>
@@ -571,22 +643,30 @@ export function ProjectorScreen({
 
           <div className="rounded-3xl bg-white/5 p-6 sm:p-8 border border-white/10 shadow-2xl backdrop-blur text-center">
             <div className="text-6xl">📽️</div>
-            <h1 className="mt-3 text-3xl font-black sm:text-4xl">{gameName}</h1>
+            <h1 className="mt-3 text-3xl font-black sm:text-4xl text-white">{gameName}</h1>
             <p className="mt-2 text-slate-300 max-w-2xl mx-auto">
               Layar proyektor berfungsi layaknya konsol game TV! Siswa dapat bermain langsung di smartboard atau menggunakan HP sebagai remote nirkabel (4 Stik Controller).
             </p>
 
-            {/* MINIMUM 4 QUESTIONS RULE VALIDATION BANNER */}
-            {!hasMinimumQuestions ? (
-              <div className="mt-6 rounded-2xl bg-amber-500/20 border-2 border-amber-400/80 p-4 text-start text-amber-200">
-                <div className="flex items-center gap-2 font-black text-sm">
-                  <span>⚠️ ATURAN GURU: SOAL KURANG DARI 4 BUTIR</span>
+            {/* DYNAMIC AUTO-SHUFFLE INFO BADGE */}
+            <div className="mt-6 rounded-2xl bg-emerald-500/10 border border-emerald-400/40 p-4 text-start text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎲</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-sm text-emerald-300">
+                      Pengacakan & Perputaran Soal Otomatis Aktif
+                    </span>
+                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-black text-emerald-300">
+                      {questions.length} Soal Tersedia
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-100/80 mt-1">
+                    Soal dan pilihan jawaban (A, B, C, D) akan diacak dan dirotasi secara otomatis antar-kelompok di setiap putaran. Guru tidak perlu menyiapkan banyak soal, permainan siap langsung dimainkan!
+                  </p>
                 </div>
-                <p className="text-xs mt-1 text-amber-100">
-                  Mode 4 Tim / Kuadran mewajibkan <strong>minimal 4 soal</strong> agar setiap kelompok mendapatkan soal yang berbeda. Saat ini permainan hanya memiliki <strong>{questions.length} soal</strong>. Silakan tambahkan soal di editor sebelum memulai 4 tim.
-                </p>
               </div>
-            ) : null}
+            </div>
 
             {/* Select Game Mechanic */}
             <div className="mt-8 text-start">
@@ -838,10 +918,124 @@ export function ProjectorScreen({
               </div>
             </div>
 
+            {/* Target Rounds Selector */}
+            <div className="mt-8 text-start">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
+                4. Target Putaran Permainan:
+              </label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  { value: 3, label: "3 Putaran (Kilat)" },
+                  { value: 5, label: "5 Putaran (Standar)" },
+                  { value: 8, label: "8 Putaran (Semua Siswa Main)" },
+                  { value: 12, label: "12 Putaran (Maraton)" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setTargetRounds(r.value)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
+                      targetRounds === r.value
+                        ? "bg-violet-600 border-violet-400 text-white font-black shadow-lg shadow-violet-600/30 scale-102"
+                        : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* PROMINENT WIRELESS PHONE CONTROLLER LAUNCHER & STATUS */}
+            <div className="mt-8 rounded-3xl bg-gradient-to-br from-indigo-950/90 via-slate-900 to-sky-950/90 p-6 border-2 border-sky-400/50 shadow-2xl text-start backdrop-blur">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-black text-sky-300">
+                    <span>🎮</span>
+                    <span>KONTROLER WIRELESS HP SISWA (MODEL STIK PS3)</span>
+                  </div>
+                  <h3 className="mt-2 text-xl sm:text-2xl font-black text-white">
+                    Hubungkan HP Siswa Sebagai Stik Nirkabel
+                  </h3>
+                  <p className="mt-1 text-xs text-sky-100/80 max-w-xl">
+                    Siswa cukup membuka tautan ini di browser HP masing-masing (Chrome/Safari), pilih Stik Tim (1-4), dan tombol A, B, C, D di HP langsung mengendalikan layar proyektor ini tanpa install aplikasi!
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <a
+                    href={`/controller?room=${roomCode}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 hover:bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg transition active:scale-95"
+                  >
+                    <span>📱</span>
+                    <span>Buka Kontroler HP (Tab Baru)</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(controllerFullUrl);
+                      alert("Tautan kontroler berhasil disalin: " + controllerFullUrl);
+                    }}
+                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition"
+                  >
+                    📋 Salin Link
+                  </button>
+                </div>
+              </div>
+
+              {/* Direct Link and Code Details */}
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-black/40 p-3.5 border border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-slate-400 block">Link HP Siswa:</span>
+                    <span className="font-mono text-sm font-black text-sky-300">{controllerDisplayUrl}</span>
+                  </div>
+                  <span className="text-xl">🌐</span>
+                </div>
+                <div className="rounded-2xl bg-black/40 p-3.5 border border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-slate-400 block">Kode Ruangan:</span>
+                    <span className="font-mono text-base font-black text-amber-300 tracking-wider">{roomCode}</span>
+                  </div>
+                  <span className="text-xl">🔑</span>
+                </div>
+              </div>
+
+              {/* 4 Sticks Live Status Grid */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-300 block mb-2">
+                  Status Koneksi 4 Stik Nirkabel Siswa:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {teams.slice(0, 4).map((t, idx) => {
+                    const isOnline = activeControllers.includes(t.id);
+                    return (
+                      <div
+                        key={t.id}
+                        className={`rounded-xl p-2.5 border text-xs font-bold transition flex items-center justify-between ${
+                          isOnline
+                            ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-200"
+                            : "bg-white/5 border-white/10 text-slate-400"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-emerald-400 animate-ping" : "bg-slate-600"}`} />
+                          <span>Stik #{idx + 1} ({t.name.split(" ")[0]})</span>
+                        </div>
+                        <span className="font-black text-[11px]">{isOnline ? "ONLINE ✅" : "Menunggu ⏳"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* Launch Big Screen Button */}
             <button
               type="button"
-              disabled={!hasMinimumQuestions && teamCount === 4}
+              disabled={questions.length === 0}
               onClick={() => {
                 setGameStarted(true);
                 playSfx("whistle");
@@ -950,7 +1144,7 @@ export function ProjectorScreen({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black">
-              PUTARAN {currentRoundOffset + 1} / {Math.ceil(questions.length / teams.length)}
+              PUTARAN {currentRoundOffset + 1} / {targetRounds}
             </span>
             <h1 className="text-base sm:text-lg font-black truncate max-w-xs sm:max-w-md">
               {gameName}
@@ -1018,6 +1212,49 @@ export function ProjectorScreen({
               className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs font-bold text-rose-300 hover:bg-rose-500/30"
             >
               Akhiri
+            </button>
+          </div>
+        </div>
+
+        {/* PERMANENT TOP BANNER FOR STUDENTS & CONTROLLERS */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-sky-950/80 via-slate-900/80 to-indigo-950/80 border border-sky-400/40 px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="animate-pulse text-sm">🎮</span>
+            <span className="font-bold text-slate-300">HP SISWA:</span>
+            <code className="rounded-lg bg-sky-500/20 px-2 py-0.5 font-mono font-black text-sky-300 border border-sky-400/30">
+              {controllerDisplayUrl}
+            </code>
+            <span className="font-bold text-slate-300">KODE:</span>
+            <span className="rounded-lg bg-amber-500/20 px-2 py-0.5 font-mono font-black text-amber-300 border border-amber-400/30">
+              {roomCode}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Stik:</span>
+            {teams.slice(0, 4).map((t, idx) => {
+              const isOnline = activeControllers.includes(t.id);
+              return (
+                <span
+                  key={t.id}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${
+                    isOnline
+                      ? "bg-emerald-500/30 text-emerald-200 border border-emerald-400/50"
+                      : "bg-white/5 text-slate-400 border border-white/10"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-400 animate-pulse" : "bg-slate-600"}`} />
+                  <span>Stik {idx + 1}</span>
+                  <span>{isOnline ? "✅" : "⏳"}</span>
+                </span>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setShowRemoteInfoModal(true)}
+              className="ml-1 rounded-lg bg-sky-600 hover:bg-sky-500 px-2.5 py-0.5 font-bold text-white text-[11px] transition shadow"
+            >
+              Info / QR
             </button>
           </div>
         </div>
@@ -1406,7 +1643,7 @@ export function ProjectorScreen({
                 : "bg-white/20 hover:bg-white/30"
             }`}
           >
-            {currentRoundOffset + 1 < Math.ceil(questions.length / teams.length)
+            {currentRoundOffset + 1 < targetRounds
               ? "Lanjut Putaran Soal Berikutnya →"
               : "Selesaikan Pertandingan 🏆"}
           </button>
@@ -1426,11 +1663,32 @@ export function ProjectorScreen({
             <div className="my-5 p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
               <span className="text-[11px] uppercase font-bold text-slate-400 block">Link Akses di Browser HP:</span>
               <div className="mt-1 text-lg font-mono font-black text-emerald-400 select-all">
-                magguru.web.id/controller
+                {controllerDisplayUrl}
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">atau ketik /remote di browser</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">atau ketik /controller / /remote</span>
               <div className="mt-2 inline-block rounded-xl bg-violet-600/40 px-3 py-1 text-xs font-mono font-bold text-violet-200">
                 Kode Ruangan: <strong>{roomCode}</strong>
+              </div>
+
+              <div className="mt-3 flex justify-center gap-2">
+                <a
+                  href={`/controller?room=${roomCode}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-xs font-black text-slate-950 transition"
+                >
+                  📱 Buka Tab Baru
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(controllerFullUrl);
+                    alert("Tautan disalin: " + controllerFullUrl);
+                  }}
+                  className="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-xs font-bold text-white transition"
+                >
+                  📋 Salin Link
+                </button>
               </div>
             </div>
 

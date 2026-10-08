@@ -106,6 +106,35 @@ export function DashboardSidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {/* Quick Launcher: Proyektor & Remote */}
+        <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 p-3 text-white shadow-md">
+          <div className="flex items-center gap-2 text-xs font-black">
+            <span>📽️</span>
+            <span>Mode Proyektor</span>
+          </div>
+          <p className="mt-1 text-[10px] text-emerald-100">
+            Layar smartboard + stik HP nirkabel siswa.
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            <Link
+              href="/test-projector"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-lg bg-white/20 py-1 text-center text-[10px] font-black text-white hover:bg-white/30 transition"
+            >
+              Layar TV
+            </Link>
+            <a
+              href="/controller"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-lg bg-white py-1 text-center text-[10px] font-black text-emerald-900 hover:bg-emerald-50 transition"
+            >
+              Stik HP 🎮
+            </a>
+          </div>
+        </div>
+
         <MenuGroup
           label={dict.group_data}
           items={dataItems}
