@@ -9,6 +9,7 @@ interface FeedbackState {
   type: "correct" | "wrong";
   message: string;
   cardIds: string[];
+  hintCardId?: string;
 }
 
 export function MatchingPlayer({
@@ -28,6 +29,37 @@ export function MatchingPlayer({
   const [submitting, setSubmitting] = useState(false);
   const [hasFinished, setHasFinished] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [showAnswerKey, setShowAnswerKey] = useState(false);
+
+  // List of solved pairs for the visual progress panel
+  const solvedPairsList = useMemo(() => {
+    const list: Array<{ prompt: string; target: string }> = [];
+    matchedPairIds.forEach((pairId) => {
+      const pairCards = matchingQuestion.cards.filter((c) => c.pairId === pairId);
+      const prompt = pairCards.find((c) => c.role === "prompt") || pairCards[0];
+      const target = pairCards.find((c) => c.role === "target" && c.id !== prompt?.id) || pairCards[1];
+      if (prompt && target) {
+        list.push({ prompt: prompt.text, target: target.text });
+      }
+    });
+    return list;
+  }, [matchedPairIds, matchingQuestion]);
+
+  // List of all correct pairs for educational review
+  const allPairsList = useMemo(() => {
+    const list: Array<{ prompt: string; target: string }> = [];
+    const pairIds = Array.from(new Set(matchingQuestion.cards.map((c) => c.pairId)));
+    pairIds.forEach((pairId) => {
+      if (pairId.startsWith("decoy_")) return;
+      const pairCards = matchingQuestion.cards.filter((c) => c.pairId === pairId);
+      const prompt = pairCards.find((c) => c.role === "prompt") || pairCards[0];
+      const target = pairCards.find((c) => c.role === "target" && c.id !== prompt?.id) || pairCards[1];
+      if (prompt && target) {
+        list.push({ prompt: prompt.text, target: target.text });
+      }
+    });
+    return list;
+  }, [matchingQuestion]);
 
   // Reset when question changes
   useEffect(() => {
@@ -37,6 +69,7 @@ export function MatchingPlayer({
     setSubmitting(false);
     setHasFinished(false);
     setFeedback(null);
+    setShowAnswerKey(false);
   }, [question.id]);
 
   async function handleCardClick(card: MatchingCard) {
@@ -72,7 +105,7 @@ export function MatchingPlayer({
 
       setFeedback({
         type: "correct",
-        message: "🎉 BENAR! Pasangan Cocok! (+50 Poin)",
+        message: `🎉 BENAR! Pasangan Cocok: "${firstCard.text}" ↔ "${card.text}" (+50 Poin)`,
         cardIds: [firstCard.id, card.id],
       });
 
@@ -82,7 +115,7 @@ export function MatchingPlayer({
         comboMultiplier: 2,
         streak: nextMatched.size,
         consequence: "match",
-        message: "Pasangan Cocok! ✓🧩",
+        message: `Pasangan Cocok: ${firstCard.text} ✓`,
       });
 
       window.setTimeout(async () => {
@@ -106,15 +139,44 @@ export function MatchingPlayer({
           playSfx("finish");
           setSubmitting(false);
         }
-      }, 700);
+      }, 900);
     } else {
       // MISMATCH! (Salah)
       playSfx("mismatch");
 
+      let wrongMsg = `❌ SALAH! "${firstCard.text}" bukan pasangan dari "${card.text}".`;
+      let hintCard: MatchingCard | undefined = undefined;
+
+      const partnerOfFirst = matchingQuestion.cards.find(
+        (c) => c.pairId === firstCard.pairId && c.id !== firstCard.id,
+      );
+      const partnerOfSecond = matchingQuestion.cards.find(
+        (c) => c.pairId === card.pairId && c.id !== card.id,
+      );
+
+      if (partnerOfFirst) {
+        hintCard = partnerOfFirst;
+        wrongMsg += ` Pasangan yang benar adalah "${firstCard.text}" ↔ "${partnerOfFirst.text}"!`;
+      } else if (partnerOfSecond) {
+        hintCard = partnerOfSecond;
+        wrongMsg += ` Pasangan yang benar adalah "${card.text}" ↔ "${partnerOfSecond.text}"!`;
+      } else {
+        // Both are distractors/decoys! Find the primary prompt and its target
+        const promptCard = matchingQuestion.cards.find((c) => c.role === "prompt");
+        const correctTarget = matchingQuestion.cards.find(
+          (c) => c.role === "target" && c.pairId === promptCard?.pairId,
+        );
+        if (promptCard && correctTarget) {
+          hintCard = correctTarget;
+          wrongMsg += ` Pasangan yang benar adalah "${promptCard.text}" ↔ "${correctTarget.text}"!`;
+        }
+      }
+
       setFeedback({
         type: "wrong",
-        message: "❌ SALAH / BELUM COCOK! Coba ingat kembali artinya.",
+        message: wrongMsg,
         cardIds: [firstCard.id, card.id],
+        hintCardId: hintCard?.id,
       });
 
       onGameEvent?.({
@@ -129,7 +191,7 @@ export function MatchingPlayer({
       window.setTimeout(() => {
         setSelectedCards([]);
         setFeedback(null);
-      }, 900);
+      }, 2000);
     }
   }
 
@@ -141,12 +203,21 @@ export function MatchingPlayer({
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Header Info */}
-      <div className="flex items-center justify-between text-xs font-bold text-indigo-300">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-indigo-300">
         <div>
           Pasangan Ditemukan: <strong className="text-white">{matchedPairIds.size}</strong> / {totalPairs}
         </div>
-        <div>
-          Langkah Tebakan: <strong className="text-white">{movesCount}</strong>
+        <div className="flex items-center gap-3">
+          <div>
+            Langkah Tebakan: <strong className="text-white">{movesCount}</strong>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAnswerKey((v) => !v)}
+            className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] font-bold text-indigo-200 hover:bg-white/20 transition"
+          >
+            {showAnswerKey ? "Tutup Kunci" : "💡 Kunci Jawaban"}
+          </button>
         </div>
       </div>
 
@@ -160,17 +231,61 @@ export function MatchingPlayer({
         </h2>
       </div>
 
+      {/* Educational Answer Key Cheat Sheet (Toggleable) */}
+      {showAnswerKey && (
+        <div className="rounded-2xl bg-slate-800/90 p-4 border border-indigo-400/40 text-xs animate-in fade-in duration-200">
+          <div className="font-black text-amber-300 mb-2 flex items-center gap-1.5">
+            <span>💡</span>
+            <span>KUNCI JAWABAN PASANGAN KATA BAHASA ARAB:</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {allPairsList.map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 border border-white/10"
+              >
+                <span className="font-bold text-emerald-300 text-sm">{p.prompt}</span>
+                <span className="text-slate-400 font-bold">⟷</span>
+                <span className="font-bold text-sky-200 text-sm">{p.target}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Prominent Right/Wrong Feedback Banner */}
       {feedback && (
         <div
-          className={`rounded-2xl p-3 text-center font-black text-sm sm:text-base animate-in zoom-in-95 duration-150 shadow-xl flex items-center justify-center gap-2 border-2 ${
+          className={`rounded-2xl p-3 text-center font-black text-xs sm:text-sm animate-in zoom-in-95 duration-150 shadow-xl flex items-center justify-center gap-2 border-2 ${
             feedback.type === "correct"
-              ? "bg-emerald-600/90 border-emerald-400 text-white shadow-emerald-500/30"
-              : "bg-rose-600/90 border-rose-400 text-white shadow-rose-500/30 animate-pulse"
+              ? "bg-emerald-600/95 border-emerald-400 text-white shadow-emerald-500/30"
+              : "bg-rose-600/95 border-rose-400 text-white shadow-rose-500/30 animate-pulse"
           }`}
         >
           <span>{feedback.type === "correct" ? "✅" : "⚠️"}</span>
           <span>{feedback.message}</span>
+        </div>
+      )}
+
+      {/* Solved Pairs Progression Panel */}
+      {solvedPairsList.length > 0 && (
+        <div className="rounded-2xl bg-emerald-950/40 border border-emerald-500/30 p-3">
+          <div className="text-[11px] font-bold text-emerald-300 mb-1.5 flex items-center gap-1.5">
+            <span>✓</span>
+            <span>Pasangan yang Sudah Terpecahkan ({solvedPairsList.length}):</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {solvedPairsList.map((pair, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/30"
+              >
+                <span className="font-semibold text-white">{pair.prompt}</span>
+                <span className="text-emerald-400 font-black">⟷</span>
+                <span className="font-semibold text-emerald-200">{pair.target}</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -193,11 +308,14 @@ export function MatchingPlayer({
           const isMatched = matchedPairIds.has(card.pairId);
           const isSelected = selectedCards.some((c) => c.id === card.id);
           const isFeedbackCard = feedback?.cardIds.includes(card.id);
+          const isHintCard = feedback?.hintCardId === card.id;
 
           let cardStyle = "border-slate-700 bg-slate-800/90 text-white hover:border-indigo-400 hover:bg-slate-700 cursor-pointer";
 
           if (isMatched) {
             cardStyle = "border-emerald-400 bg-emerald-600/30 text-emerald-200 opacity-60 cursor-default";
+          } else if (isHintCard) {
+            cardStyle = "border-amber-400 bg-amber-500/30 text-amber-100 scale-105 shadow-2xl shadow-amber-400/50 ring-4 ring-amber-400 animate-pulse";
           } else if (isFeedbackCard) {
             if (feedback?.type === "correct") {
               cardStyle = "border-emerald-400 bg-emerald-500/60 text-white scale-105 shadow-xl shadow-emerald-500/40 ring-4 ring-emerald-400";
@@ -222,6 +340,16 @@ export function MatchingPlayer({
               {isMatched && (
                 <span className="mt-1 text-[10px] text-emerald-400 font-bold uppercase">
                   ✓ Cocok
+                </span>
+              )}
+              {isHintCard && (
+                <span className="mt-1 text-[10px] text-amber-300 font-black uppercase tracking-wider bg-black/50 px-2 py-0.5 rounded">
+                  💡 Pasangan Benar
+                </span>
+              )}
+              {isFeedbackCard && feedback?.type === "wrong" && (
+                <span className="mt-1 text-[10px] text-rose-300 font-black uppercase tracking-wider bg-black/50 px-2 py-0.5 rounded">
+                  ❌ Salah
                 </span>
               )}
             </button>

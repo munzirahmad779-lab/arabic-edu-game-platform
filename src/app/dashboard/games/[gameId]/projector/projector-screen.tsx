@@ -200,6 +200,9 @@ export function ProjectorScreen({
     scoreAwarded: number;
     keeperDive: "left" | "right" | "center";
     ballCorner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    promptText?: string;
+    chosenText?: string;
+    correctText?: string;
   } | null>(null);
 
   // Game lifecycle
@@ -441,6 +444,12 @@ export function ProjectorScreen({
         ? ballCorner.includes("left") ? "right" : "left"
         : ballCorner.includes("left") ? "left" : "right";
 
+      const chosenOpt = teamQ.options.find((o) => o.option_key === chosenKey);
+      const correctOpt = teamQ.options.find((o) => o.option_key === teamQ.correct_option_key);
+      const quoteMatch = teamQ.question_text.match(/\(([^)]+)\)|"([^"]+)"|'([^']+)'|«([^»]+)»/);
+      const arabicMatch = teamQ.question_text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)*/);
+      const promptText = (quoteMatch?.[1] || quoteMatch?.[2] || quoteMatch?.[3] || quoteMatch?.[4] || arabicMatch?.[0] || teamQ.question_text).trim();
+
       setArenaAnimation({
         teamId,
         teamName: teams[teamIdx]?.name || "Tim",
@@ -450,6 +459,9 @@ export function ProjectorScreen({
         scoreAwarded: totalScore,
         keeperDive,
         ballCorner,
+        promptText,
+        chosenText: chosenOpt?.option_text || chosenKey,
+        correctText: correctOpt?.option_text || teamQ.correct_option_key,
       });
 
       // Update team score & rotate student inside the team
@@ -1253,6 +1265,31 @@ export function ProjectorScreen({
               </button>
             </div>
 
+            {/* Live Arena Mechanic Switcher (Allows teacher to switch game modes anytime) */}
+            <div className="flex rounded-xl bg-white/10 p-1 border border-white/15 gap-0.5 overflow-x-auto">
+              {[
+                { id: "penalty", label: "⚽ Adu Penalti", activeBg: "bg-emerald-600 text-white" },
+                { id: "runner", label: "🏃 Balapan Runner", activeBg: "bg-violet-600 text-white" },
+                { id: "slicer", label: "🍉 Tebas Buah", activeBg: "bg-amber-600 text-white" },
+                { id: "matching", label: "🧩 Papan Matching", activeBg: "bg-sky-600 text-white" },
+                { id: "quiz", label: "🎯 Kuis Cepat", activeBg: "bg-indigo-600 text-white" },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelectedMechanic(m.id as NormalizedGameType | "slicer")}
+                  className={`px-2 py-1 text-xs font-black rounded-lg transition whitespace-nowrap ${
+                    selectedMechanic === m.id
+                      ? `${m.activeBg} shadow-lg scale-102`
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={`Ubah Tampilan Arena ke ${m.label}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={() => setShowTeamStudioModal(true)}
@@ -1450,10 +1487,12 @@ export function ProjectorScreen({
                     {selectedMechanic === "penalty"
                       ? "STADION ADU PENALTI"
                       : selectedMechanic === "runner"
-                      ? "LINTASAN LARI 4 JALUR"
+                      ? "LINTASAN BALAPAN 4 JALUR"
                       : selectedMechanic === "slicer"
                       ? "DOJO TEBAS BUAH"
-                      : "PAPAN KARTU MATCHING"}
+                      : selectedMechanic === "matching"
+                      ? "PAPAN KARTU MATCHING"
+                      : "PANGGUNG KUIS CEPAT"}
                   </span>
                 </span>
                 {arenaAnimation ? (
@@ -1464,12 +1503,28 @@ export function ProjectorScreen({
                         : "bg-rose-500/30 text-rose-300 border border-rose-400/50"
                     }`}
                   >
-                    {arenaAnimation.isCorrect
-                      ? `⚽ GOOOL! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                      : `🧤 DITEPAK KIPER! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`}
+                    {arenaAnimation.mechanic === "penalty"
+                      ? arenaAnimation.isCorrect
+                        ? `⚽ GOOOL! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                        : `🧤 DITEPAK KIPER! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
+                      : arenaAnimation.mechanic === "runner"
+                      ? arenaAnimation.isCorrect
+                        ? `🚀 SPRINT TURBO! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                        : `💨 TERSANDUNG! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
+                      : arenaAnimation.mechanic === "slicer"
+                      ? arenaAnimation.isCorrect
+                        ? `🍉⚔️ TEBASAN SEMPURNA! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                        : `💣💥 KABOOOM! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
+                      : arenaAnimation.mechanic === "matching"
+                      ? arenaAnimation.isCorrect
+                        ? `✨ PASANGAN COCOK! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                        : `❌ BUKAN PASANGAN! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
+                      : arenaAnimation.isCorrect
+                      ? `🎯 JAWABAN TEPAT! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                      : `⚠️ KURANG TEPAT! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`}
                   </span>
                 ) : (
-                  <span className="text-slate-400">Siap menerima tendangan & jawaban 4 Stik Nirkabel HP Siswa</span>
+                  <span className="text-slate-400">Siap menerima jawaban 4 Stik Nirkabel HP Siswa</span>
                 )}
               </div>
 
@@ -1559,42 +1614,286 @@ export function ProjectorScreen({
                 </div>
               ) : selectedMechanic === "runner" ? (
                 /* 4-Lane Runner Track */
-                <div className="space-y-2 py-2">
-                  {teams.map((t) => {
-                    const progressPercent = Math.min(100, Math.max(5, (t.score / 500) * 100));
-                    return (
-                      <div
-                        key={t.id}
-                        className="relative h-11 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center px-3"
-                      >
-                        <div className="absolute inset-x-0 top-1/2 h-0.5 border-b border-dashed border-white/10" />
-                        <span className="text-xs font-black w-24 text-slate-300 z-10 truncate">
-                          {t.name.split(" ")[0]}
-                        </span>
-                        <div className="flex-1 relative h-full flex items-center">
-                          <div
-                            className="absolute transition-all duration-500 flex items-center gap-1 z-10"
-                            style={{ left: `${progressPercent}%`, transform: "translateX(-50%)" }}
-                          >
-                            <span className="text-2xl animate-bounce">🏃</span>
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${t.badgeBg} text-white shadow`}>
-                              {t.score} pts
+                <div className="relative rounded-2xl bg-gradient-to-r from-red-950 via-amber-950 to-orange-950 border-2 border-amber-600/40 p-3 sm:p-4 shadow-inner overflow-hidden">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-amber-300/80 mb-2 px-1">
+                    <span>🚩 START (0m)</span>
+                    <span className="hidden sm:inline">🏃 CHECKPOINT (50m)</span>
+                    <span>🏁 FINISH LINE (100m)</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {teams.map((t, idx) => {
+                      const progressPercent = Math.min(92, Math.max(8, (t.score / 500) * 100));
+                      const isAnimating = arenaAnimation?.teamId === t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          className={`relative h-12 rounded-xl border overflow-hidden flex items-center px-3 transition-all ${
+                            isAnimating
+                              ? arenaAnimation?.isCorrect
+                                ? "bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400/40"
+                                : "bg-rose-950/60 border-rose-400 ring-2 ring-rose-400/40"
+                              : "bg-white/5 border-white/10"
+                          }`}
+                        >
+                          <div className="absolute inset-x-0 top-1/2 h-0.5 border-b border-dashed border-white/20" />
+                          <div className="w-24 z-10 truncate flex items-center gap-1.5">
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${t.badgeBg}`}>
+                              #{idx + 1}
                             </span>
+                            <span className="text-xs font-black text-white truncate">{t.name.split(" ")[0]}</span>
                           </div>
+
+                          <div className="flex-1 relative h-full flex items-center">
+                            <div
+                              className="absolute transition-all duration-700 flex items-center gap-1 z-10"
+                              style={{ left: `${progressPercent}%`, transform: "translateX(-50%)" }}
+                            >
+                              <span className={`text-2xl ${isAnimating && arenaAnimation?.isCorrect ? "scale-125 animate-bounce" : ""}`}>
+                                🏃
+                              </span>
+                              {isAnimating && arenaAnimation?.isCorrect && (
+                                <span className="text-xs font-black bg-emerald-500 text-slate-950 px-1 rounded shadow animate-ping">
+                                  🚀
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${t.badgeBg} text-white shadow`}>
+                                {t.score} pts
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className="text-base z-10">🏁</span>
                         </div>
-                        <span className="text-sm z-10">🏁</span>
+                      );
+                    })}
+                  </div>
+
+                  {arenaAnimation && arenaAnimation.mechanic === "runner" && (
+                    <div
+                      className={`mt-2 rounded-xl p-2.5 text-center text-xs font-bold animate-in zoom-in-95 duration-150 border ${
+                        arenaAnimation.isCorrect
+                          ? "bg-emerald-950/80 border-emerald-400 text-emerald-200"
+                          : "bg-rose-950/80 border-rose-400 text-rose-200"
+                      }`}
+                    >
+                      <span>{arenaAnimation.isCorrect ? "🚀 SPRINT KILAT! " : "💨 TERSANDUNG! "}</span>
+                      <strong>{arenaAnimation.teamName}</strong> {arenaAnimation.isCorrect ? `melesat menambah +${arenaAnimation.scoreAwarded} Poin!` : `tersandung dan ${arenaAnimation.scoreAwarded} Poin!`}
+                    </div>
+                  )}
+                </div>
+              ) : selectedMechanic === "slicer" ? (
+                /* Japanese Dojo Fruit Slicer Arena */
+                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-stone-950 via-amber-950/40 to-slate-950 border-2 border-amber-600/40 shadow-inner flex flex-col justify-between p-4">
+                  <div className="absolute inset-0 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
+
+                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-amber-300">
+                    <span className="flex items-center gap-1.5">
+                      <span>🥋</span>
+                      <span>DOJO TEBAS BUAH: TEBAS BUAH JAWABAN YANG BENAR, AWAS BOM!</span>
+                    </span>
+                    <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/30">
+                      KATANA READY ⚔️
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 grid grid-cols-4 gap-2 sm:gap-4 my-auto py-2">
+                    {[
+                      { key: "A", fruit: "🍉", name: "Semangka" },
+                      { key: "B", fruit: "🍊", name: "Jeruk" },
+                      { key: "C", fruit: "🍎", name: "Apel" },
+                      { key: "D", fruit: "🥝", name: "Kiwi" },
+                    ].map((item) => {
+                      const isTargeted = arenaAnimation?.targetKey === item.key;
+                      return (
+                        <div
+                          key={item.key}
+                          className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 ${
+                            isTargeted
+                              ? arenaAnimation?.isCorrect
+                                ? "bg-emerald-500/30 border-emerald-400 scale-110 shadow-xl shadow-emerald-500/40"
+                                : "bg-rose-500/30 border-rose-400 scale-95 shadow-xl shadow-rose-500/40"
+                              : "bg-white/5 border-white/10 hover:border-white/30"
+                          }`}
+                        >
+                          <div className={`text-4xl sm:text-5xl transition-transform ${isTargeted && arenaAnimation?.isCorrect ? "scale-125 animate-bounce" : "animate-pulse"}`}>
+                            {isTargeted ? (arenaAnimation?.isCorrect ? `${item.fruit} ⚔️` : "💣💥") : item.fruit}
+                          </div>
+                          <span className="mt-1 text-[11px] font-black text-amber-200">
+                            {item.key}. {item.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {arenaAnimation && arenaAnimation.mechanic === "slicer" && (
+                    <div
+                      className={`relative z-20 rounded-2xl p-3 text-center animate-in zoom-in-75 duration-200 border-2 ${
+                        arenaAnimation.isCorrect
+                          ? "bg-emerald-950/90 border-emerald-400 text-white"
+                          : "bg-rose-950/90 border-rose-400 text-white"
+                      }`}
+                    >
+                      <div className="text-2xl">{arenaAnimation.isCorrect ? "🍉⚔️✨" : "💣💥🔥"}</div>
+                      <h4 className={`text-lg sm:text-xl font-black ${arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"}`}>
+                        {arenaAnimation.isCorrect ? "TEBASAN SEMPURNA!" : "BOOOOM! LEDAKAN BOM!"}
+                      </h4>
+                      <p className="text-xs text-white/90">
+                        {arenaAnimation.teamName} menebas {arenaAnimation.targetKey} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="relative z-10 text-center text-[10px] text-stone-400 font-bold uppercase tracking-widest pt-1 border-t border-white/10">
+                    Tebas buah melalui Stik HP / Klik pilihan di kuadran tim
+                  </div>
+                </div>
+              ) : selectedMechanic === "matching" ? (
+                /* Memory & Vocabulary Pairing Arena */
+                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-slate-950 via-sky-950/40 to-slate-900 border-2 border-sky-500/40 shadow-inner flex flex-col justify-between p-4">
+                  <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:20px_20px] opacity-15" />
+
+                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-sky-300 pb-2 border-b border-white/10">
+                    <span className="flex items-center gap-1.5">
+                      <span>🧩</span>
+                      <span>PAPAN MATCHING: MENJODOHKAN KATA ARAB DENGAN ARTINYA</span>
+                    </span>
+                    <span className="text-[10px] bg-sky-500/20 px-2 py-0.5 rounded border border-sky-400/30">
+                      MEMORY GRID 🔗
+                    </span>
+                  </div>
+
+                  {arenaAnimation && arenaAnimation.mechanic === "matching" ? (
+                    <div
+                      className={`relative z-20 my-auto rounded-2xl p-4 text-center animate-in zoom-in-75 duration-200 border-2 ${
+                        arenaAnimation.isCorrect
+                          ? "bg-emerald-950/90 border-emerald-400 text-white"
+                          : "bg-rose-950/90 border-rose-400 text-white"
+                      }`}
+                    >
+                      <div className="text-3xl animate-bounce">
+                        {arenaAnimation.isCorrect ? "✨🔗🎉" : "❌🧩⚠️"}
                       </div>
-                    );
-                  })}
+                      <h4 className={`text-xl sm:text-2xl font-black mt-1 ${arenaAnimation.isCorrect ? "text-emerald-300" : "text-rose-400"}`}>
+                        {arenaAnimation.isCorrect ? "PASANGAN COCOK & TEPAT!" : "BUKAN PASANGAN DARI KATA INI!"}
+                      </h4>
+
+                      <div className="mt-3 flex items-center justify-center gap-3">
+                        <div className="rounded-xl bg-black/60 px-4 py-2 border border-white/20 text-center">
+                          <span className="text-[10px] text-slate-400 block uppercase font-bold">Kata Soal:</span>
+                          <span className="text-base sm:text-lg font-black text-amber-300">{arenaAnimation.promptText || "Kata Arab"}</span>
+                        </div>
+                        <span className="text-xl font-black text-white">
+                          {arenaAnimation.isCorrect ? "⟷" : "≠"}
+                        </span>
+                        <div className="rounded-xl bg-black/60 px-4 py-2 border border-white/20 text-center">
+                          <span className="text-[10px] text-slate-400 block uppercase font-bold">Pilihan {arenaAnimation.targetKey}:</span>
+                          <span className="text-base sm:text-lg font-black text-white">{arenaAnimation.chosenText || arenaAnimation.targetKey}</span>
+                        </div>
+                      </div>
+
+                      {!arenaAnimation.isCorrect && arenaAnimation.correctText && (
+                        <div className="mt-3 p-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-xs font-bold text-amber-200 max-w-md mx-auto">
+                          <span>👉 Pasangan yang benar adalah: </span>
+                          <strong className="text-white">&quot;{arenaAnimation.promptText}&quot; ⟷ &quot;{arenaAnimation.correctText}&quot;</strong>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-white/80 mt-2">
+                        {arenaAnimation.teamName} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="relative z-10 my-auto text-center py-4">
+                      <div className="text-4xl mb-2 animate-pulse">🧩🔗✨</div>
+                      <h4 className="text-lg font-black text-white">Papan Memori Kosakata Bahasa Arab</h4>
+                      <p className="text-xs text-sky-200/80 max-w-md mx-auto mt-1">
+                        Pilih kartu pasangan yang cocok di kuadran tim masing-masing atau tekan tombol A, B, C, D di Stik HP!
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-2 border-t border-white/10">
+                    Setiap tim memiliki soal berpasangan masing-masing • Tercepat dapat bonus poin!
+                  </div>
                 </div>
               ) : (
-                /* Slicer / Matching Banner */
-                <div className="rounded-2xl bg-gradient-to-r from-violet-950/60 to-slate-900 p-4 text-center border border-white/10">
-                  <div className="text-3xl mb-1">🎮⚡</div>
-                  <h4 className="font-black text-sm text-white">4 Tim Bersaing Secara Realtime</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Pencet tombol di layar kuadran atau tekan tombol stik nirkabel di HP masing-masing!
-                  </p>
+                /* Television Quiz Show Stage Arena */
+                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-indigo-950 via-slate-900 to-purple-950 border-2 border-indigo-500/40 shadow-inner flex flex-col justify-between p-4">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-violet-500 via-amber-400 to-sky-400" />
+                  <div className="absolute -top-12 left-1/4 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute -top-12 right-1/4 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-indigo-300 pb-2 border-b border-white/10">
+                    <span className="flex items-center gap-1.5">
+                      <span>🎯</span>
+                      <span>PANGGUNG KUIS CEPAT: CERDAS CERMAT 4 TIM KELAS</span>
+                    </span>
+                    <span className="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-400/30">
+                      LIVE BUZZER READY 🛎️
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 my-auto py-2">
+                    {teams.map((t, idx) => {
+                      const isCurrentAction = arenaAnimation?.teamId === t.id;
+                      const hasAns = Boolean(questionAnswers[t.id]);
+                      return (
+                        <div
+                          key={t.id}
+                          className={`rounded-2xl p-3 border-2 text-center transition-all duration-300 flex flex-col items-center justify-between ${
+                            isCurrentAction
+                              ? arenaAnimation?.isCorrect
+                                ? "bg-emerald-600/40 border-emerald-400 scale-105 shadow-xl shadow-emerald-500/50"
+                                : "bg-rose-600/40 border-rose-400 scale-98 shadow-xl shadow-rose-500/50"
+                              : hasAns
+                              ? "bg-white/10 border-white/20"
+                              : "bg-black/30 border-white/10"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1 text-[10px] font-black text-slate-300 uppercase">
+                            <span className={`w-2 h-2 rounded-full ${t.badgeBg}`} />
+                            <span>Podium #{idx + 1}</span>
+                          </div>
+
+                          <div className="my-2">
+                            <div className={`text-2xl sm:text-3xl ${isCurrentAction ? "animate-bounce" : ""}`}>
+                              {isCurrentAction ? (arenaAnimation?.isCorrect ? "🚨✨" : "⚠️❌") : hasAns ? "✅" : "🎙️"}
+                            </div>
+                            <span className="text-xs font-black text-white block mt-1 truncate max-w-[120px]">
+                              {t.name.split(" ")[0]}
+                            </span>
+                          </div>
+
+                          <div className="font-mono text-xs font-black bg-black/50 px-2 py-0.5 rounded-lg text-emerald-300 border border-white/10">
+                            {t.score} pts
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {arenaAnimation && arenaAnimation.mechanic === "quiz" && (
+                    <div
+                      className={`relative z-20 rounded-2xl p-2.5 text-center animate-in zoom-in-75 duration-200 border-2 ${
+                        arenaAnimation.isCorrect
+                          ? "bg-emerald-950/90 border-emerald-400 text-white"
+                          : "bg-rose-950/90 border-rose-400 text-white"
+                      }`}
+                    >
+                      <h4 className={`text-base sm:text-lg font-black ${arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"}`}>
+                        {arenaAnimation.isCorrect ? "🎉 BEL TEPAT & BENAR!" : "❌ BEL KURANG TEPAT!"}
+                      </h4>
+                      <p className="text-xs text-white/90">
+                        {arenaAnimation.teamName} menjawab {arenaAnimation.targetKey} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-1 border-t border-white/10">
+                    Pencet tombol di layar proyektor atau tekan tombol stik nirkabel di HP masing-masing!
+                  </div>
                 </div>
               )}
             </div>
@@ -1647,10 +1946,10 @@ export function ProjectorScreen({
                     {/* Quadrant Game Interface */}
                     <div className="py-2">
                       {hasAnswered ? (
-                        /* Outcome Banner in Quadrant with Speed Bonus */
+                        /* Outcome Banner in Quadrant with Speed Bonus and Educational Correction */
                         <div
-                          className={`rounded-2xl p-5 text-center animate-in zoom-in-95 duration-200 ${
-                            ans?.isCorrect ? "bg-emerald-600/30 text-white" : "bg-rose-600/30 text-white"
+                          className={`rounded-2xl p-4 sm:p-5 text-center animate-in zoom-in-95 duration-200 ${
+                            ans?.isCorrect ? "bg-emerald-600/30 text-white border border-emerald-400/40" : "bg-rose-600/30 text-white border border-rose-400/40"
                           }`}
                         >
                           <div className="text-3xl">{ans?.isCorrect ? "🎉 ⚡" : "💥 🧤"}</div>
@@ -1658,8 +1957,18 @@ export function ProjectorScreen({
                             {ans?.bonusTitle}
                           </div>
                           <div className="text-xs opacity-80 mt-1">
-                            Pilihan: {ans?.optionKey} • Skor Putaran: +{ans?.score}
+                            Pilihan: {ans?.optionKey} • Skor Putaran: {ans?.score > 0 ? `+${ans?.score}` : ans?.score}
                           </div>
+
+                          {/* Explicit educational correction for all mechanics, especially Matching! */}
+                          {!ans?.isCorrect && (
+                            <div className="mt-3 pt-2 border-t border-white/20 text-xs text-amber-200 text-center">
+                              <span className="font-bold">👉 Kunci Jawaban yang Benar: </span>
+                              <span className="font-black text-white bg-black/40 px-2 py-0.5 rounded">
+                                {teamQ?.correct_option_key}. {teamQ?.options.find((o) => o.option_key === teamQ.correct_option_key)?.option_text}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ) : selectedMechanic === "penalty" ? (
                         /* Mini Penalty Shootout in Quadrant */
@@ -1681,6 +1990,35 @@ export function ProjectorScreen({
                                 <div className="truncate flex-1">
                                   <span className="text-[10px] font-mono text-emerald-300 block">
                                     Bola {opt.option_key}
+                                  </span>
+                                  <span className="text-xs font-bold text-white truncate block">
+                                    {opt.option_text}
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : selectedMechanic === "runner" ? (
+                        /* Mini Runner Sprint Lanes in Quadrant */
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-center text-violet-300">
+                            🏃 Pilih Jalur Lari dengan Jawaban Benar:
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {teamQ?.options.map((opt) => (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                                className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-violet-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
+                              >
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/30 font-black text-xs text-violet-200 group-hover:scale-110">
+                                  🏃 {opt.option_key}
+                                </span>
+                                <div className="truncate flex-1">
+                                  <span className="text-[10px] font-mono text-violet-300 block">
+                                    Jalur {opt.option_key}
                                   </span>
                                   <span className="text-xs font-bold text-white truncate block">
                                     {opt.option_text}
@@ -1728,24 +2066,58 @@ export function ProjectorScreen({
                             })}
                           </div>
                         </div>
+                      ) : selectedMechanic === "matching" ? (
+                        /* Mini Matching Cards in Quadrant */
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-center text-sky-300">
+                            🧩 Cari & Cocokkan Pasangan Arti Kata Ini:
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {teamQ?.options.map((opt) => (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                                className="group flex items-center gap-2 rounded-2xl bg-sky-950/40 hover:bg-sky-600/40 p-2.5 text-start border border-sky-400/30 transition active:scale-95 cursor-pointer"
+                              >
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 font-black text-xs text-sky-200 group-hover:scale-110">
+                                  🔗 {opt.option_key}
+                                </span>
+                                <div className="truncate flex-1">
+                                  <span className="text-[10px] font-mono text-sky-300 block">
+                                    Kartu {opt.option_key}
+                                  </span>
+                                  <span className="text-xs font-bold text-white truncate block">
+                                    {opt.option_text}
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ) : (
-                        /* Standard MCQ in Quadrant */
-                        <div className="grid grid-cols-2 gap-2">
-                          {teamQ?.options.map((opt) => (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                              className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-violet-600/40 p-2.5 text-start border border-white/20 transition active:scale-95"
-                            >
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 font-black text-xs text-white">
-                                {opt.option_key}
-                              </span>
-                              <span className="text-xs font-bold text-white truncate flex-1">
-                                {opt.option_text}
-                              </span>
-                            </button>
-                          ))}
+                        /* Standard TV Quiz MCQ in Quadrant */
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-center text-indigo-300">
+                            🎯 Pilih Jawaban Kuis Cepat:
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {teamQ?.options.map((opt) => (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
+                                className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-indigo-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
+                              >
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 font-black text-xs text-white">
+                                  {opt.option_key}
+                                </span>
+                                <span className="text-xs font-bold text-white truncate flex-1">
+                                  {opt.option_text}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
