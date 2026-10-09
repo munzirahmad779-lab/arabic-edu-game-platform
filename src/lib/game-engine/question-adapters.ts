@@ -201,6 +201,59 @@ export class QuestionAdapter {
   }
 
   /**
+   * Adapts multiple standard MCQ questions into a multi-pair matching game (e.g. 4 pairs = 8 cards)
+   * without requiring teacher to create specialized matching questions.
+   */
+  public static toMultiQuestionMatching(questions: RawQuestion[]): MatchingPlayableQuestion {
+    if (!questions || questions.length === 0) {
+      throw new Error("No questions provided for matching");
+    }
+    if (questions.length === 1) {
+      return this.toMatching(questions[0]!);
+    }
+
+    const cards: MatchingCard[] = [];
+    const pool = questions.slice(0, 4);
+
+    pool.forEach((q, qIdx) => {
+      const correctOpt =
+        q.options.find((o) => o.option_key === q.correct_option_key) ??
+        q.options[0];
+      const pairId = `pair_${q.id}`;
+
+      // Extract target Arabic term or quoted text
+      const quoteMatch = q.question_text.match(/\(([^)]+)\)|"([^"]+)"|'([^']+)'|«([^»]+)»/);
+      const arabicMatch = q.question_text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)*/);
+      const promptText = (quoteMatch?.[1] || quoteMatch?.[2] || quoteMatch?.[3] || quoteMatch?.[4] || arabicMatch?.[0] || q.question_text).trim();
+
+      cards.push({
+        id: `prompt_${q.id}_${qIdx}`,
+        pairId,
+        text: promptText,
+        role: "prompt",
+      });
+
+      cards.push({
+        id: `target_${q.id}_${qIdx}`,
+        pairId,
+        text: correctOpt?.option_text || "-",
+        role: "target",
+      });
+    });
+
+    const shuffled = [...cards].sort((a, b) => a.id.localeCompare(b.id));
+
+    return {
+      id: `multi_${pool.map((q) => q.id).join("_")}`,
+      title: "Jodohkan Kosa Kata & Terjemahannya (4 Pasang)",
+      cards: shuffled,
+      targetPairsCount: pool.length,
+      correctOptionId: pool[0]?.options[0]?.id || "",
+      timeLimitSeconds: 60,
+    };
+  }
+
+  /**
    * Adapts raw question into penalty shootout targets.
    */
   public static toPenalty(raw: RawQuestion): PenaltyPlayableQuestion {

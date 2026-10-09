@@ -22,6 +22,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { GameRegistry } from "../../src/lib/game-engine/registry";
 import { splitIntoGraphemes, normalizeAnswer, compareAnswers } from "../../src/lib/game-engine/arabic-utils";
+import { QuestionAdapter } from "../../src/lib/game-engine/question-adapters";
 
 describe("Permanent Regression Test Register", () => {
   // 1. Legacy game_type resolution
@@ -310,6 +311,42 @@ describe("Permanent Regression Test Register", () => {
       const anagramDef = GameRegistry.get("anagram");
       assert.equal(anagramDef.capabilities.supportsArabicRTL, true);
       assert.equal(anagramDef.capabilities.supportsTouch, true);
+    });
+  });
+
+  // 16. Multi-question matching auto-adapter generation
+  describe("16. Multi-question matching auto-adapter generation", () => {
+    test("Converts 4 standard MCQ questions into 4-pair 8-card matching game", () => {
+      const sampleQuestions: any[] = [
+        {
+          id: "q1",
+          question_text: "Terjemahkan kata: (كِتَابٌ)",
+          correct_option_key: "A",
+          options: [
+            { id: "o1", option_key: "A", option_text: "Buku" },
+            { id: "o2", option_key: "B", option_text: "Pena" },
+          ],
+        },
+        {
+          id: "q2",
+          question_text: "Arti dari kata: (قَلَمٌ)",
+          correct_option_key: "B",
+          options: [
+            { id: "o3", option_key: "A", option_text: "Meja" },
+            { id: "o4", option_key: "B", option_text: "Pena" },
+          ],
+        },
+      ];
+
+      const matchingGame = QuestionAdapter.toMultiQuestionMatching(sampleQuestions);
+      assert.equal(matchingGame.targetPairsCount, 2);
+      assert.equal(matchingGame.cards.length, 4); // 2 pairs = 4 cards
+      
+      const promptCard = matchingGame.cards.find((c) => c.text === "كِتَابٌ");
+      const targetCard = matchingGame.cards.find((c) => c.text === "Buku");
+      assert.ok(promptCard, "Prompt card should exist");
+      assert.ok(targetCard, "Target card should exist");
+      assert.equal(promptCard?.pairId, targetCard?.pairId, "Cards from same question must share pairId");
     });
   });
 });

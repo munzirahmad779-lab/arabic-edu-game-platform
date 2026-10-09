@@ -185,7 +185,22 @@ export function ProjectorScreen({
   // Single focus turn UI states
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
-  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
+
+  // Competitive Timer & Steal mechanics
+  const [timerSeconds, setTimerSeconds] = useState(20);
+  const [isTimerActive, setIsTimerActive] = useState(true);
+
+  // Live Action Arena Animation for 4-Quadrant Mode
+  const [arenaAnimation, setArenaAnimation] = useState<{
+    teamId: string;
+    teamName: string;
+    isCorrect: boolean;
+    mechanic: string;
+    targetKey: string;
+    scoreAwarded: number;
+    keeperDive: "left" | "right" | "center";
+    ballCorner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  } | null>(null);
 
   // Game lifecycle
   const [gameStarted, setGameStarted] = useState(false);
@@ -258,6 +273,7 @@ export function ProjectorScreen({
         return next;
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classStudents]);
 
   // Adjust team count (1 to 4)
@@ -382,16 +398,16 @@ export function ProjectorScreen({
         isCorrect = picked?.option_key === teamQ.correct_option_key;
       } else if (optionKeyInput) {
         const keyUpper = optionKeyInput.toUpperCase().trim();
-        const picked = teamQ.options.find((o) => o.option_key === keyUpper);
         chosenKey = keyUpper;
         isCorrect = keyUpper === teamQ.correct_option_key;
       }
 
-      // SPEED BONUS CALCULATION:
+      // SPEED BONUS & PENALTY CALCULATION:
       // First team to get it correct gets +50 speed bonus!
       // Second gets +25 speed bonus!
+      // Wrong answer incurs -25 penalty to prevent random button guessing!
       let speedBonus = 0;
-      let bonusTitle = isCorrect ? "✅ Tepat (+100 Pts)" : "❌ Kurang Tepat (0 Pts)";
+      let bonusTitle = isCorrect ? "✅ Tepat (+100 Pts)" : "❌ Kurang Tepat (-25 Pts)";
 
       if (isCorrect) {
         const orderRank = correctAnswersOrder.length + 1;
@@ -405,7 +421,7 @@ export function ProjectorScreen({
         setCorrectAnswersOrder((prev) => [...prev, teamId]);
       }
 
-      const totalScore = isCorrect ? 100 + speedBonus : 0;
+      const totalScore = isCorrect ? 100 + speedBonus : -25;
 
       // Update questionAnswers registry
       setQuestionAnswers((prev) => ({
@@ -413,13 +429,36 @@ export function ProjectorScreen({
         [teamId]: { isCorrect, score: totalScore, speedBonus, bonusTitle, optionKey: chosenKey },
       }));
 
+      // Calculate Ball Flight Corner and Keeper Dive for Stadium Animation
+      const corners: Array<"top-left" | "top-right" | "bottom-left" | "bottom-right"> = [
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right",
+      ];
+      const ballCorner = corners[Math.max(0, ["A", "B", "C", "D"].indexOf(chosenKey))] ?? "top-left";
+      const keeperDive: "left" | "right" = isCorrect
+        ? ballCorner.includes("left") ? "right" : "left"
+        : ballCorner.includes("left") ? "left" : "right";
+
+      setArenaAnimation({
+        teamId,
+        teamName: teams[teamIdx]?.name || "Tim",
+        isCorrect,
+        mechanic: selectedMechanic,
+        targetKey: chosenKey,
+        scoreAwarded: totalScore,
+        keeperDive,
+        ballCorner,
+      });
+
       // Update team score & rotate student inside the team
       setTeams((prev) =>
         prev.map((t) => {
           if (t.id === teamId) {
             return {
               ...t,
-              score: t.score + totalScore,
+              score: Math.max(0, t.score + totalScore),
               correctCount: t.correctCount + (isCorrect ? 1 : 0),
               currentMemberIndex: t.currentMemberIndex + 1, // Auto-rotate student!
             };
@@ -441,11 +480,10 @@ export function ProjectorScreen({
       // If in focus mode and current active team answered:
       if (teamId === activeTeam.id) {
         setSelectedOptionId(optionId);
-        setLastAnswerCorrect(isCorrect);
         setShowAnswerFeedback(true);
       }
     },
-    [teams, getQuestionForTeam, questionAnswers, correctAnswersOrder, activeTeam.id],
+    [teams, getQuestionForTeam, questionAnswers, correctAnswersOrder, activeTeam.id, selectedMechanic],
   );
 
   // Wireless Phone Controller Poller (Runs in both setup and gameplay stages)
@@ -482,10 +520,31 @@ export function ProjectorScreen({
     return () => window.clearInterval(interval);
   }, [gameStarted, gameFinished, roomCode, handleAnswerForTeam]);
 
+  // Advance to next question round (resets questionAnswers, speed bonus, and shifts round offset)
+  const handleNextQuestion = useCallback(() => {
+    setSelectedOptionId(null);
+    setShowAnswerFeedback(false);
+    setQuestionAnswers({});
+    setCorrectAnswersOrder([]);
+    setArenaAnimation(null);
+    setTimerSeconds(20);
+
+    if (currentRoundOffset + 1 < targetRounds) {
+      setCurrentRoundOffset((r) => r + 1);
+      setCurrentTurnIdx(0);
+      playSfx("click");
+    } else {
+      setGameFinished(true);
+      playSfx("boost");
+    }
+  }, [currentRoundOffset, targetRounds]);
+
   // Advance to next team's turn on turn mode
   const handleNextTeamTurn = useCallback(() => {
     setSelectedOptionId(null);
     setShowAnswerFeedback(false);
+    setArenaAnimation(null);
+    setTimerSeconds(20);
 
     const nextIdx = teams.findIndex(
       (t, i) => i > currentTurnIdx && !questionAnswers[t.id],
@@ -501,24 +560,31 @@ export function ProjectorScreen({
         handleNextQuestion();
       }
     }
-  }, [currentTurnIdx, teams, questionAnswers]);
+  }, [currentTurnIdx, teams, questionAnswers, handleNextQuestion]);
 
-  // Advance to next question round (resets questionAnswers, speed bonus, and shifts round offset)
-  const handleNextQuestion = useCallback(() => {
-    setSelectedOptionId(null);
-    setShowAnswerFeedback(false);
-    setQuestionAnswers({});
-    setCorrectAnswersOrder([]);
+  // Countdown timer effect (Competitive timer & auto-steal)
+  useEffect(() => {
+    if (!gameStarted || gameFinished || !isTimerActive || allTeamsAnsweredCurrentQ) return;
 
-    if (currentRoundOffset + 1 < targetRounds) {
-      setCurrentRoundOffset((r) => r + 1);
-      setCurrentTurnIdx(0);
-      playSfx("click");
-    } else {
-      setGameFinished(true);
-      playSfx("boost");
-    }
-  }, [currentRoundOffset, targetRounds]);
+    const timer = window.setInterval(() => {
+      setTimerSeconds((prev) => {
+        if (prev <= 1) {
+          playSfx("wrong");
+          // Timeout penalty -10 points to active team
+          setTeams((current) =>
+            current.map((t, idx) =>
+              idx === currentTurnIdx ? { ...t, score: Math.max(0, t.score - 10) } : t
+            )
+          );
+          handleNextTeamTurn();
+          return 20;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [gameStarted, gameFinished, isTimerActive, allTeamsAnsweredCurrentQ, currentTurnIdx, handleNextTeamTurn]);
 
   const handleRestart = () => {
     setTeams((prev) =>
@@ -1197,6 +1263,25 @@ export function ProjectorScreen({
               <span className="hidden sm:inline">Kelola Tim</span>
             </button>
 
+            {/* Competitive Round Timer Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsTimerActive((v) => !v)}
+              className={`rounded-xl px-3 py-1.5 text-xs font-mono font-black border transition flex items-center gap-1.5 ${
+                !isTimerActive
+                  ? "bg-white/5 border-white/10 text-slate-400"
+                  : timerSeconds > 10
+                  ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300 shadow"
+                  : timerSeconds > 5
+                  ? "bg-amber-500/20 border-amber-400/40 text-amber-300 shadow"
+                  : "bg-rose-500/20 border-rose-400/40 text-rose-300 animate-pulse shadow-rose-500/20"
+              }`}
+              title="Klik untuk Aktifkan / Matikan Timer"
+            >
+              <span>⏱️</span>
+              <span>{isTimerActive ? `${timerSeconds}s` : "OFF"}</span>
+            </button>
+
             <button
               type="button"
               onClick={toggleFullscreen}
@@ -1215,6 +1300,22 @@ export function ProjectorScreen({
             </button>
           </div>
         </div>
+
+        {/* Animated Timer Progress Bar */}
+        {isTimerActive && !allTeamsAnsweredCurrentQ && (
+          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden border border-white/10">
+            <div
+              className={`h-full transition-all duration-1000 ${
+                timerSeconds > 10
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                  : timerSeconds > 5
+                  ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                  : "bg-gradient-to-r from-rose-600 to-red-500 animate-pulse"
+              }`}
+              style={{ width: `${Math.min(100, Math.max(0, (timerSeconds / 20) * 100))}%` }}
+            />
+          </div>
+        )}
 
         {/* PERMANENT TOP BANNER FOR STUDENTS & CONTROLLERS */}
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-sky-950/80 via-slate-900/80 to-indigo-950/80 border border-sky-400/40 px-3 py-2 text-xs">
@@ -1339,6 +1440,165 @@ export function ProjectorScreen({
               </span>
             </div>
 
+            {/* GRAND LIVE ACTION ARENA FOR ALL 4 TEAMS */}
+            <div className="rounded-3xl bg-slate-900/90 border-2 border-indigo-500/40 p-3 sm:p-4 shadow-2xl backdrop-blur relative overflow-hidden">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs font-black">
+                <span className="flex items-center gap-2 text-indigo-300">
+                  <span className="text-lg">🏟️</span>
+                  <span>
+                    ARENA UTAMA:{" "}
+                    {selectedMechanic === "penalty"
+                      ? "STADION ADU PENALTI"
+                      : selectedMechanic === "runner"
+                      ? "LINTASAN LARI 4 JALUR"
+                      : selectedMechanic === "slicer"
+                      ? "DOJO TEBAS BUAH"
+                      : "PAPAN KARTU MATCHING"}
+                  </span>
+                </span>
+                {arenaAnimation ? (
+                  <span
+                    className={`px-3 py-1 rounded-full font-black text-xs animate-pulse ${
+                      arenaAnimation.isCorrect
+                        ? "bg-emerald-500/30 text-emerald-300 border border-emerald-400/50"
+                        : "bg-rose-500/30 text-rose-300 border border-rose-400/50"
+                    }`}
+                  >
+                    {arenaAnimation.isCorrect
+                      ? `⚽ GOOOL! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
+                      : `🧤 DITEPAK KIPER! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`}
+                  </span>
+                ) : (
+                  <span className="text-slate-400">Siap menerima tendangan & jawaban 4 Stik Nirkabel HP Siswa</span>
+                )}
+              </div>
+
+              {/* Penalty Stadium Arena */}
+              {selectedMechanic === "penalty" ? (
+                <div className="relative h-60 sm:h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-sky-950 via-slate-900 to-emerald-900 border-2 border-slate-700 shadow-inner">
+                  <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
+
+                  {/* Goal Net */}
+                  <div className="absolute inset-x-8 top-4 bottom-14 sm:inset-x-16 sm:top-6 sm:bottom-16 rounded-t-xl border-t-6 border-x-6 border-white bg-slate-950/60 shadow-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,#ffffff_1px,transparent_1px),linear-gradient(-45deg,#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-25" />
+                    <div className="absolute inset-x-0 bottom-0 h-6 bg-emerald-800/80 border-t-2 border-white/60" />
+
+                    {/* Animated Goalkeeper */}
+                    <div
+                      className={`absolute bottom-2 transition-all duration-300 z-10 flex flex-col items-center ${
+                        arenaAnimation?.keeperDive === "left"
+                          ? "left-6 -translate-y-4 -rotate-45 scale-110"
+                          : arenaAnimation?.keeperDive === "right"
+                          ? "right-6 -translate-y-4 rotate-45 scale-110"
+                          : "left-1/2 -translate-x-1/2 animate-bounce"
+                      }`}
+                    >
+                      <div className="text-4xl sm:text-5xl drop-shadow-[0_8px_8px_rgba(0,0,0,0.8)] select-none">
+                        {arenaAnimation ? (arenaAnimation.isCorrect ? "🤦‍♂️" : "🧤🤾‍♂️") : "🧤🧍‍♂️"}
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-slate-900/80 px-1.5 py-0.5 rounded text-white border border-white/20">
+                        KIPER
+                      </span>
+                    </div>
+
+                    {/* In-Flight Football */}
+                    {arenaAnimation && (
+                      <div
+                        className={`absolute text-3xl sm:text-4xl drop-shadow-2xl transition-all duration-300 z-20 ${
+                          arenaAnimation.isCorrect
+                            ? arenaAnimation.ballCorner === "top-left"
+                              ? "left-4 top-4 scale-90 rotate-180"
+                              : arenaAnimation.ballCorner === "top-right"
+                              ? "right-4 top-4 scale-90 -rotate-180"
+                              : arenaAnimation.ballCorner === "bottom-left"
+                              ? "left-4 bottom-2 scale-90"
+                              : "right-4 bottom-2 scale-90"
+                            : arenaAnimation.keeperDive === "left"
+                            ? "left-10 bottom-4 scale-75"
+                            : "right-10 bottom-4 scale-75"
+                        }`}
+                      >
+                        ⚽
+                      </div>
+                    )}
+
+                    {/* Outcome Splash Banner */}
+                    {arenaAnimation && (
+                      <div
+                        className={`absolute inset-0 flex flex-col items-center justify-center animate-in zoom-in-75 duration-200 z-30 ${
+                          arenaAnimation.isCorrect ? "bg-emerald-950/80" : "bg-rose-950/80"
+                        }`}
+                      >
+                        <span className="text-4xl sm:text-5xl animate-bounce">
+                          {arenaAnimation.isCorrect ? "⚽🥅🎉" : "🧤💥❌"}
+                        </span>
+                        <h4
+                          className={`text-2xl sm:text-3xl font-black drop-shadow tracking-wider ${
+                            arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"
+                          }`}
+                        >
+                          {arenaAnimation.isCorrect ? "GOOOOOOL!" : "DITEPAK KIPER!"}
+                        </h4>
+                        <p className="text-xs font-bold text-white mt-0.5">
+                          {arenaAnimation.teamName} •{" "}
+                          {arenaAnimation.isCorrect
+                            ? `+${arenaAnimation.scoreAwarded} Poin`
+                            : `${arenaAnimation.scoreAwarded} Poin`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Turf at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-emerald-800 to-emerald-700 flex items-center justify-center border-t-2 border-white/50">
+                    <div className="h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_8px_#fff]" />
+                    <span className="ms-2 text-[9px] font-black uppercase tracking-widest text-white/70">
+                      TITIK PENALTI BERSAMA
+                    </span>
+                  </div>
+                </div>
+              ) : selectedMechanic === "runner" ? (
+                /* 4-Lane Runner Track */
+                <div className="space-y-2 py-2">
+                  {teams.map((t) => {
+                    const progressPercent = Math.min(100, Math.max(5, (t.score / 500) * 100));
+                    return (
+                      <div
+                        key={t.id}
+                        className="relative h-11 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center px-3"
+                      >
+                        <div className="absolute inset-x-0 top-1/2 h-0.5 border-b border-dashed border-white/10" />
+                        <span className="text-xs font-black w-24 text-slate-300 z-10 truncate">
+                          {t.name.split(" ")[0]}
+                        </span>
+                        <div className="flex-1 relative h-full flex items-center">
+                          <div
+                            className="absolute transition-all duration-500 flex items-center gap-1 z-10"
+                            style={{ left: `${progressPercent}%`, transform: "translateX(-50%)" }}
+                          >
+                            <span className="text-2xl animate-bounce">🏃</span>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${t.badgeBg} text-white shadow`}>
+                              {t.score} pts
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-sm z-10">🏁</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Slicer / Matching Banner */
+                <div className="rounded-2xl bg-gradient-to-r from-violet-950/60 to-slate-900 p-4 text-center border border-white/10">
+                  <div className="text-3xl mb-1">🎮⚡</div>
+                  <h4 className="font-black text-sm text-white">4 Tim Bersaing Secara Realtime</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Pencet tombol di layar kuadran atau tekan tombol stik nirkabel di HP masing-masing!
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* 4 Quadrants Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {teams.map((t, tIdx) => {
@@ -1434,11 +1694,17 @@ export function ProjectorScreen({
                         /* Mini Slicer in Quadrant */
                         <div className="space-y-2">
                           <div className="text-[11px] font-bold text-center text-amber-300">
-                            🍉 Tebas Buah Kata yang Benar (Awas Bom 💣!):
+                            🍉 Tebas Buah Kata yang Benar (Awas Ledakan Bom!):
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {teamQ?.options.map((opt) => {
-                              const isCorrect = opt.option_key === teamQ.correct_option_key;
+                              const fruitIcons: Record<string, string> = {
+                                A: "🍉",
+                                B: "🍊",
+                                C: "🍎",
+                                D: "🥝",
+                              };
+                              const icon = fruitIcons[opt.option_key] || "🍉";
                               return (
                                 <button
                                   key={opt.id}
@@ -1447,7 +1713,7 @@ export function ProjectorScreen({
                                   className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-amber-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
                                 >
                                   <span className="text-xl group-hover:scale-125 transition">
-                                    {isCorrect ? "🍉" : "💣"}
+                                    {icon}
                                   </span>
                                   <div className="truncate flex-1">
                                     <span className="text-[10px] font-mono text-amber-300 block">

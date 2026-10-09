@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { PracticeQuestion, PracticeTopicData } from "./practice-data";
@@ -13,7 +12,6 @@ interface PracticePlayerProps {
 }
 
 export function PracticePlayer({ topic, isRtl = false }: PracticePlayerProps) {
-  const router = useRouter();
 
   // Practice state
   const [questionsQueue, setQuestionsQueue] = useState<PracticeQuestion[]>(

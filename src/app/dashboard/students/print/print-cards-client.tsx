@@ -44,7 +44,7 @@ export function PrintCardsClient({
           </Link>
           <div>
             <h1 className="text-base font-black text-teal-900">
-              Cetak Kartu Login Siswa — {classNameTitle}
+              Cetak Kartu Login Siswa — {classNameTitle} {subjectTitle ? `(${subjectTitle})` : ""}
             </h1>
             <p className="text-xs text-softslate">
               Total {students.length} santri/murid siap cetak. Gunakan kertas A4 untuk hasil terbaik.
@@ -72,7 +72,7 @@ export function PrintCardsClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 print:grid-cols-2 print:gap-3 print:m-0">
-            {students.map((student, idx) => (
+            {students.map((student) => (
               <div
                 key={student.id}
                 className="relative flex flex-col justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 shadow-sm print:shadow-none print:border-slate-400 print:break-inside-avoid"

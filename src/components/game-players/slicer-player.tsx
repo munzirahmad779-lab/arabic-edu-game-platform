@@ -380,47 +380,30 @@ export function SlicerPlayer({
             ctx.arc(0, 8, f.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Fruit vs Bomb Body
-            if (f.isCorrect) {
-              // Juicy Watermelon Disc
-              const bodyGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
-              bodyGrad.addColorStop(0, "#ec4899");
-              bodyGrad.addColorStop(0.7, "#be185d");
-              bodyGrad.addColorStop(0.9, "#10b981");
-              bodyGrad.addColorStop(1, "#047857");
+            // All options appear as vibrant, appetizing fruits! (No spoilers before slice)
+            const fruitThemes: Record<string, { inner: string; mid: string; rind: string; stroke: string }> = {
+              A: { inner: "#f43f5e", mid: "#be123c", rind: "#10b981", stroke: "#34d399" }, // Semangka Segar
+              B: { inner: "#fb923c", mid: "#ea580c", rind: "#fed7aa", stroke: "#f97316" }, // Jeruk Manis
+              C: { inner: "#ef4444", mid: "#b91c1c", rind: "#fef08a", stroke: "#dc2626" }, // Apel Merah
+              D: { inner: "#84cc16", mid: "#4d7c0f", rind: "#ca8a04", stroke: "#65a30d" }, // Melon / Kiwi
+            };
+            const theme = fruitThemes[f.option.option_key] || fruitThemes.A;
 
-              ctx.fillStyle = bodyGrad;
-              ctx.beginPath();
-              ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
-              ctx.fill();
+            const bodyGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
+            bodyGrad.addColorStop(0, theme.inner);
+            bodyGrad.addColorStop(0.7, theme.mid);
+            bodyGrad.addColorStop(0.9, theme.rind);
+            bodyGrad.addColorStop(1, theme.stroke);
 
-              // Green Rind Outer Ring
-              ctx.lineWidth = 4;
-              ctx.strokeStyle = "#34d399";
-              ctx.stroke();
-            } else {
-              // Iron Bomb Body with Hazard Look
-              const bombGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, f.radius);
-              bombGrad.addColorStop(0, "#475569");
-              bombGrad.addColorStop(0.6, "#1e293b");
-              bombGrad.addColorStop(1, "#020617");
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+            ctx.fill();
 
-              ctx.fillStyle = bombGrad;
-              ctx.beginPath();
-              ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
-              ctx.fill();
-
-              // Bomb Red Hazard Ring & Burning Fuse Spark
-              ctx.lineWidth = 3;
-              ctx.strokeStyle = "#f87171";
-              ctx.stroke();
-
-              // Draw Fuse & Spark on top of bomb
-              ctx.fillStyle = "#fbbf24";
-              ctx.beginPath();
-              ctx.arc(0, -f.radius - 4, 4, 0, Math.PI * 2);
-              ctx.fill();
-            }
+            // Outer crust / rind ring
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = theme.stroke;
+            ctx.stroke();
 
             // Option Key Badge
             ctx.fillStyle = "#ffffff";

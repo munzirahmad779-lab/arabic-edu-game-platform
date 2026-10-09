@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getLocale } from "@/lib/i18n/server";
-import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 type Topic = {
@@ -70,7 +69,6 @@ const PRACTICE_TOPICS: Topic[] = [
 
 export default async function PracticeCatalogPage() {
   const locale = await getLocale();
-  const dict = await getDictionary(locale);
   const isRtl = locale === "ar";
 
   return (
