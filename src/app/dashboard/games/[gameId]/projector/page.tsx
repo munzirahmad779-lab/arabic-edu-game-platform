@@ -11,8 +11,10 @@ export const metadata = {
 
 export default async function ProjectorPage({
   params,
+  searchParams,
 }: {
   params: { gameId: string };
+  searchParams?: { roomId?: string };
 }) {
   const supabase = await createClient();
   const {
@@ -35,6 +37,44 @@ export default async function ProjectorPage({
     redirect("/dashboard/games");
   }
 
+  // 1b. Fetch active room (if any) to synchronize room code and live online joined participants
+  let activeRoomCode: string | null = null;
+  const targetRoomId = searchParams?.roomId?.trim();
+
+  let roomQuery = supabase
+    .from("rooms")
+    .select("id, code")
+    .eq("game_id", params.gameId)
+    .eq("teacher_id", user.id);
+
+  if (targetRoomId) {
+    roomQuery = roomQuery.eq("id", targetRoomId);
+  } else {
+    roomQuery = roomQuery.order("created_at", { ascending: false }).limit(1);
+  }
+
+  const { data: roomData } = await roomQuery.maybeSingle();
+  let onlineStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [];
+
+  if (roomData) {
+    activeRoomCode = roomData.code;
+    const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
+    const { data: pData } = await supabase
+      .from("room_participants")
+      .select("id, student_id, guest_name")
+      .eq("room_id", roomData.id)
+      .gte("last_seen_at", cutoff);
+
+    if (pData && pData.length > 0) {
+      onlineStudents = pData.map((p, idx) => ({
+        id: p.id,
+        name: p.guest_name || `Murid Online #${idx + 1}`,
+        class_id: "room-online",
+        class_name: `Peserta Room (${roomData.code})`,
+      }));
+    }
+  }
+
   // 2. Fetch all classes and students for this teacher
   const { data: classesData } = await supabase
     .from("classes")
@@ -42,10 +82,20 @@ export default async function ProjectorPage({
     .eq("teacher_id", user.id)
     .order("name", { ascending: true });
 
-  const teacherClasses = classesData ?? [];
-  const classIds = teacherClasses.map((c) => c.id);
+  const teacherClasses = [...(classesData ?? [])];
+  if (onlineStudents.length > 0) {
+    teacherClasses.unshift({
+      id: "room-online",
+      name: `📡 Peserta Online Room (${activeRoomCode})`,
+      subject: "Online Join",
+    });
+  }
 
-  let allStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [];
+  const classIds = (classesData ?? []).map((c) => c.id);
+
+  let allStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [
+    ...onlineStudents,
+  ];
   if (classIds.length > 0) {
     const { data: studentsData } = await supabase
       .from("students")
@@ -54,13 +104,14 @@ export default async function ProjectorPage({
       .order("name", { ascending: true });
 
     if (studentsData) {
-      const classNameMap = new Map(teacherClasses.map((c) => [c.id, c.name]));
-      allStudents = studentsData.map((s) => ({
+      const classNameMap = new Map((classesData ?? []).map((c) => [c.id, c.name]));
+      const registeredStudents = studentsData.map((s) => ({
         id: s.id,
         name: s.name,
         class_id: s.class_id,
         class_name: classNameMap.get(s.class_id) ?? "Kelas",
       }));
+      allStudents = [...allStudents, ...registeredStudents];
     }
   }
 
@@ -141,6 +192,7 @@ export default async function ProjectorPage({
       allStudents={allStudents}
       teacherClasses={teacherClasses}
       defaultClassId={game.class_id || teacherClasses[0]?.id || ""}
+      initialRoomCode={activeRoomCode}
     />
   );
 }

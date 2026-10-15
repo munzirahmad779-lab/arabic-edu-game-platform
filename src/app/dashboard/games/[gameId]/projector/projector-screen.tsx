@@ -115,6 +115,7 @@ export function ProjectorScreen({
   teacherClasses = [],
   defaultClassId = "",
   isRtl = false,
+  initialRoomCode,
 }: {
   gameId?: string;
   gameName: string;
@@ -125,6 +126,7 @@ export function ProjectorScreen({
   teacherClasses?: TeacherClass[];
   defaultClassId?: string;
   isRtl?: boolean;
+  initialRoomCode?: string | null;
 }) {
   // Core Game State
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -163,9 +165,11 @@ export function ProjectorScreen({
   const [timerSeconds, setTimerSeconds] = useState(QUESTION_DURATION);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
 
-  // Classroom Modals
+  // Classroom Modals & Student Management
   const [selectedClassId, setSelectedClassId] = useState(defaultClassId || teacherClasses[0]?.id || "");
+  const [manualStudents, setManualStudents] = useState<StudentMember[]>([]);
   const [showClassModal, setShowClassModal] = useState(false);
+  const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [newStudentName, setNewStudentName] = useState("");
   const [targetTeamId, setTargetTeamId] = useState("team-1");
 
@@ -175,9 +179,10 @@ export function ProjectorScreen({
 
   // Phone Controller State
   const roomCode = useMemo(() => {
+    if (initialRoomCode) return initialRoomCode.toUpperCase();
     if (!gameId || gameId.startsWith("test-")) return "HOTSEAT";
     return gameId.slice(0, 6).toUpperCase();
-  }, [gameId]);
+  }, [gameId, initialRoomCode]);
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
@@ -194,26 +199,60 @@ export function ProjectorScreen({
     return allStudents.filter((s) => s.class_id === selectedClassId);
   }, [allStudents, selectedClassId]);
 
-  // Auto-distribute students across 4 teams
-  const distributeStudents = useCallback(() => {
-    const pool = [...classStudents].sort(() => Math.random() - 0.5);
-    setTeams((prev) => {
-      const next = prev.map((t) => ({ ...t, members: [] as StudentMember[], currentMemberIndex: 0 }));
-      pool.forEach((s, i) => {
-        const team = next[i % next.length];
-        if (team) team.members.push(s);
+  // Combined class students + manually added students
+  const combinedStudents = useMemo(() => {
+    return [...classStudents, ...manualStudents];
+  }, [classStudents, manualStudents]);
+
+  // Team capacity per team (1 sampai 8 siswa per tim)
+  const [teamCapacity, setTeamCapacity] = useState<number>(() => {
+    const available = allStudents.length;
+    if (available <= 0) return 4;
+    const maxCap = Math.floor(available / 4);
+    if (maxCap < 1) return 1;
+    return Math.min(4, Math.max(1, maxCap));
+  });
+
+  const totalAvailable = combinedStudents.length;
+  const requiredStudents = teamCapacity * 4;
+  const maxPossiblePerTeam = Math.floor(totalAvailable / 4);
+  const isInsufficient = totalAvailable < requiredStudents;
+
+  // Distribute students across 4 teams based on teamCapacity
+  const distributeStudents = useCallback(
+    (cap = teamCapacity) => {
+      const pool = [...combinedStudents].sort(() => Math.random() - 0.5);
+      setTeams((prev) => {
+        return prev.map((t, teamIdx) => {
+          const start = teamIdx * cap;
+          const end = start + cap;
+          const assignedMembers = pool.slice(start, end);
+          return {
+            ...t,
+            members: assignedMembers,
+            currentMemberIndex: 0,
+          };
+        });
       });
-      return next;
-    });
-    playSfx("correct");
-  }, [classStudents]);
+      playSfx("correct");
+    },
+    [combinedStudents, teamCapacity],
+  );
+
+  const handleSelectCapacity = useCallback(
+    (cap: number) => {
+      setTeamCapacity(cap);
+      distributeStudents(cap);
+    },
+    [distributeStudents],
+  );
 
   useEffect(() => {
-    if (classStudents.length > 0 && teams.every((t) => t.members.length === 0)) {
-      distributeStudents();
+    if (combinedStudents.length > 0) {
+      distributeStudents(teamCapacity);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classStudents]);
+  }, [selectedClassId, combinedStudents.length]);
 
   // Fullscreen listener
   useEffect(() => {
@@ -702,68 +741,220 @@ export function ProjectorScreen({
             </p>
           </div>
 
-          {/* 4 Teams Podiums */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {teams.map((t) => (
-              <div
-                key={t.id}
-                className={`p-4 rounded-2xl border ${t.cardBg} ${t.accentBorder} shadow-lg flex flex-col justify-between min-h-[140px]`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${t.badgeBg}`} />
-                    <span className="font-black text-sm text-white">{t.name}</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-slate-400">
-                    {t.members.length} Siswa
+          {/* Pilihan Jumlah Siswa per Tim (1 sampai 8) */}
+          <div className="p-5 rounded-3xl bg-slate-900/90 border border-white/10 shadow-xl backdrop-blur space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">👥</span>
+                  <h3 className="text-sm font-black text-white">
+                    Pilih Jumlah Siswa per Tim (4 Tim Arena):
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-400/30">
+                    Pilihan: 1 - 8 Siswa / Tim
                   </span>
                 </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Tentukan berapa murid yang mengisi masing-masing dari 4 tim (Merah, Biru, Kuning, Hijau).
+                </p>
+              </div>
 
-                <div className="my-2 max-h-24 overflow-y-auto text-xs space-y-1 text-slate-300 pr-1">
-                  {t.members.length > 0 ? (
-                    t.members.slice(0, 5).map((m) => (
-                      <div key={m.id} className="truncate bg-black/30 px-2 py-0.5 rounded">
-                        • {m.name}
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-slate-500 italic text-[11px]">Belum ada anggota</span>
-                  )}
-                  {t.members.length > 5 && (
-                    <span className="text-[10px] text-slate-400 italic block">
-                      +{t.members.length - 5} lainnya
+              <div className="text-xs text-slate-300 bg-black/50 px-3 py-1.5 rounded-xl border border-white/10 self-start sm:self-auto flex items-center gap-2">
+                <span>Total Siswa Tersedia:</span>
+                <strong className="text-emerald-400 font-mono text-sm">{totalAvailable}</strong>
+                <span>Orang</span>
+              </div>
+            </div>
+
+            {/* 8 Options for 1 to 8 students per team */}
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-1">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((cap) => {
+                const isSelected = teamCapacity === cap;
+                const needed = cap * 4;
+                const isEnough = totalAvailable >= needed;
+                return (
+                  <button
+                    key={cap}
+                    type="button"
+                    onClick={() => handleSelectCapacity(cap)}
+                    className={`py-2 px-1 rounded-2xl text-center transition-all flex flex-col items-center justify-center gap-0.5 border-2 ${
+                      isSelected
+                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/20 scale-105 font-black"
+                        : isEnough
+                          ? "bg-slate-800/90 hover:bg-slate-700 text-white border-white/10 hover:border-white/20"
+                          : "bg-amber-950/40 hover:bg-amber-900/50 text-amber-200 border-amber-500/40"
+                    }`}
+                  >
+                    <span className="text-xs font-black">{cap} Siswa</span>
+                    <span
+                      className={`text-[10px] font-mono leading-none ${
+                        isSelected ? "text-slate-950 font-bold" : isEnough ? "text-slate-400" : "text-amber-400 font-bold"
+                      }`}
+                    >
+                      {needed} Murid
                     </span>
-                  )}
+                    {!isEnough && !isSelected && (
+                      <span className="text-[9px] text-amber-400 leading-none font-bold">⚠️ Kurang</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Warning Banner if Insufficient / Success Info if Enough */}
+          {isInsufficient ? (
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-950/90 via-amber-900/80 to-yellow-950/90 border-2 border-amber-400 shadow-2xl backdrop-blur text-left">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl shrink-0 animate-bounce">⚠️</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-black text-amber-300">
+                        Jumlah Murid Belum Cukup untuk Pembagian Tim!
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold border border-amber-400/40">
+                        Peringatan
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-100/90 leading-relaxed mt-1">
+                      Anda memilih <strong>{teamCapacity} siswa per tim</strong> (membutuhkan total <strong>{requiredStudents} murid</strong> untuk 4 tim),
+                      sedangkan murid di kelas ini hanya ada <strong>{totalAvailable} orang</strong>
+                      {maxPossiblePerTeam >= 1 ? (
+                        <span> (hanya cukup dibagi <strong>{maxPossiblePerTeam} murid per tim</strong>).</span>
+                      ) : (
+                        <span> (belum cukup untuk 1 murid per tim, butuh minimal 4 murid).</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTargetTeamId(t.id);
-                    setShowClassModal(true);
-                  }}
-                  className="w-full py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white transition text-center"
-                >
-                  + Tambah Siswa
-                </button>
+                <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+                  {maxPossiblePerTeam >= 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCapacity(Math.min(8, Math.max(1, maxPossiblePerTeam)))}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-1.5"
+                    >
+                      <span>⚡</span>
+                      <span>Sesuaikan Otomatis ke {maxPossiblePerTeam} Murid/Tim</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowClassModal(true)}
+                    className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/20 flex items-center gap-1.5"
+                  >
+                    <span>+</span>
+                    <span>Tambah Murid Manual</span>
+                  </button>
+                </div>
               </div>
-            ))}
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs flex flex-wrap items-center justify-between gap-2 shadow-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-base">✅</span>
+                <span>
+                  <strong>Pembagian Tim Ideal:</strong> 4 Tim masing-masing diisi <strong>{teamCapacity} siswa</strong> (Total {requiredStudents} siswa bertanding).
+                  {totalAvailable > requiredStudents && (
+                    <span className="text-emerald-300/80"> ({totalAvailable - requiredStudents} siswa lainnya sebagai pemain cadangan/bergantian).</span>
+                  )}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => distributeStudents(teamCapacity)}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 text-[11px] font-bold border border-emerald-400/30 transition flex items-center gap-1"
+              >
+                <span>🎲</span>
+                <span>Acak Ulang Posisi</span>
+              </button>
+            </div>
+          )}
+
+          {/* 4 Teams Podiums */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {teams.map((t) => {
+              const isShort = t.members.length < teamCapacity;
+              return (
+                <div
+                  key={t.id}
+                  className={`p-4 rounded-2xl border ${t.cardBg} ${t.accentBorder} shadow-lg flex flex-col justify-between min-h-[160px]`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-3 h-3 rounded-full ${t.badgeBg}`} />
+                        <span className="font-black text-sm text-white">{t.name}</span>
+                      </div>
+                      <span
+                        className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
+                          isShort
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                            : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        }`}
+                      >
+                        {t.members.length} / {teamCapacity} Siswa
+                      </span>
+                    </div>
+
+                    {isShort && (
+                      <div className="mt-1 text-[10px] text-amber-300 font-semibold">
+                        Kurang {teamCapacity - t.members.length} murid
+                      </div>
+                    )}
+
+                    <div className="my-2 max-h-28 overflow-y-auto text-xs space-y-1 text-slate-300 pr-1">
+                      {t.members.length > 0 ? (
+                        t.members.map((m, mIdx) => (
+                          <div key={m.id || mIdx} className="truncate bg-black/30 px-2 py-1 rounded flex items-center justify-between">
+                            <span className="truncate">• {m.name}</span>
+                            <span className="text-[10px] text-slate-400 shrink-0">#{mIdx + 1}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-slate-500 italic text-[11px] block py-2">
+                          Belum ada murid di tim ini
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetTeamId(t.id);
+                      setShowClassModal(true);
+                    }}
+                    className="w-full mt-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white transition text-center"
+                  >
+                    + Tambah Siswa
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
               type="button"
-              onClick={distributeStudents}
+              onClick={() => distributeStudents(teamCapacity)}
               className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-sm transition flex items-center gap-2"
             >
               <span>🎲</span>
-              <span>Acak Siswa Kelas ({classStudents.length})</span>
+              <span>Acak Siswa Kelas ({totalAvailable})</span>
             </button>
 
             <button
               type="button"
               onClick={() => {
+                if (isInsufficient) {
+                  playSfx("wrong");
+                  setShowInsufficientModal(true);
+                  return;
+                }
                 setGameStarted(true);
                 playSfx("boost");
               }}
@@ -774,6 +965,86 @@ export function ProjectorScreen({
             </button>
           </div>
         </div>
+
+        {/* Modal: Peringatan Pembagian Tim Kurang */}
+        {showInsufficientModal && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-5 shadow-2xl text-left">
+              <div className="flex items-start gap-4">
+                <span className="text-4xl p-3 bg-amber-500/20 border border-amber-400/40 rounded-2xl shrink-0">
+                  ⚠️
+                </span>
+                <div>
+                  <h3 className="text-xl font-black text-white">
+                    Peringatan Pembagian Tim
+                  </h3>
+                  <p className="text-xs text-amber-300 font-bold uppercase tracking-wider mt-0.5">
+                    Jumlah Murid Tidak Mencukupi
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-slate-300 space-y-2 leading-relaxed">
+                <p>
+                  Anda memilih <strong>{teamCapacity} siswa per tim</strong>, yang membutuhkan total{" "}
+                  <strong className="text-amber-300">{requiredStudents} murid</strong> untuk mengisi 4 tim arena secara seimbang.
+                </p>
+                <p>
+                  Sedangkan murid yang tersedia saat ini baru{" "}
+                  <strong className="text-amber-300">{totalAvailable} murid</strong>
+                  {maxPossiblePerTeam >= 1 ? (
+                    <span> (hanya cukup dibagi rata <strong>{maxPossiblePerTeam} murid per tim</strong>).</span>
+                  ) : (
+                    <span> (belum cukup untuk 1 murid per tim).</span>
+                  )}
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  Jika dimulai sekarang, beberapa tim tidak akan memiliki jumlah anggota yang seimbang dalam menjawab soal.
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                {maxPossiblePerTeam >= 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newCap = Math.min(8, Math.max(1, maxPossiblePerTeam));
+                      setTeamCapacity(newCap);
+                      distributeStudents(newCap);
+                      setShowInsufficientModal(false);
+                      setGameStarted(true);
+                      playSfx("boost");
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-sm shadow-lg transition flex items-center justify-center gap-2"
+                  >
+                    <span>⚡</span>
+                    <span>Sesuaikan ke {maxPossiblePerTeam} Siswa & Langsung Mulai</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInsufficientModal(false);
+                    setGameStarted(true);
+                    playSfx("boost");
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/10"
+                >
+                  ▶️ Tetap Mulai Dengan Anggota Seadanya
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowInsufficientModal(false)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  Kembali & Atur Ulang Pilihan Tim
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal: Kelola Siswa */}
         {showClassModal && (
@@ -817,19 +1088,18 @@ export function ProjectorScreen({
                   type="button"
                   onClick={() => {
                     if (!newStudentName.trim()) return;
+                    const manualStudent: StudentMember = {
+                      id: `manual-${Date.now()}`,
+                      name: newStudentName.trim(),
+                      class_id: selectedClassId,
+                    };
+                    setManualStudents((prev) => [...prev, manualStudent]);
                     setTeams((prev) =>
                       prev.map((t) =>
                         t.id === targetTeamId
                           ? {
                               ...t,
-                              members: [
-                                ...t.members,
-                                {
-                                  id: `manual-${Date.now()}`,
-                                  name: newStudentName.trim(),
-                                  class_id: selectedClassId,
-                                },
-                              ],
+                              members: [...t.members, manualStudent],
                             }
                           : t,
                       ),

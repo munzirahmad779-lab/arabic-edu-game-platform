@@ -179,7 +179,7 @@ export default async function RoomPage({
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href={`/dashboard/games/${params.gameId}/projector`}
+                href={`/dashboard/games/${params.gameId}/projector?roomId=${room.id}`}
                 target="_blank"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg transition"
               >
