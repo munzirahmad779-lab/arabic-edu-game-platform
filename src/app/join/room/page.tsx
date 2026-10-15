@@ -175,12 +175,12 @@ export default function JoinRoomPage({
     roomStateRef.current = session?.room_state;
   }, [session?.room_state]);
 
-  const loadSession = useCallback(async () => {
+  const loadSession = useCallback(async (force = false) => {
     if (!token) {
       setLoadError(t.room_err_invalid_token);
       return;
     }
-    if (Date.now() < transitioningUntilRef.current) {
+    if (!force && Date.now() < transitioningUntilRef.current) {
       return;
     }
     try {
@@ -217,6 +217,14 @@ export default function JoinRoomPage({
   const loadLeaderboard = useCallback(async () => {
     if (!token) return;
     try {
+      const res = await fetch(`/api/rooms/leaderboard?token=${encodeURIComponent(token)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLeaderboard(data);
+          return;
+        }
+      }
       const supabase = createClient();
       const { data, error: rpcError } = await supabase.rpc(
         "get_room_leaderboard_student",
@@ -331,6 +339,27 @@ export default function JoinRoomPage({
     return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
   }, [adjustedNow, session, isCooperative]);
 
+  // Auto-handle timeout so student is NEVER stuck on any question
+  const timeoutHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      session &&
+      session.room_state === "running" &&
+      session.question &&
+      answerSecondsLeft === 0 &&
+      !session.answer_submitted &&
+      !submitting &&
+      timeoutHandledRef.current !== session.question.id
+    ) {
+      timeoutHandledRef.current = session.question.id;
+      void submitAnswer({
+        questionId: session.question.id,
+        selectedOptionId: null,
+        answerText: null,
+      });
+    }
+  }, [answerSecondsLeft, session, submitting]);
+
   /**
    * Submit jawaban ke server.
    * Mendukung 2 tipe:
@@ -345,11 +374,10 @@ export default function JoinRoomPage({
     if (
       !session ||
       submitting ||
-      session.answer_submitted ||
       session.room_state !== "running" ||
       (countdown !== null && countdown !== 0) ||
       (totalSecondsLeft !== null && totalSecondsLeft === 0) ||
-      (!isCooperative && answerSecondsLeft === 0)
+      (!isCooperative && answerSecondsLeft === 0 && payload.selectedOptionId !== null)
     ) {
       return { accepted: false, isCorrect: false };
     }
@@ -390,12 +418,13 @@ export default function JoinRoomPage({
       // Delay briefly (~1.2s) so student sees instant feedback overlay before transitioning
       transitioningUntilRef.current = Date.now() + 1200;
       setTimeout(() => {
-        void loadSession();
+        transitioningUntilRef.current = 0;
+        void loadSession(true);
         void loadLeaderboard();
       }, 1200);
 
       return {
-        accepted: row?.accepted ?? false,
+        accepted: row?.accepted ?? true,
         isCorrect: row?.is_correct ?? false,
         scoreAwarded: row?.score_awarded ?? 0,
       };

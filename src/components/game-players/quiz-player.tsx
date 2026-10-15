@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { pauseBackgroundAudio, resumeBackgroundAudio } from "@/lib/bg-audio-events";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { GamePlayerProps, RawOption, RawQuestion } from "@/lib/game-engine/types";
@@ -14,6 +14,12 @@ export function QuizPlayer({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+
+  useEffect(() => {
+    setSelectedId(null);
+    setSubmitting(false);
+    setHasAnswered(false);
+  }, [question.id]);
 
   async function handleOptionClick(option: RawOption) {
     if (submitting || hasAnswered) return;
@@ -110,7 +116,7 @@ export function QuizPlayer({
       )}
 
       {/* Question Text */}
-      <h2 className="text-center text-3xl font-black leading-relaxed sm:text-4xl text-slate-900">
+      <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-black leading-relaxed text-slate-900 break-words" dir="auto">
         {question.question_text}
       </h2>
 
@@ -124,16 +130,18 @@ export function QuizPlayer({
               type="button"
               disabled={submitting || hasAnswered}
               onClick={() => void handleOptionClick(option)}
-              className={`rounded-2xl border-2 p-5 text-start text-lg font-black shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed ${
+              className={`rounded-2xl border-2 p-4 sm:p-5 text-start text-base sm:text-lg font-black shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed flex items-center gap-3 ${
                 isSelected
                   ? "border-violet-600 bg-violet-100 text-violet-950"
                   : "border-slate-200 bg-slate-50 hover:border-violet-400 hover:bg-violet-50 text-slate-900"
               }`}
             >
-              <span className="me-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-700 text-white shadow">
+              <span className="shrink-0 inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-violet-700 text-white shadow text-sm sm:text-base font-black">
                 {option.option_key}
               </span>
-              <span>{option.option_text}</span>
+              <span className="flex-1 break-words leading-snug" dir="auto">
+                {option.option_text}
+              </span>
             </button>
           );
         })}

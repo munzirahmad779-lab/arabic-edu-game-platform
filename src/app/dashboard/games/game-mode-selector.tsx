@@ -59,13 +59,13 @@ export const NATIVE_GAME_ENGINES = [
     border: "border-amber-400",
   },
   {
-    id: "wheel",
-    name: "Roda Putar Keberuntungan",
-    icon: "🎡",
-    badge: "Fisika Roda Karnaval",
-    desc: "Roda putar fisika canvas dengan gaya gesek & inersia. Putar roda dengan klik untuk mendaratkan jarum pada pilihan jawaban soal tantangan.",
-    color: "from-emerald-600 to-teal-700",
-    border: "border-emerald-400",
+    id: "space",
+    name: "Penjaga Antariksa (Space Defender)",
+    icon: "🚀",
+    badge: "Arkade Laser 60 FPS",
+    desc: "Kendalikan pesawat tempur luar angkasa untuk membidik dan menembak asteroid pembawa jawaban yang tepat. Efek laser foton, ledakan kosmik & kontrol W-S/panah.",
+    color: "from-cyan-600 to-indigo-800",
+    border: "border-cyan-400",
   },
   {
     id: "memory",
@@ -127,13 +127,13 @@ export function GameModeSelector({ tracks, gm }: Props) {
                       : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">{eng.icon}</span>
-                    <span className="font-black text-xs truncate">{eng.name}</span>
+                  <div className="flex items-start gap-2 mb-1.5">
+                    <span className="text-2xl shrink-0 leading-none">{eng.icon}</span>
+                    <span className="font-black text-xs leading-snug">{eng.name}</span>
                   </div>
                   <span
-                    className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mb-1.5 ${
-                      isPicked ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                    className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black mb-1.5 tracking-tight ${
+                      isPicked ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
                     }`}
                   >
                     {eng.badge}

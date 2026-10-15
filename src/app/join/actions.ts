@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ActiveRoomStore } from "@/lib/game-engine/room-store";
 
 export async function joinRoom(formData: FormData) {
   const supabase = await createClient();
@@ -49,5 +50,16 @@ export async function joinRoom(formData: FormData) {
       `/join?error=${encodeURIComponent(codeKey)}&debug=${encodeURIComponent(msg.slice(0, 120))}`,
     );
   }
-  redirect(`/join/room?token=${encodeURIComponent(data[0].join_token)}`);
+
+  const row = data?.[0];
+  if (row) {
+    ActiveRoomStore.registerParticipant({
+      roomId: row.room_id,
+      joinToken: row.join_token,
+      participantId: row.participant_id,
+      name: row.participant_name || name,
+    });
+    redirect(`/join/room?token=${encodeURIComponent(row.join_token)}`);
+  }
+  redirect(`/join?error=generic`);
 }

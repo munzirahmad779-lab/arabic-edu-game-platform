@@ -219,8 +219,8 @@ export default function RoomLobby({
                       </div>
                     </div>
                     {stats ? (
-                      <div className="text-right">
-                        <div className="flex items-center gap-1.5">
+                      <div className="text-right shrink-0">
+                        <div className="flex items-center justify-end gap-1.5">
                           <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-black text-amber-800">
                             #{stats.rnk}
                           </span>

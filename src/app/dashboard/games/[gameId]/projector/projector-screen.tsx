@@ -9,7 +9,7 @@ import { CURATED_WEB_GAMES } from "@/lib/game-engine/curated-web-games";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 import { AirplanePlayer } from "@/components/game-players/airplane-player";
 import { WhackPlayer } from "@/components/game-players/whack-player";
-import { WheelPlayer } from "@/components/game-players/wheel-player";
+import { SpaceDefenderPlayer } from "@/components/game-players/space-defender-player";
 import { MemoryPlayer } from "@/components/game-players/memory-player";
 import { BalloonPlayer } from "@/components/game-players/balloon-player";
 
@@ -132,11 +132,11 @@ export function ProjectorScreen({
   const [gameStarted, setGameStarted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeEngine, setActiveEngine] = useState<
-    "kahoot" | "airplane" | "whack" | "wheel" | "memory" | "balloon"
+    "kahoot" | "airplane" | "whack" | "space" | "memory" | "balloon"
   >(() => {
     if (initialGameTheme === "airplane") return "airplane";
     if (initialGameTheme === "whack") return "whack";
-    if (initialGameTheme === "wheel") return "wheel";
+    if (initialGameTheme === "space" || initialGameTheme === "wheel") return "space";
     if (initialGameTheme === "memory") return "memory";
     if (initialGameTheme === "balloon") return "balloon";
     return "kahoot";
@@ -518,15 +518,15 @@ export function ProjectorScreen({
     );
   }
 
-  if (activeEngine === "wheel") {
+  if (activeEngine === "space") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🎡</span>
+            <span className="text-2xl">🚀</span>
             <div>
-              <h2 className="text-base font-black text-white">Roda Putar Fisika Karnaval (Wheel of Fortune)</h2>
-              <p className="text-xs text-yellow-400">{gameName}</p>
+              <h2 className="text-base font-black text-white">Penjaga Antariksa (Space Defender 60 FPS)</h2>
+              <p className="text-xs text-cyan-400">{gameName}</p>
             </div>
           </div>
           <button
@@ -537,7 +537,7 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <WheelPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        <SpaceDefenderPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
       </main>
     );
   }
@@ -632,11 +632,11 @@ export function ProjectorScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveEngine("wheel")}
-                className="px-2 py-1 rounded-xl bg-yellow-600/30 hover:bg-yellow-600/60 text-yellow-200 border border-yellow-400/40 text-xs font-bold transition flex items-center gap-1"
+                onClick={() => setActiveEngine("space")}
+                className="px-2 py-1 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/60 text-cyan-200 border border-cyan-400/40 text-xs font-bold transition flex items-center gap-1"
               >
-                <span>🎡</span>
-                <span>Roda</span>
+                <span>🚀</span>
+                <span>Antariksa</span>
               </button>
               <button
                 type="button"

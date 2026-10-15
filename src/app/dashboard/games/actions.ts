@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GameRegistry } from "@/lib/game-engine/registry";
+import { ActiveRoomStore } from "@/lib/game-engine/room-store";
 import type { ExplanationTiming } from "@/types/database";
 
 const MAX_GAME_NAME_LENGTH = 120;
@@ -638,6 +639,18 @@ export async function createRoom(formData: FormData) {
     );
   }
 
+  ActiveRoomStore.registerRoom({
+    id: room.id,
+    code,
+    game_name: game.name,
+    game_type: game.game_type,
+    game_mode: game.mode,
+    duration_seconds: game.duration_seconds,
+    capacity: 30,
+    state: "waiting",
+    questions: snapshotQuestions,
+  });
+
   revalidatePath("/dashboard/games");
   revalidatePath(`/dashboard/games/${game.id}/room`);
   redirect(`/dashboard/games/${game.id}/room?roomId=${room.id}`);
@@ -734,6 +747,16 @@ export async function startRoom(formData: FormData) {
       `/dashboard/games?error=room_start_failed&msg=${encodeURIComponent(error?.message ?? "no_room")}`,
     );
   }
+
+  ActiveRoomStore.registerRoom({
+    id: room.id,
+    code: "",
+    game_name: "",
+    state: "running",
+    started_at: now.toISOString(),
+    question_started_at: new Date(now.getTime() + 3000).toISOString(),
+    current_question_index: 0,
+  });
 
   revalidatePath(`/dashboard/games/${room.game_id}/room`);
   redirect(`/dashboard/games/${room.game_id}/room?roomId=${room.id}`);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+import { ActiveRoomStore } from "@/lib/game-engine/room-store";
 
 type RoomUpdate = Database["public"]["Tables"]["rooms"]["Update"];
 
@@ -42,8 +43,9 @@ export async function POST(req: NextRequest) {
     const totalQuestions = questions.length;
     const currentIndex = room.current_question_index ?? 0;
 
-    // FITUR BARU: Reset Room kembali ke Data Awal (Soal 1, Skor 0, siap dimainkan ulang)
+    // FITUR: Reset Room kembali ke Data Awal (Soal 1, Skor 0, siap dimainkan ulang)
     if (action === "reset") {
+      ActiveRoomStore.resetRoom(roomId);
       await supabase.from("submissions").delete().eq("room_id", roomId);
       const now = new Date();
       const resetPayload: RoomUpdate = {
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "end") {
+      ActiveRoomStore.endRoom(roomId);
       const updatePayload: RoomUpdate = {
         state: "ended",
         ended_at: new Date().toISOString(),
@@ -93,8 +96,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "advance") {
-      const nextIndex = currentIndex + 1;
-      const isEnded = nextIndex >= totalQuestions;
+      const advanceResult = ActiveRoomStore.advanceRoom(roomId);
+      const nextIndex = advanceResult.current_question_index;
+      const isEnded = advanceResult.room_state === "ended" || nextIndex >= totalQuestions;
 
       const updatePayload: RoomUpdate = {
         current_question_index: nextIndex,
