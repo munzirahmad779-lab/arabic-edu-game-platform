@@ -80,10 +80,10 @@ export default async function QuestionBanksPage({
           : "Bank Soal",
     page_sub:
       locale === "ar"
-        ? "إنشاء بنك أسئلة واستيراد أسئلة MCQ من قالب Excel الرسمي."
+        ? "إنشاء بنك أسئلة وإدارة الأسئلة بتنسيق Markdown السريع والذكي."
         : locale === "en"
-          ? "Create question banks and import MCQ questions from the official Excel template."
-          : "Buat bank soal dan impor soal MCQ dari template Excel resmi.",
+          ? "Create question banks and manage questions with fast, AI-powered Markdown."
+          : "Buat bank soal dan kelola soal dengan format Markdown cepat & AI generator otomatis.",
     dashboard:
       locale === "ar" ? "لوحة التحكم" : locale === "en" ? "Dashboard" : "Dashboard",
     deleted_ok:
@@ -840,17 +840,15 @@ export default async function QuestionBanksPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-lg font-black text-teal-700">
-              {L.excel_title}
+              Format Standar Markdown Magguru (Bebas Error & Langsung Aktif)
             </h2>
-            <p className="mt-1 text-sm text-softslate/70">{L.excel_desc}</p>
+            <p className="mt-1 text-sm text-softslate/70">
+              Setiap soal terdiri dari `# Soal [N]: [Pertanyaan]` dan 4 pilihan `- A. ...`, `- B. ...`, `- C. ...`, `- D. ...` dengan tanda `[x]` pada jawaban yang benar.
+            </p>
           </div>
-          <a
-            href="/templates/question-bank-template.xlsx"
-            download
-            className="w-fit rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
-          >
-            {L.excel_download}
-          </a>
+          <span className="shrink-0 rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-black text-emerald-800">
+            ✓ 100% Kompatibel Semua Game
+          </span>
         </div>
       </section>
     </div>

@@ -56,6 +56,14 @@ export function QuestionBankImportForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiCount, setAiCount] = useState(5);
+  const [aiDifficulty, setAiDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [aiProvider, setAiProvider] = useState<"auto" | "groq" | "gemini" | "openrouter" | "cutad">("auto");
+  const [generating, setGenerating] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
+
   function handleThemeChange(theme: GameThemeId) {
     setSelectedTheme(theme);
     setMdContent(GAME_MD_TEMPLATES[theme]);
@@ -65,12 +73,50 @@ export function QuestionBankImportForm({
     setSuccess(null);
   }
 
-  function handleParsePreview() {
+  function handleParsePreview(customContent?: string) {
     setServerError(null);
     setSuccess(null);
-    const { rows, errors } = parseMarkdownToImportRows(mdContent, selectedTheme);
+    const content = customContent || mdContent;
+    const { rows, errors } = parseMarkdownToImportRows(content, selectedTheme);
     setParseErrors(errors);
     setPreviewRows(rows.length > 0 ? rows : null);
+  }
+
+  async function handleGenerateAi() {
+    if (!aiTopic.trim()) {
+      setServerError("Harap tuliskan topik soal yang ingin dibuat.");
+      return;
+    }
+
+    setGenerating(true);
+    setServerError(null);
+    setAiNotice(null);
+
+    try {
+      const res = await fetch("/api/question-banks/ai-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: aiTopic,
+          count: aiCount,
+          difficulty: aiDifficulty,
+          provider: aiProvider,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setServerError(data.error || "Gagal membuat soal dari AI.");
+      } else if (data.markdown) {
+        setMdContent(data.markdown);
+        setAiNotice(`✓ Berhasil dibuat via ${data.providerUsed} (${data.modelUsed})`);
+        handleParsePreview(data.markdown);
+      }
+    } catch {
+      setServerError("Gagal terhubung ke gateway AI.");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function handleImport() {
@@ -98,14 +144,130 @@ export function QuestionBankImportForm({
 
   return (
     <div className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-      <div>
-        <h3 className="text-base font-bold text-neutral-900">
-          📝 Input & Pengelolaan Soal via Format Markdown (MD)
-        </h3>
-        <p className="mt-1 text-xs text-neutral-500">
-          Pilih template game yang sesuai di bawah ini untuk melihat contoh format Markdown, lalu edit teks soal secara langsung tanpa perlu upload file.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3">
+        <div>
+          <h3 className="text-base font-bold text-neutral-900">
+            📝 Input & Pengelolaan Soal via Format Markdown (MD)
+          </h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Pilih template game yang sesuai di bawah ini untuk melihat contoh format Markdown, atau gunakan generator AI otomatis.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAiGenerator((prev) => !prev)}
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black shadow-sm transition ${
+            showAiGenerator
+              ? "bg-indigo-700 text-white shadow-indigo-200"
+              : "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700"
+          }`}
+        >
+          <span>✨</span>
+          <span>{showAiGenerator ? "Tutup Generator AI" : "Buat Soal Otomatis (Multi-AI)"}</span>
+        </button>
       </div>
+
+      {/* Interactive Multi-Provider AI Generator Panel */}
+      {showAiGenerator && (
+        <div className="space-y-3 rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-teal-50/50 p-4 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-xs text-white">🤖</span>
+              <span className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                Generator AI Cerdas (Groq • Gemini • OpenRouter • aicutad)
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+              Auto-Failover Aktif
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-3">
+              <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                Topik / Materi Bahasa Arab:
+              </label>
+              <input
+                type="text"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="Misal: Al-Mufrodat Al-Madrosiyyah (Peralatan Sekolah) / Jamak Taksir"
+                className="w-full rounded-lg border border-neutral-300 bg-white p-2.5 text-xs font-medium text-neutral-900 focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                Jumlah Soal:
+              </label>
+              <select
+                value={aiCount}
+                onChange={(e) => setAiCount(Number(e.target.value))}
+                className="w-full rounded-lg border border-neutral-300 bg-white p-2 text-xs font-medium text-neutral-900"
+              >
+                <option value={5}>5 Soal</option>
+                <option value={10}>10 Soal</option>
+                <option value={15}>15 Soal</option>
+                <option value={20}>20 Soal</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                Tingkat Kesulitan:
+              </label>
+              <select
+                value={aiDifficulty}
+                onChange={(e) => setAiDifficulty(e.target.value as "easy" | "medium" | "hard")}
+                className="w-full rounded-lg border border-neutral-300 bg-white p-2 text-xs font-medium text-neutral-900"
+              >
+                <option value="easy">Mudah (Mufrodat Dasar)</option>
+                <option value="medium">Sedang (Kalimat & Terjemah)</option>
+                <option value="hard">Sulit (Nahwu & Sharaf)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                Provider Mesin AI:
+              </label>
+              <select
+                value={aiProvider}
+                onChange={(e) => setAiProvider(e.target.value as typeof aiProvider)}
+                className="w-full rounded-lg border border-neutral-300 bg-white p-2 text-xs font-medium text-neutral-900"
+              >
+                <option value="auto">⚡ Otomatis (Failover Groq/Gemini/OpenRouter)</option>
+                <option value="groq">Groq (Kilat 60ms - GPT/Qwen)</option>
+                <option value="gemini">Google Gemini (Spesialis Harakat Arab)</option>
+                <option value="openrouter">OpenRouter (DeepSeek R1 / Nemotron)</option>
+                <option value="cutad">aicutad.id (Gateway Lokal)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-indigo-100">
+            <span className="text-[11px] text-neutral-500">
+              Format otomatis disesuaikan agar tidak tumpang tindih di game manapun.
+            </span>
+            <button
+              type="button"
+              onClick={handleGenerateAi}
+              disabled={generating || !aiTopic.trim()}
+              className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 shadow-md transition"
+            >
+              <span>{generating ? "⏳" : "🚀"}</span>
+              <span>{generating ? "Menghasilkan Soal..." : "Generate Soal Sekarang"}</span>
+            </button>
+          </div>
+
+          {aiNotice && (
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-xs text-emerald-800 font-bold">
+              {aiNotice}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2">
         <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
@@ -140,7 +302,7 @@ export function QuestionBankImportForm({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={handleParsePreview}
+          onClick={() => handleParsePreview()}
           disabled={busy}
           className="rounded-lg bg-neutral-800 px-4 py-2 text-xs font-bold text-white hover:bg-neutral-900 disabled:opacity-50"
         >
