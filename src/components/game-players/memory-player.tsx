@@ -140,7 +140,11 @@ export function MemoryPlayer({
                 <span className="text-[10px] font-bold opacity-75 uppercase mb-0.5">
                   {card.isPrompt ? "Soal" : "Jawaban"}
                 </span>
-                <span className="font-black text-xs leading-snug break-words" dir="auto">
+                <span
+                  className="font-bold text-sm sm:text-base leading-relaxed break-words"
+                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                  dir="auto"
+                >
                   {card.text}
                 </span>
               </div>

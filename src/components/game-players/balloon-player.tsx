@@ -184,13 +184,15 @@ export function BalloonPlayer({
 
         // Balloon Text (Option Key & Text)
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 16px sans-serif";
+        ctx.font = "bold 15px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(b.option.option_key, currentX, b.y - 8);
+        ctx.fillText(b.option.option_key, currentX, b.y - 10);
 
-        ctx.font = "bold 12px sans-serif";
-        ctx.fillText(b.option.option_text.slice(0, 10), currentX, b.y + 12);
+        const bTextLen = b.option.option_text.length;
+        const bFontSize = bTextLen > 10 ? 13 : 16;
+        ctx.font = `bold ${bFontSize}px 'Traditional Arabic', Amiri, Tahoma, sans-serif`;
+        ctx.fillText(b.option.option_text.slice(0, 15), currentX, b.y + 12);
 
         // Respawn if floated off top
         if (b.y + b.radius < -30) {

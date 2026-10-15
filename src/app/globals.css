@@ -18,10 +18,44 @@ body {
     Tahoma, Arial, sans-serif;
 }
 
-/* Konten Arab — pakai stack Arabic-safe. */
-.font-arabic {
-  font-family: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, Arial,
-    sans-serif;
+/* Konten Arab — Menggunakan font Traditional Arabic resmi 16pt */
+.font-arabic,
+:lang(ar),
+[dir="rtl"] {
+  font-family: "Traditional Arabic", var(--font-amiri), "Amiri", "Scheherazade New", Tahoma, serif;
+}
+
+/* Ukuran standar teks Arab 16pt (1.25rem / 21px) dengan line-height lega agar harakat/tashkeel tajam dan terbaca jelas */
+.font-arabic,
+p[dir="rtl"], p[dir="auto"],
+span[dir="rtl"], span[dir="auto"],
+td[dir="rtl"], td[dir="auto"] {
+  font-family: "Traditional Arabic", var(--font-amiri), "Amiri", "Scheherazade New", Tahoma, serif;
+  font-size: 16pt;
+  line-height: 2;
+}
+
+/* Judul teks Arab */
+h1[dir="rtl"], h1[dir="auto"],
+h2[dir="rtl"], h2[dir="auto"],
+h3[dir="rtl"], h3[dir="auto"] {
+  font-family: "Traditional Arabic", var(--font-amiri), "Amiri", "Scheherazade New", Tahoma, serif;
+  line-height: 1.8;
+}
+
+/* Proteksi Tampilan Game: font otomatis disesuaikan secara proporsional agar tidak saling menimpa / overlap */
+.game-screen [dir="auto"],
+.game-screen [dir="rtl"],
+.game-arena [dir="auto"],
+.game-arena [dir="rtl"],
+.game-card [dir="auto"],
+.game-card [dir="rtl"],
+canvas + * [dir="auto"],
+canvas + * [dir="rtl"] {
+  font-family: "Traditional Arabic", var(--font-amiri), "Amiri", Tahoma, sans-serif !important;
+  font-size: clamp(14px, 2.2vw, 19px) !important;
+  line-height: 1.45 !important;
+  word-break: break-word !important;
 }
 
 /* Hindari hitam pekat — semua heading pakai ink/teal. */

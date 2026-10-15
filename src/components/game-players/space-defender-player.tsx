@@ -402,7 +402,11 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
           </div>
         </div>
 
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-relaxed" dir="auto">
+        <h2
+          className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-relaxed"
+          style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+          dir="auto"
+        >
           {currentQ?.question_text}
         </h2>
       </div>
@@ -453,7 +457,11 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
                 </div>
 
                 {/* Option Text */}
-                <div className="text-sm sm:text-base md:text-lg font-black text-white leading-snug break-words" dir="auto">
+                <div
+                  className="text-base sm:text-lg font-bold text-white leading-normal break-words"
+                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                  dir="auto"
+                >
                   {opt.option_text}
                 </div>
 

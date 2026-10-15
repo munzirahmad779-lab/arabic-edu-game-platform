@@ -13,6 +13,52 @@ export type GameThemeId =
   | "whack_mole"
   | "matching_column";
 
+export const DEFAULT_MAGGURU_TEMPLATE = `# Soal 1: Apa arti dari kata كِتَابٌ ?
+- A. Buku [x]
+- B. Pena
+- C. Meja
+- D. Kursi
+
+# Soal 2: Jam'u (bentuk jamak) dari kata طَالِبٌ adalah...
+- A. طُلَّابٌ [x]
+- B. طَالِبَاتٌ
+- C. مَطَالِبُ
+- D. أَطْلَابٌ
+
+# Soal 3: "قَلَمٌ" artinya dalam bahasa Indonesia adalah...
+- A. Pena [x]
+- B. Buku
+- C. Penggaris
+- D. Penghapus
+`;
+
+export const MAGGURU_AI_PROMPT = `Kamu adalah pakar penyusun kuis pembelajaran bahasa Arab untuk platform "Magguru".
+Tolong buatkan [JUMLAH] soal pilihan ganda bahasa Arab materi: [TOPIK].
+
+ATURAN KETAT PANJANG TEKS & TATA LETAK:
+1. Soal & pilihan ditulis dengan harakat/tashkeel Arab yang lengkap dan benar (Traditional Arabic).
+2. Pertanyaan: Singkat & padat, maksimal 8-15 kata agar nyaman dibaca di layar proyektor dan HP.
+3. Pilihan Jawaban: Sangat singkat, maksimal 1-3 kata agar pas di dalam game (Pesawat Awan, Pukul Tikus, Penjaga Antariksa, Balon Melayang, dan Kahoot Arena).
+4. Tepat 4 pilihan (A, B, C, D) dan berikan tanda [x] pada pilihan yang benar.
+5. Acak posisi [x] secara seimbang (A, B, C, atau D).
+
+FORMAT OUTPUT WAJIB (MARKDOWN):
+# Soal 1: [Pertanyaan]
+- A. [Pilihan A] [x]
+- B. [Pilihan B]
+- C. [Pilihan C]
+- D. [Pilihan D]
+
+# Soal 2: [Pertanyaan]
+- A. [Pilihan A]
+- B. [Pilihan B] [x]
+- C. [Pilihan C]
+- D. [Pilihan D]
+
+(Catatan: Jika Anda lebih suka output tabel spreadsheet, Anda juga bisa menyusun dalam format tabel:
+| No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar |)
+`;
+
 export const GAME_MD_TEMPLATES: Record<GameThemeId, string> = {
   excel_table: `# Format Tabel Kolom (Sesuai Template Excel)
 # Anda bisa langsung Copy tabel dari Microsoft Excel / Google Sheets lalu Paste ke sini,
@@ -27,26 +73,7 @@ export const GAME_MD_TEMPLATES: Record<GameThemeId, string> = {
 | 5 | Dhomir munfashil untuk orang pertama tunggal (saya) adalah... | أَنَا | نَحْنُ | أَنْتَ | هُوَ | A | Nahwu | Mudah | Kata ganti orang pertama |
 `,
 
-  kahoot: `# Kuis Kahoot Arena (4 Pilihan Ganda)
-
-# Soal 1: Apa arti dari kata كِتَابٌ ?
-- A. Buku [x]
-- B. Pena
-- C. Meja
-- D. Kursi
-
-# Soal 2: Jam'u (bentuk jamak) dari kata طَالِبٌ adalah...
-- A. طُلَّابٌ [x]
-- B. طَالِبَاتٌ
-- C. مَطَالِبُ
-- D. أَطْلَابٌ
-
-# Soal 3: "قَلَمٌ" artinya adalah...
-- A. Pena [x]
-- B. Buku
-- C. Penggaris
-- D. Penghapus
-`,
+  kahoot: DEFAULT_MAGGURU_TEMPLATE,
 
   millionaire: `# Kuis Who Wants to Be a Millionaire
 
@@ -295,19 +322,9 @@ export function parseMarkdownToImportRows(
   const rows: QuestionImportRow[] = [];
   const errors: string[] = [];
 
-  // If theme is excel_table or text contains table/tsv lines, check table parser first
-  if (gameTheme === "excel_table") {
-    const tableRows = parseTableOrTsvRows(lines);
-    if (tableRows.length > 0) {
-      return { rows: tableRows, errors: [] };
-    }
-    errors.push("Tidak dapat menemukan baris tabel atau TSV yang valid. Pastikan format tabel memiliki kolom: No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar");
-    return { rows: [], errors };
-  }
-
-  // Auto-detect table format even if another theme was selected
+  // 1. Auto-detect table or TSV rows first (Spreadsheet copy-paste or Markdown table)
   const autoTableRows = parseTableOrTsvRows(lines);
-  if (autoTableRows.length > 0 && (gameTheme === "kahoot" || gameTheme === "millionaire" || gameTheme === "jeopardy")) {
+  if (autoTableRows.length > 0) {
     return { rows: autoTableRows, errors: [] };
   }
 
@@ -488,7 +505,7 @@ export function parseMarkdownToImportRows(
   commitQuestion();
 
   if (rows.length === 0) {
-    errors.push("Tidak dapat menemukan format soal MCQ yang valid dalam teks Markdown.");
+    errors.push("Format soal belum terdeteksi. Silakan klik '📋 Salin Prompt & Format AI' di atas untuk membuat soal dengan AI, atau tempel tabel spreadsheet Anda langsung ke kotak ini.");
   }
 
   return { rows, errors };

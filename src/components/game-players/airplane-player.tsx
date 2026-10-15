@@ -310,9 +310,11 @@ export function AirplanePlayer({
 
         // Choice Text
         ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 15px sans-serif";
+        const textLen = cl.option.option_text.length;
+        const fontSize = textLen > 12 ? 14 : 16;
+        ctx.font = `bold ${fontSize}px 'Traditional Arabic', Amiri, Tahoma, sans-serif`;
         ctx.textAlign = "left";
-        const maxText = cl.option.option_text.slice(0, 16);
+        const maxText = cl.option.option_text.slice(0, 20);
         ctx.fillText(maxText, cl.x + 38, cy);
 
         // Collision Check with Plane

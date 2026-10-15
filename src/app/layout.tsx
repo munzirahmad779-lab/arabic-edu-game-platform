@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Amiri } from "next/font/google";
 import "./globals.css";
 import { GlobalBackgroundAudio } from "@/components/global-background-audio";
 import { PageTransition } from "@/components/page-transition";
@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+});
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-amiri",
 });
 
 const SITE_TITLE = "Magguru — Interactive Learning Platform";
@@ -50,6 +55,7 @@ const THEME_CSS = `
     --sage: #8FA68E;
     --sage-light: #D4DDD0;
     --ink: #2B2B2B;
+    --font-arabic: "Traditional Arabic", var(--font-amiri), "Amiri", "Scheherazade New", Tahoma, serif;
   }
   body {
     background-color: var(--cream);
@@ -58,6 +64,9 @@ const THEME_CSS = `
   }
   .font-display {
     font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+  }
+  .font-arabic, [dir="rtl"], :lang(ar) {
+    font-family: var(--font-arabic);
   }
 `;
 
@@ -70,7 +79,7 @@ export default function RootLayout({
     <html
       lang="id"
       dir="ltr"
-      className={`${inter.variable} ${playfair.variable}`}
+      className={`${inter.variable} ${playfair.variable} ${amiri.variable}`}
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />

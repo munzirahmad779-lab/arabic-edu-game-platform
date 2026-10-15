@@ -150,7 +150,9 @@ export function QuestionEditor({
           required
           maxLength={5000}
           rows={3}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+          dir="auto"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-base font-bold leading-relaxed"
         />
       </label>
 
@@ -197,7 +199,9 @@ export function QuestionEditor({
               defaultValue={optionMap.get(key) ?? ""}
               required
               maxLength={2000}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+              dir="auto"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-base font-bold"
             />
           </label>
         ))}

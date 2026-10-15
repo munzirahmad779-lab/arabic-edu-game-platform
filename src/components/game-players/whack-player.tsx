@@ -179,11 +179,15 @@ export function WhackPlayer({
                   </div>
 
                   {/* Choice Board held by Mole */}
-                  <div className="px-3 py-1.5 rounded-xl bg-white border-2 border-amber-900 shadow-xl text-center max-w-[130px] -mt-1 z-20">
+                  <div className="px-3 py-1.5 rounded-xl bg-white border-2 border-amber-900 shadow-xl text-center max-w-[140px] -mt-1 z-20">
                     <span className="font-mono font-black text-xs text-amber-700 mr-1">
                       {mole.option.option_key}:
                     </span>
-                    <span className="font-black text-xs text-slate-900 truncate inline-block max-w-[80px]">
+                    <span
+                      className="font-black text-sm text-slate-900 truncate inline-block max-w-[95px] leading-tight"
+                      style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                      dir="auto"
+                    >
                       {mole.option.option_text}
                     </span>
                   </div>

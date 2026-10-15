@@ -116,7 +116,11 @@ export function QuizPlayer({
       )}
 
       {/* Question Text */}
-      <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-black leading-relaxed text-slate-900 break-words" dir="auto">
+      <h2
+        className="text-center text-2xl sm:text-3xl md:text-4xl font-black leading-relaxed text-slate-900 break-words"
+        style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+        dir="auto"
+      >
         {question.question_text}
       </h2>
 
@@ -139,7 +143,11 @@ export function QuizPlayer({
               <span className="shrink-0 inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-violet-700 text-white shadow text-sm sm:text-base font-black">
                 {option.option_key}
               </span>
-              <span className="flex-1 break-words leading-snug" dir="auto">
+              <span
+                className="flex-1 break-words text-lg sm:text-xl font-bold leading-relaxed"
+                style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                dir="auto"
+              >
                 {option.option_text}
               </span>
             </button>

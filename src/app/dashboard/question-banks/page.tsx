@@ -650,7 +650,11 @@ export default async function QuestionBanksPage({
                               ) : null}
                             </div>
 
-                            <p className="mt-3 text-base font-medium leading-8 text-teal-700">
+                            <p
+                              className="mt-3 text-lg font-bold leading-relaxed text-teal-950 font-arabic"
+                              style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                              dir="auto"
+                            >
                               {question.question_text ?? "—"}
                             </p>
 
@@ -665,14 +669,22 @@ export default async function QuestionBanksPage({
                                 return (
                                   <div
                                     key={key}
-                                    className={`rounded-xl border p-3 ${
+                                    className={`rounded-xl border p-3 flex items-center justify-between ${
                                       isCorrect
                                         ? "border-sage-500/40 bg-sage-50 text-sage-600"
                                         : "border-sage-200/60 bg-white text-softslate"
                                     }`}
                                   >
-                                    <span className="font-black">{key}.</span>{" "}
-                                    {option?.option_text ?? L.option_missing}
+                                    <div>
+                                      <span className="font-black text-sm text-neutral-500">{key}.</span>{" "}
+                                      <span
+                                        className="font-bold text-base text-neutral-900"
+                                        style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                                        dir="auto"
+                                      >
+                                        {option?.option_text ?? L.option_missing}
+                                      </span>
+                                    </div>
                                     {isCorrect ? (
                                       <span className="ms-2 text-xs font-black">
                                         ✓ {L.correct}
