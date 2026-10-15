@@ -60,14 +60,63 @@ export default function LoginPage() {
 
     try {
       if (mode === "sign_in") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        let signInError: { message?: string; code?: string } | null = null;
+        try {
+          const res = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          signInError = res.error;
+        } catch (clientErr: unknown) {
+          const message = clientErr instanceof Error ? clientErr.message : "Failed to fetch";
+          signInError = { message };
+        }
+
+        // Resilient fallback: If direct browser connection has network/fetch glitch, try server route
+        if (
+          signInError &&
+          (signInError.message?.toLowerCase().includes("fetch") ||
+            signInError.message?.toLowerCase().includes("network") ||
+            signInError.message?.toLowerCase().includes("timeout"))
+        ) {
+          try {
+            const srvRes = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+            const srvData = await srvRes.json();
+            if (srvRes.ok && srvData.ok) {
+              router.replace(redirectTo);
+              router.refresh();
+              return;
+            }
+            if (srvData.error) {
+              setError(srvData.error);
+              return;
+            }
+          } catch {
+            // Server fallback also errored
+          }
+        }
+
         if (signInError) {
-          setError(signInError.message);
+          const msg = signInError.message || "";
+          if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+            setError(
+              "Koneksi ke database server sempat terputus atau server Supabase sedang aktif kembali. Silakan coba klik tombol Masuk sekali lagi."
+            );
+          } else if (
+            msg === "Invalid login credentials" ||
+            signInError.code === "invalid_credentials"
+          ) {
+            setError("Email atau kata sandi salah. Silakan periksa kembali.");
+          } else {
+            setError(msg);
+          }
           return;
         }
+
         router.replace(redirectTo);
         router.refresh();
       } else {
@@ -76,11 +125,18 @@ export default function LoginPage() {
           { redirectTo: `${window.location.origin}/reset-password` },
         );
         if (resetError) {
-          setError(resetError.message);
+          setError(
+            resetError.message === "Invalid email"
+              ? "Format email tidak valid."
+              : resetError.message
+          );
           return;
         }
         setInfoMessage(dict?.login_teacher?.success_reset ?? "OK");
       }
+    } catch (unexpectedErr: unknown) {
+      const msg = unexpectedErr instanceof Error ? unexpectedErr.message : "Terjadi kesalahan saat masuk.";
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }

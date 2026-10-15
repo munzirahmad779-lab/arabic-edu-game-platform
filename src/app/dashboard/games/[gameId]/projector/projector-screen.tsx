@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
-import { RunnerPlayer } from "@/components/game-players/runner-player";
-import { SlicerPlayer } from "@/components/game-players/slicer-player";
-import { MatchingPlayer } from "@/components/game-players/matching-player";
-import { PenaltyPlayer } from "@/components/game-players/penalty-player";
-import type { GameSessionContext, NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
+import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
+import { CURATED_WEB_GAMES } from "@/lib/game-engine/curated-web-games";
+import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
+import { AirplanePlayer } from "@/components/game-players/airplane-player";
+import { WhackPlayer } from "@/components/game-players/whack-player";
+import { WheelPlayer } from "@/components/game-players/wheel-player";
+import { MemoryPlayer } from "@/components/game-players/memory-player";
+import { BalloonPlayer } from "@/components/game-players/balloon-player";
 
 export type StudentMember = {
   id: string;
@@ -26,100 +29,87 @@ export type TeacherClass = {
 export type ProjectorTeam = {
   id: string;
   name: string;
-  color: string;
+  colorName: string;
+  themeGradient: string;
   badgeBg: string;
   accentBorder: string;
   textColor: string;
+  cardBg: string;
   score: number;
   correctCount: number;
+  streak: number;
   members: StudentMember[];
   currentMemberIndex: number;
 };
 
-const INITIAL_TEAMS_CONFIG: Array<Omit<ProjectorTeam, "members" | "currentMemberIndex" | "score" | "correctCount">> = [
+export type ProjectorGameTheme = "kahoot" | "quiz";
+
+// Kahoot 4 Iconic Cards Specifications
+const KAHOOT_OPTIONS_SPEC = [
+  { key: "A", shape: "▲", shapeName: "Segitiga", color: "bg-rose-600 hover:bg-rose-500 text-white", border: "border-rose-400/80" },
+  { key: "B", shape: "◆", shapeName: "Ketupat", color: "bg-sky-600 hover:bg-sky-500 text-white", border: "border-sky-400/80" },
+  { key: "C", shape: "●", shapeName: "Lingkaran", color: "bg-amber-500 hover:bg-amber-400 text-white", border: "border-amber-300/80" },
+  { key: "D", shape: "■", shapeName: "Kotak", color: "bg-emerald-600 hover:bg-emerald-500 text-white", border: "border-emerald-400/80" },
+];
+
+const INITIAL_TEAMS: Array<Omit<ProjectorTeam, "members" | "currentMemberIndex" | "score" | "correctCount" | "streak">> = [
   {
     id: "team-1",
-    name: "Tim Merah (الفريق الأحمر)",
-    color: "from-rose-600 to-red-700",
-    badgeBg: "bg-rose-500",
-    accentBorder: "border-rose-400",
+    name: "Tim Merah",
+    colorName: "Merah",
+    themeGradient: "from-rose-600 to-red-700",
+    badgeBg: "bg-rose-600",
+    accentBorder: "border-rose-500",
     textColor: "text-rose-400",
+    cardBg: "bg-rose-950/40",
   },
   {
     id: "team-2",
-    name: "Tim Biru (الفريق الأزرق)",
-    color: "from-sky-600 to-blue-700",
-    badgeBg: "bg-sky-500",
-    accentBorder: "border-sky-400",
+    name: "Tim Biru",
+    colorName: "Biru",
+    themeGradient: "from-sky-600 to-blue-700",
+    badgeBg: "bg-sky-600",
+    accentBorder: "border-sky-500",
     textColor: "text-sky-400",
+    cardBg: "bg-sky-950/40",
   },
   {
     id: "team-3",
-    name: "Tim Hijau (الفريق الأخضر)",
-    color: "from-emerald-600 to-teal-700",
-    badgeBg: "bg-emerald-500",
-    accentBorder: "border-emerald-400",
-    textColor: "text-emerald-400",
+    name: "Tim Kuning",
+    colorName: "Kuning",
+    themeGradient: "from-amber-500 to-yellow-600",
+    badgeBg: "bg-amber-500",
+    accentBorder: "border-amber-500",
+    textColor: "text-amber-400",
+    cardBg: "bg-amber-950/40",
   },
   {
     id: "team-4",
-    name: "Tim Kuning (الفريق الأصفر)",
-    color: "from-amber-500 to-yellow-600",
-    badgeBg: "bg-amber-500",
-    accentBorder: "border-amber-400",
-    textColor: "text-amber-400",
+    name: "Tim Hijau",
+    colorName: "Hijau",
+    themeGradient: "from-emerald-600 to-teal-700",
+    badgeBg: "bg-emerald-600",
+    accentBorder: "border-emerald-500",
+    textColor: "text-emerald-400",
+    cardBg: "bg-emerald-950/40",
   },
 ];
 
-// Helper to deterministically scramble/rotate options so teams sharing the same base question have different keys!
-function getScrambledQuestionForTeam(
-  baseQuestion: RawQuestion,
-  teamIdx: number,
-  round: number,
-): RawQuestion {
-  if (!baseQuestion || !baseQuestion.options || baseQuestion.options.length <= 1) {
-    return baseQuestion;
-  }
+type GamePhase = "question" | "reveal" | "leaderboard" | "finished";
 
-  // Find original correct option
-  const origCorrect = baseQuestion.options.find(
-    (o) => o.option_key === baseQuestion.correct_option_key,
-  );
-
-  // Deterministic rotation offset based on team and round
-  const shift = (teamIdx * 1 + round * 2) % baseQuestion.options.length;
-  if (shift === 0) return baseQuestion;
-
-  const rotatedOptions = [
-    ...baseQuestion.options.slice(shift),
-    ...baseQuestion.options.slice(0, shift),
-  ];
-
-  const keys = ["A", "B", "C", "D"];
-  let newCorrectKey = baseQuestion.correct_option_key;
-
-  const remappedOptions = rotatedOptions.map((opt, i) => {
-    const newKey = keys[i] || opt.option_key;
-    if (origCorrect && opt.id === origCorrect.id) {
-      newCorrectKey = newKey;
-    }
-    return {
-      ...opt,
-      option_key: newKey,
-    };
-  });
-
-  return {
-    ...baseQuestion,
-    correct_option_key: newCorrectKey,
-    options: remappedOptions,
-  };
-}
+type TeamAnswerRecord = {
+  teamId: string;
+  optionKey: string;
+  isCorrect: boolean;
+  scoreAwarded: number;
+  speedBonus: number;
+  answeredAt: number;
+};
 
 export function ProjectorScreen({
   gameId,
   gameName,
-  initialGameType,
+  initialGameTheme = "kahoot",
   questions,
   allStudents = [],
   teacherClasses = [],
@@ -128,108 +118,68 @@ export function ProjectorScreen({
 }: {
   gameId?: string;
   gameName: string;
-  initialGameType: NormalizedGameType;
+  initialGameType?: NormalizedGameType;
+  initialGameTheme?: string;
   questions: RawQuestion[];
   allStudents?: StudentMember[];
   teacherClasses?: TeacherClass[];
   defaultClassId?: string;
   isRtl?: boolean;
 }) {
-  const [selectedMechanic, setSelectedMechanic] = useState<NormalizedGameType | "slicer">(
-    initialGameType === "anagram" ? "slicer" : initialGameType,
-  );
+  // Core Game State
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [phase, setPhase] = useState<GamePhase>("question");
+  const [gameStarted, setGameStarted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeEngine, setActiveEngine] = useState<
+    "kahoot" | "airplane" | "whack" | "wheel" | "memory" | "balloon"
+  >(() => {
+    if (initialGameTheme === "airplane") return "airplane";
+    if (initialGameTheme === "whack") return "whack";
+    if (initialGameTheme === "wheel") return "wheel";
+    if (initialGameTheme === "memory") return "memory";
+    if (initialGameTheme === "balloon") return "balloon";
+    return "kahoot";
+  });
 
-  // Layout mode: "focus" (1 full arena with turn switcher) or "split" (4 quadrants arena)
-  const [layoutMode, setLayoutMode] = useState<"focus" | "split">("split");
-
-  // Selected class filter for assigning students
-  const [selectedClassId, setSelectedClassId] = useState<string>(
-    defaultClassId || teacherClasses[0]?.id || "",
-  );
-
-  // Teams state
-  const [teamCount, setTeamCount] = useState<number>(4);
-  const [teams, setTeams] = useState<ProjectorTeam[]>(() => {
-    return INITIAL_TEAMS_CONFIG.slice(0, 4).map((cfg) => ({
+  // Teams (4 Teams)
+  const [teams, setTeams] = useState<ProjectorTeam[]>(() =>
+    INITIAL_TEAMS.map((cfg) => ({
       ...cfg,
       score: 0,
       correctCount: 0,
+      streak: 0,
       members: [],
       currentMemberIndex: 0,
-    }));
-  });
+    })),
+  );
 
-  // Current turn indices
-  const [currentTurnIdx, setCurrentTurnIdx] = useState(0);
-  const [currentRoundOffset, setCurrentRoundOffset] = useState(0);
-  const [targetRounds, setTargetRounds] = useState<number>(5);
+  // Answer records for current question
+  const [answers, setAnswers] = useState<Record<string, TeamAnswerRecord>>({});
+  const [correctArrivalOrder, setCorrectArrivalOrder] = useState<string[]>([]);
 
-  // Speed Bonus tracking: List of teams that answered correctly in the current round, in order of arrival
-  const [correctAnswersOrder, setCorrectAnswersOrder] = useState<string[]>([]);
+  // Timer Configuration
+  const QUESTION_DURATION = 20;
+  const [timerSeconds, setTimerSeconds] = useState(QUESTION_DURATION);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
 
-  // Track which teams have answered the CURRENT question
-  // Record<teamId, { isCorrect: boolean; score: number; speedBonus: number; bonusTitle: string; optionKey: string }>
-  const [questionAnswers, setQuestionAnswers] = useState<
-    Record<
-      string,
-      {
-        isCorrect: boolean;
-        score: number;
-        speedBonus: number;
-        bonusTitle: string;
-        optionKey: string;
-      }
-    >
-  >({});
+  // Classroom Modals
+  const [selectedClassId, setSelectedClassId] = useState(defaultClassId || teacherClasses[0]?.id || "");
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [newStudentName, setNewStudentName] = useState("");
+  const [targetTeamId, setTargetTeamId] = useState("team-1");
 
-  // Single focus turn UI states
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
+  // Web Game Embed Modal
+  const [showWebGameModal, setShowWebGameModal] = useState(false);
+  const [activeEmbedUrl, setActiveEmbedUrl] = useState<string | null>(null);
 
-  // Competitive Timer & Steal mechanics
-  const [timerSeconds, setTimerSeconds] = useState(20);
-  const [isTimerActive, setIsTimerActive] = useState(true);
-
-  // Live Action Arena Animation for 4-Quadrant Mode
-  const [arenaAnimation, setArenaAnimation] = useState<{
-    teamId: string;
-    teamName: string;
-    isCorrect: boolean;
-    mechanic: string;
-    targetKey: string;
-    scoreAwarded: number;
-    keeperDive: "left" | "right" | "center";
-    ballCorner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    promptText?: string;
-    chosenText?: string;
-    correctText?: string;
-  } | null>(null);
-
-  // Game lifecycle
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameFinished, setGameFinished] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showTeamStudioModal, setShowTeamStudioModal] = useState(false);
-  const [showRemoteInfoModal, setShowRemoteInfoModal] = useState(false);
-  const [newStudentNameInput, setNewStudentNameInput] = useState("");
-  const [targetTeamForNewStudent, setTargetTeamForNewStudent] = useState("team-1");
-
-  // Wireless Phone Controller sync state
+  // Phone Controller State
   const roomCode = useMemo(() => {
     if (!gameId || gameId.startsWith("test-")) return "HOTSEAT";
     return gameId.slice(0, 6).toUpperCase();
   }, [gameId]);
-
-  // Scroll to top when game starts so header & HUD are immediately visible
-  useEffect(() => {
-    if (gameStarted && typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
-  }, [gameStarted]);
-
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
-
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
 
   useEffect(() => {
@@ -238,241 +188,115 @@ export function ProjectorScreen({
     }
   }, []);
 
-  const controllerFullUrl = `${controllerOrigin}/controller?room=${roomCode}`;
-  const controllerDisplayUrl = `${controllerOrigin.replace(/^https?:\/\//, "")}/controller`;
-
   // Filter students based on selected class
   const classStudents = useMemo(() => {
     if (!selectedClassId) return allStudents;
     return allStudents.filter((s) => s.class_id === selectedClassId);
   }, [allStudents, selectedClassId]);
 
-  // Auto-distribute / shuffle students evenly across active teams
-  const handleAutoDistributeStudents = useCallback(() => {
+  // Auto-distribute students across 4 teams
+  const distributeStudents = useCallback(() => {
     const pool = [...classStudents].sort(() => Math.random() - 0.5);
-    const newTeams = teams.map((t) => ({ ...t, members: [] as StudentMember[], currentMemberIndex: 0 }));
-
-    pool.forEach((student, idx) => {
-      const targetTeam = newTeams[idx % newTeams.length];
-      if (targetTeam) {
-        targetTeam.members.push(student);
-      }
+    setTeams((prev) => {
+      const next = prev.map((t) => ({ ...t, members: [] as StudentMember[], currentMemberIndex: 0 }));
+      pool.forEach((s, i) => {
+        const team = next[i % next.length];
+        if (team) team.members.push(s);
+      });
+      return next;
     });
-
-    setTeams(newTeams);
     playSfx("correct");
-  }, [classStudents, teams]);
+  }, [classStudents]);
 
-  // On first load, automatically distribute students if available
   useEffect(() => {
     if (classStudents.length > 0 && teams.every((t) => t.members.length === 0)) {
-      const pool = [...classStudents];
-      setTeams((prev) => {
-        const next = prev.map((t) => ({ ...t, members: [] as StudentMember[] }));
-        pool.forEach((s, idx) => {
-          const t = next[idx % next.length];
-          if (t) t.members.push(s);
-        });
-        return next;
-      });
+      distributeStudents();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classStudents]);
 
-  // Adjust team count (1 to 4)
-  const handleSetTeamCount = (count: number) => {
-    setTeamCount(count);
-    const sliced = INITIAL_TEAMS_CONFIG.slice(0, count).map((cfg, idx) => {
-      const existing = teams[idx];
-      return {
-        ...cfg,
-        score: existing?.score ?? 0,
-        correctCount: existing?.correctCount ?? 0,
-        members: existing?.members ?? [],
-        currentMemberIndex: existing?.currentMemberIndex ?? 0,
-      };
-    });
-    setTeams(sliced);
-    if (currentTurnIdx >= count) {
-      setCurrentTurnIdx(0);
-    }
-  };
-
-  // Add custom student name to team
-  const handleAddManualStudent = () => {
-    const trimmed = newStudentNameInput.trim();
-    if (!trimmed) return;
-    const newStudent: StudentMember = {
-      id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: trimmed,
-      class_id: selectedClassId || "manual",
-      class_name: "Kustom",
+  // Fullscreen listener
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
     };
-
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === targetTeamForNewStudent
-          ? { ...t, members: [...t.members, newStudent] }
-          : t,
-      ),
-    );
-    setNewStudentNameInput("");
-  };
-
-  // Remove student from team
-  const handleRemoveStudent = (studentId: string) => {
-    setTeams((prev) =>
-      prev.map((t) => ({
-        ...t,
-        members: t.members.filter((m) => m.id !== studentId),
-      })),
-    );
-  };
-
-  // Set active player within a team
-  const handleSetActiveMember = (teamId: string, memberIdx: number) => {
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId ? { ...t, currentMemberIndex: memberIdx } : t,
-      ),
-    );
-  };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      void document.documentElement.requestFullscreen();
+      void document.documentElement.requestFullscreen().catch(() => {});
       setIsFullscreen(true);
     } else {
-      void document.exitFullscreen();
+      void document.exitFullscreen().catch(() => {});
       setIsFullscreen(false);
     }
   };
 
-  // Resolve question for a specific team: dynamically auto-shuffled & scrambled per team!
-  const getQuestionForTeam = useCallback(
-    (teamIdx: number): RawQuestion => {
-      if (questions.length === 0) {
-        return {
-          id: "empty",
-          position: 0,
-          question_text: "",
-          difficulty: "easy",
-          correct_option_key: "A",
-          explanation: "",
-          options: [],
-        };
-      }
-      const index = (currentRoundOffset * teams.length + teamIdx) % questions.length;
-      const baseQ = questions[index] ?? questions[0]!;
-      return getScrambledQuestionForTeam(baseQ, teamIdx, currentRoundOffset);
-    },
-    [currentRoundOffset, teams.length, questions],
-  );
+  // Safe active question resolver
+  const activeQuestion: RawQuestion = useMemo(() => {
+    if (!questions || questions.length === 0) {
+      return {
+        id: "empty",
+        position: 0,
+        question_text: "Belum ada soal kuis yang dimuat.",
+        difficulty: "easy",
+        correct_option_key: "A",
+        explanation: "Tambahkan soal melalui bank soal atau menu kuis guru.",
+        options: [
+          { id: "1", option_key: "A", option_text: "Pilihan A" },
+          { id: "2", option_key: "B", option_text: "Pilihan B" },
+          { id: "3", option_key: "C", option_text: "Pilihan C" },
+          { id: "4", option_key: "D", option_text: "Pilihan D" },
+        ],
+      };
+    }
+    return questions[currentQuestionIndex % questions.length]!;
+  }, [questions, currentQuestionIndex]);
 
-  const activeQuestion = getQuestionForTeam(currentTurnIdx);
-  const activeTeam = teams[currentTurnIdx] ?? teams[0];
-  const activeStudentName =
-    activeTeam?.members[activeTeam.currentMemberIndex % (activeTeam.members.length || 1)]
-      ?.name || "Pemain Tim";
+  const totalQuestions = questions.length || 1;
+  const correctOptionKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
-  // Check how many teams have answered current question round
-  const answeredTeamCount = useMemo(() => {
-    return Object.keys(questionAnswers).length;
-  }, [questionAnswers]);
+  // Handle Team Answer
+  const handleRecordAnswer = useCallback(
+    (teamId: string, optionKey: string) => {
+      if (phase !== "question") return;
+      if (answers[teamId]) return;
 
-  const allTeamsAnsweredCurrentQ = answeredTeamCount >= teams.length;
+      const keyUpper = optionKey.toUpperCase().trim();
+      const isCorrect = keyUpper === correctOptionKey;
 
-  // Handle answering for a specific team (with SPEED BONUS and DIFFERENT questions!)
-  const handleAnswerForTeam = useCallback(
-    (teamId: string, optionId: string | null, optionKeyInput: string | null) => {
-      const teamIdx = teams.findIndex((t) => t.id === teamId);
-      if (teamIdx === -1) return;
-
-      const teamQ = getQuestionForTeam(teamIdx);
-      if (!teamQ) return;
-      if (questionAnswers[teamId]) return; // already answered this round
-
-      let isCorrect = false;
-      let chosenKey = "";
-
-      if (optionId) {
-        const picked = teamQ.options.find((o) => o.id === optionId);
-        chosenKey = picked?.option_key ?? "";
-        isCorrect = picked?.option_key === teamQ.correct_option_key;
-      } else if (optionKeyInput) {
-        const keyUpper = optionKeyInput.toUpperCase().trim();
-        chosenKey = keyUpper;
-        isCorrect = keyUpper === teamQ.correct_option_key;
-      }
-
-      // SPEED BONUS & PENALTY CALCULATION:
-      // First team to get it correct gets +50 speed bonus!
-      // Second gets +25 speed bonus!
-      // Wrong answer incurs -25 penalty to prevent random button guessing!
       let speedBonus = 0;
-      let bonusTitle = isCorrect ? "✅ Tepat (+100 Pts)" : "❌ Kurang Tepat (-25 Pts)";
-
       if (isCorrect) {
-        const orderRank = correctAnswersOrder.length + 1;
-        if (orderRank === 1) {
-          speedBonus = 50;
-          bonusTitle = "⚡ TERCEPAT #1! (+50 Bonus)";
-        } else if (orderRank === 2) {
-          speedBonus = 25;
-          bonusTitle = "⚡ TERCEPAT #2! (+25 Bonus)";
-        }
-        setCorrectAnswersOrder((prev) => [...prev, teamId]);
+        const arrivalRank = correctArrivalOrder.length + 1;
+        if (arrivalRank === 1) speedBonus = 50;
+        else if (arrivalRank === 2) speedBonus = 25;
+        setCorrectArrivalOrder((prev) => [...prev, teamId]);
       }
 
-      const totalScore = isCorrect ? 100 + speedBonus : -25;
+      const scoreAwarded = isCorrect ? 100 + speedBonus : -25;
 
-      // Update questionAnswers registry
-      setQuestionAnswers((prev) => ({
-        ...prev,
-        [teamId]: { isCorrect, score: totalScore, speedBonus, bonusTitle, optionKey: chosenKey },
-      }));
-
-      // Calculate Ball Flight Corner and Keeper Dive for Stadium Animation
-      const corners: Array<"top-left" | "top-right" | "bottom-left" | "bottom-right"> = [
-        "top-left",
-        "top-right",
-        "bottom-left",
-        "bottom-right",
-      ];
-      const ballCorner = corners[Math.max(0, ["A", "B", "C", "D"].indexOf(chosenKey))] ?? "top-left";
-      const keeperDive: "left" | "right" = isCorrect
-        ? ballCorner.includes("left") ? "right" : "left"
-        : ballCorner.includes("left") ? "left" : "right";
-
-      const chosenOpt = teamQ.options.find((o) => o.option_key === chosenKey);
-      const correctOpt = teamQ.options.find((o) => o.option_key === teamQ.correct_option_key);
-      const quoteMatch = teamQ.question_text.match(/\(([^)]+)\)|"([^"]+)"|'([^']+)'|«([^»]+)»/);
-      const arabicMatch = teamQ.question_text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)*/);
-      const promptText = (quoteMatch?.[1] || quoteMatch?.[2] || quoteMatch?.[3] || quoteMatch?.[4] || arabicMatch?.[0] || teamQ.question_text).trim();
-
-      setArenaAnimation({
+      const record: TeamAnswerRecord = {
         teamId,
-        teamName: teams[teamIdx]?.name || "Tim",
+        optionKey: keyUpper,
         isCorrect,
-        mechanic: selectedMechanic,
-        targetKey: chosenKey,
-        scoreAwarded: totalScore,
-        keeperDive,
-        ballCorner,
-        promptText,
-        chosenText: chosenOpt?.option_text || chosenKey,
-        correctText: correctOpt?.option_text || teamQ.correct_option_key,
-      });
+        scoreAwarded,
+        speedBonus,
+        answeredAt: Date.now(),
+      };
 
-      // Update team score & rotate student inside the team
+      setAnswers((prev) => ({ ...prev, [teamId]: record }));
+
       setTeams((prev) =>
         prev.map((t) => {
           if (t.id === teamId) {
             return {
               ...t,
-              score: Math.max(0, t.score + totalScore),
+              score: Math.max(0, t.score + scoreAwarded),
               correctCount: t.correctCount + (isCorrect ? 1 : 0),
-              currentMemberIndex: t.currentMemberIndex + 1, // Auto-rotate student!
+              streak: isCorrect ? t.streak + 1 : 0,
+              currentMemberIndex: t.currentMemberIndex + 1,
             };
           }
           return t;
@@ -480,29 +304,95 @@ export function ProjectorScreen({
       );
 
       if (isCorrect) {
-        if (speedBonus > 0) {
-          playSfx("boost");
-        } else {
-          playSfx("correct");
-        }
+        if (speedBonus > 0) playSfx("boost");
+        else playSfx("correct");
       } else {
         playSfx("wrong");
       }
-
-      // If in focus mode and current active team answered:
-      if (teamId === activeTeam.id) {
-        setSelectedOptionId(optionId);
-        setShowAnswerFeedback(true);
-      }
     },
-    [teams, getQuestionForTeam, questionAnswers, correctAnswersOrder, activeTeam.id, selectedMechanic],
+    [phase, answers, correctOptionKey, correctArrivalOrder.length],
   );
 
-  // Wireless Phone Controller Poller (Runs in both setup and gameplay stages)
-  useEffect(() => {
-    if (gameFinished) return;
+  const triggerRevealPhase = useCallback(() => {
+    setPhase("reveal");
+    setIsTimerPaused(true);
+    playSfx("click");
+  }, []);
 
-    const interval = window.setInterval(async () => {
+  // Check if all teams answered -> trigger reveal automatically
+  useEffect(() => {
+    if (phase === "question" && gameStarted) {
+      const answeredCount = Object.keys(answers).length;
+      if (answeredCount >= teams.length && teams.length > 0) {
+        const timeout = setTimeout(() => {
+          triggerRevealPhase();
+        }, 600);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [answers, phase, gameStarted, teams.length, triggerRevealPhase]);
+
+  // STABLE TIMER
+  useEffect(() => {
+    if (!gameStarted || phase !== "question" || isTimerPaused) return;
+
+    const timer = setInterval(() => {
+      setTimerSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          playSfx("wrong");
+          setTimeout(() => {
+            triggerRevealPhase();
+          }, 400);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameStarted, phase, isTimerPaused, triggerRevealPhase]);
+
+  // Advance to Leaderboard Phase
+  const handleGoToLeaderboard = () => {
+    setPhase("leaderboard");
+    playSfx("boost");
+  };
+
+  // Advance to Next Question
+  const handleGoToNextQuestion = () => {
+    if (currentQuestionIndex + 1 < totalQuestions) {
+      setCurrentQuestionIndex((idx) => idx + 1);
+      setAnswers({});
+      setCorrectArrivalOrder([]);
+      setTimerSeconds(QUESTION_DURATION);
+      setIsTimerPaused(false);
+      setPhase("question");
+      playSfx("click");
+    } else {
+      setPhase("finished");
+      playSfx("boost");
+    }
+  };
+
+  // Restart match
+  const handleRestartGame = () => {
+    setTeams((prev) =>
+      prev.map((t) => ({ ...t, score: 0, correctCount: 0, streak: 0, currentMemberIndex: 0 })),
+    );
+    setCurrentQuestionIndex(0);
+    setAnswers({});
+    setCorrectArrivalOrder([]);
+    setTimerSeconds(QUESTION_DURATION);
+    setIsTimerPaused(false);
+    setPhase("question");
+  };
+
+  // Wireless Phone Controller Poller
+  useEffect(() => {
+    if (!gameStarted || phase === "finished") return;
+
+    const interval = setInterval(async () => {
       try {
         const res = await fetch(
           `/api/projector/controller?roomCode=${roomCode}&since=${lastEventTimestampRef.current}`,
@@ -514,696 +404,557 @@ export function ProjectorScreen({
           setActiveControllers(data.activeControllers);
         }
 
-        if (gameStarted && Array.isArray(data.events) && data.events.length > 0) {
+        if (Array.isArray(data.events) && data.events.length > 0) {
           for (const ev of data.events) {
             if (ev.timestamp > lastEventTimestampRef.current) {
               lastEventTimestampRef.current = ev.timestamp;
             }
-            if (ev.action === "press" && ev.teamId && ev.optionKey) {
-              handleAnswerForTeam(ev.teamId, null, ev.optionKey);
+            if (ev.action === "press" && ev.teamId && ev.optionKey && phase === "question") {
+              handleRecordAnswer(ev.teamId, ev.optionKey);
             }
           }
         }
       } catch {
-        // ignore polling errors
+        // network polling silent catch
       }
-    }, 400);
+    }, 350);
 
-    return () => window.clearInterval(interval);
-  }, [gameStarted, gameFinished, roomCode, handleAnswerForTeam]);
+    return () => clearInterval(interval);
+  }, [gameStarted, phase, roomCode, handleRecordAnswer]);
 
-  // Advance to next question round (resets questionAnswers, speed bonus, and shifts round offset)
-  const handleNextQuestion = useCallback(() => {
-    setSelectedOptionId(null);
-    setShowAnswerFeedback(false);
-    setQuestionAnswers({});
-    setCorrectAnswersOrder([]);
-    setArenaAnimation(null);
-    setTimerSeconds(20);
-
-    if (currentRoundOffset + 1 < targetRounds) {
-      setCurrentRoundOffset((r) => r + 1);
-      setCurrentTurnIdx(0);
-      playSfx("click");
-    } else {
-      setGameFinished(true);
-      playSfx("boost");
-    }
-  }, [currentRoundOffset, targetRounds]);
-
-  // Advance to next team's turn on turn mode
-  const handleNextTeamTurn = useCallback(() => {
-    setSelectedOptionId(null);
-    setShowAnswerFeedback(false);
-    setArenaAnimation(null);
-    setTimerSeconds(20);
-
-    const nextIdx = teams.findIndex(
-      (t, i) => i > currentTurnIdx && !questionAnswers[t.id],
-    );
-
-    if (nextIdx !== -1) {
-      setCurrentTurnIdx(nextIdx);
-    } else {
-      const firstUnanswered = teams.findIndex((t) => !questionAnswers[t.id]);
-      if (firstUnanswered !== -1) {
-        setCurrentTurnIdx(firstUnanswered);
-      } else {
-        handleNextQuestion();
-      }
-    }
-  }, [currentTurnIdx, teams, questionAnswers, handleNextQuestion]);
-
-  // Countdown timer effect (Competitive timer & auto-steal)
+  // Keyboard Shortcuts
   useEffect(() => {
-    if (!gameStarted || gameFinished || !isTimerActive || allTeamsAnsweredCurrentQ) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-    const timer = window.setInterval(() => {
-      setTimerSeconds((prev) => {
-        if (prev <= 1) {
-          playSfx("wrong");
-          // Timeout penalty -10 points to active team
-          setTeams((current) =>
-            current.map((t, idx) =>
-              idx === currentTurnIdx ? { ...t, score: Math.max(0, t.score - 10) } : t
-            )
-          );
-          handleNextTeamTurn();
-          return 20;
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        if (phase === "reveal") {
+          handleGoToLeaderboard();
+        } else if (phase === "leaderboard") {
+          handleGoToNextQuestion();
         }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [gameStarted, gameFinished, isTimerActive, allTeamsAnsweredCurrentQ, currentTurnIdx, handleNextTeamTurn]);
-
-  const handleRestart = () => {
-    setTeams((prev) =>
-      prev.map((t) => ({ ...t, score: 0, correctCount: 0, currentMemberIndex: 0 })),
-    );
-    setCurrentRoundOffset(0);
-    setCurrentTurnIdx(0);
-    setQuestionAnswers({});
-    setCorrectAnswersOrder([]);
-    setGameFinished(false);
-    setShowAnswerFeedback(false);
-    setSelectedOptionId(null);
-  };
-
-  // Keyboard shortcut listener for Quiz answers (1-4 or A-D, Space/Enter for next)
-  useEffect(() => {
-    if (!gameStarted || gameFinished) return;
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (showAnswerFeedback) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          if (allTeamsAnsweredCurrentQ) {
-            handleNextQuestion();
-          } else {
-            handleNextTeamTurn();
-          }
-        }
-        return;
+      } else if (e.key.toLowerCase() === "p" && phase === "question") {
+        setIsTimerPaused((prev) => !prev);
+      } else if (e.key.toLowerCase() === "f") {
+        toggleFullscreen();
       }
+    };
 
-      const currentQ = getQuestionForTeam(currentTurnIdx);
-      if (!currentQ) return;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
-      const key = e.key.toUpperCase();
-      if (["1", "2", "3", "4"].includes(key)) {
-        const idx = Number(key) - 1;
-        const opt = currentQ.options[idx];
-        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, opt.option_key);
-      } else if (["A", "B", "C", "D"].includes(key)) {
-        const opt = currentQ.options.find((o) => o.option_key === key);
-        if (opt) handleAnswerForTeam(activeTeam.id, opt.id, key);
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [
-    gameStarted,
-    gameFinished,
-    showAnswerFeedback,
-    allTeamsAnsweredCurrentQ,
-    currentTurnIdx,
-    activeTeam.id,
-    getQuestionForTeam,
-    handleAnswerForTeam,
-    handleNextQuestion,
-    handleNextTeamTurn,
-  ]);
-
-  const mockSessionContext: GameSessionContext = useMemo(
-    () => ({
-      roomId: "projector-local",
-      roomCode,
-      gameName,
-      gameType: selectedMechanic === "slicer" ? "anagram" : selectedMechanic,
-      gameMode: "competitive",
-      durationSeconds: 600,
-      participantId: activeTeam?.id ?? "team-1",
-      participantName: `${activeTeam?.name} - ${activeStudentName}`,
-      questionIndex: currentRoundOffset,
-      questionCount: questions.length,
-      isRtl: Boolean(isRtl),
-    }),
-    [gameName, selectedMechanic, activeTeam, activeStudentName, currentRoundOffset, questions.length, isRtl, roomCode],
-  );
-
-  // Winner podium calculation
-  const rankedTeams = useMemo(() => {
+  const sortedLeaderboard = useMemo(() => {
     return [...teams].sort((a, b) => b.score - a.score);
   }, [teams]);
 
-  if (!questions || questions.length === 0) {
+  const answeredCount = Object.keys(answers).length;
+
+  // If teacher opened a direct web game embed in-session:
+  if (activeEmbedUrl) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
-        <div className="max-w-md rounded-3xl bg-slate-900 p-8 text-center border border-white/10 shadow-2xl">
-          <div className="text-5xl">⚠️</div>
-          <h1 className="mt-4 text-2xl font-black">Game Belum Memiliki Soal</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Tambahkan soal terlebih dahulu melalui Question Bank atau Game Editor.
-          </p>
-          <Link
-            href="/dashboard/games"
-            className="mt-6 inline-block rounded-2xl bg-violet-600 px-6 py-3 font-bold text-white transition hover:bg-violet-700"
+      <div className="relative w-full h-screen bg-black">
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveEmbedUrl(null)}
+            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg transition"
           >
-            Kembali ke Dashboard
-          </Link>
+            ✕ Tutup Web Game & Kembali ke Proyektor
+          </button>
         </div>
+        <WebGameEmbedPlayer embedUrl={activeEmbedUrl} title={gameName} />
+      </div>
+    );
+  }
+
+  // If teacher selected a Native Arcade Game Engine:
+  if (activeEngine === "airplane") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">✈️</span>
+            <div>
+              <h2 className="text-base font-black text-white">Pesawat Terbang Awan (Arkade 60 FPS)</h2>
+              <p className="text-xs text-sky-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        <AirplanePlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
       </main>
     );
   }
 
-  // 1. SETUP STAGE: Choose teams, manage student roster, select game mechanic
+  if (activeEngine === "whack") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🔨</span>
+            <div>
+              <h2 className="text-base font-black text-white">Pukul Tikus Kosakata (Whack-a-Mole)</h2>
+              <p className="text-xs text-amber-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        <WhackPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+      </main>
+    );
+  }
+
+  if (activeEngine === "wheel") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🎡</span>
+            <div>
+              <h2 className="text-base font-black text-white">Roda Putar Fisika Karnaval (Wheel of Fortune)</h2>
+              <p className="text-xs text-yellow-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        <WheelPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+      </main>
+    );
+  }
+
+  if (activeEngine === "memory") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🃏</span>
+            <div>
+              <h2 className="text-base font-black text-white">Kartu Memori Flip 3D (Mufrodat)</h2>
+              <p className="text-xs text-purple-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        <MemoryPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+      </main>
+    );
+  }
+
+  if (activeEngine === "balloon") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🎈</span>
+            <div>
+              <h2 className="text-base font-black text-white">Pecahkan Balon Jawaban (Balloon Pop)</h2>
+              <p className="text-xs text-sky-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        <BalloonPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+      </main>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // LOBBY PHASE (Before Start)
+  // -------------------------------------------------------------
   if (!gameStarted) {
     return (
-      <main
-        className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 sm:p-8 text-white"
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <div className="mx-auto max-w-5xl space-y-6">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/dashboard/games"
-              className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
-            >
-              ← Kembali ke Dashboard
-            </Link>
-            <div className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-black text-emerald-300">
-              📽️ Mode Proyektor & Console Smartboard
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative overflow-hidden font-sans">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-600/20 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
+
+        {/* Top Header */}
+        <header className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">📽️</span>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-white tracking-wide">{gameName}</h1>
+              <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
+                Kahoot Arena Panggung Proyektor & Remote HP Nirkabel
+              </p>
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6 sm:p-8 border border-white/10 shadow-2xl backdrop-blur text-center">
-            <div className="text-6xl">📽️</div>
-            <h1 className="mt-3 text-3xl font-black sm:text-4xl text-white">{gameName}</h1>
-            <p className="mt-2 text-slate-300 max-w-2xl mx-auto">
-              Layar proyektor berfungsi layaknya konsol game TV! Siswa dapat bermain langsung di smartboard atau menggunakan HP sebagai remote nirkabel (4 Stik Controller).
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1 bg-black/40 p-1 rounded-2xl border border-white/10">
+              <span className="text-[11px] font-bold text-slate-400 px-1">Game:</span>
+              <button
+                type="button"
+                onClick={() => setActiveEngine("airplane")}
+                className="px-2 py-1 rounded-xl bg-sky-600/30 hover:bg-sky-600/60 text-sky-200 border border-sky-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>✈️</span>
+                <span>Pesawat</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEngine("whack")}
+                className="px-2 py-1 rounded-xl bg-amber-600/30 hover:bg-amber-600/60 text-amber-200 border border-amber-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>🔨</span>
+                <span>Pukul Tikus</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEngine("wheel")}
+                className="px-2 py-1 rounded-xl bg-yellow-600/30 hover:bg-yellow-600/60 text-yellow-200 border border-yellow-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>🎡</span>
+                <span>Roda</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEngine("memory")}
+                className="px-2 py-1 rounded-xl bg-purple-600/30 hover:bg-purple-600/60 text-purple-200 border border-purple-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>🃏</span>
+                <span>Memori</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEngine("balloon")}
+                className="px-2 py-1 rounded-xl bg-rose-600/30 hover:bg-rose-600/60 text-rose-200 border border-rose-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>🎈</span>
+                <span>Balon</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowClassModal(true)}
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition border border-white/10 flex items-center gap-1.5"
+            >
+              <span>👥</span>
+              <span>Kelola Tim ({classStudents.length} Siswa)</span>
+            </button>
+
+            <Link
+              href="/dashboard/games"
+              className="px-3 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition"
+            >
+              Kembali
+            </Link>
+          </div>
+        </header>
+
+        {/* Center: Hero Controller Join Box & 4 Team Podiums */}
+        <div className="relative z-10 max-w-5xl mx-auto w-full my-auto py-6 space-y-6">
+          <div className="p-6 md:p-8 rounded-3xl bg-slate-900/90 border-2 border-emerald-500/40 shadow-2xl backdrop-blur text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black">
+              <span>🎮</span>
+              <span>STIK KONTROLER HP SISWA (/controller)</span>
+            </div>
+
+            <h2 className="text-2xl md:text-4xl font-black text-white">
+              Buka di HP Siswa: <span className="text-emerald-400 underline font-mono">{controllerOrigin}/controller</span>
+            </h2>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="px-5 py-3 rounded-2xl bg-black/50 border border-white/20 text-center">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest block font-bold">KODE ROOM</span>
+                <span className="text-2xl md:text-3xl font-black font-mono text-amber-400">{roomCode}</span>
+              </div>
+              <div className="px-5 py-3 rounded-2xl bg-black/50 border border-white/20 text-center">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest block font-bold">STIK TERHUBUNG</span>
+                <span className="text-2xl md:text-3xl font-black font-mono text-emerald-400">{activeControllers.length} HP</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 max-w-lg mx-auto">
+              Siswa membuka tautan kontroler di browser HP masing-masing, memilih timnya, dan langsung siap menekan tombol warna saat kuis dimulai.
             </p>
+          </div>
 
-            {/* DYNAMIC AUTO-SHUFFLE INFO BADGE */}
-            <div className="mt-6 rounded-2xl bg-emerald-500/10 border border-emerald-400/40 p-4 text-start text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🎲</span>
-                <div>
+          {/* 4 Teams Podiums */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {teams.map((t) => (
+              <div
+                key={t.id}
+                className={`p-4 rounded-2xl border ${t.cardBg} ${t.accentBorder} shadow-lg flex flex-col justify-between min-h-[140px]`}
+              >
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-sm text-emerald-300">
-                      Pengacakan & Perputaran Soal Otomatis Aktif
-                    </span>
-                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-black text-emerald-300">
-                      {questions.length} Soal Tersedia
-                    </span>
+                    <span className={`w-3 h-3 rounded-full ${t.badgeBg}`} />
+                    <span className="font-black text-sm text-white">{t.name}</span>
                   </div>
-                  <p className="text-xs text-emerald-100/80 mt-1">
-                    Soal dan pilihan jawaban (A, B, C, D) akan diacak dan dirotasi secara otomatis antar-kelompok di setiap putaran. Guru tidak perlu menyiapkan banyak soal, permainan siap langsung dimainkan!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Select Game Mechanic */}
-            <div className="mt-8 text-start">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                1. Pilih Tampilan / Mekanik Permainan:
-              </label>
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {[
-                  { id: "quiz", label: "Quiz Besar", icon: "📝" },
-                  { id: "runner", label: "Canvas Runner", icon: "🏃‍♂️" },
-                  { id: "slicer", label: "Fruit Slicer (Ninja)", icon: "🍉" },
-                  { id: "matching", label: "Matching Kartu", icon: "🧩" },
-                  { id: "penalty", label: "Penalty Kick", icon: "⚽" },
-                ].map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setSelectedMechanic(m.id as NormalizedGameType | "slicer")}
-                    className={`flex flex-col items-center justify-center rounded-2xl p-4 font-black transition border-2 ${
-                      selectedMechanic === m.id
-                        ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-lg shadow-emerald-500/20"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
-                    }`}
-                  >
-                    <span className="text-3xl">{m.icon}</span>
-                    <span className="mt-2 text-xs">{m.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Layout Mode Selection */}
-            <div className="mt-8 text-start">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                2. Mode Tampilan Layar Proyektor:
-              </label>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode("focus")}
-                  className={`p-4 rounded-2xl border-2 text-start transition flex items-start gap-4 ${
-                    layoutMode === "focus"
-                      ? "border-violet-400 bg-violet-600/30 text-white shadow-lg"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-                  }`}
-                >
-                  <span className="text-3xl">📺</span>
-                  <div>
-                    <div className="font-black text-sm">Mode Giliran Penuh (Fokus 1 Tim Bergantian)</div>
-                    <div className="text-xs text-slate-300 mt-1">
-                      Layar menampilkan arena game penuh. Semua tim maju bergantian dengan soal unik masing-masing.
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode("split")}
-                  className={`p-4 rounded-2xl border-2 text-start transition flex items-start gap-4 ${
-                    layoutMode === "split"
-                      ? "border-emerald-400 bg-emerald-600/30 text-white shadow-lg"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20"
-                  }`}
-                >
-                  <span className="text-3xl">⊞</span>
-                  <div>
-                    <div className="font-black text-sm">Mode Layar Terbagi 4 Kuadran (Multi-Arena)</div>
-                    <div className="text-xs text-slate-300 mt-1">
-                      Layar terbagi 4 kuadran dengan <strong>soal berbeda untuk masing-masing tim</strong>. Tim tercepat mendapat ⚡ Bonus Kecepatan!
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Team Roster & Studio */}
-            <div className="mt-8 text-start rounded-3xl bg-slate-900/60 p-6 border border-white/10">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-black text-white flex items-center gap-2">
-                    <span>👥 Pengaturan Tim & Siswa Kelas</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Tentukan jumlah kelompok, pilih kelas (misal Kelas Mangkoso), dan bagi rata siswa secara otomatis.
-                  </p>
+                  <span className="text-xs font-mono font-bold text-slate-400">
+                    {t.members.length} Siswa
+                  </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {teacherClasses.length > 0 && (
-                    <select
-                      value={selectedClassId}
-                      onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="rounded-xl bg-slate-800 border border-white/20 px-3 py-2 text-xs font-bold text-white focus:outline-hidden"
-                    >
-                      {teacherClasses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({allStudents.filter((s) => s.class_id === c.id).length} siswa)
-                        </option>
-                      ))}
-                    </select>
+                <div className="my-2 max-h-24 overflow-y-auto text-xs space-y-1 text-slate-300 pr-1">
+                  {t.members.length > 0 ? (
+                    t.members.slice(0, 5).map((m) => (
+                      <div key={m.id} className="truncate bg-black/30 px-2 py-0.5 rounded">
+                        • {m.name}
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-slate-500 italic text-[11px]">Belum ada anggota</span>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={handleAutoDistributeStudents}
-                    className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-xs font-black text-white shadow hover:scale-105 transition"
-                  >
-                    🎲 Bagi Rata Otomatis
-                  </button>
+                  {t.members.length > 5 && (
+                    <span className="text-[10px] text-slate-400 italic block">
+                      +{t.members.length - 5} lainnya
+                    </span>
+                  )}
                 </div>
-              </div>
 
-              {/* Number of Teams Selector */}
-              <div className="mt-4 flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-400">Jumlah Tim:</span>
-                <div className="flex gap-2">
-                  {[2, 3, 4].map((cnt) => (
-                    <button
-                      key={cnt}
-                      type="button"
-                      onClick={() => handleSetTeamCount(cnt)}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-black transition border ${
-                        teamCount === cnt
-                          ? "border-emerald-400 bg-emerald-500 text-slate-950 font-black shadow"
-                          : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-                      }`}
-                    >
-                      {cnt} Tim
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Team Cards Roster Grid */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {teams.map((team, tIdx) => {
-                  const currentMember = team.members[team.currentMemberIndex % (team.members.length || 1)];
-
-                  return (
-                    <div
-                      key={team.id}
-                      className={`rounded-2xl p-4 border bg-gradient-to-b from-white/10 to-slate-900/90 ${team.accentBorder} flex flex-col justify-between`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <input
-                            type="text"
-                            value={team.name}
-                            onChange={(e) => {
-                              const newName = e.target.value;
-                              setTeams((prev) =>
-                                prev.map((t) => (t.id === team.id ? { ...t, name: newName } : t)),
-                              );
-                            }}
-                            className="bg-transparent font-black text-sm text-white focus:outline-hidden focus:border-b border-white/40 w-full"
-                          />
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded text-white ${team.badgeBg}`}>
-                            #{tIdx + 1}
-                          </span>
-                        </div>
-
-                        <div className="mt-2 text-xs bg-white/5 p-2 rounded-xl border border-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase font-black block">
-                            Pemain Pertama / Saat Ini:
-                          </span>
-                          <span className="font-bold text-emerald-300 truncate block">
-                            {currentMember?.name || "(Belum ada siswa)"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="text-[10px] font-bold uppercase text-slate-400 mb-1">
-                            Anggota ({team.members.length} siswa):
-                          </div>
-                          <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
-                            {team.members.length === 0 ? (
-                              <p className="text-[11px] text-slate-500 italic">Belum ada anggota.</p>
-                            ) : (
-                              team.members.map((m, mIdx) => (
-                                <div
-                                  key={m.id}
-                                  className={`flex items-center justify-between rounded-lg px-2 py-1 text-xs transition ${
-                                    mIdx === team.currentMemberIndex % team.members.length
-                                      ? "bg-emerald-500/30 text-white font-black border border-emerald-400/50"
-                                      : "bg-white/5 text-slate-300 hover:bg-white/10"
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSetActiveMember(team.id, mIdx)}
-                                    title="Klik untuk jadikan pemain aktif sekarang"
-                                    className="truncate text-start flex-1"
-                                  >
-                                    {mIdx + 1}. {m.name}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveStudent(m.id)}
-                                    className="text-rose-400 hover:text-rose-200 text-xs px-1"
-                                    title="Hapus dari tim ini"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-400">
-                        <span>Total: {team.members.length} anak</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Add Student Manually Box */}
-              <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Tambah nama siswa manual..."
-                  value={newStudentNameInput}
-                  onChange={(e) => setNewStudentNameInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddManualStudent();
-                  }}
-                  className="rounded-xl bg-slate-800 border border-white/20 px-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-hidden flex-1 min-w-[200px]"
-                />
-                <select
-                  value={targetTeamForNewStudent}
-                  onChange={(e) => setTargetTeamForNewStudent(e.target.value)}
-                  className="rounded-xl bg-slate-800 border border-white/20 px-3 py-2 text-xs text-white"
-                >
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
                 <button
                   type="button"
-                  onClick={handleAddManualStudent}
-                  className="rounded-xl bg-white/20 px-4 py-2 text-xs font-bold text-white hover:bg-white/30"
+                  onClick={() => {
+                    setTargetTeamId(t.id);
+                    setShowClassModal(true);
+                  }}
+                  className="w-full py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white transition text-center"
                 >
                   + Tambah Siswa
                 </button>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Target Rounds Selector */}
-            <div className="mt-8 text-start">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                4. Target Putaran Permainan:
-              </label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  { value: 3, label: "3 Putaran (Kilat)" },
-                  { value: 5, label: "5 Putaran (Standar)" },
-                  { value: 8, label: "8 Putaran (Semua Siswa Main)" },
-                  { value: 12, label: "12 Putaran (Maraton)" },
-                ].map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() => setTargetRounds(r.value)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
-                      targetRounds === r.value
-                        ? "bg-violet-600 border-violet-400 text-white font-black shadow-lg shadow-violet-600/30 scale-102"
-                        : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* PROMINENT WIRELESS PHONE CONTROLLER LAUNCHER & STATUS */}
-            <div className="mt-8 rounded-3xl bg-gradient-to-br from-indigo-950/90 via-slate-900 to-sky-950/90 p-6 border-2 border-sky-400/50 shadow-2xl text-start backdrop-blur">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-black text-sky-300">
-                    <span>🎮</span>
-                    <span>KONTROLER WIRELESS HP SISWA (MODEL STIK PS3)</span>
-                  </div>
-                  <h3 className="mt-2 text-xl sm:text-2xl font-black text-white">
-                    Hubungkan HP Siswa Sebagai Stik Nirkabel
-                  </h3>
-                  <p className="mt-1 text-xs text-sky-100/80 max-w-xl">
-                    Siswa cukup membuka tautan ini di browser HP masing-masing (Chrome/Safari), pilih Stik Tim (1-4), dan tombol A, B, C, D di HP langsung mengendalikan layar proyektor ini tanpa install aplikasi!
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                  <a
-                    href={`/controller?room=${roomCode}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 hover:bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg transition active:scale-95"
-                  >
-                    <span>📱</span>
-                    <span>Buka Kontroler HP (Tab Baru)</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(controllerFullUrl);
-                      alert("Tautan kontroler berhasil disalin: " + controllerFullUrl);
-                    }}
-                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition"
-                  >
-                    📋 Salin Link
-                  </button>
-                </div>
-              </div>
-
-              {/* Direct Link and Code Details */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-black/40 p-3.5 border border-white/10 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-black text-slate-400 block">Link HP Siswa:</span>
-                    <span className="font-mono text-sm font-black text-sky-300">{controllerDisplayUrl}</span>
-                  </div>
-                  <span className="text-xl">🌐</span>
-                </div>
-                <div className="rounded-2xl bg-black/40 p-3.5 border border-white/10 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-black text-slate-400 block">Kode Ruangan:</span>
-                    <span className="font-mono text-base font-black text-amber-300 tracking-wider">{roomCode}</span>
-                  </div>
-                  <span className="text-xl">🔑</span>
-                </div>
-              </div>
-
-              {/* 4 Sticks Live Status Grid */}
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-300 block mb-2">
-                  Status Koneksi 4 Stik Nirkabel Siswa:
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {teams.slice(0, 4).map((t, idx) => {
-                    const isOnline = activeControllers.includes(t.id);
-                    return (
-                      <div
-                        key={t.id}
-                        className={`rounded-xl p-2.5 border text-xs font-bold transition flex items-center justify-between ${
-                          isOnline
-                            ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-200"
-                            : "bg-white/5 border-white/10 text-slate-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-emerald-400 animate-ping" : "bg-slate-600"}`} />
-                          <span>Stik #{idx + 1} ({t.name.split(" ")[0]})</span>
-                        </div>
-                        <span className="font-black text-[11px]">{isOnline ? "ONLINE ✅" : "Menunggu ⏳"}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Launch Big Screen Button */}
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
               type="button"
-              disabled={questions.length === 0}
+              onClick={distributeStudents}
+              className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-sm transition flex items-center gap-2"
+            >
+              <span>🎲</span>
+              <span>Acak Siswa Kelas ({classStudents.length})</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 setGameStarted(true);
-                playSfx("whistle");
+                playSfx("boost");
               }}
-              className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-10 py-4 text-xl font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-base shadow-xl transition hover:scale-105 active:scale-95 flex items-center gap-2"
             >
-              <span>🚀 Mulai di Proyektor Sekarang</span>
+              <span>▶️</span>
+              <span>MULAI KUIS KELAS ({totalQuestions} SOAL)</span>
             </button>
           </div>
         </div>
+
+        {/* Modal: Kelola Siswa */}
+        {showClassModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-white/20 rounded-3xl p-6 max-w-lg w-full space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-white">Kelola Pembagian Tim</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowClassModal(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Pilih Kelas:</label>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-white/10 text-white text-sm"
+                >
+                  {teacherClasses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nama siswa manual..."
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  className="flex-1 p-2.5 rounded-xl bg-slate-800 border border-white/10 text-white text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newStudentName.trim()) return;
+                    setTeams((prev) =>
+                      prev.map((t) =>
+                        t.id === targetTeamId
+                          ? {
+                              ...t,
+                              members: [
+                                ...t.members,
+                                {
+                                  id: `manual-${Date.now()}`,
+                                  name: newStudentName.trim(),
+                                  class_id: selectedClassId,
+                                },
+                              ],
+                            }
+                          : t,
+                      ),
+                    );
+                    setNewStudentName("");
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm"
+                >
+                  + Tambah
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowClassModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-white/10 text-white font-bold text-sm hover:bg-white/20 transition"
+                >
+                  Selesai
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Buka Web Game Embed */}
+        {showWebGameModal && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 max-w-2xl w-full space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-black text-white">🌐 Buka Web Game Pembelajaran Asli</h3>
+                  <p className="text-xs text-slate-400">Pilih dari katalog 30 game atau tempel URL embed Wordwall/Educaplay/H5P:</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowWebGameModal(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                {CURATED_WEB_GAMES.slice(0, 12).map((wg) => (
+                  <button
+                    key={wg.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveEmbedUrl(wg.embedUrl);
+                      setShowWebGameModal(false);
+                    }}
+                    className="p-3 rounded-xl bg-slate-800 hover:bg-indigo-900/60 border border-white/10 hover:border-indigo-400 text-left transition flex flex-col justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">{wg.thumbnailIcon}</span>
+                      <span className="font-bold text-white truncate">{wg.title}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span className="font-bold text-indigo-300">{wg.platform}</span>
+                      <span>{wg.category}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-white/10">
+                <input
+                  type="url"
+                  placeholder="Tempel URL embed di sini (misal: https://wordwall.net/embed/...)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
+                      setActiveEmbedUrl((e.target as HTMLInputElement).value);
+                      setShowWebGameModal(false);
+                    }
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-white/10 text-white text-xs placeholder-slate-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     );
   }
 
-  // 2. FINISHED STAGE: Championship Podium on Big Screen
-  if (gameFinished) {
-    const winner = rankedTeams[0];
+  // -------------------------------------------------------------
+  // FINISHED PHASE (Winner Podium)
+  // -------------------------------------------------------------
+  if (phase === "finished") {
+    const winner = sortedLeaderboard[0];
     return (
-      <main
-        className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 p-6 text-white text-center flex flex-col justify-center items-center relative overflow-hidden"
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <Confetti active={true} particleCount={220} originY={0.9} />
-
-        <div className="relative z-10 max-w-3xl w-full rounded-3xl bg-white/10 p-8 border border-white/20 shadow-2xl backdrop-blur">
-          <div className="text-7xl animate-bounce">🏆</div>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-black">Pertandingan Selesai!</h1>
-          <p className="mt-2 text-emerald-300 font-bold text-lg">
-            Selamat kepada seluruh tim dan siswa yang telah berjuang luar biasa!
-          </p>
-
-          {/* Winner Banner */}
-          {winner && (
-            <div className={`mt-8 rounded-3xl p-6 bg-gradient-to-r ${winner.color} text-white shadow-2xl`}>
-              <div className="text-xs uppercase font-black tracking-widest opacity-80">
-                🥇 JUARA 1 KELAS
-              </div>
-              <div className="mt-2 text-3xl sm:text-4xl font-black">{winner.name}</div>
-              <div className="mt-2 text-xl font-black">
-                {winner.score} Poin • {winner.correctCount} Jawaban Benar
-              </div>
-              {winner.members.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/20 text-xs text-white/90">
-                  Anggota Tim: {winner.members.map((m) => m.name).join(", ")}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Leaderboard Table of Teams */}
-          <div className="mt-6 rounded-2xl bg-slate-900/80 p-4 border border-white/10 text-start">
-            <h3 className="text-xs font-black uppercase text-slate-400 mb-2">Peringkat Lengkap:</h3>
-            <div className="space-y-2">
-              {rankedTeams.map((team, idx) => (
-                <div
-                  key={team.id}
-                  className="flex items-center justify-between rounded-xl bg-white/5 p-3 font-bold"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-sm font-black">
-                      #{idx + 1}
-                    </span>
-                    <div>
-                      <div className="text-white">{team.name}</div>
-                      <div className="text-[11px] text-slate-400">
-                        {team.members.length} anggota • {team.correctCount} benar
-                      </div>
-                    </div>
-                  </div>
-                  <span className="font-mono text-xl font-black text-emerald-400">
-                    {team.score} Pts
-                  </span>
-                </div>
-              ))}
-            </div>
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center relative select-none">
+        <Confetti />
+        <div className="max-w-2xl w-full p-8 rounded-3xl bg-slate-900/90 border border-amber-400/40 shadow-2xl backdrop-blur space-y-6 animate-in zoom-in-95">
+          <span className="text-6xl animate-bounce block">🏆</span>
+          <div>
+            <span className="text-xs uppercase tracking-widest text-amber-400 font-bold block mb-1">JUARA PERTAMA</span>
+            <h1 className="text-4xl md:text-5xl font-black text-white">{winner?.name ?? "Tim Juara"}</h1>
+            <p className="text-2xl font-black text-emerald-400 font-mono mt-2">{winner?.score ?? 0} Poin</p>
           </div>
 
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
+            {sortedLeaderboard.map((t, idx) => (
+              <div key={t.id} className={`p-3 rounded-xl border ${t.cardBg} ${t.accentBorder} text-center`}>
+                <span className="text-xs font-mono font-bold text-amber-400 block">#{idx + 1}</span>
+                <span className="text-xs font-black text-white truncate block">{t.name}</span>
+                <span className="text-xs font-mono text-emerald-400 font-bold">{t.score} Pts</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-3 pt-4">
             <button
               type="button"
-              onClick={handleRestart}
-              className="rounded-2xl bg-white px-6 py-3 font-black text-slate-900 shadow-lg transition hover:bg-slate-100"
+              onClick={handleRestartGame}
+              className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition"
             >
-              🔄 Main Lagi
+              🔄 Ulangi Kuis
             </button>
             <Link
               href="/dashboard/games"
-              className="rounded-2xl bg-white/20 px-6 py-3 font-black text-white transition hover:bg-white/30"
+              className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm transition shadow-lg"
             >
-              Kembali ke Dashboard
+              Selesai & Keluar
             </Link>
           </div>
         </div>
@@ -1211,1338 +962,311 @@ export function ProjectorScreen({
     );
   }
 
-  // 3. LIVE GAMEPLAY STAGE ON PROJECTOR
-  return (
-    <main
-      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-3 sm:p-5 text-white flex flex-col justify-between"
-      dir={isRtl ? "rtl" : "ltr"}
-    >
-      {/* TOP PROJECTOR HUD */}
-      <header className="rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4 backdrop-blur shadow-xl space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black">
-              PUTARAN {currentRoundOffset + 1} / {targetRounds}
-            </span>
-            <h1 className="text-base sm:text-lg font-black truncate max-w-xs sm:max-w-md">
-              {gameName}
-            </h1>
-          </div>
-
-          {/* Remote HP Wireless Controllers Badge */}
+  // -------------------------------------------------------------
+  // LEADERBOARD PHASE (Mid-Game Rankings)
+  // -------------------------------------------------------------
+  if (phase === "leaderboard") {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative font-sans">
+        <header className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowRemoteInfoModal(true)}
-              className="rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-3 py-1.5 text-xs font-black text-white shadow hover:scale-105 transition flex items-center gap-1.5"
-            >
-              <span>🎮</span>
-              <span>Stik Remote HP ({activeControllers.length}/4)</span>
-            </button>
-
-            <div className="flex rounded-xl bg-white/10 p-1">
-              <button
-                type="button"
-                onClick={() => setLayoutMode("focus")}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
-                  layoutMode === "focus"
-                    ? "bg-violet-600 text-white font-black shadow"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                📺 Fokus 1 Tim
-              </button>
-              <button
-                type="button"
-                onClick={() => setLayoutMode("split")}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
-                  layoutMode === "split"
-                    ? "bg-emerald-600 text-white font-black shadow"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                ⊞ Terbagi 4 Kuadran
-              </button>
-            </div>
-
-            {/* Live Arena Mechanic Switcher (Allows teacher to switch game modes anytime) */}
-            <div className="flex rounded-xl bg-white/10 p-1 border border-white/15 gap-0.5 overflow-x-auto">
-              {[
-                { id: "penalty", label: "⚽ Adu Penalti", activeBg: "bg-emerald-600 text-white" },
-                { id: "runner", label: "🏃 Balapan Runner", activeBg: "bg-violet-600 text-white" },
-                { id: "slicer", label: "🍉 Tebas Buah", activeBg: "bg-amber-600 text-white" },
-                { id: "matching", label: "🧩 Papan Matching", activeBg: "bg-sky-600 text-white" },
-                { id: "quiz", label: "🎯 Kuis Cepat", activeBg: "bg-indigo-600 text-white" },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setSelectedMechanic(m.id as NormalizedGameType | "slicer")}
-                  className={`px-2 py-1 text-xs font-black rounded-lg transition whitespace-nowrap ${
-                    selectedMechanic === m.id
-                      ? `${m.activeBg} shadow-lg scale-102`
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  }`}
-                  title={`Ubah Tampilan Arena ke ${m.label}`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowTeamStudioModal(true)}
-              className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 flex items-center gap-1.5"
-              title="Kelola Tim & Siswa"
-            >
-              <span>⚙️</span>
-              <span className="hidden sm:inline">Kelola Tim</span>
-            </button>
-
-            {/* Competitive Round Timer Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsTimerActive((v) => !v)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-mono font-black border transition flex items-center gap-1.5 ${
-                !isTimerActive
-                  ? "bg-white/5 border-white/10 text-slate-400"
-                  : timerSeconds > 10
-                  ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300 shadow"
-                  : timerSeconds > 5
-                  ? "bg-amber-500/20 border-amber-400/40 text-amber-300 shadow"
-                  : "bg-rose-500/20 border-rose-400/40 text-rose-300 animate-pulse shadow-rose-500/20"
-              }`}
-              title="Klik untuk Aktifkan / Matikan Timer"
-            >
-              <span>⏱️</span>
-              <span>{isTimerActive ? `${timerSeconds}s` : "OFF"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-              title="Layar Penuh"
-            >
-              {isFullscreen ? "🗗" : "⛶"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setGameFinished(true)}
-              className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs font-bold text-rose-300 hover:bg-rose-500/30"
-            >
-              Akhiri
-            </button>
+            <span className="text-2xl">🏆</span>
+            <h2 className="text-lg font-black text-white uppercase tracking-wider">PAPAN KLASEMEN SEMENTARA</h2>
           </div>
-        </div>
+          <span className="text-xs text-slate-400 font-mono">Soal {currentQuestionIndex + 1} / {totalQuestions}</span>
+        </header>
 
-        {/* Animated Timer Progress Bar */}
-        {isTimerActive && !allTeamsAnsweredCurrentQ && (
-          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden border border-white/10">
+        <div className="max-w-3xl mx-auto w-full my-auto py-6 space-y-3">
+          {sortedLeaderboard.map((team, idx) => (
             <div
-              className={`h-full transition-all duration-1000 ${
-                timerSeconds > 10
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                  : timerSeconds > 5
-                  ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                  : "bg-gradient-to-r from-rose-600 to-red-500 animate-pulse"
-              }`}
-              style={{ width: `${Math.min(100, Math.max(0, (timerSeconds / 20) * 100))}%` }}
-            />
-          </div>
-        )}
-
-        {/* PERMANENT TOP BANNER FOR STUDENTS & CONTROLLERS */}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-sky-950/80 via-slate-900/80 to-indigo-950/80 border border-sky-400/40 px-3 py-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="animate-pulse text-sm">🎮</span>
-            <span className="font-bold text-slate-300">HP SISWA:</span>
-            <code className="rounded-lg bg-sky-500/20 px-2 py-0.5 font-mono font-black text-sky-300 border border-sky-400/30">
-              {controllerDisplayUrl}
-            </code>
-            <span className="font-bold text-slate-300">KODE:</span>
-            <span className="rounded-lg bg-amber-500/20 px-2 py-0.5 font-mono font-black text-amber-300 border border-amber-400/30">
-              {roomCode}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Stik:</span>
-            {teams.slice(0, 4).map((t, idx) => {
-              const isOnline = activeControllers.includes(t.id);
-              return (
-                <span
-                  key={t.id}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${
-                    isOnline
-                      ? "bg-emerald-500/30 text-emerald-200 border border-emerald-400/50"
-                      : "bg-white/5 text-slate-400 border border-white/10"
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-400 animate-pulse" : "bg-slate-600"}`} />
-                  <span>Stik {idx + 1}</span>
-                  <span>{isOnline ? "✅" : "⏳"}</span>
-                </span>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => setShowRemoteInfoModal(true)}
-              className="ml-1 rounded-lg bg-sky-600 hover:bg-sky-500 px-2.5 py-0.5 font-bold text-white text-[11px] transition shadow"
+              key={team.id}
+              className={`p-4 md:p-5 rounded-2xl border-2 flex items-center justify-between transition-all shadow-xl ${team.cardBg} ${team.accentBorder}`}
             >
-              Info / QR
-            </button>
-          </div>
-        </div>
-
-        {/* INTERACTIVE TEAM TABS & TURN SELECTOR */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/10">
-          {teams.map((t, idx) => {
-            const hasAnswered = Boolean(questionAnswers[t.id]);
-            const ans = questionAnswers[t.id];
-            const isTurn = currentTurnIdx === idx;
-            const currentMem = t.members[t.currentMemberIndex % (t.members.length || 1)];
-            const isControllerActive = activeControllers.includes(t.id);
-
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setCurrentTurnIdx(idx);
-                  setShowAnswerFeedback(false);
-                  setSelectedOptionId(null);
-                }}
-                className={`text-start rounded-xl p-2.5 transition-all border-2 relative overflow-hidden ${
-                  isTurn
-                    ? `border-white bg-gradient-to-r ${t.color} text-white shadow-lg scale-102 z-10`
-                    : hasAnswered
-                    ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-200"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-black text-xs truncate">{t.name}</span>
-                    {isControllerActive && (
-                      <span className="text-[10px]" title="Stik HP Terhubung">
-                        🎮
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-mono text-xs font-black">
-                    {t.score} pts
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between text-[11px]">
-                  <span className="truncate opacity-80 font-bold">
-                    👤 {currentMem?.name || "Pemain"}
-                  </span>
-                  <span>
-                    {hasAnswered ? (
-                      ans?.isCorrect ? (
-                        <span className="text-emerald-400 font-bold">
-                          {ans.speedBonus > 0 ? "⚡ Tercepat" : "✅ Benar"}
-                        </span>
-                      ) : (
-                        <span className="text-rose-400 font-bold">❌ Salah</span>
-                      )
-                    ) : isTurn ? (
-                      <span className="text-amber-300 font-black animate-pulse">👉 Giliran</span>
-                    ) : (
-                      <span className="text-slate-500">Menunggu</span>
-                    )}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </header>
-
-      {/* CENTRAL GAMEPLAY ARENA */}
-      <section className="my-3 flex-1 flex flex-col justify-center">
-        {layoutMode === "split" ? (
-          /* =====================================================================
-             MODE B: 4-QUADRANT SPLIT SCREEN ARENA
-             Each team has its own DIFFERENT question & options, with SPEED BONUS!
-             ===================================================================== */
-          <div className="space-y-4">
-            {/* Speed Bonus Announcement Banner */}
-            <div className="rounded-2xl bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 p-3 text-center border border-amber-500/40 shadow-xl backdrop-blur">
-              <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center justify-center gap-2">
-                <span>⚡ MODE 4 KUADRAN: SOAL BERBEDA UNTUK TIAP KELOMPOK • TERCEPAT DAPAT BONUS +50 POIN!</span>
-              </span>
-            </div>
-
-            {/* GRAND LIVE ACTION ARENA FOR ALL 4 TEAMS */}
-            <div className="rounded-3xl bg-slate-900/90 border-2 border-indigo-500/40 p-3 sm:p-4 shadow-2xl backdrop-blur relative overflow-hidden">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs font-black">
-                <span className="flex items-center gap-2 text-indigo-300">
-                  <span className="text-lg">🏟️</span>
-                  <span>
-                    ARENA UTAMA:{" "}
-                    {selectedMechanic === "penalty"
-                      ? "STADION ADU PENALTI"
-                      : selectedMechanic === "runner"
-                      ? "LINTASAN BALAPAN 4 JALUR"
-                      : selectedMechanic === "slicer"
-                      ? "DOJO TEBAS BUAH"
-                      : selectedMechanic === "matching"
-                      ? "PAPAN KARTU MATCHING"
-                      : "PANGGUNG KUIS CEPAT"}
-                  </span>
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center font-mono font-black text-amber-400 text-base">
+                  #{idx + 1}
                 </span>
-                {arenaAnimation ? (
-                  <span
-                    className={`px-3 py-1 rounded-full font-black text-xs animate-pulse ${
-                      arenaAnimation.isCorrect
-                        ? "bg-emerald-500/30 text-emerald-300 border border-emerald-400/50"
-                        : "bg-rose-500/30 text-rose-300 border border-rose-400/50"
-                    }`}
-                  >
-                    {arenaAnimation.mechanic === "penalty"
-                      ? arenaAnimation.isCorrect
-                        ? `⚽ GOOOL! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                        : `🧤 DITEPAK KIPER! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
-                      : arenaAnimation.mechanic === "runner"
-                      ? arenaAnimation.isCorrect
-                        ? `🚀 SPRINT TURBO! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                        : `💨 TERSANDUNG! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
-                      : arenaAnimation.mechanic === "slicer"
-                      ? arenaAnimation.isCorrect
-                        ? `🍉⚔️ TEBASAN SEMPURNA! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                        : `💣💥 KABOOOM! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
-                      : arenaAnimation.mechanic === "matching"
-                      ? arenaAnimation.isCorrect
-                        ? `✨ PASANGAN COCOK! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                        : `❌ BUKAN PASANGAN! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`
-                      : arenaAnimation.isCorrect
-                      ? `🎯 JAWABAN TEPAT! ${arenaAnimation.teamName} (+${arenaAnimation.scoreAwarded} Pts)`
-                      : `⚠️ KURANG TEPAT! ${arenaAnimation.teamName} (${arenaAnimation.scoreAwarded} Pts)`}
-                  </span>
-                ) : (
-                  <span className="text-slate-400">Siap menerima jawaban 4 Stik Nirkabel HP Siswa</span>
-                )}
+                <div>
+                  <h3 className="text-lg font-black text-white">{team.name}</h3>
+                  <span className="text-xs text-slate-400">{team.correctCount} Jawaban Tepat</span>
+                </div>
               </div>
-
-              {/* Penalty Stadium Arena */}
-              {selectedMechanic === "penalty" ? (
-                <div className="relative h-60 sm:h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-sky-950 via-slate-900 to-emerald-900 border-2 border-slate-700 shadow-inner">
-                  <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
-
-                  {/* Goal Net */}
-                  <div className="absolute inset-x-8 top-4 bottom-14 sm:inset-x-16 sm:top-6 sm:bottom-16 rounded-t-xl border-t-6 border-x-6 border-white bg-slate-950/60 shadow-2xl overflow-hidden">
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,#ffffff_1px,transparent_1px),linear-gradient(-45deg,#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-25" />
-                    <div className="absolute inset-x-0 bottom-0 h-6 bg-emerald-800/80 border-t-2 border-white/60" />
-
-                    {/* Animated Goalkeeper */}
-                    <div
-                      className={`absolute bottom-2 transition-all duration-300 z-10 flex flex-col items-center ${
-                        arenaAnimation?.keeperDive === "left"
-                          ? "left-6 -translate-y-4 -rotate-45 scale-110"
-                          : arenaAnimation?.keeperDive === "right"
-                          ? "right-6 -translate-y-4 rotate-45 scale-110"
-                          : "left-1/2 -translate-x-1/2 animate-bounce"
-                      }`}
-                    >
-                      <div className="text-4xl sm:text-5xl drop-shadow-[0_8px_8px_rgba(0,0,0,0.8)] select-none">
-                        {arenaAnimation ? (arenaAnimation.isCorrect ? "🤦‍♂️" : "🧤🤾‍♂️") : "🧤🧍‍♂️"}
-                      </div>
-                      <span className="text-[9px] font-black uppercase tracking-wider bg-slate-900/80 px-1.5 py-0.5 rounded text-white border border-white/20">
-                        KIPER
-                      </span>
-                    </div>
-
-                    {/* In-Flight Football */}
-                    {arenaAnimation && (
-                      <div
-                        className={`absolute text-3xl sm:text-4xl drop-shadow-2xl transition-all duration-300 z-20 ${
-                          arenaAnimation.isCorrect
-                            ? arenaAnimation.ballCorner === "top-left"
-                              ? "left-4 top-4 scale-90 rotate-180"
-                              : arenaAnimation.ballCorner === "top-right"
-                              ? "right-4 top-4 scale-90 -rotate-180"
-                              : arenaAnimation.ballCorner === "bottom-left"
-                              ? "left-4 bottom-2 scale-90"
-                              : "right-4 bottom-2 scale-90"
-                            : arenaAnimation.keeperDive === "left"
-                            ? "left-10 bottom-4 scale-75"
-                            : "right-10 bottom-4 scale-75"
-                        }`}
-                      >
-                        ⚽
-                      </div>
-                    )}
-
-                    {/* Outcome Splash Banner */}
-                    {arenaAnimation && (
-                      <div
-                        className={`absolute inset-0 flex flex-col items-center justify-center animate-in zoom-in-75 duration-200 z-30 ${
-                          arenaAnimation.isCorrect ? "bg-emerald-950/80" : "bg-rose-950/80"
-                        }`}
-                      >
-                        <span className="text-4xl sm:text-5xl animate-bounce">
-                          {arenaAnimation.isCorrect ? "⚽🥅🎉" : "🧤💥❌"}
-                        </span>
-                        <h4
-                          className={`text-2xl sm:text-3xl font-black drop-shadow tracking-wider ${
-                            arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"
-                          }`}
-                        >
-                          {arenaAnimation.isCorrect ? "GOOOOOOL!" : "DITEPAK KIPER!"}
-                        </h4>
-                        <p className="text-xs font-bold text-white mt-0.5">
-                          {arenaAnimation.teamName} •{" "}
-                          {arenaAnimation.isCorrect
-                            ? `+${arenaAnimation.scoreAwarded} Poin`
-                            : `${arenaAnimation.scoreAwarded} Poin`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Turf at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-emerald-800 to-emerald-700 flex items-center justify-center border-t-2 border-white/50">
-                    <div className="h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_8px_#fff]" />
-                    <span className="ms-2 text-[9px] font-black uppercase tracking-widest text-white/70">
-                      TITIK PENALTI BERSAMA
-                    </span>
-                  </div>
-                </div>
-              ) : selectedMechanic === "runner" ? (
-                /* 4-Lane Runner Track */
-                <div className="relative rounded-2xl bg-gradient-to-r from-red-950 via-amber-950 to-orange-950 border-2 border-amber-600/40 p-3 sm:p-4 shadow-inner overflow-hidden">
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-amber-300/80 mb-2 px-1">
-                    <span>🚩 START (0m)</span>
-                    <span className="hidden sm:inline">🏃 CHECKPOINT (50m)</span>
-                    <span>🏁 FINISH LINE (100m)</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {teams.map((t, idx) => {
-                      const progressPercent = Math.min(92, Math.max(8, (t.score / 500) * 100));
-                      const isAnimating = arenaAnimation?.teamId === t.id;
-                      return (
-                        <div
-                          key={t.id}
-                          className={`relative h-12 rounded-xl border overflow-hidden flex items-center px-3 transition-all ${
-                            isAnimating
-                              ? arenaAnimation?.isCorrect
-                                ? "bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400/40"
-                                : "bg-rose-950/60 border-rose-400 ring-2 ring-rose-400/40"
-                              : "bg-white/5 border-white/10"
-                          }`}
-                        >
-                          <div className="absolute inset-x-0 top-1/2 h-0.5 border-b border-dashed border-white/20" />
-                          <div className="w-24 z-10 truncate flex items-center gap-1.5">
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${t.badgeBg}`}>
-                              #{idx + 1}
-                            </span>
-                            <span className="text-xs font-black text-white truncate">{t.name.split(" ")[0]}</span>
-                          </div>
-
-                          <div className="flex-1 relative h-full flex items-center">
-                            <div
-                              className="absolute transition-all duration-700 flex items-center gap-1 z-10"
-                              style={{ left: `${progressPercent}%`, transform: "translateX(-50%)" }}
-                            >
-                              <span className={`text-2xl ${isAnimating && arenaAnimation?.isCorrect ? "scale-125 animate-bounce" : ""}`}>
-                                🏃
-                              </span>
-                              {isAnimating && arenaAnimation?.isCorrect && (
-                                <span className="text-xs font-black bg-emerald-500 text-slate-950 px-1 rounded shadow animate-ping">
-                                  🚀
-                                </span>
-                              )}
-                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${t.badgeBg} text-white shadow`}>
-                                {t.score} pts
-                              </span>
-                            </div>
-                          </div>
-
-                          <span className="text-base z-10">🏁</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {arenaAnimation && arenaAnimation.mechanic === "runner" && (
-                    <div
-                      className={`mt-2 rounded-xl p-2.5 text-center text-xs font-bold animate-in zoom-in-95 duration-150 border ${
-                        arenaAnimation.isCorrect
-                          ? "bg-emerald-950/80 border-emerald-400 text-emerald-200"
-                          : "bg-rose-950/80 border-rose-400 text-rose-200"
-                      }`}
-                    >
-                      <span>{arenaAnimation.isCorrect ? "🚀 SPRINT KILAT! " : "💨 TERSANDUNG! "}</span>
-                      <strong>{arenaAnimation.teamName}</strong> {arenaAnimation.isCorrect ? `melesat menambah +${arenaAnimation.scoreAwarded} Poin!` : `tersandung dan ${arenaAnimation.scoreAwarded} Poin!`}
-                    </div>
-                  )}
-                </div>
-              ) : selectedMechanic === "slicer" ? (
-                /* Japanese Dojo Fruit Slicer Arena */
-                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-stone-950 via-amber-950/40 to-slate-950 border-2 border-amber-600/40 shadow-inner flex flex-col justify-between p-4">
-                  <div className="absolute inset-0 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
-
-                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-amber-300">
-                    <span className="flex items-center gap-1.5">
-                      <span>🥋</span>
-                      <span>DOJO TEBAS BUAH: TEBAS BUAH JAWABAN YANG BENAR, AWAS BOM!</span>
-                    </span>
-                    <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/30">
-                      KATANA READY ⚔️
-                    </span>
-                  </div>
-
-                  <div className="relative z-10 grid grid-cols-4 gap-2 sm:gap-4 my-auto py-2">
-                    {[
-                      { key: "A", fruit: "🍉", name: "Semangka" },
-                      { key: "B", fruit: "🍊", name: "Jeruk" },
-                      { key: "C", fruit: "🍎", name: "Apel" },
-                      { key: "D", fruit: "🥝", name: "Kiwi" },
-                    ].map((item) => {
-                      const isTargeted = arenaAnimation?.targetKey === item.key;
-                      return (
-                        <div
-                          key={item.key}
-                          className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 ${
-                            isTargeted
-                              ? arenaAnimation?.isCorrect
-                                ? "bg-emerald-500/30 border-emerald-400 scale-110 shadow-xl shadow-emerald-500/40"
-                                : "bg-rose-500/30 border-rose-400 scale-95 shadow-xl shadow-rose-500/40"
-                              : "bg-white/5 border-white/10 hover:border-white/30"
-                          }`}
-                        >
-                          <div className={`text-4xl sm:text-5xl transition-transform ${isTargeted && arenaAnimation?.isCorrect ? "scale-125 animate-bounce" : "animate-pulse"}`}>
-                            {isTargeted ? (arenaAnimation?.isCorrect ? `${item.fruit} ⚔️` : "💣💥") : item.fruit}
-                          </div>
-                          <span className="mt-1 text-[11px] font-black text-amber-200">
-                            {item.key}. {item.name}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {arenaAnimation && arenaAnimation.mechanic === "slicer" && (
-                    <div
-                      className={`relative z-20 rounded-2xl p-3 text-center animate-in zoom-in-75 duration-200 border-2 ${
-                        arenaAnimation.isCorrect
-                          ? "bg-emerald-950/90 border-emerald-400 text-white"
-                          : "bg-rose-950/90 border-rose-400 text-white"
-                      }`}
-                    >
-                      <div className="text-2xl">{arenaAnimation.isCorrect ? "🍉⚔️✨" : "💣💥🔥"}</div>
-                      <h4 className={`text-lg sm:text-xl font-black ${arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"}`}>
-                        {arenaAnimation.isCorrect ? "TEBASAN SEMPURNA!" : "BOOOOM! LEDAKAN BOM!"}
-                      </h4>
-                      <p className="text-xs text-white/90">
-                        {arenaAnimation.teamName} menebas {arenaAnimation.targetKey} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="relative z-10 text-center text-[10px] text-stone-400 font-bold uppercase tracking-widest pt-1 border-t border-white/10">
-                    Tebas buah melalui Stik HP / Klik pilihan di kuadran tim
-                  </div>
-                </div>
-              ) : selectedMechanic === "matching" ? (
-                /* Memory & Vocabulary Pairing Arena */
-                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-slate-950 via-sky-950/40 to-slate-900 border-2 border-sky-500/40 shadow-inner flex flex-col justify-between p-4">
-                  <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:20px_20px] opacity-15" />
-
-                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-sky-300 pb-2 border-b border-white/10">
-                    <span className="flex items-center gap-1.5">
-                      <span>🧩</span>
-                      <span>PAPAN MATCHING: MENJODOHKAN KATA ARAB DENGAN ARTINYA</span>
-                    </span>
-                    <span className="text-[10px] bg-sky-500/20 px-2 py-0.5 rounded border border-sky-400/30">
-                      MEMORY GRID 🔗
-                    </span>
-                  </div>
-
-                  {arenaAnimation && arenaAnimation.mechanic === "matching" ? (
-                    <div
-                      className={`relative z-20 my-auto rounded-2xl p-4 text-center animate-in zoom-in-75 duration-200 border-2 ${
-                        arenaAnimation.isCorrect
-                          ? "bg-emerald-950/90 border-emerald-400 text-white"
-                          : "bg-rose-950/90 border-rose-400 text-white"
-                      }`}
-                    >
-                      <div className="text-3xl animate-bounce">
-                        {arenaAnimation.isCorrect ? "✨🔗🎉" : "❌🧩⚠️"}
-                      </div>
-                      <h4 className={`text-xl sm:text-2xl font-black mt-1 ${arenaAnimation.isCorrect ? "text-emerald-300" : "text-rose-400"}`}>
-                        {arenaAnimation.isCorrect ? "PASANGAN COCOK & TEPAT!" : "BUKAN PASANGAN DARI KATA INI!"}
-                      </h4>
-
-                      <div className="mt-3 flex items-center justify-center gap-3">
-                        <div className="rounded-xl bg-black/60 px-4 py-2 border border-white/20 text-center">
-                          <span className="text-[10px] text-slate-400 block uppercase font-bold">Kata Soal:</span>
-                          <span className="text-base sm:text-lg font-black text-amber-300">{arenaAnimation.promptText || "Kata Arab"}</span>
-                        </div>
-                        <span className="text-xl font-black text-white">
-                          {arenaAnimation.isCorrect ? "⟷" : "≠"}
-                        </span>
-                        <div className="rounded-xl bg-black/60 px-4 py-2 border border-white/20 text-center">
-                          <span className="text-[10px] text-slate-400 block uppercase font-bold">Pilihan {arenaAnimation.targetKey}:</span>
-                          <span className="text-base sm:text-lg font-black text-white">{arenaAnimation.chosenText || arenaAnimation.targetKey}</span>
-                        </div>
-                      </div>
-
-                      {!arenaAnimation.isCorrect && arenaAnimation.correctText && (
-                        <div className="mt-3 p-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-xs font-bold text-amber-200 max-w-md mx-auto">
-                          <span>👉 Pasangan yang benar adalah: </span>
-                          <strong className="text-white">&quot;{arenaAnimation.promptText}&quot; ⟷ &quot;{arenaAnimation.correctText}&quot;</strong>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-white/80 mt-2">
-                        {arenaAnimation.teamName} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="relative z-10 my-auto text-center py-4">
-                      <div className="text-4xl mb-2 animate-pulse">🧩🔗✨</div>
-                      <h4 className="text-lg font-black text-white">Papan Memori Kosakata Bahasa Arab</h4>
-                      <p className="text-xs text-sky-200/80 max-w-md mx-auto mt-1">
-                        Pilih kartu pasangan yang cocok di kuadran tim masing-masing atau tekan tombol A, B, C, D di Stik HP!
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-2 border-t border-white/10">
-                    Setiap tim memiliki soal berpasangan masing-masing • Tercepat dapat bonus poin!
-                  </div>
-                </div>
-              ) : (
-                /* Television Quiz Show Stage Arena */
-                <div className="relative min-h-60 sm:min-h-72 w-full overflow-hidden rounded-2xl bg-gradient-to-b from-indigo-950 via-slate-900 to-purple-950 border-2 border-indigo-500/40 shadow-inner flex flex-col justify-between p-4">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-violet-500 via-amber-400 to-sky-400" />
-                  <div className="absolute -top-12 left-1/4 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
-                  <div className="absolute -top-12 right-1/4 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
-
-                  <div className="relative z-10 flex items-center justify-between text-xs font-black text-indigo-300 pb-2 border-b border-white/10">
-                    <span className="flex items-center gap-1.5">
-                      <span>🎯</span>
-                      <span>PANGGUNG KUIS CEPAT: CERDAS CERMAT 4 TIM KELAS</span>
-                    </span>
-                    <span className="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-400/30">
-                      LIVE BUZZER READY 🛎️
-                    </span>
-                  </div>
-
-                  <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 my-auto py-2">
-                    {teams.map((t, idx) => {
-                      const isCurrentAction = arenaAnimation?.teamId === t.id;
-                      const hasAns = Boolean(questionAnswers[t.id]);
-                      return (
-                        <div
-                          key={t.id}
-                          className={`rounded-2xl p-3 border-2 text-center transition-all duration-300 flex flex-col items-center justify-between ${
-                            isCurrentAction
-                              ? arenaAnimation?.isCorrect
-                                ? "bg-emerald-600/40 border-emerald-400 scale-105 shadow-xl shadow-emerald-500/50"
-                                : "bg-rose-600/40 border-rose-400 scale-98 shadow-xl shadow-rose-500/50"
-                              : hasAns
-                              ? "bg-white/10 border-white/20"
-                              : "bg-black/30 border-white/10"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1 text-[10px] font-black text-slate-300 uppercase">
-                            <span className={`w-2 h-2 rounded-full ${t.badgeBg}`} />
-                            <span>Podium #{idx + 1}</span>
-                          </div>
-
-                          <div className="my-2">
-                            <div className={`text-2xl sm:text-3xl ${isCurrentAction ? "animate-bounce" : ""}`}>
-                              {isCurrentAction ? (arenaAnimation?.isCorrect ? "🚨✨" : "⚠️❌") : hasAns ? "✅" : "🎙️"}
-                            </div>
-                            <span className="text-xs font-black text-white block mt-1 truncate max-w-[120px]">
-                              {t.name.split(" ")[0]}
-                            </span>
-                          </div>
-
-                          <div className="font-mono text-xs font-black bg-black/50 px-2 py-0.5 rounded-lg text-emerald-300 border border-white/10">
-                            {t.score} pts
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {arenaAnimation && arenaAnimation.mechanic === "quiz" && (
-                    <div
-                      className={`relative z-20 rounded-2xl p-2.5 text-center animate-in zoom-in-75 duration-200 border-2 ${
-                        arenaAnimation.isCorrect
-                          ? "bg-emerald-950/90 border-emerald-400 text-white"
-                          : "bg-rose-950/90 border-rose-400 text-white"
-                      }`}
-                    >
-                      <h4 className={`text-base sm:text-lg font-black ${arenaAnimation.isCorrect ? "text-amber-300" : "text-rose-400"}`}>
-                        {arenaAnimation.isCorrect ? "🎉 BEL TEPAT & BENAR!" : "❌ BEL KURANG TEPAT!"}
-                      </h4>
-                      <p className="text-xs text-white/90">
-                        {arenaAnimation.teamName} menjawab {arenaAnimation.targetKey} • {arenaAnimation.isCorrect ? `+${arenaAnimation.scoreAwarded} Poin` : `${arenaAnimation.scoreAwarded} Poin`}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-1 border-t border-white/10">
-                    Pencet tombol di layar proyektor atau tekan tombol stik nirkabel di HP masing-masing!
-                  </div>
-                </div>
-              )}
+              <span className="text-2xl font-black font-mono text-emerald-400">{team.score} Pts</span>
             </div>
+          ))}
+        </div>
 
-            {/* 4 Quadrants Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {teams.map((t, tIdx) => {
-                const teamQ = getQuestionForTeam(tIdx);
-                const ans = questionAnswers[t.id];
-                const hasAnswered = Boolean(ans);
-                const currentMem = t.members[t.currentMemberIndex % (t.members.length || 1)];
+        <footer className="flex items-center justify-center gap-4 pt-4 border-t border-white/10">
+          <button
+            type="button"
+            onClick={handleGoToNextQuestion}
+            className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm shadow-xl transition hover:scale-105 active:scale-95 flex items-center gap-2"
+          >
+            <span>Soal Berikutnya</span>
+            <span>→ (Spasi)</span>
+          </button>
+        </footer>
+      </main>
+    );
+  }
 
-                return (
-                  <div
-                    key={t.id}
-                    className={`rounded-3xl p-4 border-2 transition-all shadow-2xl relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950 ${
-                      hasAnswered
-                        ? ans?.isCorrect
-                          ? "border-emerald-400 bg-emerald-950/30"
-                          : "border-rose-400 bg-rose-950/30"
-                        : t.accentBorder
-                    }`}
-                  >
-                    {/* Quadrant Header */}
-                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-3 w-3 rounded-full ${t.badgeBg}`} />
-                        <span className="font-black text-sm text-white">{t.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-300">
-                          Pemain: <strong className="text-amber-300">{currentMem?.name || "Tim"}</strong>
-                        </span>
-                        <span className="font-mono text-sm font-black text-emerald-400 bg-black/40 px-2 py-0.5 rounded-lg">
-                          {t.score} pts
-                        </span>
-                      </div>
-                    </div>
+  // -------------------------------------------------------------
+  // ACTIVE QUESTION & REVEAL PHASE (Kahoot Arena Showdown)
+  // -------------------------------------------------------------
+  return (
+    <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-3 md:p-6 select-none relative overflow-hidden font-sans">
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-900/15 blur-[150px] pointer-events-none rounded-full" />
 
-                    {/* Question Headline for this specific team */}
-                    <div className="my-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                        Soal Tim #{tIdx + 1}:
-                      </span>
-                      <h3 className="font-black text-base sm:text-lg text-white leading-snug mt-0.5">
-                        {teamQ?.question_text}
-                      </h3>
-                    </div>
-
-                    {/* Quadrant Game Interface */}
-                    <div className="py-2">
-                      {hasAnswered ? (
-                        /* Outcome Banner in Quadrant with Speed Bonus and Educational Correction */
-                        <div
-                          className={`rounded-2xl p-4 sm:p-5 text-center animate-in zoom-in-95 duration-200 ${
-                            ans?.isCorrect ? "bg-emerald-600/30 text-white border border-emerald-400/40" : "bg-rose-600/30 text-white border border-rose-400/40"
-                          }`}
-                        >
-                          <div className="text-3xl">{ans?.isCorrect ? "🎉 ⚡" : "💥 🧤"}</div>
-                          <div className="text-lg font-black mt-1">
-                            {ans?.bonusTitle}
-                          </div>
-                          <div className="text-xs opacity-80 mt-1">
-                            Pilihan: {ans?.optionKey} • Skor Putaran: {ans?.score > 0 ? `+${ans?.score}` : ans?.score}
-                          </div>
-
-                          {/* Explicit educational correction for all mechanics, especially Matching! */}
-                          {!ans?.isCorrect && (
-                            <div className="mt-3 pt-2 border-t border-white/20 text-xs text-amber-200 text-center">
-                              <span className="font-bold">👉 Kunci Jawaban yang Benar: </span>
-                              <span className="font-black text-white bg-black/40 px-2 py-0.5 rounded">
-                                {teamQ?.correct_option_key}. {teamQ?.options.find((o) => o.option_key === teamQ.correct_option_key)?.option_text}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : selectedMechanic === "penalty" ? (
-                        /* Mini Penalty Shootout in Quadrant */
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-center text-emerald-300">
-                            ⚽ Pilih Bola untuk Menendang ke Gawang:
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {teamQ?.options.map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                                className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-emerald-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
-                              >
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 font-black text-xs shadow group-hover:scale-110">
-                                  ⚽
-                                </span>
-                                <div className="truncate flex-1">
-                                  <span className="text-[10px] font-mono text-emerald-300 block">
-                                    Bola {opt.option_key}
-                                  </span>
-                                  <span className="text-xs font-bold text-white truncate block">
-                                    {opt.option_text}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : selectedMechanic === "runner" ? (
-                        /* Mini Runner Sprint Lanes in Quadrant */
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-center text-violet-300">
-                            🏃 Pilih Jalur Lari dengan Jawaban Benar:
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {teamQ?.options.map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                                className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-violet-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
-                              >
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/30 font-black text-xs text-violet-200 group-hover:scale-110">
-                                  🏃 {opt.option_key}
-                                </span>
-                                <div className="truncate flex-1">
-                                  <span className="text-[10px] font-mono text-violet-300 block">
-                                    Jalur {opt.option_key}
-                                  </span>
-                                  <span className="text-xs font-bold text-white truncate block">
-                                    {opt.option_text}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : selectedMechanic === "slicer" ? (
-                        /* Mini Slicer in Quadrant */
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-center text-amber-300">
-                            🍉 Tebas Buah Kata yang Benar (Awas Ledakan Bom!):
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {teamQ?.options.map((opt) => {
-                              const fruitIcons: Record<string, string> = {
-                                A: "🍉",
-                                B: "🍊",
-                                C: "🍎",
-                                D: "🥝",
-                              };
-                              const icon = fruitIcons[opt.option_key] || "🍉";
-                              return (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                                  className="group flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-amber-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
-                                >
-                                  <span className="text-xl group-hover:scale-125 transition">
-                                    {icon}
-                                  </span>
-                                  <div className="truncate flex-1">
-                                    <span className="text-[10px] font-mono text-amber-300 block">
-                                      {opt.option_key}
-                                    </span>
-                                    <span className="text-xs font-bold text-white truncate block">
-                                      {opt.option_text}
-                                    </span>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : selectedMechanic === "matching" ? (
-                        /* Mini Matching Cards in Quadrant */
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-center text-sky-300">
-                            🧩 Cari & Cocokkan Pasangan Arti Kata Ini:
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {teamQ?.options.map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                                className="group flex items-center gap-2 rounded-2xl bg-sky-950/40 hover:bg-sky-600/40 p-2.5 text-start border border-sky-400/30 transition active:scale-95 cursor-pointer"
-                              >
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 font-black text-xs text-sky-200 group-hover:scale-110">
-                                  🔗 {opt.option_key}
-                                </span>
-                                <div className="truncate flex-1">
-                                  <span className="text-[10px] font-mono text-sky-300 block">
-                                    Kartu {opt.option_key}
-                                  </span>
-                                  <span className="text-xs font-bold text-white truncate block">
-                                    {opt.option_text}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        /* Standard TV Quiz MCQ in Quadrant */
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-center text-indigo-300">
-                            🎯 Pilih Jawaban Kuis Cepat:
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {teamQ?.options.map((opt) => (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleAnswerForTeam(t.id, opt.id, opt.option_key)}
-                                className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-indigo-600/40 p-2.5 text-start border border-white/20 transition active:scale-95 cursor-pointer"
-                              >
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 font-black text-xs text-white">
-                                  {opt.option_key}
-                                </span>
-                                <span className="text-xs font-bold text-white truncate flex-1">
-                                  {opt.option_text}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* TOP HUD: Progress, Big Timer, Fullscreen */}
+      <header className="relative z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+        {/* Left: Question Progress */}
+        <div className="flex items-center gap-2.5">
+          <div className="px-3 py-1.5 rounded-xl bg-indigo-600/30 border border-indigo-400/40 text-indigo-200 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+            <span>SOAL</span>
+            <span className="text-sm text-white font-mono">{currentQuestionIndex + 1} / {totalQuestions}</span>
           </div>
-        ) : (
-          /* =====================================================================
-             MODE A: FULL ARENA FOCUS TURN
-             Full immersive game player with round-robin fair turns for each team
-             ===================================================================== */
-          <div className="space-y-4">
-            {/* Active Team Headline Banner */}
-            <div
-              className={`rounded-2xl p-3 bg-gradient-to-r ${activeTeam?.color} text-white font-black text-center shadow-lg flex items-center justify-between px-6`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">👉</span>
-                <span className="text-base sm:text-lg">GILIRAN: {activeTeam?.name}</span>
-              </div>
-              <div className="text-xs sm:text-sm bg-black/30 px-3 py-1 rounded-xl">
-                Pemain di Papan: <strong className="text-amber-300">{activeStudentName}</strong>
-              </div>
-            </div>
 
-            {/* Mechanics Render */}
-            {selectedMechanic === "runner" ? (
-              <RunnerPlayer
-                key={`${activeQuestion?.id}-${activeTeam.id}`}
-                question={activeQuestion}
-                session={mockSessionContext}
-                onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
-                  return { accepted: true, isCorrect: true, scoreAwarded: 100 };
-                }}
-                isRtl={Boolean(isRtl)}
-              />
-            ) : selectedMechanic === "slicer" ? (
-              <SlicerPlayer
-                key={`${activeQuestion?.id}-${activeTeam.id}`}
-                question={activeQuestion}
-                session={mockSessionContext}
-                onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
-                  return { accepted: true, isCorrect: true, scoreAwarded: 100 };
-                }}
-                isRtl={Boolean(isRtl)}
-              />
-            ) : selectedMechanic === "matching" ? (
-              <MatchingPlayer
-                key={`${activeQuestion?.id}-${activeTeam.id}`}
-                question={activeQuestion}
-                session={mockSessionContext}
-                onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
-                  return { accepted: true, isCorrect: true, scoreAwarded: 100 };
-                }}
-                isRtl={Boolean(isRtl)}
-              />
-            ) : selectedMechanic === "penalty" ? (
-              <PenaltyPlayer
-                key={`${activeQuestion?.id}-${activeTeam.id}`}
-                question={activeQuestion}
-                session={mockSessionContext}
-                onSubmitAnswer={async (payload) => {
-                  handleAnswerForTeam(activeTeam.id, payload.selectedOptionId, null);
-                  return { accepted: true, isCorrect: true, scoreAwarded: 100 };
-                }}
-                isRtl={Boolean(isRtl)}
-              />
-            ) : (
-              /* Big Projector Quiz Layout */
-              <div className="space-y-6 max-w-4xl mx-auto w-full">
-                <div className="rounded-3xl bg-white/10 p-6 sm:p-10 text-center border border-white/20 shadow-2xl backdrop-blur">
-                  <span className="inline-block rounded-full bg-violet-500/20 px-4 py-1 text-xs font-bold text-violet-300">
-                    Pertanyaan Tim #{currentTurnIdx + 1}
-                  </span>
-                  <h2 className="mt-4 text-3xl sm:text-5xl font-black leading-relaxed text-white">
-                    {activeQuestion?.question_text}
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {activeQuestion?.options.map((opt, idx) => {
-                    const isSelected = selectedOptionId === opt.id;
-                    const isCorrect = opt.option_key === activeQuestion.correct_option_key;
-
-                    let cardStyle = "border-white/10 bg-white/5 hover:bg-white/15 text-white";
-                    if (showAnswerFeedback) {
-                      if (isCorrect) {
-                        cardStyle = "border-emerald-400 bg-emerald-600/80 text-white shadow-emerald-500/50 shadow-xl";
-                      } else if (isSelected) {
-                        cardStyle = "border-rose-400 bg-rose-600/80 text-white shadow-rose-500/50 shadow-xl";
-                      } else {
-                        cardStyle = "border-white/5 bg-white/5 opacity-50";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        disabled={showAnswerFeedback}
-                        onClick={() => handleAnswerForTeam(activeTeam.id, opt.id, opt.option_key)}
-                        className={`flex items-center gap-4 rounded-3xl p-5 text-start font-black text-xl transition-all border-2 active:scale-98 cursor-pointer ${cardStyle}`}
-                      >
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black">
-                          {opt.option_key}
-                        </span>
-                        <span className="text-xl sm:text-2xl flex-1">{opt.option_text}</span>
-                        <span className="text-xs uppercase opacity-40 font-mono">[{idx + 1}]</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* FOOTER ACTIONS BAR */}
-      <footer className="rounded-2xl p-3 sm:p-4 bg-slate-900/90 border border-white/20 backdrop-blur shadow-2xl flex flex-wrap items-center justify-between gap-3">
-        {/* Status indicator */}
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-sm font-black">
-            {answeredTeamCount}/{teams.length}
-          </span>
-          <div className="text-xs">
-            <span className="font-bold text-white block">
-              {allTeamsAnsweredCurrentQ
-                ? "🎉 Seluruh Tim Telah Menjawab Putaran Ini!"
-                : `Menunggu ${teams.length - answeredTeamCount} tim lagi pada putaran ini`}
-            </span>
-            <span className="text-slate-400 text-[11px]">
-              Siswa dapat memencet tombol di layar atau lewat Remote HP (/controller).
-            </span>
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+            <span>▲</span>
+            <span>Kahoot Arena Proyektor</span>
           </div>
         </div>
 
-        {/* Action button */}
+        {/* Center: BIG GLOWING COUNTDOWN TIMER */}
         <div className="flex items-center gap-2">
-          {!allTeamsAnsweredCurrentQ && (
+          <div
+            className={`flex items-center gap-2 px-5 py-1 rounded-2xl border font-mono font-black text-xl transition-all duration-300 ${
+              timerSeconds <= 5 && phase === "question"
+                ? "bg-rose-600 text-white border-rose-400 shadow-[0_0_30px_rgba(225,29,72,0.6)] animate-pulse"
+                : timerSeconds <= 10 && phase === "question"
+                ? "bg-amber-500/20 text-amber-300 border-amber-400/50"
+                : "bg-white/10 text-white border-white/20 shadow-lg"
+            }`}
+          >
+            <span className="text-sm">⏱️</span>
+            <span>{phase === "question" ? `${timerSeconds}s` : "SELESAI"}</span>
+          </div>
+
+          {phase === "question" && (
             <button
               type="button"
-              onClick={handleNextTeamTurn}
-              className="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-black text-white hover:bg-sky-500 transition shadow"
+              onClick={() => setIsTimerPaused((p) => !p)}
+              className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-xs text-slate-300 border border-white/10 transition"
+              title={isTimerPaused ? "Lanjutkan Detik (P)" : "Jeda Detik (P)"}
             >
-              👉 Lanjut Giliran Tim Berikutnya
+              {isTimerPaused ? "▶️" : "⏸️"}
             </button>
           )}
+        </div>
+
+        {/* Right: Answered Progress, Fullscreen */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`px-3 py-1.5 rounded-xl border text-xs font-black font-mono transition ${
+              answeredCount >= teams.length
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                : "bg-white/5 text-slate-300 border-white/10"
+            }`}
+          >
+            {answeredCount} / {teams.length} Tim
+          </div>
 
           <button
             type="button"
-            onClick={handleNextQuestion}
-            className={`rounded-xl px-6 py-2.5 text-sm font-black text-white shadow-xl transition active:scale-95 ${
-              allTeamsAnsweredCurrentQ
-                ? "bg-emerald-500 hover:bg-emerald-600 animate-pulse"
-                : "bg-white/20 hover:bg-white/30"
-            }`}
+            onClick={toggleFullscreen}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-xs text-slate-300 border border-white/10 transition"
+            title="Layar Penuh TV / Projector (F)"
           >
-            {currentRoundOffset + 1 < targetRounds
-              ? "Lanjut Putaran Soal Berikutnya →"
-              : "Selesaikan Pertandingan 🏆"}
+            {isFullscreen ? "🗗" : "⛶"}
           </button>
+
+          <Link
+            href="/dashboard/games"
+            className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition"
+          >
+            Keluar
+          </Link>
         </div>
-      </footer>
+      </header>
 
-      {/* REMOTE HP INFORMATION MODAL */}
-      {showRemoteInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/20 p-6 shadow-2xl text-center">
-            <div className="text-5xl animate-bounce">📱🎮</div>
-            <h3 className="text-2xl font-black text-white mt-2">Remote Wireless HP Siswa</h3>
-            <p className="text-xs text-slate-300 mt-1">
-              Siswa atau perwakilan tim dapat membuka link berikut di HP masing-masing untuk bermain layaknya stik konsol game!
-            </p>
+      {/* Main Question & 4 Cards */}
+      <section className="relative z-10 my-auto py-2 max-w-6xl mx-auto w-full flex flex-col gap-4">
+        {/* Question Text Box */}
+        <div className="rounded-3xl bg-slate-900/90 border border-white/15 p-5 md:p-8 text-center shadow-2xl backdrop-blur relative">
+          <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-wide leading-relaxed py-2 drop-shadow-md select-text" dir="auto">
+            {activeQuestion.question_text}
+          </h2>
+          {phase === "reveal" && (
+            <div className="mt-3 p-3.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs md:text-sm animate-in zoom-in-95">
+              <span className="font-black text-emerald-400 block mb-0.5">💡 PEMBAHASAN / ARTI:</span>
+              <p>{activeQuestion.explanation || "Jawaban yang benar adalah pilihan bertanda centang hijau di bawah."}</p>
+            </div>
+          )}
+        </div>
 
-            <div className="my-5 p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-              <span className="text-[11px] uppercase font-bold text-slate-400 block">Link Akses di Browser HP:</span>
-              <div className="mt-1 text-lg font-mono font-black text-emerald-400 select-all">
-                {controllerDisplayUrl}
+        {/* 4 Iconic Kahoot Options */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 md:gap-4">
+          {KAHOOT_OPTIONS_SPEC.map((spec) => {
+            const rawOpt = activeQuestion.options.find((o) => o.option_key.toUpperCase() === spec.key);
+            const isThisOptionCorrect = spec.key === correctOptionKey;
+            const teamsPickedThis = Object.values(answers).filter((ans) => ans.optionKey === spec.key);
+
+            let cardStyle = spec.color;
+            let borderStyle = spec.border;
+            let opacityStyle = "opacity-100";
+
+            if (phase === "reveal") {
+              if (isThisOptionCorrect) {
+                cardStyle = "bg-emerald-600 text-white";
+                borderStyle = "border-emerald-300 ring-4 ring-emerald-400/60 shadow-[0_0_40px_rgba(16,185,129,0.5)]";
+              } else {
+                opacityStyle = "opacity-35 grayscale-[40%]";
+              }
+            }
+
+            return (
+              <div
+                key={spec.key}
+                className={`rounded-3xl p-4 md:p-6 border-2 transition-all duration-300 flex flex-col justify-between min-h-[110px] md:min-h-[135px] shadow-xl ${cardStyle} ${borderStyle} ${opacityStyle}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-2xl md:text-3xl font-black">{spec.shape}</span>
+                    <span className="text-xs md:text-sm font-black uppercase tracking-wider opacity-90">Pilihan {spec.key}</span>
+                  </div>
+                  {phase === "reveal" && isThisOptionCorrect && (
+                    <span className="px-3 py-1 rounded-full bg-white text-emerald-900 text-xs font-black shadow-md flex items-center gap-1 animate-bounce">
+                      <span>✓</span> BENAR
+                    </span>
+                  )}
+                </div>
+                <div className="text-xl md:text-2xl lg:text-3xl font-black leading-snug break-words" dir="auto">
+                  {rawOpt?.option_text || `(Pilihan ${spec.key})`}
+                </div>
+                {teamsPickedThis.length > 0 && (
+                  <div className="mt-2.5 pt-2 border-t border-white/20 flex flex-wrap gap-1.5 items-center">
+                    <span className="text-[10px] font-bold opacity-80">Dipilih:</span>
+                    {teamsPickedThis.map((ans) => (
+                      <span key={ans.teamId} className="px-2 py-0.5 rounded-lg bg-black/40 text-white font-black text-[11px]">
+                        {teams.find((t) => t.id === ans.teamId)?.name} {phase === "reveal" && (ans.isCorrect ? "✓" : "✗")}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">atau ketik /controller / /remote</span>
-              <div className="mt-2 inline-block rounded-xl bg-violet-600/40 px-3 py-1 text-xs font-mono font-bold text-violet-200">
-                Kode Ruangan: <strong>{roomCode}</strong>
-              </div>
+            );
+          })}
+        </div>
+      </section>
 
-              <div className="mt-3 flex justify-center gap-2">
-                <a
-                  href={`/controller?room=${roomCode}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-xs font-black text-slate-950 transition"
-                >
-                  📱 Buka Tab Baru
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(controllerFullUrl);
-                    alert("Tautan disalin: " + controllerFullUrl);
-                  }}
-                  className="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-xs font-bold text-white transition"
-                >
-                  📋 Salin Link
-                </button>
+      {/* Footer Podiums and Controls */}
+      <footer className="relative z-20 border-t border-white/10 pt-3 mt-1">
+        {phase === "reveal" ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-white/15 p-3.5 rounded-2xl shadow-2xl mb-2 animate-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">💡</span>
+              <div>
+                <p className="text-xs font-black text-white">Pembahasan Soal Selesai!</p>
+                <p className="text-[11px] text-slate-400">Tekan tombol di bawah untuk melihat perolehan poin tim.</p>
               </div>
             </div>
 
-            {/* Controller Connection Status */}
-            <div className="space-y-2 text-start">
-              <span className="text-xs font-bold text-slate-400 block">Status 4 Stik Nirkabel:</span>
-              <div className="grid grid-cols-2 gap-2">
-                {teams.map((t) => {
-                  const isConnected = activeControllers.includes(t.id);
-                  return (
-                    <div
-                      key={t.id}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between ${
-                        isConnected
-                          ? "border-emerald-400 bg-emerald-950/40 text-emerald-300"
-                          : "border-white/10 bg-white/5 text-slate-400"
-                      }`}
-                    >
-                      <span className="truncate">{t.name}</span>
-                      <span>{isConnected ? "✅ Tersambung" : "⏳ Menunggu"}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setShowRemoteInfoModal(false)}
-                className="rounded-xl bg-white px-6 py-2.5 text-xs font-black text-slate-900 hover:bg-slate-100"
+                onClick={handleGoToLeaderboard}
+                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs shadow-lg transition hover:scale-105 active:scale-95 flex items-center gap-1.5"
               >
-                Tutup & Kembali ke Game
+                <span>🏆</span>
+                <span>Lihat Papan Skor (Spasi)</span>
+                <span>→</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGoToNextQuestion}
+                className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition border border-white/10"
+              >
+                Langsung Soal Berikutnya ⏩
               </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
 
-      {/* TEAM STUDIO MODAL */}
-      {showTeamStudioModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-4xl rounded-3xl bg-slate-900 border border-white/20 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div>
-                <h3 className="text-xl font-black text-white">⚙️ Studio Kelola Tim & Siswa</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Atur ulang tim, ubah nama, ganti pemain aktif, atau bagi rata siswa.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowTeamStudioModal(false)}
-                className="rounded-xl bg-white/10 p-2 text-white hover:bg-white/20"
+        {/* 4 Teams Interactive Podiums */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {teams.map((team) => {
+            const hasAnswered = Boolean(answers[team.id]);
+            const ansRecord = answers[team.id];
+            const currentStudent =
+              team.members[team.currentMemberIndex % (team.members.length || 1)]?.name ||
+              "Pemain Tim";
+
+            return (
+              <div
+                key={team.id}
+                className={`rounded-2xl p-2.5 border transition-all duration-300 flex flex-col justify-between ${team.cardBg} ${team.accentBorder} shadow-lg`}
               >
-                ✕ Tutup
-              </button>
-            </div>
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className={`w-2.5 h-2.5 rounded-full ${team.badgeBg}`} />
+                    <span className="text-xs font-black text-white truncate">{team.name}</span>
+                  </div>
+                  <span className="text-xs font-black font-mono text-emerald-400">
+                    {team.score} Pts
+                  </span>
+                </div>
 
-            <div className="mt-4 space-y-4">
-              {/* Quick Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white/5 p-3 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-bold">Kelas:</span>
-                  {teacherClasses.length > 0 && (
-                    <select
-                      value={selectedClassId}
-                      onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="rounded-xl bg-slate-800 border border-white/20 px-3 py-1.5 text-xs font-bold text-white"
-                    >
-                      {teacherClasses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({allStudents.filter((s) => s.class_id === c.id).length} siswa)
-                        </option>
-                      ))}
-                    </select>
+                <div className="my-1 flex items-center justify-between text-[11px] text-slate-300 bg-black/30 px-2 py-0.5 rounded-lg">
+                  <span className="truncate">👤 {currentStudent}</span>
+                  {team.streak >= 2 && (
+                    <span className="text-[10px] text-amber-300 font-bold">🔥 {team.streak}x</span>
                   )}
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleAutoDistributeStudents}
-                    className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white hover:bg-violet-700"
+                {hasAnswered ? (
+                  <div
+                    className={`text-center py-1 rounded-xl text-xs font-black transition ${
+                      phase === "reveal"
+                        ? ansRecord?.isCorrect
+                          ? "bg-emerald-600 text-white"
+                          : "bg-rose-600 text-white"
+                        : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    }`}
                   >
-                    🎲 Bagi Rata & Acak Ulang
-                  </button>
-                </div>
+                    {phase === "reveal" ? (
+                      ansRecord?.isCorrect ? (
+                        <span>✓ TEPAT ({ansRecord.optionKey}) +{ansRecord.scoreAwarded}</span>
+                      ) : (
+                        <span>✗ SALAH ({ansRecord?.optionKey})</span>
+                      )
+                    ) : (
+                      <span>✓ TERKUNCI ({ansRecord?.optionKey})</span>
+                    )}
+                  </div>
+                ) : phase === "question" ? (
+                  <div className="flex gap-1 pt-0.5">
+                    {KAHOOT_OPTIONS_SPEC.map((spec) => (
+                      <button
+                        key={spec.key}
+                        type="button"
+                        onClick={() => handleRecordAnswer(team.id, spec.key)}
+                        className={`flex-1 py-1 rounded-lg text-xs font-black text-white transition hover:scale-105 active:scale-95 shadow-sm ${spec.color}`}
+                        title={`Pilih ${spec.key} untuk ${team.name}`}
+                      >
+                        {spec.shape}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-0.5 text-[11px] text-slate-500 italic">
+                    Waktu Habis
+                  </div>
+                )}
               </div>
-
-              {/* Teams Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {teams.map((t, idx) => {
-                  const currentMember = t.members[t.currentMemberIndex % (t.members.length || 1)];
-
-                  return (
-                    <div
-                      key={t.id}
-                      className={`rounded-2xl p-4 border bg-slate-800/80 ${t.accentBorder} flex flex-col justify-between`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <input
-                            type="text"
-                            value={t.name}
-                            onChange={(e) => {
-                              const newName = e.target.value;
-                              setTeams((prev) =>
-                                prev.map((item) => (item.id === t.id ? { ...item, name: newName } : item)),
-                              );
-                            }}
-                            className="bg-transparent font-black text-xs text-white focus:outline-hidden border-b border-white/20 w-full"
-                          />
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${t.badgeBg}`}>
-                            #{idx + 1}
-                          </span>
-                        </div>
-
-                        <div className="mt-2 text-xs bg-black/40 p-2 rounded-xl">
-                          <span className="text-[10px] text-slate-400 uppercase font-black block">
-                            Pemain Aktif:
-                          </span>
-                          <span className="font-bold text-emerald-300 truncate block">
-                            {currentMember?.name || "(Belum ada)"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="text-[10px] font-bold uppercase text-slate-400 mb-1">
-                            Anggota ({t.members.length}):
-                          </div>
-                          <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
-                            {t.members.map((m, mIdx) => (
-                              <div
-                                key={m.id}
-                                className={`flex items-center justify-between rounded-lg px-2 py-1 text-xs ${
-                                  mIdx === t.currentMemberIndex % t.members.length
-                                    ? "bg-emerald-500/30 text-emerald-200 font-bold"
-                                    : "bg-white/5 text-slate-300"
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => handleSetActiveMember(t.id, mIdx)}
-                                  className="truncate text-start flex-1"
-                                  title="Pilih sebagai pemain aktif"
-                                >
-                                  {mIdx + 1}. {m.name}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveStudent(m.id)}
-                                  className="text-rose-400 text-xs px-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-2 border-t border-white/10 text-[10px] text-slate-400 flex justify-between">
-                        <span>Skor: {t.score}</span>
-                        <span>{t.members.length} siswa</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Add Student Manually */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <input
-                  type="text"
-                  placeholder="Nama murid baru..."
-                  value={newStudentNameInput}
-                  onChange={(e) => setNewStudentNameInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddManualStudent();
-                  }}
-                  className="rounded-xl bg-slate-800 border border-white/20 px-3 py-2 text-xs text-white placeholder-slate-400 flex-1 min-w-[200px]"
-                />
-                <select
-                  value={targetTeamForNewStudent}
-                  onChange={(e) => setTargetTeamForNewStudent(e.target.value)}
-                  className="rounded-xl bg-slate-800 border border-white/20 px-3 py-2 text-xs text-white"
-                >
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddManualStudent}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
-                >
-                  + Tambahkan
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowTeamStudioModal(false)}
-                className="rounded-xl bg-white px-6 py-2.5 text-xs font-black text-slate-900 hover:bg-slate-100"
-              >
-                Selesai & Lanjutkan Permainan
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
-      )}
+      </footer>
     </main>
   );
 }

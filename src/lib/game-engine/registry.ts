@@ -10,6 +10,16 @@ import type {
   NormalizedGameType,
 } from "./types";
 
+const defaultCapabilities = {
+  supportedModes: ["competitive", "cooperative", "practice", "endless"] as const,
+  hasLanes: false,
+  hasTimer: true,
+  supportsTouch: true,
+  supportsKeyboard: true,
+  supportsArabicRTL: true,
+  supportsSingleQuestion: true,
+};
+
 const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
   runner: {
     id: "runner",
@@ -17,15 +27,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     descriptionKey: "game_runner_desc",
     icon: "🏃‍♂️",
     accentColor: "emerald",
-    capabilities: {
-      supportedModes: ["competitive", "practice"],
-      hasLanes: true,
-      hasTimer: true,
-      supportsTouch: true,
-      supportsKeyboard: true,
-      supportsArabicRTL: true,
-      supportsSingleQuestion: true,
-    },
+    capabilities: { ...defaultCapabilities, supportedModes: ["competitive", "practice"], hasLanes: true },
     defaultDifficulty: "easy",
   },
   matching: {
@@ -34,15 +36,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     descriptionKey: "game_matching_desc",
     icon: "🧩",
     accentColor: "indigo",
-    capabilities: {
-      supportedModes: ["competitive", "practice"],
-      hasLanes: false,
-      hasTimer: true,
-      supportsTouch: true,
-      supportsKeyboard: true,
-      supportsArabicRTL: true,
-      supportsSingleQuestion: true,
-    },
+    capabilities: { ...defaultCapabilities, supportedModes: ["competitive", "practice"] },
     defaultDifficulty: "medium",
   },
   penalty: {
@@ -51,15 +45,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     descriptionKey: "game_penalty_desc",
     icon: "⚽",
     accentColor: "amber",
-    capabilities: {
-      supportedModes: ["competitive", "practice"],
-      hasLanes: false,
-      hasTimer: true,
-      supportsTouch: true,
-      supportsKeyboard: true,
-      supportsArabicRTL: true,
-      supportsSingleQuestion: true,
-    },
+    capabilities: { ...defaultCapabilities, supportedModes: ["competitive", "practice"] },
     defaultDifficulty: "easy",
   },
   anagram: {
@@ -68,15 +54,7 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     descriptionKey: "game_anagram_desc",
     icon: "🔤",
     accentColor: "violet",
-    capabilities: {
-      supportedModes: ["competitive", "practice"],
-      hasLanes: false,
-      hasTimer: true,
-      supportsTouch: true,
-      supportsKeyboard: true,
-      supportsArabicRTL: true,
-      supportsSingleQuestion: true,
-    },
+    capabilities: { ...defaultCapabilities, supportedModes: ["competitive", "practice"] },
     defaultDifficulty: "medium",
   },
   quiz: {
@@ -85,23 +63,102 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
     descriptionKey: "game_quiz_desc",
     icon: "📝",
     accentColor: "sky",
-    capabilities: {
-      supportedModes: ["competitive", "cooperative", "practice", "endless"],
-      hasLanes: false,
-      hasTimer: true,
-      supportsTouch: true,
-      supportsKeyboard: true,
-      supportsArabicRTL: true,
-      supportsSingleQuestion: true,
-    },
+    capabilities: defaultCapabilities,
     defaultDifficulty: "easy",
+  },
+  kahoot: {
+    id: "kahoot",
+    nameKey: "Kahoot Arena Showdown",
+    descriptionKey: "Kuis Panggung Pilihan Ganda Interaktif",
+    icon: "▲",
+    accentColor: "rose",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "easy",
+  },
+  millionaire: {
+    id: "millionaire",
+    nameKey: "Who Wants to Be a Millionaire",
+    descriptionKey: "Kuis Tangga Hadiah Studio TV",
+    icon: "💰",
+    accentColor: "amber",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  jeopardy: {
+    id: "jeopardy",
+    nameKey: "Cerdas Cermat Matriks (Jeopardy)",
+    descriptionKey: "Papan Matriks Poin Kategori",
+    icon: "📋",
+    accentColor: "indigo",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  memory_card: {
+    id: "memory_card",
+    nameKey: "3D Memory Card Flip",
+    descriptionKey: "Mencocokkan Kartu Memori Mufrodat",
+    icon: "🃏",
+    accentColor: "purple",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  wordle: {
+    id: "wordle",
+    nameKey: "Arabic Wordle (Katla)",
+    descriptionKey: "Menebak Kata Hijaiyah 5 Huruf",
+    icon: "🟩",
+    accentColor: "emerald",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  scramble: {
+    id: "scramble",
+    nameKey: "Word Scramble",
+    descriptionKey: "Susun Huruf Hijaiyah Menjadi Kata",
+    icon: "🔤",
+    accentColor: "violet",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  hangman: {
+    id: "hangman",
+    nameKey: "Manusia Salju Kata (Hangman)",
+    descriptionKey: "Tebak Huruf Rahasia",
+    icon: "⛄",
+    accentColor: "sky",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  wheel_fortune: {
+    id: "wheel_fortune",
+    nameKey: "Wheel of Fortune",
+    descriptionKey: "Roda Karnaval Keberuntungan Poin",
+    icon: "🎡",
+    accentColor: "amber",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
+  },
+  whack_mole: {
+    id: "whack_mole",
+    nameKey: "Whack-a-Mole Vocab",
+    descriptionKey: "Pukul Tikus Kata Target",
+    icon: "🔨",
+    accentColor: "orange",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "easy",
+  },
+  matching_column: {
+    id: "matching_column",
+    nameKey: "Drag & Drop Matching Column",
+    descriptionKey: "Hubungkan Garis Kolom Kiri & Kanan",
+    icon: "↔️",
+    accentColor: "cyan",
+    capabilities: defaultCapabilities,
+    defaultDifficulty: "medium",
   },
 };
 
 export class GameRegistry {
-  /**
-   * Resolves raw game_type or legacy game_mode string into a standard NormalizedGameType.
-   */
   public static resolve(
     rawType?: string | null,
     rawMode?: string | null,
@@ -109,23 +166,29 @@ export class GameRegistry {
     const cleanType = (rawType ?? "").trim().toLowerCase();
     const cleanMode = (rawMode ?? "").trim().toLowerCase();
 
-    // Legacy compatibility: In historical schema (0001 to 0060),
-    // public.games.game_type was constrained exclusively to 'arabic_chase_race'.
-    // Historical games designated their true mechanic in `mode`.
     if (cleanType === "arabic_chase_race") {
       if (cleanMode === "anagram") return "anagram";
       if (cleanMode === "matching") return "matching";
       return "runner";
     }
 
-    // Canonical modern game types
     if (cleanType === "runner") return "runner";
     if (cleanType === "matching") return "matching";
     if (cleanType === "penalty") return "penalty";
     if (cleanType === "anagram") return "anagram";
     if (cleanType === "quiz") return "quiz";
 
-    // Fallback when game_type is null or empty, inspecting mode
+    if (cleanType === "kahoot") return "kahoot";
+    if (cleanType === "millionaire") return "millionaire";
+    if (cleanType === "jeopardy") return "jeopardy";
+    if (cleanType === "memory_card") return "memory_card";
+    if (cleanType === "wordle") return "wordle";
+    if (cleanType === "scramble") return "scramble";
+    if (cleanType === "hangman") return "hangman";
+    if (cleanType === "wheel_fortune") return "wheel_fortune";
+    if (cleanType === "whack_mole") return "whack_mole";
+    if (cleanType === "matching_column") return "matching_column";
+
     if (cleanMode === "anagram") return "anagram";
     if (cleanMode === "matching") return "matching";
     if (cleanMode === "speed_run") return "runner";
@@ -133,25 +196,19 @@ export class GameRegistry {
     return "quiz";
   }
 
-  /**
-   * Retrieves the definition for a normalized game type.
-   */
   public static get(type: NormalizedGameType): GameDefinition {
-    return DEFINITIONS[type];
+    return DEFINITIONS[type] ?? DEFINITIONS["quiz"];
   }
 
-  /**
-   * Returns all registered game definitions.
-   */
-  public static getAll(): readonly GameDefinition[] {
+  public static getAll(): GameDefinition[] {
     return Object.values(DEFINITIONS);
   }
 
-  /**
-   * Checks whether a specific game mode is supported by the given game type.
-   */
-  public static isModeSupported(type: NormalizedGameType, mode: GameMode): boolean {
-    const def = DEFINITIONS[type];
-    return def.capabilities.supportedModes.includes(mode);
+  public static isModeSupported(
+    type: NormalizedGameType,
+    mode: GameMode,
+  ): boolean {
+    const def = this.get(type);
+    return def ? def.capabilities.supportedModes.includes(mode) : false;
   }
 }

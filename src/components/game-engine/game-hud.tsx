@@ -27,6 +27,16 @@ const TYPE_ICONS: Record<NormalizedGameType, string> = {
   penalty: "⚽",
   anagram: "🔤",
   quiz: "📝",
+  kahoot: "▲",
+  millionaire: "💰",
+  jeopardy: "📋",
+  memory_card: "🃏",
+  wordle: "🟩",
+  scramble: "🔤",
+  hangman: "⛄",
+  wheel_fortune: "🎡",
+  whack_mole: "🔨",
+  matching_column: "↔️",
 };
 
 export function GameHud({

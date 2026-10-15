@@ -1,12 +1,14 @@
-﻿"use client";
+"use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { importQuestionBankRows } from "./actions";
 import {
-  parseQuestionBankWorkbook,
-  type QuestionImportPreview,
-} from "@/lib/question-bank/excel";
+  GAME_MD_TEMPLATES,
+  parseMarkdownToImportRows,
+  type GameThemeId,
+} from "@/lib/question-bank/md-parser";
+import type { QuestionImportRow } from "@/lib/question-bank/excel";
 
 type ImportDict = {
   file_label: string;
@@ -26,67 +28,53 @@ type ImportDict = {
   success: string;
 };
 
-function fmt(tpl: string, vars: Record<string, string | number>): string {
-  let out = tpl;
-  for (const [k, v] of Object.entries(vars)) {
-    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
-  }
-  return out;
-}
-
-function formatError(
-  error: QuestionImportPreview["errors"][number],
-  qi: ImportDict,
-) {
-  return `${qi.row_prefix} ${error.row} — ${error.field}: ${error.message}`;
-}
+const GAME_THEME_LABELS: Record<GameThemeId, string> = {
+  kahoot: "Kahoot Arena (4 Pilihan Ganda)",
+  millionaire: "Who Wants to Be a Millionaire",
+  jeopardy: "Cerdas Cermat Matriks (5 Kategori)",
+  memory_card: "3D Memory Card Flip (Pasangan Memori)",
+  wordle: "Arabic Wordle / Katla (Tebak 5 Huruf)",
+  scramble: "Word Scramble (Susun Kata Hijaiyah)",
+  hangman: "Manusia Salju Kata (Hangman Tebak Huruf)",
+  wheel_fortune: "Wheel of Fortune (Roda Karnaval)",
+  whack_mole: "Whack-a-Mole (Pukul Tikus Mufrodat)",
+  matching_column: "Drag & Drop Matching Column (Hubungkan Garis)",
+};
 
 export function QuestionBankImportForm({
   questionBankId,
-  qi,
 }: {
   questionBankId: string;
-  qi: ImportDict;
+  qi?: ImportDict;
 }) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<QuestionImportPreview | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [selectedTheme, setSelectedTheme] = useState<GameThemeId>("kahoot");
+  const [mdContent, setMdContent] = useState<string>(GAME_MD_TEMPLATES.kahoot);
+  const [previewRows, setPreviewRows] = useState<QuestionImportRow[] | null>(null);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  async function handleFile(file: File | undefined) {
+  function handleThemeChange(theme: GameThemeId) {
+    setSelectedTheme(theme);
+    setMdContent(GAME_MD_TEMPLATES[theme]);
+    setPreviewRows(null);
+    setParseErrors([]);
     setServerError(null);
     setSuccess(null);
-    setPreview(null);
-    setFileName(file?.name ?? "");
-    if (!file) return;
+  }
 
-    try {
-      const result = await parseQuestionBankWorkbook(file);
-      setPreview(result);
-    } catch {
-      setPreview({
-        rows: [],
-        errors: [
-          {
-            row: 1,
-            field: "file",
-            message: qi.read_fail,
-          },
-        ],
-      });
-    }
+  function handleParsePreview() {
+    setServerError(null);
+    setSuccess(null);
+    const { rows, errors } = parseMarkdownToImportRows(mdContent, selectedTheme);
+    setParseErrors(errors);
+    setPreviewRows(rows.length > 0 ? rows : null);
   }
 
   async function handleImport() {
-    if (
-      !preview ||
-      preview.errors.length > 0 ||
-      preview.rows.length === 0 ||
-      busy
-    ) {
+    if (!previewRows || previewRows.length === 0 || busy || parseErrors.length > 0) {
       return;
     }
 
@@ -94,7 +82,7 @@ export function QuestionBankImportForm({
     setServerError(null);
     setSuccess(null);
 
-    const result = await importQuestionBankRows(questionBankId, preview.rows);
+    const result = await importQuestionBankRows(questionBankId, previewRows);
 
     if (!result.ok) {
       setBusy(false);
@@ -102,125 +90,129 @@ export function QuestionBankImportForm({
       return;
     }
 
-    setSuccess(fmt(qi.success, { n: result.imported }));
-    setPreview(null);
-    setFileName("");
-    if (inputRef.current) inputRef.current.value = "";
+    setSuccess(`✓ Berhasil menambahkan ${result.imported} soal dari template Markdown!`);
+    setPreviewRows(null);
     setBusy(false);
-
     router.refresh();
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div>
-        <label
-          htmlFor={`question-bank-file-${questionBankId}`}
-          className="block text-sm font-medium text-neutral-700"
-        >
-          {qi.file_label}
+        <h3 className="text-base font-bold text-neutral-900">
+          📝 Input & Pengelolaan Soal via Format Markdown (MD)
+        </h3>
+        <p className="mt-1 text-xs text-neutral-500">
+          Pilih template game yang sesuai di bawah ini untuk melihat contoh format Markdown, lalu edit teks soal secara langsung tanpa perlu upload file.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
+          Pilih Template Game Pembelajaran:
         </label>
-        <input
-          ref={inputRef}
-          id={`question-bank-file-${questionBankId}`}
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          onChange={(event) => void handleFile(event.target.files?.[0])}
-          disabled={busy}
-          className="mt-2 block w-full text-sm"
+        <select
+          value={selectedTheme}
+          onChange={(e) => handleThemeChange(e.target.value as GameThemeId)}
+          className="w-full rounded-lg border border-neutral-300 bg-neutral-50 p-2.5 text-sm font-medium text-neutral-900 focus:border-indigo-500 focus:bg-white"
+        >
+          {Object.entries(GAME_THEME_LABELS).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
+          Editor Teks Markdown Soal ({selectedTheme}):
+        </label>
+        <textarea
+          rows={10}
+          value={mdContent}
+          onChange={(e) => setMdContent(e.target.value)}
+          className="w-full rounded-lg border border-neutral-300 bg-neutral-900 p-3.5 font-mono text-xs text-emerald-400 placeholder-neutral-500 focus:border-indigo-500 focus:outline-none"
+          placeholder="Tuliskan format Markdown soal di sini..."
         />
       </div>
 
-      {fileName ? (
-        <p className="text-sm text-neutral-600">
-          {qi.file_selected} <span className="font-medium">{fileName}</span>
-        </p>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={handleParsePreview}
+          disabled={busy}
+          className="rounded-lg bg-neutral-800 px-4 py-2 text-xs font-bold text-white hover:bg-neutral-900 disabled:opacity-50"
+        >
+          🔍 Pratinjau & Parse Soal MD
+        </button>
 
-      {preview ? (
-        <div className="rounded-md border border-neutral-200 p-4">
-          {preview.errors.length > 0 ? (
-            <div
-              role="alert"
-              className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-            >
-              <p className="font-semibold">{qi.rejected}</p>
-              <ul className="mt-2 list-disc space-y-1 pr-5">
-                {preview.errors.map((error, index) => (
-                  <li key={`${error.row}-${error.field}-${index}`}>
-                    {formatError(error, qi)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-semibold">
-                  {fmt(qi.preview_title, { n: preview.rows.length })}
-                </p>
-                <span className="text-xs text-neutral-500">
-                  {qi.preview_note}
-                </span>
-              </div>
+        {previewRows && previewRows.length > 0 && parseErrors.length === 0 && (
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={busy}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {busy ? "Menyimpan Soal..." : `💾 Simpan ${previewRows.length} Soal ke Bank Soal`}
+          </button>
+        )}
+      </div>
 
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full text-right text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-200">
-                      <th className="px-3 py-2">{qi.th_no}</th>
-                      <th className="px-3 py-2">{qi.th_question}</th>
-                      <th className="px-3 py-2">{qi.th_topic}</th>
-                      <th className="px-3 py-2">{qi.th_difficulty}</th>
-                      <th className="px-3 py-2">{qi.th_media}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.rows.map((row) => (
-                      <tr key={row.no} className="border-b border-neutral-100">
-                        <td className="px-3 py-2">{row.no}</td>
-                        <td className="px-3 py-2">{row.question}</td>
-                        <td className="px-3 py-2">{row.topic}</td>
-                        <td className="px-3 py-2">{row.difficulty}</td>
-                        <td className="px-3 py-2">
-                          {row.hasMedia ? row.mediaType : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handleImport()}
-                disabled={busy}
-                className="mt-4 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {busy ? qi.importing : qi.confirm_import}
-              </button>
-            </>
-          )}
+      {parseErrors.length > 0 && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+          <p className="font-bold">❌ Error Format Markdown:</p>
+          <ul className="mt-1 list-disc space-y-1 pl-4">
+            {parseErrors.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
         </div>
-      ) : null}
+      )}
 
-      {serverError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
-          {serverError}
-        </p>
-      ) : null}
+      {serverError && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 font-medium">
+          ❌ {serverError}
+        </div>
+      )}
 
-      {success ? (
-        <p
-          role="status"
-          className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800"
-        >
+      {success && (
+        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-bold">
           {success}
-        </p>
-      ) : null}
+        </div>
+      )}
+
+      {previewRows && previewRows.length > 0 && (
+        <div className="mt-4 space-y-2 border-t border-neutral-200 pt-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+            Hasil Pratinjau Soal ({previewRows.length} Soal Terbaca):
+          </h4>
+          <div className="max-h-60 overflow-y-auto rounded-lg border border-neutral-200">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-neutral-100 font-bold text-neutral-700">
+                <tr>
+                  <th className="p-2">No</th>
+                  <th className="p-2">Pertanyaan / Kata</th>
+                  <th className="p-2">Pilihan A (Jawaban)</th>
+                  <th className="p-2">Pilihan B</th>
+                  <th className="p-2">Topik</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {previewRows.map((r, i) => (
+                  <tr key={i} className="hover:bg-neutral-50">
+                    <td className="p-2 font-bold">{r.no}</td>
+                    <td className="p-2" dir="auto">{r.question}</td>
+                    <td className="p-2 font-medium text-emerald-700" dir="auto">{r.options.A}</td>
+                    <td className="p-2 text-neutral-500" dir="auto">{r.options.B}</td>
+                    <td className="p-2 text-neutral-600">{r.topic}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

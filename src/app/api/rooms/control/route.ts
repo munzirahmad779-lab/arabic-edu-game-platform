@@ -17,13 +17,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { roomId, action } = body as { roomId?: string; action?: "advance" | "end" };
+    const { roomId, action } = body as {
+      roomId?: string;
+      action?: "advance" | "end" | "reset";
+    };
 
     if (!roomId || !action) {
       return NextResponse.json({ error: "INVALID_PAYLOAD" }, { status: 400 });
     }
 
-    // Ambil baris room dan pastikan host adalah guru yang sedang login
     const { data: room, error: roomError } = await supabase
       .from("rooms")
       .select("id, teacher_id, state, current_question_index, snapshot")
@@ -35,11 +37,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ROOM_NOT_FOUND_OR_FORBIDDEN" }, { status: 404 });
     }
 
-    // Ambil daftar pertanyaan dari snapshot
     const snapshotObj = room.snapshot as { questions?: unknown[] } | null;
     const questions = snapshotObj?.questions ?? [];
     const totalQuestions = questions.length;
     const currentIndex = room.current_question_index ?? 0;
+
+    // FITUR BARU: Reset Room kembali ke Data Awal (Soal 1, Skor 0, siap dimainkan ulang)
+    if (action === "reset") {
+      await supabase.from("submissions").delete().eq("room_id", roomId);
+      const now = new Date();
+      const resetPayload: RoomUpdate = {
+        state: "running",
+        current_question_index: 0,
+        started_at: now.toISOString(),
+        question_started_at: new Date(now.getTime() + 2000).toISOString(),
+        ended_at: null,
+      };
+      const { error: resetError } = await supabase
+        .from("rooms")
+        .update(resetPayload)
+        .eq("id", roomId);
+
+      if (resetError) {
+        return NextResponse.json({ error: resetError.message }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        room_state: "running",
+        current_question_index: 0,
+        total_questions: totalQuestions,
+      });
+    }
 
     if (action === "end") {
       const updatePayload: RoomUpdate = {

@@ -89,7 +89,7 @@ export default function TestProjectorPage() {
     <ProjectorScreen
       gameId="test-game-123"
       gameName="Latihan Bahasa Arab Interaktif (Proyektor Kelas)"
-      initialGameType="penalty"
+      initialGameType="quiz"
       questions={MOCK_QUESTIONS}
       allStudents={MOCK_MANGKOSO_STUDENTS}
       teacherClasses={MOCK_CLASSES}

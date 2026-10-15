@@ -185,10 +185,10 @@ export default function ControllerPage() {
       {/* 4 BIG TACTILE CONSOLE BUTTONS */}
       <section className="grid grid-cols-2 gap-4 pb-4">
         {[
-          { key: "A", label: "A / Bola 1", icon: "⚽", color: "from-rose-600 to-red-700", border: "border-rose-400" },
-          { key: "B", label: "B / Bola 2", icon: "⚽", color: "from-sky-600 to-blue-700", border: "border-sky-400" },
-          { key: "C", label: "C / Bola 3", icon: "⚽", color: "from-emerald-600 to-teal-700", border: "border-emerald-400" },
-          { key: "D", label: "D / Bola 4", icon: "⚽", color: "from-amber-500 to-yellow-600", border: "border-amber-400" },
+          { key: "A", label: "A / Segitiga", icon: "▲", color: "from-rose-600 to-red-700", border: "border-rose-400", shapeBg: "bg-rose-500" },
+          { key: "B", label: "B / Ketupat", icon: "◆", color: "from-sky-600 to-blue-700", border: "border-sky-400", shapeBg: "bg-sky-500" },
+          { key: "C", label: "C / Lingkaran", icon: "●", color: "from-amber-500 to-yellow-600", border: "border-amber-400", shapeBg: "bg-amber-500" },
+          { key: "D", label: "D / Kotak", icon: "■", color: "from-emerald-600 to-teal-700", border: "border-emerald-400", shapeBg: "bg-emerald-500" },
         ].map((btn) => {
           const isSelected = lastPressedKey === btn.key;
 
@@ -202,9 +202,9 @@ export default function ControllerPage() {
                 isSelected ? "ring-4 ring-white scale-95" : ""
               }`}
             >
-              <span className="text-4xl drop-shadow-lg">{btn.icon}</span>
-              <span className="text-2xl font-black mt-1">{btn.key}</span>
-              <span className="text-[10px] font-mono opacity-80 uppercase tracking-widest mt-0.5">
+              <span className="text-4xl drop-shadow-md">{btn.icon}</span>
+              <span className="text-2xl font-black mt-1">Pilihan {btn.key}</span>
+              <span className="text-[11px] font-mono opacity-90 uppercase tracking-wider mt-0.5">
                 {btn.label}
               </span>
             </button>

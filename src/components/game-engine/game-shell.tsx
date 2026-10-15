@@ -40,6 +40,16 @@ const BG_GRADIENTS: Record<NormalizedGameType, string> = {
   penalty: "from-amber-800 via-stone-900 to-emerald-950",
   anagram: "from-violet-800 via-purple-900 to-slate-950",
   quiz: "from-violet-700 via-indigo-800 to-sky-900",
+  kahoot: "from-rose-800 via-purple-900 to-indigo-950",
+  millionaire: "from-amber-900 via-slate-900 to-indigo-950",
+  jeopardy: "from-indigo-900 via-slate-900 to-blue-950",
+  memory_card: "from-purple-900 via-indigo-900 to-slate-950",
+  wordle: "from-emerald-900 via-slate-900 to-teal-950",
+  scramble: "from-violet-900 via-purple-900 to-slate-950",
+  hangman: "from-sky-900 via-slate-900 to-indigo-950",
+  wheel_fortune: "from-amber-800 via-rose-900 to-purple-950",
+  whack_mole: "from-orange-900 via-amber-950 to-stone-950",
+  matching_column: "from-cyan-900 via-slate-900 to-indigo-950",
 };
 
 export function GameShell({

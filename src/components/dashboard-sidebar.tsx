@@ -174,10 +174,9 @@ export function DashboardSidebar({
         {open ? "✕" : "☰"}
       </button>
 
-      {/* Sidebar desktop (fixed) */}
+      {/* Sidebar desktop */}
       <aside
-        className="hidden lg:flex fixed inset-y-0 z-30 w-60 flex-col border-e border-sage-200/60 bg-white"
-        style={{ insetInlineStart: 0 }}
+        className="hidden lg:flex h-full w-60 flex-col border-e border-sage-200/60 bg-white"
         dir={isRtl ? "rtl" : "ltr"}
       >
         {menu}

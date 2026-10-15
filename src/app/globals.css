@@ -61,3 +61,68 @@ h6 {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ========================================================================== */
+/* AUTHENTIC LEARNING GAME ANIMATIONS (3D FLIP, WHEEL SPIN, MOLE POP, SHAKE) */
+/* ========================================================================== */
+
+@keyframes cardFlip3D {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(90deg); }
+  100% { transform: rotateY(180deg); }
+}
+
+@keyframes molePopUp {
+  0% { transform: translateY(100%); opacity: 0; }
+  20% { transform: translateY(0%); opacity: 1; }
+  80% { transform: translateY(0%); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes shakeHoriz {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.8); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.9); }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.animate-card-flip {
+  animation: cardFlip3D 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-mole-pop {
+  animation: molePopUp 2.5s ease-in-out infinite;
+}
+
+.animate-shake {
+  animation: shakeHoriz 0.4s ease-in-out;
+}
+
+.animate-float-up {
+  animation: floatUp 1s ease-out forwards;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}

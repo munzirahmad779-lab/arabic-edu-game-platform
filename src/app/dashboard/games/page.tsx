@@ -228,12 +228,25 @@ export default async function GamesPage({
                 game.mode === "learning";
               const durationMinutes = Math.round(game.duration_seconds / 60);
 
+              const isEmbedGame = /\[EMBED:(.*?)\]/.test(game.name);
+              const themeMatch = game.name.match(/\[THEME:(.*?)\]/);
+              const theme = themeMatch ? themeMatch[1] : null;
+              const displayName = game.name.replace(/\[(THEME|EMBED):.*?\]/, "").trim();
+
+              const THEME_LABELS: Record<string, string> = {
+                airplane: "✈️ Pesawat Awan",
+                whack: "🔨 Pukul Tikus",
+                wheel: "🎡 Roda Putar",
+                memory: "🃏 Memori 3D",
+                balloon: "🎈 Pecahkan Balon",
+              };
+
               return (
                 <article key={game.id} className="aesthetic-card flex flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="font-display truncate text-lg font-black text-teal-700">
-                        {game.name}
+                        {displayName}
                       </h3>
                       <p className="mt-1 truncate text-sm text-softslate/70">
                         {className}
@@ -242,9 +255,19 @@ export default async function GamesPage({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-terracotta-100 px-2 py-1 font-bold text-terracotta-600">
-                      {getModeLabel(game.mode)}
-                    </span>
+                    {theme && THEME_LABELS[theme] ? (
+                      <span className="rounded-full bg-sky-100 px-2 py-1 font-bold text-sky-700">
+                        {THEME_LABELS[theme]}
+                      </span>
+                    ) : isEmbedGame ? (
+                      <span className="rounded-full bg-indigo-100 px-2 py-1 font-bold text-indigo-700">
+                        🌐 Web Game Asli
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-terracotta-100 px-2 py-1 font-bold text-terracotta-600">
+                        {getModeLabel(game.mode)}
+                      </span>
+                    )}
                     {isTimed ? (
                       <span className="rounded-full bg-teal-100 px-2 py-1 font-bold text-teal-700">
                         {durationMinutes} {t.duration_min}
@@ -261,35 +284,43 @@ export default async function GamesPage({
                     ) : null}
                   </div>
 
-                  {!isRoom ? (
+                  {!isRoom && !isEmbedGame ? (
                     <p className="mt-2 rounded-xl bg-teal-50 px-2 py-1.5 text-[11px] font-bold text-teal-700">
                       {t.self_practice}
                     </p>
                   ) : null}
 
                   <div className="mt-4 space-y-2 pt-2">
-                    {/* Primary Button: Mode Proyektor & Remote HP */}
-                    <div className="flex gap-2">
+                    {isEmbedGame ? (
                       <Link
                         href={`/dashboard/games/${game.id}/projector`}
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-black text-white shadow-md transition hover:from-emerald-700 hover:to-teal-700 hover:scale-101"
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-xs font-black text-white shadow-md transition hover:from-indigo-700 hover:to-purple-700"
                       >
-                        <span className="text-base">📽️</span>
-                        <span>Mode Proyektor & Remote HP</span>
+                        <span className="text-base">▶️</span>
+                        <span>Mainkan Web Game (Layar Penuh / TV)</span>
                       </Link>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/games/${game.id}/projector`}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-black text-white shadow-md transition hover:from-emerald-700 hover:to-teal-700 hover:scale-101"
+                        >
+                          <span className="text-base">📽️</span>
+                          <span>Mode Proyektor & Remote HP</span>
+                        </Link>
 
-                      {/* Quick link to controller with game room code */}
-                      <a
-                        href={`/controller?room=${game.id.slice(0, 6).toUpperCase()}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Buka Stik Remote HP Siswa (/controller)"
-                        className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
-                      >
-                        <span>🎮</span>
-                        <span className="hidden sm:inline">Stik HP</span>
-                      </a>
-                    </div>
+                        <a
+                          href={`/controller?room=${game.id.slice(0, 6).toUpperCase()}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Buka Stik Remote HP Siswa (/controller)"
+                          className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
+                        >
+                          <span>🎮</span>
+                          <span className="hidden sm:inline">Stik HP</span>
+                        </a>
+                      </div>
+                    )}
 
                     {/* Secondary Actions: Room Online, Clone, Delete */}
                     <div className="flex gap-2">

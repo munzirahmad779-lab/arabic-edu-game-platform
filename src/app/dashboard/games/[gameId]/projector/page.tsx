@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GameRegistry } from "@/lib/game-engine/registry";
 import { ProjectorScreen } from "./projector-screen";
+import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 import type { RawOption, RawQuestion } from "@/lib/game-engine/types";
 
 export const metadata = {
@@ -117,13 +118,25 @@ export default async function ProjectorPage({
     rawQuestions = rawQuestionsList;
   }
 
+  // Check if this game is an embedded web game (Wordwall / Educaplay / H5P / Quizizz)
+  const embedMatch = game.name.match(/\[EMBED:(.*?)\]/);
+  if (embedMatch && embedMatch[1]) {
+    const embedUrl = embedMatch[1].trim();
+    const cleanTitle = game.name.replace(/\[EMBED:.*?\]/, "").trim();
+    return <WebGameEmbedPlayer embedUrl={embedUrl} title={cleanTitle} />;
+  }
+
+  const themeMatch = game.name.match(/\[THEME:(.*?)\]/);
+  const cleanTitle = game.name.replace(/\[(THEME|EMBED):.*?\]/, "").trim();
   const initialGameType = GameRegistry.resolve(game.game_type, game.mode);
+  const initialGameTheme = themeMatch ? themeMatch[1] : (game.game_type || "kahoot");
 
   return (
     <ProjectorScreen
       gameId={game.id}
-      gameName={game.name}
+      gameName={cleanTitle}
       initialGameType={initialGameType}
+      initialGameTheme={initialGameTheme}
       questions={rawQuestions}
       allStudents={allStudents}
       teacherClasses={teacherClasses}

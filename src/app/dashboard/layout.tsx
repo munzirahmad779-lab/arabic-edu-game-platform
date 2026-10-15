@@ -7,6 +7,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DashboardShell } from "@/components/dashboard-shell";
 
 const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
 
@@ -71,41 +72,35 @@ export default async function DashboardLayout({
       className="min-h-screen bg-warmwhite"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <DashboardSidebar
-        locale={locale}
-        dict={sb}
-        brandName={dict.common.brand_main}
-        isSuperAdmin={isSuperAdmin}
-      />
-
-      <div className="lg:ps-60">
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-sage-200/60 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
-          {/* Logo + nama halaman */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="ms-12 flex items-center gap-2 lg:ms-0"
-              aria-label={dict.common.brand_main}
-            >
-              <Image
-                src="/logo-horizontal.png"
-                alt={dict.common.brand_main}
-                width={200}
-                height={88}
-                className="h-8 w-auto sm:h-9"
-                priority
-              />
-            </Link>
-            <span className="hidden text-sm font-bold text-softslate/40 sm:inline">
-              /
-            </span>
-            <span className="hidden text-sm font-black text-teal-700 sm:inline">
-              {sb.nav_dashboard}
-            </span>
-          </div>
-
-          {/* Kanan: bahasa + nama + keluar */}
-          <div className="flex items-center gap-2 sm:gap-3">
+      <DashboardShell
+        isRtl={isRtl}
+        headerTitle={sb.nav_dashboard}
+        sidebar={
+          <DashboardSidebar
+            locale={locale}
+            dict={sb}
+            brandName={dict.common.brand_main}
+            isSuperAdmin={isSuperAdmin}
+          />
+        }
+        headerLogo={
+          <Link
+            href="/dashboard"
+            className="ms-12 flex items-center gap-2 lg:ms-0"
+            aria-label={dict.common.brand_main}
+          >
+            <Image
+              src="/logo-horizontal.png"
+              alt={dict.common.brand_main}
+              width={200}
+              height={88}
+              className="h-8 w-auto sm:h-9"
+              priority
+            />
+          </Link>
+        }
+        headerRight={
+          <>
             <LanguageSwitcher current={locale} />
             <span
               className="hidden max-w-[160px] truncate text-sm font-bold text-softslate/80 sm:inline"
@@ -121,13 +116,11 @@ export default async function DashboardLayout({
                 {dict.dashboard.logout}
               </button>
             </form>
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-          {children}
-        </main>
-      </div>
+          </>
+        }
+      >
+        {children}
+      </DashboardShell>
     </div>
   );
 }

@@ -10,9 +10,34 @@ export type GameType =
   | "runner"
   | "matching"
   | "penalty"
-  | "arabic_chase_race";
+  | "arabic_chase_race"
+  | "kahoot"
+  | "millionaire"
+  | "jeopardy"
+  | "memory_card"
+  | "wordle"
+  | "scramble"
+  | "hangman"
+  | "wheel_fortune"
+  | "whack_mole"
+  | "matching_column";
 
-export type NormalizedGameType = "quiz" | "anagram" | "runner" | "matching" | "penalty";
+export type NormalizedGameType =
+  | "quiz"
+  | "anagram"
+  | "runner"
+  | "matching"
+  | "penalty"
+  | "kahoot"
+  | "millionaire"
+  | "jeopardy"
+  | "memory_card"
+  | "wordle"
+  | "scramble"
+  | "hangman"
+  | "wheel_fortune"
+  | "whack_mole"
+  | "matching_column";
 
 export type GameMode =
   | "competitive"

@@ -13,7 +13,7 @@ export type Json =
 
 export type ExplanationTiming = "after_each_question" | "after_game_only" | "never";
 export type GameMode = "competitive" | "cooperative" | "endless" | "practice" | "learning" | "anagram" | "matching";
-export type GameType = "arabic_chase_race" | "quiz" | "runner" | "matching" | "penalty" | "anagram";
+export type GameType = "arabic_chase_race" | "quiz" | "runner" | "matching" | "penalty" | "anagram" | "kahoot" | "millionaire" | "jeopardy" | "memory_card" | "wordle" | "scramble" | "hangman" | "wheel_fortune" | "whack_mole" | "matching_column";
 export type QuestionType = "mcq";
 export type RankingVisibility = "full" | "hidden" | "self_only";
 export type RoomState = "waiting" | "running" | "ended" | "locked";

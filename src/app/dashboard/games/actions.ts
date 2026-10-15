@@ -155,12 +155,23 @@ const durationMinutes = isTimedMode
     );
   }
 
+  const gameThemeRaw = normalizeName(formData.get("game_theme"));
+  let finalGameName = name;
+  if (gameThemeRaw && gameThemeRaw !== "kahoot") {
+    if (gameThemeRaw.startsWith("embed:")) {
+      const embedUrl = gameThemeRaw.replace(/^embed:/, "").trim();
+      if (embedUrl) finalGameName = `${name} [EMBED:${embedUrl}]`;
+    } else {
+      finalGameName = `${name} [THEME:${gameThemeRaw}]`;
+    }
+  }
+
   const { data: game, error: gameError } = await supabase
     .from("games")
     .insert({
       teacher_id: user.id,
       class_id: classId,
-      name,
+      name: finalGameName,
       game_type: gameType,
       mode,
       duration_seconds: durationSeconds,
