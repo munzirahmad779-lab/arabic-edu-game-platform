@@ -445,18 +445,19 @@ export function parseMarkdownToImportRows(
     return { rows, errors };
   }
 
-  // Standard MCQ Parsing (Kahoot, Millionaire, Jeopardy)
+  // Standard MCQ Parsing (Robust for both Markdown # and plain text "Soal 1:", "1.", etc.)
   let currentTopic = "Umum";
   let currentQuestion = "";
   let currentOptions: { A: string; B: string; C: string; D: string } = { A: "", B: "", C: "", D: "" };
   let currentCorrect: "A" | "B" | "C" | "D" = "A";
+  let currentExplanation: string | null = null;
   let rowNo = 1;
 
   function commitQuestion() {
-    if (currentQuestion && (currentOptions.A || currentOptions.B)) {
+    if (currentQuestion.trim() && (currentOptions.A || currentOptions.B)) {
       rows.push({
         no: rowNo++,
-        question: currentQuestion,
+        question: currentQuestion.trim(),
         options: {
           A: currentOptions.A || "Pilihan A",
           B: currentOptions.B || "Pilihan B",
@@ -470,36 +471,100 @@ export function parseMarkdownToImportRows(
         mediaType: null,
         mediaFilename: null,
         maxPlayCount: null,
-        explanation: null,
+        explanation: currentExplanation,
       });
     }
     currentQuestion = "";
     currentOptions = { A: "", B: "", C: "", D: "" };
     currentCorrect = "A";
+    currentExplanation = null;
   }
 
-  for (const line of lines) {
-    if (line.startsWith("## Kategori:")) {
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("//")) continue;
+
+    // 1. Topic / Category header: "## Kategori: Nahwu" or "Topik: Mufrodat"
+    if (
+      line.toLowerCase().startsWith("## kategori:") ||
+      line.toLowerCase().startsWith("topik:") ||
+      line.toLowerCase().startsWith("kategori:")
+    ) {
       commitQuestion();
-      currentTopic = line.replace("## Kategori:", "").trim();
+      currentTopic = line.replace(/^(?:##\s*)?(?:kategori|topik):\s*/i, "").trim() || "Umum";
       continue;
     }
 
-    if (line.startsWith("# Soal") || line.startsWith("###") || (line.startsWith("#") && !line.startsWith("##"))) {
-      commitQuestion();
-      currentQuestion = line.replace(/^#+\s*/, "").replace(/^Soal\s*\d+:\s*/i, "").trim();
+    // 2. Separate Answer Key line (e.g. "Kunci: B", "Jawaban: C", "Kunci Jawaban: A")
+    const keyLineMatch = line.match(/^(?:Kunci(?:\s*Jawaban)?|Jawaban(?:\s*Benar)?|Key|Answer)\s*[:\-=–]\s*([A-D])/i);
+    if (keyLineMatch) {
+      currentCorrect = keyLineMatch[1].toUpperCase() as "A" | "B" | "C" | "D";
       continue;
     }
 
-    const optionMatch = line.match(/^[-*]?\s*([A-D])[\.\)]\s*(.+)/i);
-    if (optionMatch && currentQuestion) {
+    // 3. Explanation line (e.g. "Pembahasan: ...", "Alasan: ...")
+    const expMatch = line.match(/^(?:Pembahasan|Penjelasan|Alasan|Explanation)\s*[:\-=–]\s*(.+)/i);
+    if (expMatch) {
+      currentExplanation = expMatch[1].trim();
+      continue;
+    }
+
+    // 4. Option line: A. Text, - A. Text, A) Text, (A) Text, [A] Text, A - Text, a. Text
+    const optionMatch = line.match(/^[-*•]?\s*[\(\[]?([A-D])[\)\]\.\:\-–]\s*(.+)/i);
+    if (optionMatch) {
       const key = optionMatch[1].toUpperCase() as "A" | "B" | "C" | "D";
       let text = optionMatch[2].trim();
-      const isCorrect = text.includes("[x]") || text.includes("*") || text.toLowerCase().includes("(benar)");
-      text = text.replace(/\[x\]|\*|\(benar\)/gi, "").trim();
+
+      // If we encounter option 'A' again while currentOptions already has 'A',
+      // it means a new question started without an explicit question prefix!
+      if (key === "A" && currentOptions.A && currentQuestion) {
+        commitQuestion();
+      }
+
+      const isCorrect = /\[x\]|\*|\(benar\)|\(kunci\)|\(jawaban benar\)|\(x\)|✓/i.test(text);
+      text = text.replace(/\[x\]|\*|\(benar\)|\(kunci\)|\(jawaban benar\)|\(x\)|✓/gi, "").trim();
 
       currentOptions[key] = text;
       if (isCorrect) currentCorrect = key;
+      continue;
+    }
+
+    // 5. Explicit Question Header:
+    // Matches:
+    // - "Soal 1: Apa arti...", "Soal 1. Apa...", "Soal 1 - Apa..."
+    // - "# Soal 1: ...", "### 1. ..."
+    // - "1. Apa arti...", "1) Apa arti...", "[1] Apa..."
+    // - "Pertanyaan 1: ...", "Q1: ..."
+    // - Lines starting with '#' (Markdown heading)
+    const isExplicitQuestion =
+      /^(?:#+\s*)?(?:Soal|Pertanyaan|Question|No\.?)\s*\d+[\.:\)\-–]?\s*/i.test(line) ||
+      /^(?:#+\s*)?\[?\d+\]?[\.:\)\-–]\s+/i.test(line) ||
+      line.startsWith("#");
+
+    if (isExplicitQuestion) {
+      commitQuestion();
+      currentQuestion = line
+        .replace(/^#+\s*/, "")
+        .replace(/^(?:Soal|Pertanyaan|Question|No\.?)\s*\d+[\.:\)\-–]?\s*/i, "")
+        .replace(/^\[?\d+\]?[\.:\)\-–]\s*/, "")
+        .trim();
+      continue;
+    }
+
+    // 6. Generic / Implicit Question:
+    // If the line is not an option and we don't have option A or B yet,
+    // it belongs to the question!
+    if (!currentOptions.A && !currentOptions.B) {
+      if (currentQuestion) {
+        currentQuestion += " " + line;
+      } else {
+        currentQuestion = line;
+      }
+    } else {
+      // If we already have options A & B, but this line is NOT an option,
+      // it means this line is the next question!
+      commitQuestion();
+      currentQuestion = line;
     }
   }
   commitQuestion();
