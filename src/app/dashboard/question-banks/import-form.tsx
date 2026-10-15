@@ -29,16 +29,17 @@ type ImportDict = {
 };
 
 const GAME_THEME_LABELS: Record<GameThemeId, string> = {
-  kahoot: "Kahoot Arena (4 Pilihan Ganda)",
-  millionaire: "Who Wants to Be a Millionaire",
-  jeopardy: "Cerdas Cermat Matriks (5 Kategori)",
-  memory_card: "3D Memory Card Flip (Pasangan Memori)",
-  wordle: "Arabic Wordle / Katla (Tebak 5 Huruf)",
-  scramble: "Word Scramble (Susun Kata Hijaiyah)",
-  hangman: "Manusia Salju Kata (Hangman Tebak Huruf)",
-  wheel_fortune: "Wheel of Fortune (Roda Karnaval)",
-  whack_mole: "Whack-a-Mole (Pukul Tikus Mufrodat)",
-  matching_column: "Drag & Drop Matching Column (Hubungkan Garis)",
+  excel_table: "📊 Format Tabel Kolom Excel (Sesuai Template / Copy-Paste Spreadsheet)",
+  kahoot: "▲ Kahoot Arena Showdown (4 Pilihan Ganda)",
+  millionaire: "💰 Who Wants to Be a Millionaire",
+  jeopardy: "🏆 Cerdas Cermat Matriks (5 Kategori)",
+  memory_card: "🃏 3D Memory Card Flip (Pasangan Memori)",
+  wordle: "🔤 Arabic Wordle / Katla (Tebak 5 Huruf)",
+  scramble: "🧩 Word Scramble (Susun Kata Hijaiyah)",
+  hangman: "⛄ Manusia Salju Kata (Hangman Tebak Huruf)",
+  wheel_fortune: "🎡 Wheel of Fortune (Roda Tantangan)",
+  whack_mole: "🔨 Whack-a-Mole (Pukul Tikus Mufrodat)",
+  matching_column: "🔗 Drag & Drop Matching Column (Hubungkan Garis)",
 };
 
 export function QuestionBankImportForm({
@@ -57,6 +58,8 @@ export function QuestionBankImportForm({
   const [success, setSuccess] = useState<string | null>(null);
 
   const [showAiGenerator, setShowAiGenerator] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  const [activeGuideTab, setActiveGuideTab] = useState<"table" | "ai" | "list">("table");
   const [aiTopic, setAiTopic] = useState("");
   const [aiCount, setAiCount] = useState(5);
   const [aiDifficulty, setAiDifficulty] = useState<"easy" | "medium" | "hard">("medium");
@@ -166,6 +169,181 @@ export function QuestionBankImportForm({
           <span>✨</span>
           <span>{showAiGenerator ? "Tutup Generator AI" : "Buat Soal Otomatis (Multi-AI)"}</span>
         </button>
+      </div>
+
+      {/* Panduan Interaktif Guru: Cara Memasukkan Soal */}
+      <div className="rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50/60 via-white to-emerald-50/40 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-teal-100 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-600 text-sm text-white">📖</span>
+            <div>
+              <h4 className="text-sm font-bold text-teal-950">
+                Panduan Guru: 3 Cara Mudah Memasukkan Soal
+              </h4>
+              <p className="text-[11px] text-teal-800/80">
+                Pilih metode yang paling nyaman untuk Anda. Tidak perlu lagi upload file Excel rumit!
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuide((prev) => !prev)}
+            className="rounded-lg border border-teal-300 bg-white px-2.5 py-1 text-xs font-bold text-teal-800 hover:bg-teal-50 transition"
+          >
+            {showGuide ? "Sembunyikan Panduan ▲" : "Buka Panduan ▼"}
+          </button>
+        </div>
+
+        {showGuide && (
+          <div className="mt-3 space-y-3">
+            {/* Navigasi Tab Metode */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("table")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                  activeGuideTab === "table"
+                    ? "bg-teal-700 text-white shadow"
+                    : "bg-white text-teal-900 border border-teal-200 hover:bg-teal-100/50"
+                }`}
+              >
+                <span>📊</span>
+                <span>Metode 1: Tabel Excel (Copy-Paste Spreadsheet)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("ai")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                  activeGuideTab === "ai"
+                    ? "bg-indigo-700 text-white shadow"
+                    : "bg-white text-indigo-900 border border-indigo-200 hover:bg-indigo-100/50"
+                }`}
+              >
+                <span>✨</span>
+                <span>Metode 2: Otomatis via AI (1-Klik)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("list")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                  activeGuideTab === "list"
+                    ? "bg-slate-700 text-white shadow"
+                    : "bg-white text-slate-800 border border-slate-200 hover:bg-slate-100/50"
+                }`}
+              >
+                <span>📝</span>
+                <span>Metode 3: Format Daftar Standar (# Soal 1)</span>
+              </button>
+            </div>
+
+            {/* Konten Tab 1: Format Tabel Excel */}
+            {activeGuideTab === "table" && (
+              <div className="rounded-xl border border-teal-200 bg-white p-3.5 space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-black uppercase tracking-wider text-teal-900">
+                    Format Tabel Kolom (Paling Cocok bagi yang Punya Soal di Excel / Spreadsheet)
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTheme("excel_table");
+                      setMdContent(GAME_MD_TEMPLATES.excel_table);
+                      handleParsePreview(GAME_MD_TEMPLATES.excel_table);
+                    }}
+                    className="text-xs font-bold text-teal-700 hover:text-teal-900 underline"
+                  >
+                    Terapkan Template Tabel ke Editor ➔
+                  </button>
+                </div>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Anda tidak perlu lagi menyimpan dan mengunggah file <code>.xlsx</code>. Anda bisa langsung <b>Copy</b> baris soal dari Excel atau Google Sheets, lalu <b>Paste (Ctrl + V)</b> ke editor teks di bawah. Sistem otomatis mendeteksi kolom-kolomnya!
+                </p>
+                <div className="rounded-lg bg-neutral-900 p-2.5 font-mono text-[11px] text-emerald-400 overflow-x-auto leading-5">
+                  <p className="text-neutral-400">// Contoh Format Tabel (Kolom dipisahkan tanda pipa |):</p>
+                  <p>| No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar | Topik | Tingkat Kesulitan |</p>
+                  <p>|---|---|---|---|---|---|---|---|---|</p>
+                  <p>| 1 | Apa arti كِتَابٌ ? | Buku | Pena | Meja | Kursi | A | Mufrodat | Mudah |</p>
+                  <p>| 2 | Jamak dari طَالِبٌ ? | طُلَّابٌ | طَالِبَاتٌ | مَطَالِبُ | أَطْلَابٌ | A | Nahwu | Sedang |</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-teal-800 bg-teal-50/80 p-2 rounded-lg">
+                  <span>💡 <b>Tips Excel:</b> Kunci jawaban cukup tulis hurufnya saja: <code>A</code>, <code>B</code>, <code>C</code>, atau <code>D</code>.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Konten Tab 2: Generator AI */}
+            {activeGuideTab === "ai" && (
+              <div className="rounded-xl border border-indigo-200 bg-white p-3.5 space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-black uppercase tracking-wider text-indigo-900">
+                    Pembuatan Soal Otomatis Berbasis Kecerdasan Buatan (AI)
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiGenerator(true)}
+                    className="text-xs font-bold text-indigo-700 hover:text-indigo-900 underline"
+                  >
+                    Buka Panel Generator AI ➔
+                  </button>
+                </div>
+                <ol className="list-decimal space-y-1 pl-4 text-xs text-neutral-700">
+                  <li>Klik tombol hijau <b>&quot;✨ Buat Soal Otomatis (Multi-AI)&quot;</b> di atas.</li>
+                  <li>Ketik topik / materi Bahasa Arab yang Anda inginkan (misal: <i>Adawatul Madrosiyyah</i> atau <i>Fi&apos;il Madhi</i>).</li>
+                  <li>Pilih jumlah soal (5, 10, 15, atau 20) dan tingkat kesulitan.</li>
+                  <li>Klik tombol <b>&quot;🚀 Generate Soal Sekarang&quot;</b>. AI secara otomatis menulis kosa kata Arab berharakat rapi dengan opsi jawaban seimbang.</li>
+                  <li>Periksa hasil di Pratinjau, lalu klik <b>&quot;💾 Simpan Soal&quot;</b>.</li>
+                </ol>
+              </div>
+            )}
+
+            {/* Konten Tab 3: Format Daftar Standar */}
+            {activeGuideTab === "list" && (
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    Format Daftar Catatan Markdown (# Soal)
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTheme("kahoot");
+                      setMdContent(GAME_MD_TEMPLATES.kahoot);
+                      handleParsePreview(GAME_MD_TEMPLATES.kahoot);
+                    }}
+                    className="text-xs font-bold text-slate-700 hover:text-slate-900 underline"
+                  >
+                    Terapkan Template Daftar ke Editor ➔
+                  </button>
+                </div>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Menulis seperti mencatat biasa di kertas atau chat. Gunakan tanda <code>[x]</code> di sebelah pilihan yang merupakan kunci jawaban benar.
+                </p>
+                <div className="rounded-lg bg-neutral-900 p-2.5 font-mono text-[11px] text-emerald-400 overflow-x-auto leading-5">
+                  <p># Soal 1: Apa arti dari kata كِتَابٌ ?</p>
+                  <p>- A. Buku [x]</p>
+                  <p>- B. Pena</p>
+                  <p>- C. Meja</p>
+                  <p>- D. Kursi</p>
+                </div>
+              </div>
+            )}
+
+            {/* Kotak Aturan Emas Anti-Tumpang Tindih */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-950 flex items-start gap-2.5">
+              <span className="text-base leading-none">🛡️</span>
+              <div>
+                <span className="font-bold">Pedoman Tata Letak (Anti-Tumpang Tindih di Layar Proyektor & HP Siswa):</span>
+                <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-amber-900">
+                  <li><b>Teks Pertanyaan:</b> Idealnya 8–15 kata agar nyaman dibaca dari baris belakang kelas.</li>
+                  <li><b>Pilihan Jawaban (A, B, C, D):</b> Cukup 1–3 kata agar tidak bertumpukan di balon, pesawat tempur, maupun tombol buzzer controller siswa.</li>
+                  <li><b>Tashkeel / Harakat:</b> Gunakan harakat Arab standar agar terbaca jelas oleh proyektor.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Interactive Multi-Provider AI Generator Panel */}

@@ -2,6 +2,7 @@ import type { QuestionImportRow } from "./excel";
 
 export type GameThemeId =
   | "kahoot"
+  | "excel_table"
   | "millionaire"
   | "jeopardy"
   | "memory_card"
@@ -13,6 +14,19 @@ export type GameThemeId =
   | "matching_column";
 
 export const GAME_MD_TEMPLATES: Record<GameThemeId, string> = {
+  excel_table: `# Format Tabel Kolom (Sesuai Template Excel)
+# Anda bisa langsung Copy tabel dari Microsoft Excel / Google Sheets lalu Paste ke sini,
+# atau tulis manual dengan pemisah tanda pipa (|):
+
+| No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar | Topik | Tingkat Kesulitan | Alasan |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Apa arti dari kata كِتَابٌ ? | Buku | Pena | Meja | Kursi | A | Mufrodat | Mudah | Buku tulis atau bacaan |
+| 2 | Jam'u (bentuk jamak) dari kata طَالِبٌ adalah... | طُلَّابٌ | طَالِبَاتٌ | مَطَالِبُ | أَطْلَابٌ | A | Nahwu | Sedang | Jamak taksir mudzakkar |
+| 3 | Fi'il madhi dari kata "يَكْتُبُ" adalah... | كَتَبَ | كِتَابَةٌ | كَاتِبٌ | اِكْتُبْ | A | Sharaf | Sedang | Fi'il tsulatsi mujarrad |
+| 4 | "قَلَمٌ" artinya dalam bahasa Indonesia adalah... | Pena | Penggaris | Penghapus | Meja | A | Mufrodat | Mudah | Alat tulis tinta |
+| 5 | Dhomir munfashil untuk orang pertama tunggal (saya) adalah... | أَنَا | نَحْنُ | أَنْتَ | هُوَ | A | Nahwu | Mudah | Kata ganti orang pertama |
+`,
+
   kahoot: `# Kuis Kahoot Arena (4 Pilihan Ganda)
 
 # Soal 1: Apa arti dari kata كِتَابٌ ?
@@ -156,6 +170,123 @@ Target: Peralatan Sekolah (Adawatul Madrosiyyah)
 `,
 };
 
+function parseTableOrTsvRows(lines: string[]): QuestionImportRow[] {
+  const rows: QuestionImportRow[] = [];
+  let rowCounter = 1;
+
+  for (const rawLine of lines) {
+    if (rawLine.startsWith("#")) continue;
+
+    let cells: string[] = [];
+    if (rawLine.includes("\t")) {
+      cells = rawLine.split("\t").map((c) => c.trim());
+    } else if (rawLine.includes("|")) {
+      const parts = rawLine.split("|").map((c) => c.trim());
+      if (parts[0] === "") parts.shift();
+      if (parts[parts.length - 1] === "") parts.pop();
+      cells = parts;
+    }
+
+    if (cells.length < 5) continue;
+
+    // Skip divider row: |---|---|
+    if (cells.every((c) => /^[-: ]+$/.test(c))) continue;
+
+    // Skip header row
+    const lowerJoined = cells.join(" ").toLowerCase();
+    if (
+      lowerJoined.includes("pertanyaan") ||
+      lowerJoined.includes("pilihan a") ||
+      lowerJoined.includes("jawaban benar") ||
+      lowerJoined.includes("question")
+    ) {
+      continue;
+    }
+
+    let no = rowCounter;
+    let question = "";
+    let optA = "";
+    let optB = "";
+    let optC = "";
+    let optD = "";
+    let correctKeyRaw = "A";
+    let topic = "Umum";
+    let difficultyRaw = "medium";
+    let explanation: string | null = null;
+
+    const firstIsNumber = /^\d+$/.test(cells[0]);
+
+    if (firstIsNumber && cells.length >= 6) {
+      no = parseInt(cells[0], 10) || rowCounter;
+      question = cells[1];
+      optA = cells[2] || "";
+      optB = cells[3] || "";
+      optC = cells[4] || "";
+      optD = cells[5] || "";
+      correctKeyRaw = cells[6] || "A";
+      if (cells[7]) topic = cells[7];
+      if (cells[8]) difficultyRaw = cells[8];
+      if (cells[9]) explanation = cells[9];
+    } else if (cells.length >= 5) {
+      question = cells[0];
+      optA = cells[1] || "";
+      optB = cells[2] || "";
+      optC = cells[3] || "";
+      optD = cells[4] || "";
+      correctKeyRaw = cells[5] || "A";
+      if (cells[6]) topic = cells[6];
+      if (cells[7]) difficultyRaw = cells[7];
+      if (cells[8]) explanation = cells[8];
+    }
+
+    if (!question || !optA) continue;
+
+    let correctKey: "A" | "B" | "C" | "D" = "A";
+    const cleanKey = correctKeyRaw.toUpperCase().trim();
+    if (cleanKey === "A" || cleanKey === "B" || cleanKey === "C" || cleanKey === "D") {
+      correctKey = cleanKey;
+    } else if (cleanKey === optA.toUpperCase().trim()) {
+      correctKey = "A";
+    } else if (cleanKey === optB.toUpperCase().trim()) {
+      correctKey = "B";
+    } else if (cleanKey === optC.toUpperCase().trim()) {
+      correctKey = "C";
+    } else if (cleanKey === optD.toUpperCase().trim()) {
+      correctKey = "D";
+    }
+
+    let difficulty: "easy" | "medium" | "hard" = "medium";
+    const diffLower = difficultyRaw.toLowerCase();
+    if (diffLower.includes("mudah") || diffLower.includes("easy")) {
+      difficulty = "easy";
+    } else if (diffLower.includes("sulit") || diffLower.includes("hard")) {
+      difficulty = "hard";
+    }
+
+    rows.push({
+      no: no || rowCounter,
+      question,
+      options: {
+        A: optA || "Pilihan A",
+        B: optB || "Pilihan B",
+        C: optC || "Pilihan C",
+        D: optD || "Pilihan D",
+      },
+      correctOptionKey: correctKey,
+      topic: topic || "Umum",
+      difficulty,
+      hasMedia: false,
+      mediaType: null,
+      mediaFilename: null,
+      maxPlayCount: null,
+      explanation: explanation || null,
+    });
+    rowCounter++;
+  }
+
+  return rows;
+}
+
 export function parseMarkdownToImportRows(
   mdText: string,
   gameTheme: GameThemeId = "kahoot"
@@ -163,6 +294,22 @@ export function parseMarkdownToImportRows(
   const lines = mdText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("//"));
   const rows: QuestionImportRow[] = [];
   const errors: string[] = [];
+
+  // If theme is excel_table or text contains table/tsv lines, check table parser first
+  if (gameTheme === "excel_table") {
+    const tableRows = parseTableOrTsvRows(lines);
+    if (tableRows.length > 0) {
+      return { rows: tableRows, errors: [] };
+    }
+    errors.push("Tidak dapat menemukan baris tabel atau TSV yang valid. Pastikan format tabel memiliki kolom: No | Pertanyaan | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban Benar");
+    return { rows: [], errors };
+  }
+
+  // Auto-detect table format even if another theme was selected
+  const autoTableRows = parseTableOrTsvRows(lines);
+  if (autoTableRows.length > 0 && (gameTheme === "kahoot" || gameTheme === "millionaire" || gameTheme === "jeopardy")) {
+    return { rows: autoTableRows, errors: [] };
+  }
 
   if (gameTheme === "memory_card" || gameTheme === "matching_column") {
     let rowNo = 1;
