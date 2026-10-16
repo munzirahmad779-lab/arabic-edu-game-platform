@@ -37,12 +37,13 @@ export function BalloonPlayer({
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
-  // Balloons state
+  // Balloons state with adaptive sizing
   const balloonsRef = useRef<
     Array<{
       x: number;
       y: number;
-      radius: number;
+      radiusX: number;
+      radiusY: number;
       vy: number;
       swayOffset: number;
       swaySpeed: number;
@@ -65,22 +66,30 @@ export function BalloonPlayer({
     }>
   >([]);
 
-  // Spawn Balloons
+  // Spawn Balloons with dynamic adaptive size based on option text length
   const spawnBalloons = useCallback((width: number, height: number) => {
     const opts = activeQuestion.options.slice(0, 4);
     const spacing = width / (opts.length + 1);
 
-    balloonsRef.current = opts.map((opt, i) => ({
-      x: spacing * (i + 1),
-      y: height + 60 + Math.random() * 40,
-      radius: 46,
-      vy: 1.8 + Math.random() * 0.8,
-      swayOffset: Math.random() * Math.PI * 2,
-      swaySpeed: 0.03 + Math.random() * 0.02,
-      color: BALLOON_COLORS[i % BALLOON_COLORS.length]!,
-      option: opt,
-      popped: false,
-    }));
+    balloonsRef.current = opts.map((opt, i) => {
+      const textLen = (opt.option_text || "").length;
+      // Adaptive oval radius so choices never overflow or get truncated
+      const radiusX = Math.max(48, Math.min(78, textLen * 3.5 + 28));
+      const radiusY = Math.round(radiusX * 1.25);
+
+      return {
+        x: spacing * (i + 1),
+        y: height + 60 + Math.random() * 40,
+        radiusX,
+        radiusY,
+        vy: 1.8 + Math.random() * 0.8,
+        swayOffset: Math.random() * Math.PI * 2,
+        swaySpeed: 0.03 + Math.random() * 0.02,
+        color: BALLOON_COLORS[i % BALLOON_COLORS.length]!,
+        option: opt,
+        popped: false,
+      };
+    });
   }, [activeQuestion.options]);
 
   // Handle Balloon Pop Click
@@ -163,39 +172,57 @@ export function BalloonPlayer({
         ctx.beginPath();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
         ctx.lineWidth = 1.5;
-        ctx.moveTo(currentX, b.y + b.radius);
-        ctx.quadraticCurveTo(currentX - 10, b.y + b.radius + 20, currentX, b.y + b.radius + 40);
+        ctx.moveTo(currentX, b.y + b.radiusY);
+        ctx.quadraticCurveTo(currentX - 10, b.y + b.radiusY + 18, currentX, b.y + b.radiusY + 36);
         ctx.stroke();
 
-        // Draw Balloon
+        // Draw Balloon Oval with dynamic adaptive radius
         ctx.beginPath();
         ctx.fillStyle = b.color;
         ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
         ctx.shadowBlur = 12;
-        ctx.ellipse(currentX, b.y, b.radius * 0.9, b.radius * 1.15, 0, 0, Math.PI * 2);
+        ctx.ellipse(currentX, b.y, b.radiusX, b.radiusY, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
 
         // Balloon Highlight shine
         ctx.beginPath();
         ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.ellipse(currentX - b.radius * 0.35, b.y - b.radius * 0.4, 8, 14, -0.4, 0, Math.PI * 2);
+        ctx.ellipse(currentX - b.radiusX * 0.35, b.y - b.radiusY * 0.35, 8, 14, -0.4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Balloon Text (Option Key & Text)
+        // Balloon Option Key Badge
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 15px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(b.option.option_key, currentX, b.y - 10);
+        ctx.fillText(b.option.option_key, currentX, b.y - b.radiusY * 0.35);
 
-        const bTextLen = b.option.option_text.length;
-        const bFontSize = bTextLen > 10 ? 13 : 16;
-        ctx.font = `bold ${bFontSize}px 'Traditional Arabic', Amiri, Tahoma, sans-serif`;
-        ctx.fillText(b.option.option_text.slice(0, 15), currentX, b.y + 12);
+        // Adaptive Choice Text (Traditional Arabic font & multiline wrap if needed, NO truncation)
+        const fullText = b.option.option_text;
+        const words = fullText.split(" ");
+        const maxLineWidth = b.radiusX * 1.65;
+
+        if (words.length >= 2 && fullText.length > 10) {
+          const mid = Math.ceil(words.length / 2);
+          const line1 = words.slice(0, mid).join(" ");
+          const line2 = words.slice(mid).join(" ");
+          ctx.font = `bold 13px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          ctx.fillText(line1, currentX, b.y + 4);
+          ctx.fillText(line2, currentX, b.y + 22);
+        } else {
+          let fontSize = 16;
+          ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          const measured = ctx.measureText(fullText).width;
+          if (measured > maxLineWidth && maxLineWidth > 20) {
+            fontSize = Math.max(11, Math.floor(fontSize * (maxLineWidth / measured)));
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          }
+          ctx.fillText(fullText, currentX, b.y + 10);
+        }
 
         // Respawn if floated off top
-        if (b.y + b.radius < -30) {
+        if (b.y + b.radiusY < -30) {
           b.y = height + 50;
         }
       }
@@ -233,8 +260,8 @@ export function BalloonPlayer({
       for (const b of balloonsRef.current) {
         if (b.popped) continue;
         const currentX = b.x + Math.sin(b.swayOffset) * 18;
-        const dist = Math.hypot(clickX - currentX, clickY - b.y);
-        if (dist <= b.radius * 1.1) {
+        const dist = Math.hypot(clickX - currentX, (clickY - b.y) / 1.2);
+        if (dist <= b.radiusX * 1.15) {
           handlePopBalloon(b);
           break;
         }
@@ -267,7 +294,11 @@ export function BalloonPlayer({
             <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
               PECAHKAN BALON (SOAL #{currentQIndex + 1})
             </span>
-            <h3 className="text-base sm:text-lg font-black text-white" dir={isRtl ? "rtl" : "ltr"}>
+            <h3
+              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              dir="auto"
+            >
               {activeQuestion.question_text}
             </h3>
           </div>

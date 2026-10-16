@@ -178,7 +178,11 @@ export function WheelPlayer({
             <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
               RODA PUTAR SOAL #{currentQIndex + 1}
             </span>
-            <h3 className="text-base sm:text-lg font-black text-white" dir={isRtl ? "rtl" : "ltr"}>
+            <h3
+              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              dir="auto"
+            >
               {activeQuestion.question_text}
             </h3>
           </div>

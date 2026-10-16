@@ -511,7 +511,7 @@ export function ProjectorScreen({
   // If teacher selected a Native Arcade Game Engine:
   if (activeEngine === "airplane") {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">✈️</span>
@@ -535,7 +535,7 @@ export function ProjectorScreen({
 
   if (activeEngine === "whack") {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🔨</span>
@@ -559,7 +559,7 @@ export function ProjectorScreen({
 
   if (activeEngine === "space") {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🚀</span>
@@ -583,7 +583,7 @@ export function ProjectorScreen({
 
   if (activeEngine === "memory") {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🃏</span>
@@ -607,7 +607,7 @@ export function ProjectorScreen({
 
   if (activeEngine === "balloon") {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between">
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎈</span>
@@ -634,7 +634,7 @@ export function ProjectorScreen({
   // -------------------------------------------------------------
   if (!gameStarted) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative overflow-hidden font-sans">
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative overflow-hidden font-sans game-screen font-arabic">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-600/20 blur-3xl rounded-full pointer-events-none" />
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
 
@@ -1284,7 +1284,7 @@ export function ProjectorScreen({
   // ACTIVE QUESTION & REVEAL PHASE (Kahoot Arena Showdown)
   // -------------------------------------------------------------
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-3 md:p-6 select-none relative overflow-hidden font-sans">
+    <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-3 md:p-6 select-none relative overflow-hidden font-sans game-screen font-arabic">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-900/15 blur-[150px] pointer-events-none rounded-full" />
 
       {/* TOP HUD: Progress, Big Timer, Fullscreen */}

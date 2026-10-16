@@ -129,7 +129,11 @@ export function WhackPlayer({
             <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
               WHACK-A-MOLE VOCAB (SOAL #{currentQIndex + 1})
             </span>
-            <h3 className="text-base sm:text-lg font-black text-white" dir={isRtl ? "rtl" : "ltr"}>
+            <h3
+              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              dir="auto"
+            >
               {activeQuestion.question_text}
             </h3>
           </div>
@@ -178,14 +182,23 @@ export function WhackPlayer({
                     <div className="w-4 h-2.5 bg-rose-400 rounded-full mb-1" />
                   </div>
 
-                  {/* Choice Board held by Mole */}
-                  <div className="px-3 py-1.5 rounded-xl bg-white border-2 border-amber-900 shadow-xl text-center max-w-[140px] -mt-1 z-20">
-                    <span className="font-mono font-black text-xs text-amber-700 mr-1">
+                  {/* Choice Board held by Mole - Adaptive Width and No Truncation */}
+                  <div className="px-3 py-1.5 rounded-2xl bg-white border-2 border-amber-900 shadow-xl text-center min-w-[120px] max-w-[210px] -mt-1 z-20 choice-board flex items-center justify-center gap-1.5">
+                    <span className="font-mono font-black text-xs text-amber-700 shrink-0">
                       {mole.option.option_key}:
                     </span>
                     <span
-                      className="font-black text-sm text-slate-900 truncate inline-block max-w-[95px] leading-tight"
-                      style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                      className={`font-black text-slate-900 break-words leading-tight ${
+                        mole.option.option_text.length > 18
+                          ? "text-xs"
+                          : mole.option.option_text.length > 12
+                          ? "text-xs sm:text-sm"
+                          : "text-sm sm:text-base"
+                      }`}
+                      style={{
+                        fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif",
+                        lineHeight: 1.25,
+                      }}
                       dir="auto"
                     >
                       {mole.option.option_text}

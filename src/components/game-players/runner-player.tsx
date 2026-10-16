@@ -477,7 +477,11 @@ export function RunnerPlayer({
         <span className="inline-block rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300">
           Tantangan Lintasan Soal
         </span>
-        <h2 className="mt-2 text-2xl font-black leading-relaxed text-white sm:text-3xl">
+        <h2
+          className="mt-2 text-2xl font-black leading-relaxed text-white sm:text-3xl"
+          style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+          dir="auto"
+        >
           {runnerQuestion.questionText}
         </h2>
       </div>

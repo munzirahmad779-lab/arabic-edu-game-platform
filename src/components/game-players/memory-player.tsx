@@ -25,7 +25,7 @@ export function MemoryPlayer({
     questions.slice(0, 6).forEach((q, idx) => {
       const correctOpt = q.options.find((o) => o.option_key === q.correct_option_key) || q.options[0];
       // Card 1: Question Text
-      list.push({ id: idx * 2, pairId: idx, text: q.question_text.slice(0, 24), isPrompt: true });
+      list.push({ id: idx * 2, pairId: idx, text: q.question_text, isPrompt: true });
       // Card 2: Answer Text
       list.push({ id: idx * 2 + 1, pairId: idx, text: correctOpt?.option_text || "Jawaban", isPrompt: false });
     });
@@ -104,12 +104,19 @@ export function MemoryPlayer({
         {cards.map((card, idx) => {
           const isFlipped = flippedIndices.includes(idx) || matchedIds.includes(card.pairId);
           const isMatched = matchedIds.includes(card.pairId);
+          const textLen = card.text.length;
+          const fontSizeClass =
+            textLen > 24
+              ? "text-[11px] sm:text-xs leading-tight"
+              : textLen > 14
+              ? "text-xs sm:text-[13px] leading-snug"
+              : "text-sm sm:text-base leading-snug";
 
           return (
             <div
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className="h-24 sm:h-28 cursor-pointer transform transition-transform duration-500 relative"
+              className="h-28 sm:h-32 cursor-pointer transform transition-transform duration-500 relative memory-card"
               style={{
                 transformStyle: "preserve-3d",
                 transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -125,7 +132,7 @@ export function MemoryPlayer({
 
               {/* Card Front (Revealed state) */}
               <div
-                className={`absolute inset-0 rounded-2xl border-2 p-2.5 flex flex-col items-center justify-center text-center shadow-xl ${
+                className={`absolute inset-0 rounded-2xl border-2 p-2 flex flex-col items-center justify-between text-center shadow-xl overflow-hidden ${
                   isMatched
                     ? "bg-emerald-600 border-emerald-300 text-white"
                     : card.isPrompt
@@ -137,16 +144,21 @@ export function MemoryPlayer({
                   transform: "rotateY(180deg)",
                 }}
               >
-                <span className="text-[10px] font-bold opacity-75 uppercase mb-0.5">
-                  {card.isPrompt ? "Soal" : "Jawaban"}
+                <span className="text-[9px] font-mono tracking-widest font-black opacity-80 uppercase px-2 py-0.5 rounded-full bg-black/30 shrink-0">
+                  {card.isPrompt ? "SOAL" : "JAWABAN"}
                 </span>
-                <span
-                  className="font-bold text-sm sm:text-base leading-relaxed break-words"
-                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
-                  dir="auto"
-                >
-                  {card.text}
-                </span>
+                <div className="flex-1 flex items-center justify-center w-full px-1 py-0.5 overflow-hidden">
+                  <span
+                    className={`font-black text-center break-words max-h-[64px] sm:max-h-[72px] overflow-hidden ${fontSizeClass}`}
+                    style={{
+                      fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif",
+                      lineHeight: 1.3,
+                    }}
+                    dir="auto"
+                  >
+                    {card.text}
+                  </span>
+                </div>
               </div>
             </div>
           );

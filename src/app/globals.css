@@ -50,11 +50,17 @@ h3[dir="rtl"], h3[dir="auto"] {
 .game-arena [dir="rtl"],
 .game-card [dir="auto"],
 .game-card [dir="rtl"],
+.game-card span,
+.memory-card,
+.memory-card span,
+.memory-card div,
+.choice-board,
+.choice-board span,
 canvas + * [dir="auto"],
 canvas + * [dir="rtl"] {
   font-family: "Traditional Arabic", var(--font-amiri), "Amiri", Tahoma, sans-serif !important;
-  font-size: clamp(14px, 2.2vw, 19px) !important;
-  line-height: 1.45 !important;
+  font-size: clamp(12px, 2vw, 17px) !important;
+  line-height: 1.35 !important;
   word-break: break-word !important;
 }
 

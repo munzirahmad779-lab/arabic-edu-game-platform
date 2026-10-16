@@ -334,7 +334,11 @@ export function MatchingPlayer({
               onClick={() => void handleCardClick(card)}
               className={`flex min-h-24 sm:min-h-28 flex-col items-center justify-center rounded-2xl p-4 text-center font-black transition-all duration-200 border-2 active:scale-95 ${cardStyle}`}
             >
-              <span className="text-lg sm:text-xl leading-relaxed">
+              <span
+                className="text-base sm:text-lg leading-snug break-words"
+                style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+                dir="auto"
+              >
                 {card.text}
               </span>
               {isMatched && (

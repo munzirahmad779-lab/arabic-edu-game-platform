@@ -78,15 +78,18 @@ export function AirplanePlayer({
   // Spawn clouds for current question
   const spawnClouds = useCallback((width: number, height: number) => {
     const opts = activeQuestion.options.slice(0, 4);
-    const cloudHeight = 70;
-    const cloudWidth = 190;
+    const cloudHeight = 72;
     const availableHeight = height - 120;
     const slotHeight = availableHeight / Math.max(opts.length, 1);
 
     cloudsRef.current = opts.map((opt, i) => {
       const centerY = 90 + i * slotHeight + slotHeight / 2;
+      const textLen = (opt.option_text || "").length;
+      // Adaptive cloud width so full text fits without truncation
+      const cloudWidth = Math.max(200, Math.min(340, textLen * 9.5 + 85));
+
       return {
-        x: width + 50 + (i % 2 === 0 ? 0 : 70), // slightly staggered
+        x: width + 50 + (i % 2 === 0 ? 0 : 75), // slightly staggered
         y: centerY - cloudHeight / 2,
         width: cloudWidth,
         height: cloudHeight,
@@ -281,53 +284,79 @@ export function AirplanePlayer({
         if (cl.hit) continue;
         cl.x -= 2.8; // cloud speed
 
-        // Draw Cloud Shape
-        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-        ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
-        ctx.shadowBlur = 10;
+        // Draw Adaptive Cloud Shape
+        ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.18)";
+        ctx.shadowBlur = 12;
 
+        const left = cl.x;
+        const top = cl.y;
+        const w = cl.width;
+        const h = cl.height;
+        const r = h / 2;
+
+        // Base rounded pill shape
         ctx.beginPath();
-        const cx = cl.x + cl.width / 2;
-        const cy = cl.y + cl.height / 2;
-        ctx.arc(cx - 50, cy, 26, 0, Math.PI * 2);
-        ctx.arc(cx - 20, cy - 14, 34, 0, Math.PI * 2);
-        ctx.arc(cx + 25, cy - 12, 32, 0, Math.PI * 2);
-        ctx.arc(cx + 55, cy, 26, 0, Math.PI * 2);
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(left, top, w, h, r);
+        } else {
+          ctx.rect(left, top, w, h);
+        }
+        ctx.fill();
+
+        // Fluffy cumulus cloud bubbles on top and sides
+        ctx.beginPath();
+        ctx.arc(left + 26, top + 10, 22, 0, Math.PI * 2);
+        ctx.arc(left + w * 0.35, top + 4, 26, 0, Math.PI * 2);
+        ctx.arc(left + w * 0.65, top + 2, 27, 0, Math.PI * 2);
+        ctx.arc(left + w - 26, top + 10, 22, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
 
         // Choice Badge (A, B, C, D)
+        const badgeX = left + 22;
+        const badgeY = top + h / 2;
         ctx.fillStyle = "#0284c7";
         ctx.beginPath();
-        ctx.arc(cl.x + 18, cy, 14, 0, Math.PI * 2);
+        ctx.arc(badgeX, badgeY, 15, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 13px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(cl.option.option_key, cl.x + 18, cy);
+        ctx.fillText(cl.option.option_key, badgeX, badgeY);
 
-        // Choice Text
+        // Adaptive Choice Text (Traditional Arabic font & scalable size to prevent truncation)
+        const text = cl.option.option_text;
+        const availTextWidth = w - 55;
+        let fontSize = 16;
+        ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+        const measured = ctx.measureText(text).width;
+        if (measured > availTextWidth && availTextWidth > 30) {
+          fontSize = Math.max(12, Math.floor(fontSize * (availTextWidth / measured)));
+          ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+        }
+
         ctx.fillStyle = "#0f172a";
-        const textLen = cl.option.option_text.length;
-        const fontSize = textLen > 12 ? 14 : 16;
-        ctx.font = `bold ${fontSize}px 'Traditional Arabic', Amiri, Tahoma, sans-serif`;
         ctx.textAlign = "left";
-        const maxText = cl.option.option_text.slice(0, 20);
-        ctx.fillText(maxText, cl.x + 38, cy);
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, left + 44, badgeY);
 
         // Collision Check with Plane
-        const pRadius = 22;
-        const dist = Math.hypot(plane.x - cx, plane.y - cy);
-        if (dist < pRadius + 45) {
+        const planeX = plane.x;
+        const planeY = plane.y;
+        const isHitX = planeX >= left - 25 && planeX <= left + w + 15;
+        const isHitY = Math.abs(planeY - badgeY) <= h / 2 + 20;
+
+        if (isHitX && isHitY) {
           cl.hit = true;
           handleHitCloud(cl.option);
         }
 
         // Respawn cloud if went off-screen without hit
-        if (cl.x + cl.width < -50) {
-          cl.x = width + 50;
+        if (cl.x + cl.width < -60) {
+          cl.x = width + 60;
         }
       }
 
@@ -378,7 +407,11 @@ export function AirplanePlayer({
             <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
               SOAL #{currentQIndex + 1} / {questions.length}
             </span>
-            <h3 className="text-base sm:text-lg font-black text-white" dir={isRtl ? "rtl" : "ltr"}>
+            <h3
+              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              dir="auto"
+            >
               {activeQuestion.question_text}
             </h3>
           </div>

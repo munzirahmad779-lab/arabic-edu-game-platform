@@ -833,6 +833,7 @@ export function AnagramPlayer({
 
         <h1
           className="mx-auto mt-3 max-w-2xl text-center text-xl font-black leading-relaxed text-teal-900 sm:text-3xl"
+          style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
           dir={
             hasArabic(
               activeQuestion.question_text,
