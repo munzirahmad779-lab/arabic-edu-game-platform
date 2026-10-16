@@ -155,7 +155,7 @@ describe("MAGGURU COMPREHENSIVE AUDIT & VERIFICATION SUITE", () => {
       data.gameState.phase = "reveal";
 
       // Setiap request press saat fase reveal harus ditolak
-      const canPressInReveal = data.gameState.phase === "question";
+      const canPressInReveal = (data.gameState.phase as string) === "question";
       assert.equal(canPressInReveal, false, "Tidak boleh ada tim yang bisa menekan tombol saat fase reveal");
     });
 

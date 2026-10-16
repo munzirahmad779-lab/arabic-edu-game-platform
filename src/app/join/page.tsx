@@ -53,6 +53,11 @@ export default async function JoinPage({
             <span className="text-xl">⚠️</span>
             <div className="flex-1 leading-relaxed">
               {errorMessage}
+              {searchParams.error && searchParams.error !== errorMessage ? (
+                <span className="block text-[11px] font-mono text-red-500/80 mt-1">
+                  ({searchParams.error})
+                </span>
+              ) : null}
             </div>
           </div>
         ) : null}
