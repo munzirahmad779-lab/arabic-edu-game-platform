@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
-import { CURATED_WEB_GAMES } from "@/lib/game-engine/curated-web-games";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 import { AirplanePlayer } from "@/components/game-players/airplane-player";
 import { WhackPlayer } from "@/components/game-players/whack-player";
@@ -173,8 +172,7 @@ export function ProjectorScreen({
   const [newStudentName, setNewStudentName] = useState("");
   const [targetTeamId, setTargetTeamId] = useState("team-1");
 
-  // Web Game Embed Modal
-  const [showWebGameModal, setShowWebGameModal] = useState(false);
+  // Web Game Embed State
   const [activeEmbedUrl, setActiveEmbedUrl] = useState<string | null>(null);
 
   // Phone Controller State
@@ -1148,63 +1146,6 @@ export function ProjectorScreen({
           </div>
         )}
 
-        {/* Modal: Buka Web Game Embed */}
-        {showWebGameModal && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 max-w-2xl w-full space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-black text-white">🌐 Buka Web Game Pembelajaran Asli</h3>
-                  <p className="text-xs text-slate-400">Pilih dari katalog 30 game atau tempel URL embed Wordwall/Educaplay/H5P:</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowWebGameModal(false)}
-                  className="text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-                {CURATED_WEB_GAMES.slice(0, 12).map((wg) => (
-                  <button
-                    key={wg.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveEmbedUrl(wg.embedUrl);
-                      setShowWebGameModal(false);
-                    }}
-                    className="p-3 rounded-xl bg-slate-800 hover:bg-indigo-900/60 border border-white/10 hover:border-indigo-400 text-left transition flex flex-col justify-between text-xs"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{wg.thumbnailIcon}</span>
-                      <span className="font-bold text-white truncate">{wg.title}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="font-bold text-indigo-300">{wg.platform}</span>
-                      <span>{wg.category}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="pt-2 border-t border-white/10">
-                <input
-                  type="url"
-                  placeholder="Tempel URL embed di sini (misal: https://wordwall.net/embed/...)"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
-                      setActiveEmbedUrl((e.target as HTMLInputElement).value);
-                      setShowWebGameModal(false);
-                    }
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-white/10 text-white text-xs placeholder-slate-500"
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     );
   }

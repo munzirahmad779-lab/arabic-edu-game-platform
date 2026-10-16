@@ -117,7 +117,7 @@ export function DashboardSidebar({
           </p>
           <div className="mt-2 flex gap-1.5">
             <Link
-              href="/test-projector"
+              href="/dashboard/games"
               onClick={() => setOpen(false)}
               className="flex-1 rounded-lg bg-white/20 py-1 text-center text-[10px] font-black text-white hover:bg-white/30 transition"
             >

@@ -184,13 +184,15 @@ export default async function GamesPage({
               <span>📱</span>
               <span>Buka Kontroler HP Siswa (/controller)</span>
             </a>
-            <a
-              href="/test-projector"
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-950/70 border border-white/20 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-950/90 transition"
-            >
-              <span>📽️</span>
-              <span>Uji Layar (Kelas Mangkoso)</span>
-            </a>
+            {gameList.length > 0 ? (
+              <a
+                href={`/dashboard/games/${gameList[0].id}/projector`}
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-950/70 border border-white/20 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-950/90 transition"
+              >
+                <span>📽️</span>
+                <span>Buka Layar Proyektor ({gameList[0].name})</span>
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
