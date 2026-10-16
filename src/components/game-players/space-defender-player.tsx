@@ -49,9 +49,11 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const [questionList, setQuestionList] = useState(() => [...questions]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [health, setHealth] = useState(3);
   const [selectedTargetKey, setSelectedTargetKey] = useState<string | null>(null);
   const [isGameOver, setIsGameOver] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -66,7 +68,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const starsRef = useRef<Star[]>([]);
   const pulseRef = useRef<number>(0);
 
-  const currentQ = questions[currentIdx] ?? questions[0];
+  const currentQ = questionList[currentIdx] ?? questionList[0];
   const options = currentQ?.options ?? [];
   const correctKey = (currentQ?.correct_option_key ?? "A").trim().toUpperCase();
 
@@ -147,13 +149,23 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         setFeedback("wrong");
         playSfx("wrong");
         setStreak(0);
+        setHealth((h) => {
+          if (h <= 1) {
+            setTimeout(() => {
+              setIsGameOver(true);
+              onFinish?.();
+            }, 600);
+            return 0;
+          }
+          return h - 1;
+        });
       }
 
       // Transition to next question after 1.2s
       setTimeout(() => {
         setFeedback(null);
         setSelectedTargetKey(null);
-        if (currentIdx + 1 < questions.length) {
+        if (currentIdx + 1 < questionList.length) {
           setCurrentIdx((idx) => idx + 1);
         } else {
           setIsGameOver(true);
@@ -161,7 +173,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         }
       }, 1200);
     },
-    [selectedTargetKey, isGameOver, options, correctKey, streak, currentIdx, questions.length, onFinish]
+    [selectedTargetKey, isGameOver, options, correctKey, streak, currentIdx, questionList.length, onFinish]
   );
 
   // Keyboard navigation (A/D or Arrows to move, Space/Enter or 1-4 to shoot)
@@ -371,14 +383,18 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         <button
           type="button"
           onClick={() => {
+            setQuestionList([...questions].sort(() => Math.random() - 0.5));
             setCurrentIdx(0);
             setScore(0);
+            setHealth(3);
             setStreak(0);
+            setSelectedTargetKey(null);
             setIsGameOver(false);
           }}
-          className="px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow-xl transition"
+          className="px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow-xl transition flex items-center gap-2"
         >
-          🔄 Mainkan Lagi
+          <span>🎲</span>
+          <span>Acak Soal & Bertahan Lagi</span>
         </button>
       </div>
     );
@@ -390,9 +406,17 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
       <div className="relative z-10 mb-3 p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-cyan-500/30 shadow-2xl backdrop-blur text-center">
         <div className="flex items-center justify-between text-xs font-mono font-bold text-cyan-400 mb-2">
           <span>
-            SOAL {currentIdx + 1} / {questions.length}
+            SOAL {currentIdx + 1} / {questionList.length}
           </span>
           <div className="flex items-center gap-3">
+            {/* Health Hearts */}
+            <div className="flex items-center gap-1 text-sm bg-black/40 px-3 py-1 rounded-xl border border-white/10">
+              {[1, 2, 3].map((h) => (
+                <span key={h} className={h <= health ? "text-rose-500 text-lg" : "text-slate-600 text-lg"}>
+                  ♥
+                </span>
+              ))}
+            </div>
             {streak > 1 && (
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
                 🔥 STREAK x{streak}
@@ -403,8 +427,8 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         </div>
 
         <h2
-          className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-relaxed"
-          style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.6]"
+          style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
           dir="auto"
         >
           {currentQ?.question_text}
@@ -422,6 +446,14 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
             const optKey = opt.option_key.toUpperCase();
             const isPicked = selectedTargetKey === optKey;
             const isCorrectTarget = optKey === correctKey;
+            const optText = opt.option_text;
+            const textLen = optText.length;
+            const fontClass =
+              textLen > 35
+                ? "text-xs sm:text-sm leading-tight"
+                : textLen > 18
+                ? "text-sm sm:text-base leading-snug"
+                : "text-base sm:text-lg font-bold leading-normal";
 
             let cardStateClass = "hover:scale-[1.03] active:scale-95";
             if (isPicked) {
@@ -458,11 +490,11 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
 
                 {/* Option Text */}
                 <div
-                  className="text-base sm:text-lg font-bold text-white leading-normal break-words"
-                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                  className={`font-bold text-white break-words ${fontClass}`}
+                  style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, sans-serif" }}
                   dir="auto"
                 >
-                  {opt.option_text}
+                  {optText}
                 </div>
 
                 {/* Blaster Target Reticle hint */}

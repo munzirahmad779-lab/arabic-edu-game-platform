@@ -566,7 +566,7 @@ export function SlicerPlayer({
           Target Tebasan
         </span>
         <h2
-          className="mt-2 text-2xl font-black leading-relaxed text-white sm:text-3xl"
+          className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-[1.6] text-white"
           style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
           dir="auto"
         >

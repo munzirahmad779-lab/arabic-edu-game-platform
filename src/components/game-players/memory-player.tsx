@@ -18,11 +18,13 @@ export function MemoryPlayer({
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [matchedIds, setMatchedIds] = useState<number[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [shuffleCount, setShuffleCount] = useState(0);
 
-  // Derive card pairs from questions (e.g. question text and correct answer)
+  // Derive card pairs from questions (e.g. question text and correct answer) with true reshuffle
   const cards = useMemo(() => {
     const list: Array<{ id: number; pairId: number; text: string; isPrompt: boolean }> = [];
-    questions.slice(0, 6).forEach((q, idx) => {
+    const pool = [...questions].sort(() => Math.random() - 0.5);
+    pool.slice(0, 6).forEach((q, idx) => {
       const correctOpt = q.options.find((o) => o.option_key === q.correct_option_key) || q.options[0];
       // Card 1: Question Text
       list.push({ id: idx * 2, pairId: idx, text: q.question_text, isPrompt: true });
@@ -31,7 +33,7 @@ export function MemoryPlayer({
     });
     // Shuffle cards
     return list.sort(() => Math.random() - 0.5);
-  }, [questions]);
+  }, [questions, shuffleCount]);
 
   const handleCardClick = (index: number) => {
     if (flippedIndices.length >= 2) return;
@@ -83,7 +85,11 @@ export function MemoryPlayer({
             <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">
               KARTU MEMORI FLIP 3D
             </span>
-            <h3 className="text-base sm:text-lg font-black text-white">
+            <h3
+              className="text-lg sm:text-2xl font-black text-white leading-[1.6]"
+              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              dir="auto"
+            >
               Cocokkan Soal dengan Jawabannya!
             </h3>
           </div>
@@ -184,10 +190,12 @@ export function MemoryPlayer({
               setMoves(0);
               setScore(0);
               setIsGameOver(false);
+              setShuffleCount((c) => c + 1);
             }}
-            className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm shadow-xl transition hover:scale-105"
+            className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm shadow-xl transition hover:scale-105 flex items-center gap-2"
           >
-            🔄 Acak Ulang Kartu
+            <span>🎲</span>
+            <span>Acak Soal & Main Lagi</span>
           </button>
         </div>
       )}

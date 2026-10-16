@@ -18,10 +18,16 @@ export function MatchingPlayer({
   isRtl,
   onGameEvent,
 }: GamePlayerProps<RawQuestion>) {
-  const matchingQuestion = useMemo(
-    () => QuestionAdapter.toMatching(question),
-    [question],
-  );
+  const [shuffleKey, setShuffleKey] = useState(0);
+
+  const matchingQuestion = useMemo(() => {
+    const mq = QuestionAdapter.toMatching(question);
+    // Deep copy and shuffle cards on shuffleKey change
+    return {
+      ...mq,
+      cards: [...mq.cards].sort(() => Math.random() - 0.5),
+    };
+  }, [question, shuffleKey]);
 
   const [selectedCards, setSelectedCards] = useState<MatchingCard[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<Set<string>>(new Set());
@@ -30,6 +36,17 @@ export function MatchingPlayer({
   const [hasFinished, setHasFinished] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
+
+  const handleRestart = () => {
+    setSelectedCards([]);
+    setMatchedPairIds(new Set());
+    setMovesCount(0);
+    setSubmitting(false);
+    setHasFinished(false);
+    setFeedback(null);
+    setShowAnswerKey(false);
+    setShuffleKey((k) => k + 1);
+  };
 
   // List of solved pairs for the visual progress panel
   const solvedPairsList = useMemo(() => {
@@ -207,10 +224,18 @@ export function MatchingPlayer({
         <div>
           Pasangan Ditemukan: <strong className="text-white">{matchedPairIds.size}</strong> / {totalPairs}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div>
             Langkah Tebakan: <strong className="text-white">{movesCount}</strong>
           </div>
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="rounded-lg bg-amber-500/20 border border-amber-400/40 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 transition flex items-center gap-1"
+            title="Acak posisi kartu"
+          >
+            <span>🎲</span> Acak Kartu
+          </button>
           <button
             type="button"
             onClick={() => setShowAnswerKey((v) => !v)}
@@ -226,7 +251,11 @@ export function MatchingPlayer({
         <span className="inline-block rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold text-indigo-300">
           🧩 Cocokkan Pasangan Kata Bahasa Arab
         </span>
-        <h2 className="mt-2 text-xl font-black leading-relaxed text-white sm:text-2xl">
+        <h2
+          className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-[1.6] text-white"
+          style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+          dir="auto"
+        >
           {matchingQuestion.title}
         </h2>
       </div>
@@ -360,6 +389,22 @@ export function MatchingPlayer({
           );
         })}
       </div>
+
+      {/* Victory / Finish Banner */}
+      {hasFinished && (
+        <div className="rounded-2xl bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 border-2 border-emerald-400 p-6 text-center animate-in zoom-in-95 shadow-2xl">
+          <span className="text-5xl block animate-bounce">🏆</span>
+          <h3 className="mt-2 text-2xl font-black text-white">Semua Pasangan Berhasil Ditemukan!</h3>
+          <p className="mt-1 text-emerald-300 font-bold text-sm">Diselesaikan dalam {movesCount} langkah tebakan.</p>
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 px-6 py-3 font-black text-slate-950 shadow-xl transition transform hover:scale-105 active:scale-95"
+          >
+            <span>🎲</span> Acak Kartu & Main Lagi
+          </button>
+        </div>
+      )}
     </section>
   );
 }

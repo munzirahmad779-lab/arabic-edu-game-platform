@@ -14,6 +14,7 @@ export function AirplanePlayer({
   isRtl?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [questionList, setQuestionList] = useState(() => [...questions]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -23,7 +24,7 @@ export function AirplanePlayer({
 
   const activeQuestion = useMemo(() => {
     return (
-      questions[currentQIndex % (questions.length || 1)] || {
+      questionList[currentQIndex % (questionList.length || 1)] || {
         id: "q-mock",
         position: 0,
         question_text: "Soal Kuis Pesawat",
@@ -36,7 +37,7 @@ export function AirplanePlayer({
         correct_option_key: "A",
       }
     );
-  }, [questions, currentQIndex]);
+  }, [questionList, currentQIndex]);
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
@@ -330,18 +331,34 @@ export function AirplanePlayer({
         // Adaptive Choice Text (Traditional Arabic font & scalable size to prevent truncation)
         const text = cl.option.option_text;
         const availTextWidth = w - 55;
-        let fontSize = 16;
+        let fontSize = 15;
         ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
         const measured = ctx.measureText(text).width;
-        if (measured > availTextWidth && availTextWidth > 30) {
-          fontSize = Math.max(12, Math.floor(fontSize * (availTextWidth / measured)));
-          ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
-        }
 
         ctx.fillStyle = "#0f172a";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(text, left + 44, badgeY);
+
+        if (measured > availTextWidth && text.includes(" ")) {
+          // 2-line auto-wrap for Indonesian sentences or multi-word phrases
+          const words = text.split(" ");
+          const mid = Math.ceil(words.length / 2);
+          const line1 = words.slice(0, mid).join(" ");
+          const line2 = words.slice(mid).join(" ");
+          const maxLineWidth = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width, 1);
+          if (maxLineWidth > availTextWidth) {
+            fontSize = Math.min(14, Math.max(11, Math.floor(fontSize * (availTextWidth / maxLineWidth))));
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          }
+          ctx.fillText(line1, left + 44, badgeY - 10);
+          ctx.fillText(line2, left + 44, badgeY + 11);
+        } else {
+          if (measured > availTextWidth && availTextWidth > 30) {
+            fontSize = Math.max(11, Math.floor(fontSize * (availTextWidth / measured)));
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          }
+          ctx.fillText(text, left + 44, badgeY);
+        }
 
         // Collision Check with Plane
         const planeX = plane.x;
@@ -408,7 +425,7 @@ export function AirplanePlayer({
               SOAL #{currentQIndex + 1} / {questions.length}
             </span>
             <h3
-              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.6]"
               style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
               dir="auto"
             >
@@ -486,15 +503,17 @@ export function AirplanePlayer({
           <button
             type="button"
             onClick={() => {
+              setQuestionList([...questions].sort(() => Math.random() - 0.5));
               setCurrentQIndex(0);
               setScore(0);
               setHealth(3);
               setStreak(0);
               setIsGameOver(false);
             }}
-            className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-xl transition hover:scale-105"
+            className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-xl transition hover:scale-105 flex items-center gap-2"
           >
-            🔄 Terbang Lagi
+            <span>🎲</span>
+            <span>Acak Soal & Terbang Lagi</span>
           </button>
         </div>
       )}

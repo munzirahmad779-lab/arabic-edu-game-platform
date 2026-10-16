@@ -148,6 +148,9 @@ export function AnagramPlayer({
   totalQuestions: totalQuestionsProp,
   timeLimitSeconds,
 }: Props) {
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(() =>
+    [...questions].sort(() => Math.random() - 0.5),
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
 
@@ -193,14 +196,14 @@ export function AnagramPlayer({
     useRef<string | null>(null);
 
   const totalQuestions =
-    totalQuestionsProp ?? questions.length;
+    totalQuestionsProp ?? shuffledQuestions.length;
 
   const currentQuestion =
-    questions[currentIndex];
+    shuffledQuestions[currentIndex];
 
   const activeQuestion =
     singleQuestionMode
-      ? questions[0]
+      ? shuffledQuestions[0]
       : currentQuestion;
 
   const correctOption = useMemo(() => {
@@ -758,6 +761,24 @@ export function AnagramPlayer({
         <p className="mt-2 text-4xl font-black text-terracotta-600">
           {percent}%
         </p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setShuffledQuestions([...questions].sort(() => Math.random() - 0.5));
+              setCurrentIndex(0);
+              setCorrectCount(0);
+              setFinished(false);
+              setTimeStart(Date.now());
+              setElapsedSeconds(0);
+              setRemainingSeconds(timeLimitSeconds ?? null);
+            }}
+            className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 px-6 py-3 font-black text-slate-950 shadow-lg transition transform hover:scale-105 active:scale-95"
+          >
+            <span>🎲</span> Acak Soal & Susun Lagi
+          </button>
+        </div>
       </div>
     );
   }
@@ -832,7 +853,7 @@ export function AnagramPlayer({
         </div>
 
         <h1
-          className="mx-auto mt-3 max-w-2xl text-center text-xl font-black leading-relaxed text-teal-900 sm:text-3xl"
+          className="mx-auto mt-3 max-w-3xl text-center text-2xl sm:text-3xl md:text-4xl font-black leading-[1.6] text-teal-900"
           style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
           dir={
             hasArabic(

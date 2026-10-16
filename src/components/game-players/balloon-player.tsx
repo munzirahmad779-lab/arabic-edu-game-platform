@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion, RawOption } from "@/lib/game-engine/types";
 
@@ -16,24 +16,30 @@ export function BalloonPlayer({
   isRtl?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [questionList, setQuestionList] = useState(() => [...questions]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [health, setHealth] = useState(3);
   const [isGameOver, setIsGameOver] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; color: string } | null>(null);
 
-  const activeQuestion = questions[currentQIndex % (questions.length || 1)] || {
-    id: "q-mock",
-    position: 0,
-    question_text: "Pecahkan Balon Jawaban yang Tepat",
-    options: [
-      { id: "1", option_key: "A", option_text: "Jawaban A" },
-      { id: "2", option_key: "B", option_text: "Jawaban B" },
-      { id: "3", option_key: "C", option_text: "Jawaban C" },
-      { id: "4", option_key: "D", option_text: "Jawaban D" },
-    ],
-    correct_option_key: "A",
-  };
+  const activeQuestion = useMemo(() => {
+    return (
+      questionList[currentQIndex % (questionList.length || 1)] || {
+        id: "q-mock",
+        position: 0,
+        question_text: "Pecahkan Balon Jawaban yang Tepat",
+        options: [
+          { id: "1", option_key: "A", option_text: "Jawaban A" },
+          { id: "2", option_key: "B", option_text: "Jawaban B" },
+          { id: "3", option_key: "C", option_text: "Jawaban C" },
+          { id: "4", option_key: "D", option_text: "Jawaban D" },
+        ],
+        correct_option_key: "A",
+      }
+    );
+  }, [questionList, currentQIndex]);
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
@@ -71,7 +77,7 @@ export function BalloonPlayer({
     const opts = activeQuestion.options.slice(0, 4);
     const spacing = width / (opts.length + 1);
 
-    balloonsRef.current = opts.map((opt, i) => {
+    balloonsRef.current = opts.map((opt: RawOption, i: number) => {
       const textLen = (opt.option_text || "").length;
       // Adaptive oval radius so choices never overflow or get truncated
       const radiusX = Math.max(48, Math.min(78, textLen * 3.5 + 28));
@@ -121,7 +127,7 @@ export function BalloonPlayer({
 
         setTimeout(() => {
           setFeedback(null);
-          if (currentQIndex + 1 < questions.length) {
+          if (currentQIndex + 1 < questionList.length) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
@@ -132,10 +138,20 @@ export function BalloonPlayer({
         playSfx("wrong");
         setStreak(0);
         setFeedback({ text: `✗ SALAH! Jawaban Benar: ${correctKey}`, color: "text-rose-400" });
+        setHealth((h) => {
+          if (h <= 1) {
+            setTimeout(() => {
+              setIsGameOver(true);
+              onFinish?.(score);
+            }, 600);
+            return 0;
+          }
+          return h - 1;
+        });
         setTimeout(() => setFeedback(null), 1000);
       }
     },
-    [correctKey, currentQIndex, questions.length, streak, score, onFinish],
+    [correctKey, currentQIndex, questionList.length, streak, score, onFinish],
   );
 
   // Canvas Render Loop
@@ -288,14 +304,14 @@ export function BalloonPlayer({
     <div className="relative w-full h-[580px] bg-sky-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-sky-400 select-none">
       {/* Top HUD */}
       <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15 px-4 py-3 text-white backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🎈</span>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🎈</span>
           <div>
             <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
-              PECAHKAN BALON (SOAL #{currentQIndex + 1})
+              PECAHKAN BALON (SOAL #{currentQIndex + 1} / {questionList.length})
             </span>
             <h3
-              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.6]"
               style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
               dir="auto"
             >
@@ -304,8 +320,19 @@ export function BalloonPlayer({
           </div>
         </div>
 
-        <div className="px-4 py-1.5 rounded-xl bg-black/40 font-mono font-black text-amber-400 text-sm border border-white/10">
-          {score} Pts
+        <div className="flex items-center gap-3">
+          {/* Health Hearts */}
+          <div className="flex items-center gap-1 text-sm bg-black/40 px-3 py-1 rounded-xl border border-white/10">
+            {[1, 2, 3].map((h) => (
+              <span key={h} className={h <= health ? "text-rose-500 text-lg" : "text-slate-600 text-lg"}>
+                ♥
+              </span>
+            ))}
+          </div>
+
+          <div className="px-4 py-1.5 rounded-xl bg-black/40 font-mono font-black text-amber-400 text-sm border border-white/10">
+            {score} Pts
+          </div>
         </div>
       </div>
 
@@ -320,7 +347,7 @@ export function BalloonPlayer({
         )}
 
         <div className="absolute left-4 bottom-4 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur border border-white/10 text-[11px] text-white/80 z-20">
-          🎯 Klik balon yang membawa jawaban yang benar untuk meletuskannya!
+          🎯 Klik balon yang membawa jawaban yang benar untuk meletuskannya! Anda memiliki 3 nyawa.
         </div>
       </div>
 
@@ -328,19 +355,22 @@ export function BalloonPlayer({
       {isGameOver && (
         <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur flex flex-col items-center justify-center p-6 text-center text-white space-y-4">
           <span className="text-6xl animate-bounce">🎈</span>
-          <h2 className="text-3xl font-black">Semua Balon Selesai!</h2>
+          <h2 className="text-3xl font-black">Permainan Selesai!</h2>
           <p className="text-xl font-bold font-mono text-emerald-400">Total Skor Akhir: {score} Poin</p>
           <button
             type="button"
             onClick={() => {
+              setQuestionList([...questions].sort(() => Math.random() - 0.5));
               setCurrentQIndex(0);
               setScore(0);
+              setHealth(3);
               setStreak(0);
               setIsGameOver(false);
             }}
-            className="px-6 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm shadow-xl transition hover:scale-105"
+            className="px-6 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm shadow-xl transition hover:scale-105 flex items-center gap-2"
           >
-            🔄 Main Lagi
+            <span>🎲</span>
+            <span>Acak Soal & Main Lagi</span>
           </button>
         </div>
       )}

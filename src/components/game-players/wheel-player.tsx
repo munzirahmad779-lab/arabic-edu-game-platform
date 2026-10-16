@@ -17,13 +17,25 @@ export function WheelPlayer({
   onFinish?: (finalScore: number) => void;
   isRtl?: boolean;
 }) {
+  const [questionList, setQuestionList] = useState<RawQuestion[]>(() =>
+    [...questions].sort(() => Math.random() - 0.5),
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinResult, setSpinResult] = useState<string | null>(null);
+  const [isFinished, setIsFinished] = useState(false);
 
-  const activeQuestion = questions[currentQIndex % (questions.length || 1)] || {
+  const handleReshuffle = () => {
+    setQuestionList([...questions].sort(() => Math.random() - 0.5));
+    setCurrentQIndex(0);
+    setScore(0);
+    setSpinResult(null);
+    setIsFinished(false);
+  };
+
+  const activeQuestion = questionList[currentQIndex % (questionList.length || 1)] || {
     id: "q-mock",
     position: 0,
     question_text: "Putar Roda Keberuntungan",
@@ -176,10 +188,10 @@ export function WheelPlayer({
           <span className="text-2xl">🎡</span>
           <div>
             <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
-              RODA PUTAR SOAL #{currentQIndex + 1}
+              RODA PUTAR SOAL #{currentQIndex + 1} / {questionList.length}
             </span>
             <h3
-              className="text-lg sm:text-2xl font-black text-white leading-relaxed"
+              className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.6]"
               style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
               dir="auto"
             >
@@ -188,52 +200,78 @@ export function WheelPlayer({
           </div>
         </div>
 
-        <div className="px-4 py-1.5 rounded-xl bg-black/40 font-mono font-black text-amber-400 text-sm border border-white/10">
-          {score} Pts
-        </div>
-      </div>
-
-      {/* Main Wheel View */}
-      <div className="flex flex-col items-center justify-center my-auto z-10 py-2">
-        <div className="relative">
-          <canvas ref={canvasRef} className="block drop-shadow-2xl" />
-        </div>
-
-        {/* Spin Button */}
-        <button
-          type="button"
-          disabled={isSpinning}
-          onClick={handleSpin}
-          className={`mt-4 px-8 py-3 rounded-2xl font-black text-sm shadow-xl transition transform active:scale-95 ${
-            isSpinning
-              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 hover:scale-105"
-          }`}
-        >
-          {isSpinning ? "🌀 Roda Sedang Berputar..." : "🎯 PUTAR RODA (KLIK SINI)"}
-        </button>
-
-        {/* Result Announcement */}
-        {spinResult && (
-          <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-white/20 text-center animate-in zoom-in-95">
-            <span className="font-black text-sm text-amber-300">{spinResult}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSpinResult(null);
-                if (currentQIndex + 1 < questions.length) {
-                  setCurrentQIndex((idx) => idx + 1);
-                } else {
-                  onFinish?.(score);
-                }
-              }}
-              className="ml-3 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
-            >
-              Soal Selanjutnya →
-            </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleReshuffle}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-amber-300 border border-amber-300/30 transition flex items-center gap-1.5"
+            title="Acak urutan soal"
+          >
+            <span>🎲</span> Acak Soal
+          </button>
+          <div className="px-4 py-1.5 rounded-xl bg-black/40 font-mono font-black text-amber-400 text-sm border border-white/10">
+            {score} Pts
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Main Wheel View or Finished View */}
+      {isFinished ? (
+        <div className="flex flex-col items-center justify-center my-auto z-10 py-6 text-center">
+          <span className="text-6xl animate-bounce">🏆</span>
+          <h2 className="text-2xl sm:text-3xl font-black text-white mt-4">Kuis Roda Selesai!</h2>
+          <p className="text-amber-400 font-bold mt-1 text-lg">Skor Akhir: {score} Poin</p>
+          <button
+            type="button"
+            onClick={handleReshuffle}
+            className="mt-6 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-base shadow-2xl transition transform hover:scale-105 active:scale-95 flex items-center gap-2"
+          >
+            <span>🎲</span> Acak Soal & Putar Lagi
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center my-auto z-10 py-2">
+          <div className="relative">
+            <canvas ref={canvasRef} className="block drop-shadow-2xl" />
+          </div>
+
+          {/* Spin Button */}
+          <button
+            type="button"
+            disabled={isSpinning}
+            onClick={handleSpin}
+            className={`mt-4 px-8 py-3 rounded-2xl font-black text-sm shadow-xl transition transform active:scale-95 ${
+              isSpinning
+                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 hover:scale-105"
+            }`}
+          >
+            {isSpinning ? "🌀 Roda Sedang Berputar..." : "🎯 PUTAR RODA (KLIK SINI)"}
+          </button>
+
+          {/* Result Announcement */}
+          {spinResult && (
+            <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-white/20 text-center animate-in zoom-in-95">
+              <span className="font-black text-sm text-amber-300">{spinResult}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSpinResult(null);
+                  if (currentQIndex + 1 < questionList.length) {
+                    setCurrentQIndex((idx) => idx + 1);
+                  } else {
+                    setIsFinished(true);
+                    onFinish?.(score);
+                  }
+                }}
+                className="ml-3 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+              >
+                Soal Selanjutnya →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer Instructions */}
       <div className="text-center text-xs text-indigo-300/80 bg-black/40 py-2 rounded-xl">

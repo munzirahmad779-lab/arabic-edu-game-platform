@@ -427,6 +427,29 @@ export function ProjectorScreen({
     setPhase("question");
   };
 
+  // Continuously synchronize projector state with controller API
+  useEffect(() => {
+    const answeredTeamsObj: Record<string, { optionKey: string; timestamp: number }> = {};
+    for (const [tId, rec] of Object.entries(answers)) {
+      answeredTeamsObj[tId] = { optionKey: rec.optionKey, timestamp: rec.answeredAt };
+    }
+
+    void fetch("/api/projector/controller", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomCode,
+        action: "sync_state",
+        phase: gameStarted ? phase : "lobby",
+        currentQuestionIndex,
+        timerSeconds,
+        totalQuestions,
+        questionText: activeQuestion.question_text,
+        answeredTeams: answeredTeamsObj,
+      }),
+    }).catch(() => {});
+  }, [gameStarted, phase, currentQuestionIndex, timerSeconds, totalQuestions, activeQuestion.question_text, answers, roomCode]);
+
   // Wireless Phone Controller Poller
   useEffect(() => {
     if (!gameStarted || phase === "finished") return;
@@ -1363,7 +1386,11 @@ export function ProjectorScreen({
       <section className="relative z-10 my-auto py-2 max-w-6xl mx-auto w-full flex flex-col gap-4">
         {/* Question Text Box */}
         <div className="rounded-3xl bg-slate-900/90 border border-white/15 p-5 md:p-8 text-center shadow-2xl backdrop-blur relative">
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-wide leading-relaxed py-2 drop-shadow-md select-text" dir="auto">
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-wide leading-[1.6] py-2 drop-shadow-md select-text"
+            style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, serif" }}
+            dir="auto"
+          >
             {activeQuestion.question_text}
           </h2>
           {phase === "reveal" && (
@@ -1380,6 +1407,14 @@ export function ProjectorScreen({
             const rawOpt = activeQuestion.options.find((o) => o.option_key.toUpperCase() === spec.key);
             const isThisOptionCorrect = spec.key === correctOptionKey;
             const teamsPickedThis = Object.values(answers).filter((ans) => ans.optionKey === spec.key);
+            const optText = rawOpt?.option_text || `(Pilihan ${spec.key})`;
+            const textLen = optText.length;
+            const optFontClass =
+              textLen > 45
+                ? "text-base sm:text-lg md:text-xl leading-normal"
+                : textLen > 25
+                ? "text-lg sm:text-xl md:text-2xl leading-normal"
+                : "text-xl md:text-2xl lg:text-3xl leading-snug";
 
             let cardStyle = spec.color;
             let borderStyle = spec.border;
@@ -1410,15 +1445,20 @@ export function ProjectorScreen({
                     </span>
                   )}
                 </div>
-                <div className="text-xl md:text-2xl lg:text-3xl font-black leading-snug break-words" dir="auto">
-                  {rawOpt?.option_text || `(Pilihan ${spec.key})`}
+                <div
+                  className={`font-black break-words ${optFontClass}`}
+                  style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, sans-serif" }}
+                  dir="auto"
+                >
+                  {optText}
                 </div>
-                {teamsPickedThis.length > 0 && (
+                {/* Anti-cheat: Only display which teams picked this after question reveal! */}
+                {phase === "reveal" && teamsPickedThis.length > 0 && (
                   <div className="mt-2.5 pt-2 border-t border-white/20 flex flex-wrap gap-1.5 items-center">
                     <span className="text-[10px] font-bold opacity-80">Dipilih:</span>
                     {teamsPickedThis.map((ans) => (
                       <span key={ans.teamId} className="px-2 py-0.5 rounded-lg bg-black/40 text-white font-black text-[11px]">
-                        {teams.find((t) => t.id === ans.teamId)?.name} {phase === "reveal" && (ans.isCorrect ? "✓" : "✗")}
+                        {teams.find((t) => t.id === ans.teamId)?.name} {ans.isCorrect ? "✓" : "✗"}
                       </span>
                     ))}
                   </div>
@@ -1510,7 +1550,7 @@ export function ProjectorScreen({
                         <span>✗ SALAH ({ansRecord?.optionKey})</span>
                       )
                     ) : (
-                      <span>✓ TERKUNCI ({ansRecord?.optionKey})</span>
+                      <span>✓ JAWABAN TERKUNCI</span>
                     )}
                   </div>
                 ) : phase === "question" ? (

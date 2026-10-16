@@ -23,6 +23,14 @@ export async function joinRoom(formData: FormData) {
     redirect(`/join?error=${encodeURIComponent("incomplete")}`);
   }
 
+  // Auto-detect if this is a Projector Hotseat / Remote session
+  const { isProjectorRoomActive } = await import(
+    "@/lib/game-engine/projector-controller-store"
+  );
+  if (code === "HOTSEAT" || isProjectorRoomActive(code)) {
+    redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
+  }
+
   const { data, error } = await supabase.rpc("join_room", {
     p_code: code,
     p_name: name,
@@ -33,6 +41,11 @@ export async function joinRoom(formData: FormData) {
     const msg = error?.message ?? "";
 
     console.error("[joinRoom] RPC error:", msg);
+
+    // Second check in case the projector room was initialized during connection
+    if (isProjectorRoomActive(code)) {
+      redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
+    }
 
     const codeKey =
       msg.includes("ROOM_NOT_FOUND") ? "room_not_found"
