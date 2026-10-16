@@ -22,6 +22,7 @@ export function MemoryPlayer({
 
   // Derive card pairs from questions (e.g. question text and correct answer) with true reshuffle
   const cards = useMemo(() => {
+    void shuffleCount;
     const list: Array<{ id: number; pairId: number; text: string; isPrompt: boolean }> = [];
     const pool = [...questions].sort(() => Math.random() - 0.5);
     pool.slice(0, 6).forEach((q, idx) => {

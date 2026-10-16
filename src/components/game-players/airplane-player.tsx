@@ -415,7 +415,10 @@ export function AirplanePlayer({
   }, [spawnClouds, handleHitCloud]);
 
   return (
-    <div className="relative w-full h-[580px] bg-sky-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-2 border-sky-400 select-none">
+    <div
+      className="relative w-full h-[580px] bg-sky-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-2 border-sky-400 select-none"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       {/* Top HUD: Question & Stats */}
       <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15 px-4 py-3 text-white backdrop-blur">
         <div className="flex items-center gap-3">

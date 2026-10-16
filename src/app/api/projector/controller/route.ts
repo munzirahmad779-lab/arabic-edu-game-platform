@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  ControllerEvent,
-  ProjectorGameState,
-  RoomControllerData,
+  type ControllerEvent,
   getProjectorRoomData,
 } from "@/lib/game-engine/projector-controller-store";
 

@@ -181,7 +181,10 @@ export function WheelPlayer({
   }, [segments, correctKey]);
 
   return (
-    <div className="relative w-full h-[580px] bg-gradient-to-b from-indigo-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-indigo-500 select-none p-4">
+    <div
+      className="relative w-full h-[580px] bg-gradient-to-b from-indigo-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-indigo-500 select-none p-4"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       {/* Top HUD */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-black/60 border border-white/20 p-3.5 rounded-2xl text-white backdrop-blur z-20">
         <div className="flex items-center gap-2">

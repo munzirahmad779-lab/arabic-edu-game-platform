@@ -21,6 +21,7 @@ export function MatchingPlayer({
   const [shuffleKey, setShuffleKey] = useState(0);
 
   const matchingQuestion = useMemo(() => {
+    void shuffleKey;
     const mq = QuestionAdapter.toMatching(question);
     // Deep copy and shuffle cards on shuffleKey change
     return {

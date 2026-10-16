@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion, RawOption } from "@/lib/game-engine/types";
 
@@ -69,7 +69,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const pulseRef = useRef<number>(0);
 
   const currentQ = questionList[currentIdx] ?? questionList[0];
-  const options = currentQ?.options ?? [];
+  const options = useMemo(() => currentQ?.options ?? [], [currentQ]);
   const correctKey = (currentQ?.correct_option_key ?? "A").trim().toUpperCase();
 
   // Initialize stars once
@@ -96,7 +96,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
       setSelectedTargetKey(optKey);
 
       // Target asteroid index
-      const optIdx = options.findIndex((o) => o.id === option.id);
+      const optIdx = options.findIndex((o: RawOption) => o.id === option.id);
       const targetPercent = optIdx >= 0 ? 15 + (optIdx / Math.max(1, options.length - 1)) * 70 : 50;
       targetShipPosRef.current = targetPercent;
 
@@ -192,7 +192,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         // Shoot closest asteroid
         let closestIdx = 0;
         let minDiff = 999;
-        options.forEach((_, i) => {
+        options.forEach((_: RawOption, i: number) => {
           const targetX = 15 + (i / Math.max(1, options.length - 1)) * 70;
           const diff = Math.abs(targetX - targetShipPosRef.current);
           if (diff < minDiff) {
@@ -441,7 +441,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
 
         {/* Floating Asteroid Targets (The Options) */}
         <div className="absolute top-4 inset-x-2 sm:inset-x-6 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 z-20">
-          {options.map((opt, i) => {
+          {options.map((opt: RawOption, i: number) => {
             const colorSpec = ASTEROID_COLORS[i % ASTEROID_COLORS.length]!;
             const optKey = opt.option_key.toUpperCase();
             const isPicked = selectedTargetKey === optKey;
