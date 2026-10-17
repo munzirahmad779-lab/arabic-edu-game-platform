@@ -203,10 +203,68 @@ Perubahan pada codebase inti Magguru dibatasi maksimal pada 5 file titik sambung
 
 ---
 
-## 8. KESIMPULAN & STATUS FASE 0
+---
 
-Fase 0 (Audit) telah selesai secara komprehensif dengan bukti pengujian nyata dan analisis mendalam. Sesuai dengan **Aturan Emas §4**, kami **BERHENTI DI SINI** dan menunggu konfirmasi eksplisit dari Ahmad.
+## 8. PHASE 0 ADDENDUM — CHECKPOINT & TRANSPORT GUARD (MENGIKAT)
 
-Ketik atau balas dengan:
-**`LANJUT FASE 1`**
-untuk memulai implementasi Fase 1 (Spesifikasi Teknis & Setup Modul).
+Addendum ini mengikat secara hukum arsitektur dan menjadi batas tegas yang wajib dipatuhi modul `souq-fishing`:
+
+### 8.1 Server-Side Namespace & Isolasi Snapshot
+1. **Server-Side Only Persistence:** Checkpoint sesi hanya boleh disimpan secara server-side melalui endpoint/bridge berwenang, dilarang keras ditulis langsung dari client siswa.
+2. **Namespace Terisolasi:** Data checkpoint wajib menggunakan namespace khusus bertingkat:
+   ```json
+   snapshot.souq_fishing.checkpoint_v1
+   ```
+3. **Larangan Overwrite:** Modul **DILARANG KERAS** menimpa atau memodifikasi field bawaan Magguru lainnya di dalam `rooms.snapshot` seperti:
+   - `snapshot.game`
+   - `snapshot.questions`
+   - `snapshot.game_questions`
+   - `snapshot.settings`
+4. **Merge JSONB Atomik, Versioned & Berbatas Ukuran:**
+   - Update checkpoint dilakukan secara atomik menggunakan update `jsonb_set` parsial ber-version (`version: number`).
+   - Setiap checkpoint menyertakan timestamp `updated_at` (ISO 8601).
+   - **Size Guard:** Payload serialisasi checkpoint dibatasi ketat **maksimal 64 KB** (mencegah bloat pada kolom snapshot).
+
+### 8.2 Tata Kelola Route & RPC Baru (Target 0 Migrasi)
+- Modul tetap memegang target **0 migrasi database**.
+- Penyimpanan checkpoint proyektor memanfaatkan route server aman yang mengeksekusi update parsial pada tabel `rooms` milik guru.
+- Jika di masa mendatang diperlukan RPC Postgres baru, rancangan spesifikasinya wajib ditulis dan dilaporkan ke Ahmad terlebih dahulu untuk persetujuan eksplisit sebelum migrasi apa pun dieksekusi.
+
+### 8.3 Transport Guard: Polling, Throttling & Larangan Broadcast Per-Frame
+1. **Dynamic Polling & Exponential Backoff:**
+   - **Fase Aktif (Giliran/Input Menunggu):** Polling standar 400ms – 500ms.
+   - **Fase Idle/Jeda/Walking Animasi:** Polling melambat otomatis ke 1000ms – 2000ms.
+   - **Error / Offline Backoff:** Polling mundur bertahap: 1s -> 2s -> 4s -> max 8s saat jaringan putus.
+2. **Koalesensi Event & Batas Laju:**
+   - Input cepat (rapid tap) dikonsolidasikan (event debouncing / coalescing) sebelum dikirim ke server.
+   - Pembatasan aman: **maksimal 25 pesan per detik** per sesi room.
+3. **Larangan Keras Broadcast Per-Frame:**
+   - Dilarang mem-broadcast koordinat posisi karakter frame-by-frame (60 FPS) ke jaringan.
+   - Yang dikirim hanyalah **niat navigasi discrete** (misal: `{ action: "travel_to", destinationNodeId: "gate_1" }`).
+   - Animasi langkah kaki dijalankan 100% lokal di klien masing-masing berdasarkan seed deterministik.
+
+### 8.4 Titik Sanitasi Kunci Jawaban di Bridge (Anti-Cheat & Strict Privacy)
+- **Aturan Kerahasiaan Jawaban:** Kunci jawaban (`correctOptionId`, `correct_option_key`, `is_correct`) **DILARANG KERAS** berada di dalam payload apa pun yang dikirim ke kontroler HP siswa atau layar proyektor sebelum waktu pengumuman/reveal tiba.
+- **Titik Sanitasi (`QuestionSourceAdapter` & `MagguruBridge`):**
+  - Saat membaca raw question dari snapshot, adapter menjalankan fungsi sterilisasi:
+    ```typescript
+    export function sanitizeQuestionForClient(q: RawQuestion): SanitizedQuestion {
+      const { correct_option_key, ...safeQuestion } = q;
+      return {
+        ...safeQuestion,
+        options: q.options.map(({ id, option_key, option_text }) => ({
+          id,
+          option_key,
+          option_text,
+        })),
+      };
+    }
+    ```
+  - Kunci jawaban asli tetap tersimpan secara privat di Host Engine / server session bridge dan hanya digunakan untuk memverifikasi `intent` jawaban yang dikirimkan siswa.
+
+---
+
+## 9. KESIMPULAN & STATUS FASE 0
+
+Fase 0 (Audit) beserta Addendum Checkpoint & Transport Guard telah lengkap dan terikat secara arsitektur.
+

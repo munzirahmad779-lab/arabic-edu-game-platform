@@ -1,0 +1,146 @@
+{
+  "id": {
+    "game": {
+      "title": "Ekspedisi Pasar & Dermaga Pancing",
+      "subtitle": "Petualangan Madrasah: Jelajahi Pasar, Buka Gerbang Ilmu, dan Mancing Berkah",
+      "badge": "Panggung Interaktif + Kontroler HP",
+      "description": "Game petualangan kelas real-time. Siswa memilih 1 dari 4 karakter santun, menjawab soal untuk membuka Gerbang Quest di darat, mengoleksi Joran Emas dan Umpan Berkilau di Kantin, lalu memancing ikan berpoin di dermaga."
+    },
+    "characters": {
+      "putri_hijab": "Putri Berhijab (أخت محجبة)",
+      "putri_non_hijab": "Putri Mandiri (أخت)",
+      "putra_peci": "Putra Berpeci (أخ بالقلنسوة)",
+      "putra_non_peci": "Putra Mandiri (أخ)"
+    },
+    "zones": {
+      "souq": "Pasar Santri",
+      "gate": "Gerbang Quest",
+      "canteen": "Kantin Barokah",
+      "pier": "Dermaga Pancing"
+    },
+    "items": {
+      "rod_golden": "Joran Emas",
+      "bait_sparkling": "Umpan Berkilau",
+      "canteen_buff": "Buff Kantin (+25% Poin)"
+    },
+    "states": {
+      "lobby": "Menunggu Pemain & Tim Siap",
+      "traveling": "Sedang Berjalan ke Lokasi...",
+      "challenge": "Jawab Pertanyaan Berikut!",
+      "fishing": "Menunggu Tangkapan Ikan...",
+      "fish_caught": "Ikan Tertangkap!",
+      "finished": "Ekspedisi Selesai!"
+    },
+    "actions": {
+      "select_character": "Pilih Karakter",
+      "select_team": "Pilih Tim",
+      "roll_dice": "Langkah Maju",
+      "submit_answer": "Kirim Jawaban",
+      "cast_line": "Lempar Umpan",
+      "pull_fish": "Tarik Joran!",
+      "view_leaderboard": "Lihat Papan Skor"
+    },
+    "teams": {
+      "team-1": "Tim Merah",
+      "team-2": "Tim Biru",
+      "team-3": "Tim Hijau",
+      "team-4": "Tim Kuning"
+    }
+  },
+  "ar": {
+    "game": {
+      "title": "رحلة السوق ورصيف الصيد",
+      "subtitle": "مغامرة المدرسة: استكشف السوق، وافتح بوابات العلم، واصطد البركة",
+      "badge": "شاشة العرض + جهاز تحكم الجوال",
+      "description": "لعبة مغامرة صفية تفاعلية. يختار الطلاب شخصياتهم، ويجيبون عن الأسئلة لفتح البوابات وجمع أدوات الصيد الذهبية ثم الصيد عند الرصيف."
+    },
+    "characters": {
+      "putri_hijab": "طالبة محجبة",
+      "putri_non_hijab": "طالبة",
+      "putra_peci": "طالب بالقلنسوة",
+      "putra_non_peci": "طالب"
+    },
+    "zones": {
+      "souq": "سوق الطلاب",
+      "gate": "بوابة الأسئلة",
+      "canteen": "مقصف البركة",
+      "pier": "رصيف الصيد"
+    },
+    "items": {
+      "rod_golden": "السنارة الذهبية",
+      "bait_sparkling": "الطعم اللامع",
+      "canteen_buff": "مكافأة المقصف (+25%)"
+    },
+    "states": {
+      "lobby": "في انتظار اكتمال الفرق",
+      "traveling": "جاري الانتقال إلى الموقع...",
+      "challenge": "أجب عن السؤال التالي!",
+      "fishing": "في انتظار الصيد...",
+      "fish_caught": "تم صيد السمكة بنجاح!",
+      "finished": "انتهت الرحلة الاستكشافية!"
+    },
+    "actions": {
+      "select_character": "اختر الشخصية",
+      "select_team": "اختر الفريق",
+      "roll_dice": "خطوة للأمام",
+      "submit_answer": "إرسال الإجابة",
+      "cast_line": "ألقِ الصنارة",
+      "pull_fish": "اسحب الصنارة!",
+      "view_leaderboard": "عرض لوحة المتصدرين"
+    },
+    "teams": {
+      "team-1": "الفريق الأحمر",
+      "team-2": "الفريق الأزرق",
+      "team-3": "الفريق الأخضر",
+      "team-4": "الفريق الأصفر"
+    }
+  },
+  "en": {
+    "game": {
+      "title": "Souq & Fishing Pier Expedition",
+      "subtitle": "Madrasah Quest: Explore the Souq, Unlock Knowledge Gates, and Catch Fish",
+      "badge": "Projector Stage + Mobile Controller",
+      "description": "Real-time classroom quest game. Students choose from 4 polite characters, answer curriculum questions to open land Gates, collect Golden Rods and Baits, and fish from the pier."
+    },
+    "characters": {
+      "putri_hijab": "Hijabi Student",
+      "putri_non_hijab": "Student Girl",
+      "putra_peci": "Student with Peci Cap",
+      "putra_non_peci": "Student Boy"
+    },
+    "zones": {
+      "souq": "Student Souq",
+      "gate": "Knowledge Gate",
+      "canteen": "Barakah Canteen",
+      "pier": "Fishing Pier"
+    },
+    "items": {
+      "rod_golden": "Golden Rod",
+      "bait_sparkling": "Sparkling Bait",
+      "canteen_buff": "Canteen Buff (+25% Points)"
+    },
+    "states": {
+      "lobby": "Waiting for Teams in Lobby",
+      "traveling": "Traveling to Destination...",
+      "challenge": "Solve the Question!",
+      "fishing": "Waiting for a Bite...",
+      "fish_caught": "Fish Caught!",
+      "finished": "Expedition Finished!"
+    },
+    "actions": {
+      "select_character": "Choose Character",
+      "select_team": "Select Team",
+      "roll_dice": "Advance Step",
+      "submit_answer": "Submit Answer",
+      "cast_line": "Cast Line",
+      "pull_fish": "Reel In!",
+      "view_leaderboard": "View Leaderboard"
+    },
+    "teams": {
+      "team-1": "Red Team",
+      "team-2": "Blue Team",
+      "team-3": "Green Team",
+      "team-4": "Yellow Team"
+    }
+  }
+}

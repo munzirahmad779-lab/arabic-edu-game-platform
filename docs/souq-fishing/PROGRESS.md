@@ -2,8 +2,8 @@
 
 | Fase | Deskripsi | Status | Tanggal | Catatan & Bukti |
 | :---: | :--- | :---: | :---: | :--- |
-| **0** | **Audit Kode Riil & Baseline** | **SELESAI** | 18 Okt 2026 | Baseline 81 tes lulus, typecheck bersih, build sukses. `AUDIT.md` dan `DECISIONS.md` telah disusun. Menunggu "LANJUT FASE 1". |
-| 1 | Spesifikasi Protokol & Kontrak Tipe | Menunggu | - | - |
+| **0** | **Audit Kode Riil & Baseline** | **SELESAI** | 18 Okt 2026 | Baseline 81 tes lulus, typecheck bersih, build sukses. `AUDIT.md` dan `DECISIONS.md` telah disusun. |
+| **1** | **Spesifikasi Teknis & Setup Modul** | **SELESAI** | 18 Okt 2026 | Folder `src/modules/souq-fishing/` dibuat; 4 Adapter Types & Stubs selesai; `magguru-bridge.ts` stub dibuat; feature flag `ENABLE_SOUQ_FISHING_MODULE`; label 3 bahasa `theme-labels.json`; dokumen `SPECIFICATION.md` selesai. |
 | 2 | Pure Engine: World, Gates, Fishing & Clock | Menunggu | - | - |
 | 3 | Adapters & Jembatan Magguru Bridge | Menunggu | - | - |
 | 4 | UI Peta Proyektor 2-Baris & 4 Papan Tim | Menunggu | - | - |
