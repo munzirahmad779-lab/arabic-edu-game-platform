@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GameRegistry } from "@/lib/game-engine/registry";
+import { isSouqFishingEnabled } from "@/modules/souq-fishing/bridge/magguru-bridge";
 
 type Track = {
   id: string;
@@ -87,6 +88,16 @@ export const NATIVE_GAME_ENGINES = [
   },
 ];
 
+const SOUQ_FISHING_CARD = {
+  id: "souq_fishing",
+  name: "Ekspedisi Pasar & Dermaga Pancing",
+  icon: "🎣",
+  badge: "Active Tilt 58/42 + Dual Zone",
+  desc: "Petualangan edukatif kooperatif: jelajahi pasar, taklukkan gerbang mufrodat, dan pancing ikan di dermaga.",
+  color: "from-amber-600 via-teal-700 to-sky-800",
+  border: "border-teal-400",
+};
+
 export function GameModeSelector({ tracks, gm }: Props) {
   const [selectedEngine, setSelectedEngine] = useState<string>("kahoot");
   const [mode, setMode] = useState("competitive");
@@ -100,7 +111,9 @@ export function GameModeSelector({ tracks, gm }: Props) {
   const isSelfPractice = mode === "endless" || mode === "practice";
 
   const activeEngineInfo =
-    NATIVE_GAME_ENGINES.find((g) => g.id === selectedEngine) ?? NATIVE_GAME_ENGINES[0]!;
+    (isSouqFishingEnabled() && selectedEngine === "souq_fishing" ? SOUQ_FISHING_CARD : null) ??
+    NATIVE_GAME_ENGINES.find((g) => g.id === selectedEngine) ??
+    NATIVE_GAME_ENGINES[0]!;
 
   return (
     <>
@@ -148,6 +161,39 @@ export function GameModeSelector({ tracks, gm }: Props) {
                 </button>
               );
             })}
+            {isSouqFishingEnabled() && (
+              <button
+                key={SOUQ_FISHING_CARD.id}
+                type="button"
+                onClick={() => setSelectedEngine(SOUQ_FISHING_CARD.id)}
+                className={`p-3.5 rounded-2xl text-left border-2 transition-all ${
+                  selectedEngine === SOUQ_FISHING_CARD.id
+                    ? `bg-gradient-to-br ${SOUQ_FISHING_CARD.color} ${SOUQ_FISHING_CARD.border} text-white shadow-lg scale-[1.02]`
+                    : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-start gap-2 mb-1.5">
+                  <span className="text-2xl shrink-0 leading-none">{SOUQ_FISHING_CARD.icon}</span>
+                  <span className="font-black text-xs leading-snug">{SOUQ_FISHING_CARD.name}</span>
+                </div>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black mb-1.5 tracking-tight ${
+                    selectedEngine === SOUQ_FISHING_CARD.id
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {SOUQ_FISHING_CARD.badge}
+                </span>
+                <p
+                  className={`text-[11px] line-clamp-2 leading-relaxed ${
+                    selectedEngine === SOUQ_FISHING_CARD.id ? "text-white/90" : "text-slate-500"
+                  }`}
+                >
+                  {SOUQ_FISHING_CARD.desc}
+                </p>
+              </button>
+            )}
           </div>
         </div>
 

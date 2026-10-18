@@ -11,6 +11,8 @@ import { WhackPlayer } from "@/components/game-players/whack-player";
 import { SpaceDefenderPlayer } from "@/components/game-players/space-defender-player";
 import { MemoryPlayer } from "@/components/game-players/memory-player";
 import { BalloonPlayer } from "@/components/game-players/balloon-player";
+import { isSouqFishingEnabled, buildProjectorSnapshot } from "@/modules/souq-fishing/bridge/magguru-bridge";
+import { ProjectorShell as SouqFishingProjectorShell } from "@/modules/souq-fishing/ui/projector";
 
 export type StudentMember = {
   id: string;
@@ -527,6 +529,21 @@ export function ProjectorScreen({
         <WebGameEmbedPlayer embedUrl={activeEmbedUrl} title={gameName} />
       </div>
     );
+  }
+
+  // If teacher selected Souq & Fishing Game Module:
+  if (
+    isSouqFishingEnabled() &&
+    (initialGameTheme === "souq_fishing" ||
+      initialGameTheme === "souq-fishing" ||
+      (activeEngine as string) === "souq_fishing")
+  ) {
+    const worldState = buildProjectorSnapshot({
+      id: gameId,
+      room_code: roomCode,
+      snapshot: { questions },
+    });
+    return <SouqFishingProjectorShell worldState={worldState} />;
   }
 
   // If teacher selected a Native Arcade Game Engine:
