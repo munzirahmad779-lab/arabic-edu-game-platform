@@ -1,27 +1,28 @@
-# Final QA & Regression Verification Matrix (Phase 6)
+# Final QA & Regression Verification Matrix (Phase 6 & 6.7 Cleanup)
 
 ## Verification Matrix
 
 | # | Skenario | Cara Verifikasi | Status / Hasil |
 |---|---|---|---|
-| 1 | Feature flag ON, register game | Buka `/dashboard/games`, periksa kartu pilihan game mode. | PASS (Manual Ahmad: card "Ekspedisi Pasar & Dermaga Pancing" muncul) |
-| 2 | Feature flag ON, projector render | Buka `/dashboard/games/[id]/projector` dengan `game_theme=souq_fishing`. | PASS (Manual Ahmad: layout 58/42 split Pasar & Dermaga aktif) |
-| 3 | Feature flag ON, controller render | Buka `/controller?theme=souq_fishing&room=HOTSEAT&team=MERAH`. | PASS (Manual Ahmad: mobile 4-state controller aktif) |
+| 1 | Feature flag ON, register game | Buka `/dashboard/games`, periksa kartu pilihan game mode. | PENDING — menunggu verifikasi Ahmad di browser |
+| 2 | Feature flag ON, projector render | Buka `/dashboard/games/[id]/projector` dengan `game_theme=souq_fishing`. | PENDING — menunggu verifikasi Ahmad di browser |
+| 3 | Feature flag ON, controller render | Buka `/controller?theme=souq_fishing&room=HOTSEAT&team=MERAH`. | PENDING — menunggu verifikasi Ahmad di browser |
 | 4 | Feature flag ON, checkpoint save/load | Kirim request ke `/api/souq-fishing/checkpoint` (POST/GET). | PASS (Verified via `checkpoint-api.test.ts`) |
-| 5 | Feature flag OFF, quiz lama utuh | Buka game Quiz reguler tanpa flag. | PASS (Manual Ahmad: quiz berfungsi normal tanpa regresi) |
-| 6 | Feature flag OFF, runner lama utuh | Buka game Runner reguler tanpa flag. | PASS (Manual Ahmad: runner berfungsi normal tanpa regresi) |
-| 7 | Feature flag OFF, matching lama utuh | Buka game Matching reguler tanpa flag. | PASS (Manual Ahmad: matching berfungsi normal tanpa regresi) |
-| 8 | Feature flag OFF, penalty lama utuh | Buka game Penalty shootout tanpa flag. | PASS (Manual Ahmad: penalty berfungsi normal tanpa regresi) |
-| 9 | Feature flag OFF, anagram lama utuh | Buka game Anagram reguler tanpa flag. | PASS (Manual Ahmad: anagram berfungsi normal tanpa regresi) |
-| 10 | Feature flag OFF, airplane lama utuh | Buka game Pesawat Awan (Airplane) tanpa flag. | PASS (Manual Ahmad: arcade airplane 60 FPS normal) |
-| 11 | Feature flag OFF, whack lama utuh | Buka game Pukul Tikus (Whack) tanpa flag. | PASS (Manual Ahmad: whack-a-mole normal) |
+| 5 | Feature flag OFF, quiz lama utuh | Buka game Quiz reguler tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 6 | Feature flag OFF, runner lama utuh | Buka game Runner reguler tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 7 | Feature flag OFF, matching lama utuh | Buka game Matching reguler tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 8 | Feature flag OFF, penalty lama utuh | Buka game Penalty shootout tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 9 | Feature flag OFF, anagram lama utuh | Buka game Anagram reguler tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 10 | Feature flag OFF, airplane lama utuh | Buka game Pesawat Awan (Airplane) tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
+| 11 | Feature flag OFF, whack lama utuh | Buka game Pukul Tikus (Whack) tanpa flag. | PENDING — menunggu verifikasi Ahmad di browser |
 | 12 | Build flag ON | Jalankan `npm run build` | PASS (Exit code 0, 39 static routes) |
 | 13 | Build flag OFF | Jalankan `ENABLE_SOUQ_FISHING_MODULE=false npm run build` | PASS (Exit code 0, bundle identik baseline) |
 | 14 | Bundle delta | Bandingkan `First Load JS shared by all` (ON vs OFF) | PASS (Delta 0.0 kB: baseline 87.4 kB → build 87.4 kB) |
 | 15 | Zero-import | `git grep -nE "souq[-_]?[Ff]ishing"` di luar direktori modul | PASS (Hanya 5 file inti yang match) |
-| 16 | Accessibility: soal Arab line-height ≥1.95 | Inspect DOM teks Arab di card soal proyektor & HP | PASS (`leading-[2.0]` / `line-height >= 1.95` diterapkan) |
-| 17 | Accessibility: tap target ≥56px di HP | Inspect tombol controller di viewport 360x640 | PASS (Tombol jawaban tinggi `h-36` / 144px > 56px) |
-| 19 | Checkpoint recovery after refresh | Refresh layar proyektor saat permainan berlangsung | PASS (Manual Ahmad: state team, skor, pin dipulihkan) |
+| 16 | Accessibility: soal Arab line-height ≥1.95 | Inspect DOM teks Arab di card soal proyektor & HP | PASS (code inspection) — Ahmad verify disarankan |
+| 17 | Accessibility: tap target ≥56px di HP | Inspect tombol controller di viewport 360x640 | PASS (code inspection) — Ahmad verify disarankan |
+| 18 | Bebas scroll di proyektor | Inspect element proyektor di viewport 1920x1080 | PASS (code inspection) — Ahmad verify disarankan |
+| 19 | Checkpoint recovery after refresh | Refresh layar proyektor saat permainan berlangsung | PENDING — menunggu verifikasi Ahmad di browser |
 | 20 | Checkpoint size guard >64KB rejected | POST checkpoint dengan ukuran > 65,536 bytes | PASS (Verified: HTTP 413 Payload Too Large via 64 KB guard) |
 | 21 | Checkpoint real DB token validation | POST checkpoint dengan token acak "abc123" / session ended | PASS (Verified: HTTP 401 Unauthorized via real DB query) |
 | 22 | Checkpoint concurrent atomic merge | POST concurrent x 2 ke endpoint checkpoint | PASS (Verified: RPC souq_fishing_merge_checkpoint dieksekusi 2x, both persisted) |
@@ -50,3 +51,28 @@ ENABLE_SOUQ_FISHING_MODULE=false
 ```
 1. Buka dashboard game dan pastikan kartu Souq Fishing **tidak muncul**.
 2. Buka semua rute game lama (Quiz, Runner, Kahoot, Airplane, dll.) dan pastikan berfungsi 100% normal tanpa perubahan apapun.
+
+---
+
+## Sign-off Condition
+
+Sign-off final HANYA sah jika Ahmad sudah membuka 11 skenario manual
+(skenario 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 19) di browser pada commit
+Fase 6.6 (`f98657e`) atau lebih baru.
+
+Sebelum itu, tanda tangan sign-off = TIDAK SAH.
+
+Checklist manual Ahmad (buka satu per satu):
+- [ ] Skenario 1: card muncul di /dashboard/games
+- [ ] Skenario 2: projector 58/42 render
+- [ ] Skenario 3: controller 4-state mobile render
+- [ ] Skenario 5: quiz lama utuh
+- [ ] Skenario 6: runner lama utuh
+- [ ] Skenario 7: matching lama utuh
+- [ ] Skenario 8: penalty lama utuh
+- [ ] Skenario 9: anagram lama utuh
+- [ ] Skenario 10: airplane lama utuh
+- [ ] Skenario 11: whack lama utuh
+- [ ] Skenario 19: checkpoint recovery after refresh
+
+Setelah semua [x], Ahmad meng-update FINAL-QA.md dengan tanggal verifikasi.

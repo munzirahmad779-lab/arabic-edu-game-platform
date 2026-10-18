@@ -1,4 +1,4 @@
-# Souq & Fishing Game Module — Production QA Sign-Off (Phase 6 & 6.5 Remediation)
+# Souq & Fishing Game Module — Production QA Sign-Off (Phase 6 & 6.7 Cleanup)
 
 ## 1. Commit Trail
 
@@ -10,8 +10,8 @@
 | Fase 4 | `821ffc3` | Mobile Controller HP UI (4-State Switcher) + Active Tilt dynamic tests (`f4bd297`) |
 | Fase 5 | `eab5caf` | Real bridge, server checkpoint API, dan 5 core file mounts guarded additive-only |
 | Fase 6 | `e3dff21` | Final QA regression matrix, E2E smoke tests, and production documentation |
-| Fase 6.5 | `8710004` | Remediation: PostgreSQL atomic merge RPC (`0065`), real DB token & session auth, 10-case test suite |
-| Fase 6.6 | *(current)* | Security Patch: RPC anon/authenticated revoke (`0066`), session.id backdoor removal, 11-case test suite |
+| Fase 6.5 | `8710004` | Remediation: PostgreSQL atomic merge RPC (`0065`), real DB token, 10-case test suite |
+| Fase 6.6 | `f98657e` | Security patch: revoke anon RPC (`0066`), remove session.id backdoor, 11-case test suite |
 
 ---
 
@@ -24,7 +24,7 @@
 - **Fase 5 (Integration & Bridge)**: +21 tests → 160 passed
 - **Fase 6 (E2E Headless Smoke)**: +3 tests → 163 passed
 - **Fase 6.5 (Atomic RPC & Real DB Auth)**: +6 tests → 169 passed
-- **Fase 6.6 (Security Patch & Backdoor Removal)**: +1 test → **170 passed across 52 test suites** (0 fails, 0 skipped)
+- **Fase 6.6 (Security Patch & Backdoor Removal)**: +1 test (case 11 backdoor) → **170 passed across 52 test suites** (0 fails, 0 skipped)
 
 ---
 
@@ -45,18 +45,23 @@
    - `SouqFishingSelfPacedView`: Diekspor dari bridge `@/modules/souq-fishing/bridge/magguru-bridge`.
    - *Konfirmasi*: Zero inline function definitions di dalam 5 file inti. Semua modifikasi additive-only.
 
-2. **Per-file Additive Modifications**:
-   - `src/lib/game-engine/registry.ts`: Additive lookup and definition getter.
-   - `src/app/dashboard/games/game-mode-selector.tsx`: Additive card render and fallback.
-   - `src/app/dashboard/games/[gameId]/projector/projector-screen.tsx`: Additive conditional render.
-   - `src/app/controller/page.tsx`: Additive conditional controller render.
-   - `src/app/join/room/page.tsx`: Additive conditional self-paced render.
+2. **Per-file Additive Modifications** (with behavioral-equivalent nuance):
+   - `src/lib/game-engine/registry.ts`: +22/-3. The -3 is the signature of `GameRegistry.get()` expanded from `(type: NormalizedGameType)` to `(type: NormalizedGameType | string)`. Behavior for non-souq types is IDENTICAL: `DEFINITIONS[type as NormalizedGameType] ?? DEFINITIONS["quiz"]`. Not literal additive but behavior-equivalent when flag OFF.
+   - `src/app/dashboard/games/game-mode-selector.tsx`: +47/-1. The -1 is a single line split into 3 lines (nullish coalescing). Behavior identical when flag OFF.
+   - Other 3 core files (`projector-screen.tsx`, `controller/page.tsx`, `join/room/page.tsx`): literal additive, zero deletions.
 
-3. **Checkpoint API Atomic Merge & Real DB Auth (Remediated)**:
-   - **Atomic PostgreSQL RPC**: Merge JSONB dieksekusi melalui single-statement RPC `souq_fishing_merge_checkpoint` (`jsonb_set` langsung pada level database) via migrasi `0065_souq_fishing_checkpoint_rpc.sql`. Eliminasi total pola read-modify-write.
-   - **Real DB Token & Active Session Verification**: Otoritas diperiksa terhadap `room_sessions` (`ended_at IS NULL`) dan `room_participants.join_token`. Token palsu/acak ditolak di level query database dengan `HTTP 401`.
-   - **Payload Guard**: Ukuran payload divalidasi `Buffer.byteLength(JSON.stringify(cp)) <= 64 * 1024` bytes (HTTP 413) di route handler serta constraint guard di fungsi PL/pgSQL.
-   - **Field Isolation**: Penulisan JSONB terisolasi murni ke `rooms.snapshot.souq_fishing.checkpoint_v1`. Field `snapshot.game_questions` dan metadata snapshot lainnya tidak pernah ditimpa.
+3. **Checkpoint API Atomic Merge & Real DB Auth (Remediated 6.5+6.6)**:
+   - Atomic PostgreSQL RPC via migration 0065 (`jsonb_set`).
+   - Real DB token validation via `room_participants.join_token`.
+   - **Migration 0066**: REVOKE anon/authenticated, GRANT only service_role. Defense against client-side anon key bypass.
+   - **Backdoor removal**: `session.id !== token` removed. Test case 11.
+   - Payload guard 64 KB (route + DB defense-in-depth).
+   - Field isolation: write only to `snapshot.souq_fishing.checkpoint_v1`.
+
+4. **Adapter Architecture Clarification**:
+   - `MagguruCheckpointStoreAdapter` (in `adapters/checkpoint-store.ts`) uses in-memory `Map` for testing and local dev. **Not used in production.**
+   - Production path: `POST/GET /api/souq-fishing/checkpoint` → `mergeCheckpointIntoSnapshot` → `supabaseAdmin.rpc('souq_fishing_merge_checkpoint')` → atomic PostgreSQL JSONB merge.
+   - Do NOT instantiate `MagguruCheckpointStoreAdapter` in production route handlers (lambda cold start would lose state).
 
 ---
 
