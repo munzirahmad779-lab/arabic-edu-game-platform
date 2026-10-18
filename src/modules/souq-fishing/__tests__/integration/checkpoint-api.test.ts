@@ -353,4 +353,23 @@ describe("Phase 6.5 Remediation: Checkpoint API Suite (Atomic Merge & Real DB Au
     const body = await res.json();
     assert.equal(body.error, "UNAUTHORIZED");
   });
+
+  // 11. POST dengan token = session.id (UUID sesi) -> 401 (Backdoor ditutup)
+  it("11. POST with token = session.id (UUID sesi) returns 401 Unauthorized (backdoor removal verified)", async () => {
+    const sessionId = mockSessions["room-active"].id; // "session-active-uuid"
+    const req = new NextRequest("http://localhost:3000/api/souq-fishing/checkpoint", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionId}`,
+      },
+      body: JSON.stringify({ roomId: "room-active", checkpoint: { tick: 1 } }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 401);
+    const body = await res.json();
+    assert.equal(body.error, "UNAUTHORIZED");
+    assert.equal(rpcCallCount, 0, "RPC must never be called with session.id as token");
+  });
 });

@@ -81,3 +81,18 @@ Suite `checkpoint-api.test.ts` diperbarui dari 4 skenario menjadi 10 skenario ko
 10. `GET tanpa token -> 401`
 
 Total test suite proyek bertambah dari 163 lulus menjadi **169 lulus, 0 gagal**.
+
+---
+
+## Fase 6.6 — Security Patch (2026-10-19)
+
+### What Fase 6.5 missed:
+1. Migration 0065 granted EXECUTE to `anon` — allowed client bypass of route auth.
+2. Token validation had backdoor: `session.id !== token` accepted session UUID.
+3. D0.3/D0.4/D0.5 raw disclosure was incomplete (excerpt, not full).
+
+### What Fase 6.6 fixes:
+1. Migration 0066 revokes anon/authenticated, grants only service_role.
+2. Removed session.id fallback; only join_token valid.
+3. Full raw disclosure provided in this report.
+

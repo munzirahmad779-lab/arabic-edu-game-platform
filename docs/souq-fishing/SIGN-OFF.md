@@ -10,7 +10,8 @@
 | Fase 4 | `821ffc3` | Mobile Controller HP UI (4-State Switcher) + Active Tilt dynamic tests (`f4bd297`) |
 | Fase 5 | `eab5caf` | Real bridge, server checkpoint API, dan 5 core file mounts guarded additive-only |
 | Fase 6 | `e3dff21` | Final QA regression matrix, E2E smoke tests, and production documentation |
-| Fase 6.5 | *(current)* | Remediation: PostgreSQL atomic merge RPC (`0065`), real DB token & session auth, 10-case test suite |
+| Fase 6.5 | `8710004` | Remediation: PostgreSQL atomic merge RPC (`0065`), real DB token & session auth, 10-case test suite |
+| Fase 6.6 | *(current)* | Security Patch: RPC anon/authenticated revoke (`0066`), session.id backdoor removal, 11-case test suite |
 
 ---
 
@@ -22,7 +23,8 @@
 - **Fase 4 (Mobile Controller)**: +18 tests → 139 passed
 - **Fase 5 (Integration & Bridge)**: +21 tests → 160 passed
 - **Fase 6 (E2E Headless Smoke)**: +3 tests → 163 passed
-- **Fase 6.5 (Atomic RPC & Real DB Auth)**: +6 test cases → **169 passed across 52 test suites** (0 fails, 0 skipped)
+- **Fase 6.5 (Atomic RPC & Real DB Auth)**: +6 tests → 169 passed
+- **Fase 6.6 (Security Patch & Backdoor Removal)**: +1 test → **170 passed across 52 test suites** (0 fails, 0 skipped)
 
 ---
 

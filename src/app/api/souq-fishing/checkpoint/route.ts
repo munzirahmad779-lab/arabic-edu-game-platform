@@ -55,13 +55,7 @@ async function validateSessionAndToken(
     .eq("join_token", token)
     .maybeSingle();
 
-  const isTokenValid =
-    Boolean(participant) ||
-    session.id === token ||
-    (session as Record<string, unknown>).projector_token === token ||
-    (session as Record<string, unknown>).controller_token === token;
-
-  if (!isTokenValid) {
+  if (!participant) {
     return { ok: false, status: 401, error: "UNAUTHORIZED" };
   }
 
