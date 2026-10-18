@@ -7,6 +7,42 @@ export const CHECKPOINT_MAX_BYTES = 64 * 1024; // 64 KB strict guard
 export const CHECKPOINT_NAMESPACE = "snapshot.souq_fishing.checkpoint_v1";
 
 /**
+ * Pure JSONB merge utility ensuring no overwrite of game_questions or other snapshot fields.
+ */
+export function mergeCheckpointIntoSnapshot(
+  existingSnapshot: unknown,
+  checkpoint: unknown,
+): { snapshot: Record<string, unknown>; updated_at: string } {
+  const currentSnapshot =
+    existingSnapshot && typeof existingSnapshot === "object"
+      ? (existingSnapshot as Record<string, unknown>)
+      : {};
+
+  const currentSouq =
+    currentSnapshot.souq_fishing && typeof currentSnapshot.souq_fishing === "object"
+      ? (currentSnapshot.souq_fishing as Record<string, unknown>)
+      : {};
+
+  const now = new Date().toISOString();
+  const versionedEnvelope = {
+    version: 1,
+    updated_at: now,
+    data: checkpoint,
+  };
+
+  return {
+    snapshot: {
+      ...currentSnapshot,
+      souq_fishing: {
+        ...currentSouq,
+        checkpoint_v1: versionedEnvelope,
+      },
+    },
+    updated_at: now,
+  };
+}
+
+/**
  * MagguruCheckpointStoreAdapter stub.
  * Stores and recovers session state atomically without overwriting Magguru question snapshots.
  */

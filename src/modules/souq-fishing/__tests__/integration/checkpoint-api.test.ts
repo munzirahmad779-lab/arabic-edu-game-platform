@@ -4,8 +4,8 @@ import { NextRequest } from "next/server";
 import {
   POST,
   GET,
-  mergeCheckpointIntoSnapshot,
 } from "@/app/api/souq-fishing/checkpoint/route";
+import { mergeCheckpointIntoSnapshot } from "@/modules/souq-fishing/adapters/checkpoint-store";
 
 describe("Phase 5 Integration: Checkpoint API Suite", () => {
   it("POST returns 401 when projector token is invalid or missing", async () => {
