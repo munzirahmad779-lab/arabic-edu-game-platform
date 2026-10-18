@@ -30,8 +30,13 @@ export const SOUQ_FISHING_ENGINE_ID = "souq_fishing";
  * Defaults to false when unset, empty, 'false', or '0'.
  */
 export function isSouqFishingEnabled(customEnv?: Record<string, string | undefined>): boolean {
-  const envSource = customEnv ?? (typeof process !== "undefined" ? process.env : {});
-  const val = envSource[FEATURE_FLAG_ENV_KEY] ?? envSource.ENABLE_SOUQ_FISHING_MODULE;
+  if (customEnv) {
+    const val = customEnv[FEATURE_FLAG_ENV_KEY] ?? customEnv.ENABLE_SOUQ_FISHING_MODULE;
+    return val === "true" || val === "1";
+  }
+  const val =
+    process.env.NEXT_PUBLIC_ENABLE_SOUQ_FISHING_MODULE ??
+    process.env.ENABLE_SOUQ_FISHING_MODULE;
   if (val === "true" || val === "1") {
     return true;
   }

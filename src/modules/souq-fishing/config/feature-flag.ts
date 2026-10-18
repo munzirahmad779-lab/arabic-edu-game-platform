@@ -12,17 +12,11 @@ export const FEATURE_FLAG_ENV_KEY = "NEXT_PUBLIC_ENABLE_SOUQ_FISHING_MODULE";
  * and strictly false if explicitly set to "false" or "0".
  */
 export function isSouqFishingEnabled(): boolean {
-  if (typeof process !== "undefined" && process.env) {
-    const val =
-      process.env[FEATURE_FLAG_ENV_KEY] ??
-      process.env.ENABLE_SOUQ_FISHING_MODULE;
-    if (val === "false" || val === "0") {
-      return false;
-    }
-    if (val === "true" || val === "1") {
-      return true;
-    }
+  const val =
+    process.env.NEXT_PUBLIC_ENABLE_SOUQ_FISHING_MODULE ??
+    process.env.ENABLE_SOUQ_FISHING_MODULE;
+  if (val === "true" || val === "1") {
+    return true;
   }
-  // Default to enabled unless explicitly turned off
-  return true;
+  return false;
 }
