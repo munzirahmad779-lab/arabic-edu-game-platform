@@ -33,7 +33,25 @@ describe("Phase 3 UI: ProjectorFourTeamTables & Active Tilt Flex Suite", () => {
     assert.equal(matches15?.length, 3);
   });
 
-  it("renders two active columns at 35% and two columns at 15% when N = 2", () => {
+  it("renders active columns for teams 1 & 2 (35/35/15/15) when N = 2", () => {
+    let world = createInitialWorldState();
+    world = {
+      ...world,
+      teams: {
+        ...world.teams,
+        MERAH: { ...world.teams.MERAH, status: "IN_GATE_QUESTION" },
+        BIRU: { ...world.teams.BIRU, status: "IN_FISHING_QUESTION" },
+      },
+    };
+
+    const html = renderToString(<ProjectorFourTeamTables worldState={world} />);
+    assert.match(html, /flex-basis:35%[^>]*data-testid="team-box-merah"/);
+    assert.match(html, /flex-basis:35%[^>]*data-testid="team-box-biru"/);
+    assert.match(html, /flex-basis:15%[^>]*data-testid="team-box-kuning"/);
+    assert.match(html, /flex-basis:15%[^>]*data-testid="team-box-hijau"/);
+  });
+
+  it("renders active columns for teams 1 & 3 (35/15/35/15) when N = 2", () => {
     let world = createInitialWorldState();
     world = {
       ...world,
@@ -45,10 +63,10 @@ describe("Phase 3 UI: ProjectorFourTeamTables & Active Tilt Flex Suite", () => {
     };
 
     const html = renderToString(<ProjectorFourTeamTables worldState={world} />);
-    const matches35 = html.match(/flex-basis:35%/g);
-    const matches15 = html.match(/flex-basis:15%/g);
-    assert.equal(matches35?.length, 2);
-    assert.equal(matches15?.length, 2);
+    assert.match(html, /flex-basis:35%[^>]*data-testid="team-box-merah"/);
+    assert.match(html, /flex-basis:15%[^>]*data-testid="team-box-biru"/);
+    assert.match(html, /flex-basis:35%[^>]*data-testid="team-box-kuning"/);
+    assert.match(html, /flex-basis:15%[^>]*data-testid="team-box-hijau"/);
   });
 
   it("renders three active columns at 28% and one inactive at 16% when N = 3", () => {
