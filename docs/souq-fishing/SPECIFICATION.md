@@ -73,10 +73,14 @@ Baris atas proyektor (`ProjectorWorldMap`, 58vh) dibagi secara visual menjadi 2 
 │                │                       │          │       │                              │            │
 │                ▼                       ▼          │       ▼                              ▼            │
 │         Quest G1 (3 Pin)        Quest G2 (4 Pin)  │ Memancing Biasa              Ikan Legendaris      │
-│                │                       │          │ (+50 s.d. +500 Poin)         (+600 s.d. +1200 P)  │
-│                └───────────► [KANTIN] ─┘          │                                                   │
-│                        (Buff +25% Poin)           │                                                   │
-│                                                   │                                                   │
+│         (+20/pin, +100 lulus)   (Hadiah VIP +     │ Common {50, 75, 100}         Epic {450, 500, 550, │
+│                │                 Umpan x3 +       │ Rare {200, 250, 300}         600}                 │
+│                ▼                 Buff 180s)       │                              Legendary {800, 1000,│
+│         [Hadiah: Joran Emas]         │            │                              1200}                │
+│                │                     ▼            │                                                   │
+│                └───────────► [KANTIN] ────────────┘                                                   │
+│                        (Buff: Jalan -50%, Poin +20%)                                                  │
+│                                                                                                       │
 │ ── Jalur 1 (Merah: Putri Hijab) ─────────────────►│ ── Jalur 1 (Merah: Ujung Dermaga 1) ─────────────►│
 │ ── Jalur 2 (Biru: Putra Peci) ───────────────────►│ ── Jalur 2 (Biru: Ujung Dermaga 2) ──────────────►│
 │ ── Jalur 3 (Hijau: Putri Mandiri) ───────────────►│ ── Jalur 3 (Hijau: Dermaga Tengah) ──────────────►│
@@ -87,12 +91,12 @@ Baris atas proyektor (`ProjectorWorldMap`, 58vh) dibagi secara visual menjadi 2 
 ### Rincian Zona & Progresi Jalur (Dedicated Lanes):
 1. **Kolom Kiri (50% Lebar) — Daratan Pasar:**
    - `ALUN`: Titik awal kumpul dan musyawarah tim santri.
-   - `KIOS (G1)`: Gerbang Quest 1, tantangan 3 pin kunci emas `[🔓][🔓][🔒]`.
-   - `GERBANG_KANTIN (G2)`: Gerbang Quest 2, tantangan 4 pin kunci emas `[🔓][🔓][🔓][🔒]`.
-   - `KANTIN`: Pos Barokah tempat santri mengklaim Buff Kantin (+25% Poin pancing) dan perlengkapan Joran Emas.
+   - `KIOS (G1)`: Gerbang Quest 1, tantangan 3 pin kunci emas (`+20` poin per pin, bonus lulus `+100` poin, hadiah `rod_golden` / Joran Emas).
+   - `GERBANG_KANTIN (G2)`: Gerbang Quest 2, tantangan 4 pin kunci emas (syarat lulus G1, hadiah Kunci Dermaga VIP + Umpan Berkilau ×3 + Buff Berkah Kantin).
+   - `KANTIN`: Pos Barokah tempat santri mengklaim Buff Berkah Kantin durasi 180 detik (kecepatan jalan -50% durasi / 2× lebih cepat, poin tangkapan +20% dibulatkan ke atas).
 2. **Kolom Kanan (50% Lebar) — Perairan Dermaga:**
-   - `DERMAGA_1`: Spot memancing standar (ikan air tawar & pantai: Mujair, Lele, Gurame, Baronang).
-   - `DERMAGA_VIP`: Spot memancing laut dalam bagi tim yang menuntaskan seluruh quest (Kerapu Samudra, Marlin Biru, Ikan Mas Emas).
+   - `DERMAGA_1`: Spot memancing standar untuk tier Common {50, 75, 100} dan Rare {200, 250, 300}.
+   - `DERMAGA_VIP`: Spot memancing laut dalam untuk tier Epic {450, 500, 550, 600} dan Legendary {800, 1000, 1200}.
 3. **4 Dedicated Lanes (Jalur Eksklusif Tim):**
    - Setiap tim memiliki jalur koordinat Y terpisah (offset vertikal 12px) sehingga avatar 4 karakter santun (`putri_hijab`, `putra_peci`, `putri_non_hijab`, `putra_non_peci`) berjalan berdampingan tanpa saling menimpa atau tumpang tindih visual.
    - Progresi mesin Fase 1 (`ALUN -> G1 -> G2 -> KANTIN -> DERMAGA`) berjalan 100% deterministik dan bebas deadlock.
@@ -182,7 +186,7 @@ Tampilan tantangan di Proyektor (`<TeamBox>`) dan HP Kontroler wajib menyertakan
    - Kartu soal kurikulum guru + 4 opsi A–D.
 2. **`FISHING_QUESTION_VIEW` (Tantangan Memancing Ikan):**
    - Animasi SVG ikan melompat dari perairan.
-   - Pita poin tangkapan (`+50` s.d. `+1200 POIN`).
+   - Pita poin tangkapan sesuai tier ikan (Common {50, 75, 100}, Rare {200, 250, 300}, Epic {450, 500, 550, 600}, Legendary {800, 1000, 1200}).
    - Tension bar (indikator kekuatan tarikan senar pancing).
    - Kartu soal pancing + 4 opsi A–D.
 
@@ -245,37 +249,56 @@ Semua karakter dirender menggunakan SVG kartun lokal yang santun dan ramah buday
 
 ## 11. MEKANIK GERBANG QUEST (GATE MECHANICS)
 
-1. **Gerbang KIOS (G1):**
-   - Syarat: 3 Jawaban Benar Kumulatif (`[🔓][🔓][🔒]`).
-   - Efek: Membuka akses dari Alun-Alun menuju Gerbang Kantin.
-2. **Gerbang KANTIN (G2):**
-   - Syarat: 4 Jawaban Benar Kumulatif (`[🔓][🔓][🔓][🔒]`).
-   - Efek: Membuka akses masuk ke Kantin Barokah dan akses jalur perairan Dermaga Pancing.
-3. **Buff Kantin Barokah:**
-   - Tim yang singgah di Kantin memperoleh item `canteen_buff` (+25% Poin pancing) dan perlengkapan `rod_golden`.
+1. **Gerbang 1 (KIOS):**
+   - Syarat: 3 pin kunci emas (`[🔓][🔓][🔒]`).
+   - Skor: `+20` poin per pin jawaban benar.
+   - Bonus Kelulusan: `+100` poin saat 3 pin terpenuhi.
+   - Hadiah: `rod_golden` (Joran Emas) untuk membuka kemampuan memancing.
+2. **Gerbang 2 (GERBANG_KANTIN):**
+   - Syarat: 4 pin kunci emas (`[🔓][🔓][🔓][🔒]`), dengan prasyarat wajib telah lulus Gerbang 1 (KIOS).
+   - Hadiah Kelulusan:
+     - Kunci Akses `DERMAGA_VIP`.
+     - `bait_sparkling` (Umpan Berkilau) ×3.
+     - `canteen_buff` (Buff Berkah Kantin): Durasi **180 detik**, durasi perjalanan (jalan) berkurang `-50%` (kecepatan gerak 2× lebih cepat), poin tangkapan ikan `+20%` (dibulatkan ke atas).
 
 ---
 
 ## 12. TINGKATAN IKAN & POIN (FISHING TIERS)
 
-Hasil pancingan di Kolom Kanan Dermaga dikelompokkan ke dalam 4 tier tangkapan bernilai edukatif:
+Hasil pancingan di Kolom Kanan Dermaga dikelompokkan secara kanonikal ke dalam 4 tier dengan aturan rantai soal (*question chain*):
 
-| Tier Ikan | Contoh Spesies Ikan Lokal | Rentang Poin | Lokasi Dermaga |
-| :--- | :--- | :---: | :--- |
-| **Common** | Ikan Mujair, Ikan Lele Santri | `+50 s.d. +150` | Dermaga 1 (Jalur Biasa) |
-| **Rare** | Ikan Gurame Barokah, Nila Merah | `+200 s.d. +400` | Dermaga 1 (Jalur Biasa) |
-| **Epic** | Ikan Kerapu Samudra, Baronang Emas | `+500 s.d. +800` | Dermaga VIP (Jalur Khusus) |
-| **Legendary**| Ikan Mas Emas Legendaris, Marlin Biru | `+900 s.d. +1200`| Dermaga VIP (Puncak Quest) |
+1. **Common:**
+   - Nilai Poin Diskrit: `{50, 75, 100}`
+   - Mekanik Tantangan: 1 soal, tanpa timer.
+   - Lokasi: `DERMAGA_1` (Jalur Biasa).
+2. **Rare:**
+   - Nilai Poin Diskrit: `{200, 250, 300}`
+   - Mekanik Tantangan: 1 soal, batas waktu timer **20 detik**.
+   - Lokasi: `DERMAGA_1` (Jalur Biasa).
+3. **Epic:**
+   - Nilai Poin Diskrit: `{450, 500, 550, 600}`
+   - Mekanik Tantangan: Rantai **2 soal beruntun** ($n = 2$).
+   - Lokasi: `DERMAGA_VIP` (Jalur Khusus).
+4. **Legendary:**
+   - Nilai Poin Diskrit: `{800, 1000, 1200}`
+   - Mekanik Tantangan: Rantai **3 soal beruntun** ($n = 3$).
+   - Lokasi: `DERMAGA_VIP` (Puncak Quest).
+5. **Aturan Penalti Gagal Rantai ($n \ge 2$):**
+   - Jika gagal di tengah jalan pada rantai $n \ge 2$, tim menerima poin parsial dengan formula resmi:
+     $$\text{Poin Parsial} = \left\lfloor 0.25 \times \text{Nilai Poin} \times \frac{\text{Jumlah Benar}}{n} \right\rfloor$$
 
 ---
 
 ## 13. TANGGA BANTUAN BELAJAR SANTRI (ASSISTANCE LADDER)
 
-Untuk mencegah santri merasa putus asa atau tim terkunci permanen di satu gerbang:
-1. **Salah 1×:** Umpan balik korektif lembut diberikan, tim dipersilakan berdiskusi dan mencoba kembali.
-2. **Salah 2×:** Petunjuk ringkas (Hint) otomatis dimunculkan, dan 1 opsi distractor salah dieliminasi (bantuan 50:50 ringan).
-3. **Salah 3×:** Tim masuk ke status "Istirahat Santun" (*cooling-down* 5 detik) untuk menenangkan ritme tim.
-4. **Status Assisted:** Gerbang otomatis terbuka dengan bobot skor 50% agar tim tetap dapat melanjutkan ekspedisi ke pos berikutnya tanpa macet permanen.
+Untuk mencegah santri merasa putus asa atau tim terkunci permanen di satu gerbang, modul menerapkan tangga bantuan bertingkat resmi:
+1. **Salah 2× Beruntun:**
+   - Sistem secara otomatis menyembunyikan 1 opsi salah (bantuan eliminasi 50:50).
+2. **Salah 3× Beruntun:**
+   - Tim masuk ke status **Istirahat Belajar selama 15 detik** (bukan 5 detik), dan layar menampilkan ulasan/pembahasan soal yang salah untuk evaluasi pemahaman santri.
+3. **Lulus Dibantu (Assisted = true):**
+   - Setelah 3× istirahat belajar, gerbang diberikan status **Lulus Dibantu (`assisted: true`)** agar tim dapat melanjutkan ekspedisi ke pos berikutnya.
+   - **Konsekuensi Skor:** Tim **TIDAK DIBERI** bonus kelulusan `+100` poin dari gerbang (bukan pemotongan 50% poin, melainkan peniadaan bonus +100 gerbang).
 
 ---
 

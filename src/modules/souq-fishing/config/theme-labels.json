@@ -22,7 +22,7 @@
     "items": {
       "rod_golden": "Joran Emas",
       "bait_sparkling": "Umpan Berkilau",
-      "canteen_buff": "Buff Kantin (+25% Poin)"
+      "canteen_buff": "Buff Kantin (+20% Poin)"
     },
     "states": {
       "lobby": "Menunggu Pemain & Tim Siap",
@@ -47,6 +47,12 @@
       "team-2": "Tim Biru",
       "team-3": "Tim Hijau",
       "team-4": "Tim Kuning"
+    },
+    "ui_elements": {
+      "tension_bar": "Kekuatan Tarikan Senar (Tension Bar)",
+      "pin_gate_3": "3 Pin Gembok Emas Gerbang G1",
+      "pin_gate_4": "4 Pin Gembok Emas Gerbang G2",
+      "point_ribbon": "Pita Poin Tangkapan Ikan"
     }
   },
   "ar": {
@@ -72,7 +78,7 @@
     "items": {
       "rod_golden": "السنارة الذهبية",
       "bait_sparkling": "الطعم اللامع",
-      "canteen_buff": "مكافأة المقصف (+25%)"
+      "canteen_buff": "مكافأة المقصف (+20%)"
     },
     "states": {
       "lobby": "في انتظار اكتمال الفرق",
@@ -97,6 +103,12 @@
       "team-2": "الفريق الأزرق",
       "team-3": "الفريق الأخضر",
       "team-4": "الفريق الأصفر"
+    },
+    "ui_elements": {
+      "tension_bar": "مؤشر شد الخيط (Tension Bar)",
+      "pin_gate_3": "3 مفاتيح ذهبية للبوابة الأولى",
+      "pin_gate_4": "4 مفاتيح ذهبية للبوابة الثانية",
+      "point_ribbon": "شريط نقاط الصيد"
     }
   },
   "en": {
@@ -122,7 +134,7 @@
     "items": {
       "rod_golden": "Golden Rod",
       "bait_sparkling": "Sparkling Bait",
-      "canteen_buff": "Canteen Buff (+25% Points)"
+      "canteen_buff": "Canteen Buff (+20% Points)"
     },
     "states": {
       "lobby": "Waiting for Teams in Lobby",
@@ -147,6 +159,12 @@
       "team-2": "Blue Team",
       "team-3": "Green Team",
       "team-4": "Yellow Team"
+    },
+    "ui_elements": {
+      "tension_bar": "Line Tension Indicator",
+      "pin_gate_3": "3 Golden Pins Gate G1",
+      "pin_gate_4": "4 Golden Pins Gate G2",
+      "point_ribbon": "Fish Catch Point Ribbon"
     }
   },
   "bugis_lontara": {
@@ -172,7 +190,7 @@
     "items": {
       "rod_golden": "ᨄᨙᨔᨗ ᨕᨘᨒᨓᨙ (Pési Ulaweng / Joran Emas)",
       "bait_sparkling": "ᨕᨘᨄ ᨆᨌᨗᨒ (Umpang Maccila' / Umpan Berkilau)",
-      "canteen_buff": "ᨅᨑᨚᨀ ᨀᨊᨛᨈᨗ (+25% Poin) // Ahmad: silakan edit"
+      "canteen_buff": "ᨅᨑᨚᨀ ᨀᨊᨛᨈᨗ (+20% Poin) // Ahmad: silakan edit"
     },
     "states": {
       "lobby": "ᨆᨈᨍ ᨄᨔᨘᨀ (Mattajeng Pasukan / Menunggu Tim)",
