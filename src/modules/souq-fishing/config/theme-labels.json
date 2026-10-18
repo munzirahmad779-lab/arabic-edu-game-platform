@@ -16,7 +16,8 @@
       "souq": "Pasar Santri",
       "gate": "Gerbang Quest",
       "canteen": "Kantin Barokah",
-      "pier": "Dermaga Pancing"
+      "pier": "Dermaga Pancing",
+      "pier_vip": "Dermaga VIP"
     },
     "items": {
       "rod_golden": "Joran Emas",
@@ -29,6 +30,7 @@
       "challenge": "Jawab Pertanyaan Berikut!",
       "fishing": "Menunggu Tangkapan Ikan...",
       "fish_caught": "Ikan Tertangkap!",
+      "queued_question": "Menunggu Giliran Tampil Soal...",
       "finished": "Ekspedisi Selesai!"
     },
     "actions": {
@@ -64,7 +66,8 @@
       "souq": "سوق الطلاب",
       "gate": "بوابة الأسئلة",
       "canteen": "مقصف البركة",
-      "pier": "رصيف الصيد"
+      "pier": "رصيف الصيد",
+      "pier_vip": "رصيف الصيد الممتاز"
     },
     "items": {
       "rod_golden": "السنارة الذهبية",
@@ -77,6 +80,7 @@
       "challenge": "أجب عن السؤال التالي!",
       "fishing": "في انتظار الصيد...",
       "fish_caught": "تم صيد السمكة بنجاح!",
+      "queued_question": "في قائمة الانتظار...",
       "finished": "انتهت الرحلة الاستكشافية!"
     },
     "actions": {
@@ -112,7 +116,8 @@
       "souq": "Student Souq",
       "gate": "Knowledge Gate",
       "canteen": "Barakah Canteen",
-      "pier": "Fishing Pier"
+      "pier": "Fishing Pier",
+      "pier_vip": "VIP Fishing Pier"
     },
     "items": {
       "rod_golden": "Golden Rod",
@@ -125,6 +130,7 @@
       "challenge": "Solve the Question!",
       "fishing": "Waiting for a Bite...",
       "fish_caught": "Fish Caught!",
+      "queued_question": "Waiting for Question Turn...",
       "finished": "Expedition Finished!"
     },
     "actions": {
@@ -141,6 +147,62 @@
       "team-2": "Blue Team",
       "team-3": "Green Team",
       "team-4": "Yellow Team"
+    }
+  },
+  "bugis_lontara": {
+    "game": {
+      "title": "ᨒᨒᨚ ᨄᨔ ᨊ ᨉᨛᨑᨆᨁ ᨆᨙᨆᨂ (Lalo Pasa' na Dermaga Mémang)",
+      "subtitle": "ᨄᨈᨚᨒᨚ ᨔᨊᨛᨈᨛᨑᨗ: ᨍᨍ ᨄᨔ, ᨅᨘᨀ ᨅᨅ ᨄᨂᨗᨔᨛᨂᨛ, ᨊ ᨆᨙᨆᨂ ᨅᨑᨚᨀ",
+      "badge": "ᨄᨂᨘ ᨑᨆᨙ + ᨄᨀ ᨆᨚᨅᨗ (Panggung Ramé + Pakkappang HP)",
+      "description": "ᨄᨙᨉᨙ ᨄᨛᨈᨘᨕᨒᨂ ᨀᨒ ᨔᨗᨔᨘᨓ ᨆᨄᨗᨒᨙ ᨈᨚ ᨆᨀᨑᨅ, ᨆᨙᨅᨒᨗ ᨄᨀᨘᨈᨊ ᨆᨄᨙᨅᨘᨀ ᨅᨅ ᨀᨘᨕᨙ, ᨊ ᨆᨄᨒᨛᨈᨚ ᨅᨚᨂᨚ ᨕᨙᨆ ᨑ ᨉᨛᨑᨆᨁ."
+    },
+    "characters": {
+      "putri_hijab": "ᨕᨊ ᨉᨑ ᨆᨍᨗᨒᨅ (Ana' Dara Majilbab)",
+      "putri_non_hijab": "ᨕᨊ ᨉᨑ ᨆᨒᨙᨅ (Ana' Dara Malempu)",
+      "putra_peci": "ᨀᨚᨒᨚ ᨆᨄᨙᨌᨗ (Kallolo Mappeci)",
+      "putra_non_peci": "ᨀᨚᨒᨚ ᨆᨒᨙᨅ (Kallolo Malempu)"
+    },
+    "zones": {
+      "souq": "ᨄᨔ ᨔᨊᨛᨈᨛᨑᨗ (Pasa' Santri)",
+      "gate": "ᨅᨅ ᨄᨂᨗᨔᨛᨂᨛ (Babang Pangissengeng)",
+      "canteen": "ᨀᨊᨛᨈᨗ ᨅᨑᨚᨀ (Kantin Barakka')",
+      "pier": "ᨉᨛᨑᨆᨁ ᨆᨙᨆᨂ (Dermaga Mémang)",
+      "pier_vip": "ᨉᨛᨑᨆᨁ ᨆᨒᨚᨄᨚ (Dermaga Maloppo / VIP) // Ahmad: silakan edit"
+    },
+    "items": {
+      "rod_golden": "ᨄᨙᨔᨗ ᨕᨘᨒᨓᨙ (Pési Ulaweng / Joran Emas)",
+      "bait_sparkling": "ᨕᨘᨄ ᨆᨌᨗᨒ (Umpang Maccila' / Umpan Berkilau)",
+      "canteen_buff": "ᨅᨑᨚᨀ ᨀᨊᨛᨈᨗ (+25% Poin) // Ahmad: silakan edit"
+    },
+    "states": {
+      "lobby": "ᨆᨈᨍ ᨄᨔᨘᨀ (Mattajeng Pasukan / Menunggu Tim)",
+      "traveling": "ᨔᨗᨉᨗ ᨍᨚᨀ-ᨍᨚᨀ (Siddi Jokka-jokka / Sedang Berjalan)",
+      "challenge": "ᨅᨒᨗ ᨄᨀᨘᨈᨊᨕᨙ! (Bali Pakkutanana! / Jawab Pertanyaan!)",
+      "fishing": "ᨆᨈᨍ ᨅᨒᨙ (Mattajeng Bale / Menunggu Ikan)",
+      "fish_caught": "ᨊᨀᨙᨊ ᨅᨒᨙᨊ! (Nakennai Balena! / Ikan Tertangkap!)",
+      "queued_question": "ᨆᨈᨍ ᨁᨗᨒᨗᨑ (Mattajeng Gilirang / Antri Pertanyaan)",
+      "finished": "ᨄᨘᨑᨊᨗ ᨒᨒᨚᨊ (Purani Lalona / Ekspedisi Selesai)"
+    },
+    "actions": {
+      "select_character": "ᨄᨗᨒᨙ ᨑᨘᨄ (Pilé Rupa / Pilih Karakter)",
+      "select_team": "ᨄᨗᨒᨙ ᨄᨔᨘᨀ (Pilé Pasukan / Pilih Tim)",
+      "roll_dice": "ᨍᨚᨀ ᨆᨍᨘ (Jokka Maju / Melangkah)",
+      "submit_answer": "ᨀᨗᨑᨗ ᨍᨓᨅ (Kiring Jawakang / Kirim Jawaban)",
+      "cast_line": "ᨈᨗᨅ ᨄᨙᨔᨗ (Tibang Pési / Lempar Pancing)",
+      "pull_fish": "ᨈᨑᨗ ᨄᨙᨔᨗ! (Tari' Pési! / Tarik Joran!)",
+      "view_leaderboard": "ᨕᨗᨈ ᨄᨄ ᨄᨚᨕᨗ (Ita Papan Poin / Lihat Skor)"
+    },
+    "teams": {
+      "team-1": "ᨄᨔᨘᨀ ᨌᨙᨒ (Pasukan Cella' / Merah)",
+      "team-2": "ᨄᨔᨘᨀ ᨁᨕᨘ (Pasukan Gau' / Biru)",
+      "team-3": "ᨄᨔᨘᨀ ᨀᨘᨉᨗ (Pasukan Kudara' / Hijau)",
+      "team-4": "ᨄᨔᨘᨀ ᨀᨘᨊᨗ (Pasukan Kuni' / Kuning)"
+    },
+    "ui_elements": {
+      "tension_bar": "ᨅᨈ ᨁᨚᨈᨚ ᨈᨒᨗ (Batang Gontong Tali / Tension Bar) // Ahmad: silakan edit",
+      "pin_gate_3": "ᨈᨛᨒᨘ ᨀᨘᨋᨗ (Tello Kunci / 3 Pin Gerbang G1)",
+      "pin_gate_4": "ᨕᨙᨄ ᨀᨘᨋᨗ (Eppa' Kunci / 4 Pin Gerbang G2)",
+      "point_ribbon": "ᨄᨚᨕᨗ ᨅᨒᨙ (Poin Balé / Nilai Poin Ikan)"
     }
   }
 }

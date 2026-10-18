@@ -35,7 +35,7 @@ export const SOUQ_FISHING_ENGINE_ID = "souq_fishing";
 /**
  * Returns localized theme metadata for the game mode selector in teacher dashboard.
  */
-export function getSouqFishingEngineMetadata(locale: "id" | "ar" | "en" = "id") {
+export function getSouqFishingEngineMetadata(locale: "id" | "ar" | "en" | "bugis_lontara" = "id") {
   const dict = themeLabels[locale] || themeLabels.id;
   return {
     id: SOUQ_FISHING_ENGINE_ID,
