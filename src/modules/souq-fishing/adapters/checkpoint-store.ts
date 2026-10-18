@@ -1,3 +1,4 @@
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   CheckpointData,
   CheckpointStoreAdapter,
@@ -6,44 +7,62 @@ import type {
 export const CHECKPOINT_MAX_BYTES = 64 * 1024; // 64 KB strict guard
 export const CHECKPOINT_NAMESPACE = "snapshot.souq_fishing.checkpoint_v1";
 
-/**
- * Pure JSONB merge utility ensuring no overwrite of game_questions or other snapshot fields.
- */
-export function mergeCheckpointIntoSnapshot(
-  existingSnapshot: unknown,
-  checkpoint: unknown,
-): { snapshot: Record<string, unknown>; updated_at: string } {
-  const currentSnapshot =
-    existingSnapshot && typeof existingSnapshot === "object"
-      ? (existingSnapshot as Record<string, unknown>)
-      : {};
+let _testClient: SupabaseClient | null = null;
 
-  const currentSouq =
-    currentSnapshot.souq_fishing && typeof currentSnapshot.souq_fishing === "object"
-      ? (currentSnapshot.souq_fishing as Record<string, unknown>)
-      : {};
+export function setCheckpointSupabaseClient(client: unknown) {
+  _testClient = client as SupabaseClient | null;
+}
 
-  const now = new Date().toISOString();
-  const versionedEnvelope = {
-    version: 1,
-    updated_at: now,
-    data: checkpoint,
-  };
+export function getCheckpointSupabaseClient(): SupabaseClient {
+  if (_testClient) {
+    return _testClient;
+  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://test-ci.supabase.co";
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "ci-testing-key-magguru";
 
-  return {
-    snapshot: {
-      ...currentSnapshot,
-      souq_fishing: {
-        ...currentSouq,
-        checkpoint_v1: versionedEnvelope,
-      },
-    },
-    updated_at: now,
-  };
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 /**
- * MagguruCheckpointStoreAdapter stub.
+ * Atomic Checkpoint Merge Helper.
+ * Calls PostgreSQL RPC souq_fishing_merge_checkpoint to guarantee single-statement
+ * atomic JSONB merge, preventing multi-lambda read-modify-write race conditions.
+ */
+export async function mergeCheckpointIntoSnapshot(
+  supabaseAdmin: SupabaseClient,
+  roomId: string,
+  checkpoint: unknown,
+): Promise<{ ok: boolean; updated_at: string }> {
+  const updatedAt =
+    (checkpoint && typeof checkpoint === "object" && "updated_at" in checkpoint
+      ? String((checkpoint as Record<string, unknown>).updated_at)
+      : null) || new Date().toISOString();
+
+  const versionedCheckpoint = {
+    version: 1,
+    updated_at: updatedAt,
+    data: checkpoint,
+  };
+
+  const { error } = await supabaseAdmin.rpc("souq_fishing_merge_checkpoint", {
+    p_room_id: roomId,
+    p_checkpoint: versionedCheckpoint,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return { ok: true, updated_at: updatedAt };
+}
+
+/**
+ * MagguruCheckpointStoreAdapter.
  * Stores and recovers session state atomically without overwriting Magguru question snapshots.
  */
 export class MagguruCheckpointStoreAdapter implements CheckpointStoreAdapter {

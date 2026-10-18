@@ -22,8 +22,9 @@
 | 16 | Accessibility: soal Arab line-height ≥1.95 | Inspect DOM teks Arab di card soal proyektor & HP | PASS (`leading-[2.0]` / `line-height >= 1.95` diterapkan) |
 | 17 | Accessibility: tap target ≥56px di HP | Inspect tombol controller di viewport 360x640 | PASS (Tombol jawaban tinggi `h-36` / 144px > 56px) |
 | 18 | Bebas scroll di proyektor | Inspect element proyektor di viewport 1920x1080 | PASS (`overflow-hidden`, `h-screen`, `grid-rows-[58fr_42fr]`) |
-| 19 | Checkpoint recovery after refresh | Refresh layar proyektor saat permainan berlangsung | PASS (Manual Ahmad: state team, skor, pin dipulihkan) |
-| 20 | Checkpoint size guard >64KB rejected | POST checkpoint dengan ukuran > 65,536 bytes | PASS (Verified: HTTP 413 Payload Too Large) |
+| 20 | Checkpoint size guard >64KB rejected | POST checkpoint dengan ukuran > 65,536 bytes | PASS (Verified: HTTP 413 Payload Too Large via 64 KB guard) |
+| 21 | Checkpoint real DB token validation | POST checkpoint dengan token acak "abc123" / session ended | PASS (Verified: HTTP 401 Unauthorized via real DB query) |
+| 22 | Checkpoint concurrent atomic merge | POST concurrent x 2 ke endpoint checkpoint | PASS (Verified: RPC souq_fishing_merge_checkpoint dieksekusi 2x, both persisted) |
 
 ---
 
