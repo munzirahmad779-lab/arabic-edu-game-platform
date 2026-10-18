@@ -185,12 +185,12 @@
       "gate": "ᨅᨅ ᨄᨂᨗᨔᨛᨂᨛ (Babang Pangissengeng)",
       "canteen": "ᨀᨊᨛᨈᨗ ᨅᨑᨚᨀ (Kantin Barakka')",
       "pier": "ᨉᨛᨑᨆᨁ ᨆᨙᨆᨂ (Dermaga Mémang)",
-      "pier_vip": "ᨉᨛᨑᨆᨁ ᨆᨒᨚᨄᨚ (Dermaga Maloppo / VIP) // Ahmad: silakan edit"
+      "pier_vip": "ᨉᨛᨑᨆᨁ ᨆᨒᨚᨄᨚ (Dermaga Maloppo / VIP)"
     },
     "items": {
       "rod_golden": "ᨄᨙᨔᨗ ᨕᨘᨒᨓᨙ (Pési Ulaweng / Joran Emas)",
       "bait_sparkling": "ᨕᨘᨄ ᨆᨌᨗᨒ (Umpang Maccila' / Umpan Berkilau)",
-      "canteen_buff": "ᨅᨑᨚᨀ ᨀᨊᨛᨈᨗ (+20% Poin) // Ahmad: silakan edit"
+      "canteen_buff": "ᨅᨑᨚᨀ ᨀᨊᨛᨈᨗ (+20% Poin)"
     },
     "states": {
       "lobby": "ᨆᨈᨍ ᨄᨔᨘᨀ (Mattajeng Pasukan / Menunggu Tim)",
@@ -217,7 +217,7 @@
       "team-4": "ᨄᨔᨘᨀ ᨀᨘᨊᨗ (Pasukan Kuni' / Kuning)"
     },
     "ui_elements": {
-      "tension_bar": "ᨅᨈ ᨁᨚᨈᨚ ᨈᨒᨗ (Batang Gontong Tali / Tension Bar) // Ahmad: silakan edit",
+      "tension_bar": "ᨅᨈ ᨁᨚᨈᨚ ᨈᨒᨗ (Batang Gontong Tali / Tension Bar)",
       "pin_gate_3": "ᨈᨛᨒᨘ ᨀᨘᨋᨗ (Tello Kunci / 3 Pin Gerbang G1)",
       "pin_gate_4": "ᨕᨙᨄ ᨀᨘᨋᨗ (Eppa' Kunci / 4 Pin Gerbang G2)",
       "point_ribbon": "ᨄᨚᨕᨗ ᨅᨒᨙ (Poin Balé / Nilai Poin Ikan)"

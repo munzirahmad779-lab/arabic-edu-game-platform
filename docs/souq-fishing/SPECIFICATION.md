@@ -323,4 +323,4 @@ File `src/modules/souq-fishing/config/theme-labels.json` dikemas secara flat den
 - `ar`: Bahasa Arab
 - `en`: Bahasa Inggris
 - `bugis_lontara`: Bahasa Bugis & Aksara Lontara
-Setiap istilah modern (seperti Dermaga VIP, buff kantin, dan tension bar) ditandai dengan komentar panduan `// Ahmad: silakan edit` agar mudah disesuaikan oleh guru/pengembang.
+Panduan edit untuk Ahmad disimpan di key top-level `_notes` di theme-labels.json, TIDAK di dalam value label. UI hanya membaca path labels[locale].<section>.<key>.
