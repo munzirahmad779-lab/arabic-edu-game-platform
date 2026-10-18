@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/regression/*.test.ts tests/health/*.test.ts \"src/modules/souq-fishing/__tests__/**/*.test.*\"",
+    "test": "tsx --test tests/regression/*.test.ts tests/health/*.test.ts \"src/modules/*/__tests__/**/*.test.*\"",
     "test:doctor": "node scripts/database-doctor.mjs",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/e2e/01-auth.spec.ts tests/e2e/04-game-creation.spec.ts tests/e2e/06-gameplay-runners.spec.ts",
