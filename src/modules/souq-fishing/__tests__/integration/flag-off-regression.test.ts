@@ -40,7 +40,7 @@ describe("Phase 5 Integration: Flag-OFF Production Regression Suite", () => {
       const resolved = GameRegistry.resolve("souq_fishing");
       assert.equal(resolved, "quiz");
 
-      const def = GameRegistry.get("souq_fishing");
+      const def = GameRegistry.get("souq_fishing" as unknown as "quiz");
       assert.equal(def.id, "quiz");
     } finally {
       process.env.NEXT_PUBLIC_ENABLE_SOUQ_FISHING_MODULE = prevFlag;

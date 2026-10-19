@@ -3,11 +3,10 @@ import assert from "node:assert/strict";
 import { GameRegistry } from "@/lib/game-engine/registry";
 
 describe("Phase 5 Integration: Game Engine Registry Integration Suite", () => {
-  it("registry.souq_fishing exists with valid metadata and title", () => {
-    assert.ok(GameRegistry.souq_fishing);
-    assert.equal(GameRegistry.souq_fishing.id, "souq_fishing");
-    assert.equal(GameRegistry.souq_fishing.icon, "🎣");
-    assert.ok(GameRegistry.souq_fishing.name.length > 0);
+  it("GameRegistry is isolated and does not collide with standalone souq-fishing", () => {
+    assert.equal(GameRegistry.resolve("souq_fishing"), "quiz");
+    const def = GameRegistry.get("quiz");
+    assert.equal(def.id, "quiz");
   });
 
   it("GameRegistry.get('quiz') remains identical to original baseline definition", () => {

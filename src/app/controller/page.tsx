@@ -3,10 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { isSouqFishingEnabled } from "@/modules/souq-fishing/bridge/magguru-bridge";
-import { ControllerShell as SouqFishingControllerShell } from "@/modules/souq-fishing/ui/controller";
-import { createInitialWorldState } from "@/modules/souq-fishing/engine/world";
-import type { TeamColor } from "@/modules/souq-fishing/engine/types";
 
 type TeamSlot = {
   id: string;
@@ -207,27 +203,6 @@ export default function ControllerPage() {
     },
     [selectedTeam, submitting, hasLocallyAnswered, gameState.phase, gameState.isLocked, roomCode],
   );
-
-  // Souq & Fishing Game Module Mount (Additive-Only)
-  const themeParam = searchParams.get("theme") || searchParams.get("game_theme");
-  if (
-    isSouqFishingEnabled() &&
-    (themeParam === "souq_fishing" || themeParam === "souq-fishing")
-  ) {
-    const rawTeam = (searchParams.get("team") || "MERAH").toUpperCase();
-    const currentTeamColor: TeamColor = (
-      ["MERAH", "BIRU", "KUNING", "HIJAU"] as const
-    ).includes(rawTeam as TeamColor)
-      ? (rawTeam as TeamColor)
-      : "MERAH";
-    const worldState = createInitialWorldState();
-    return (
-      <SouqFishingControllerShell
-        worldState={worldState}
-        currentTeamColor={currentTeamColor}
-      />
-    );
-  }
 
   // 1. SELECT TEAM CONTROLLER SLOT
   if (!selectedTeam) {

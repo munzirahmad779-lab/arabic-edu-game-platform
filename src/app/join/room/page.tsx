@@ -8,7 +8,6 @@ import { RoomReview } from "./room-review";
 import { GameRegistry } from "@/lib/game-engine/registry";
 import { GameShell } from "@/components/game-engine/game-shell";
 import { QuizPlayer } from "@/components/game-players/quiz-player";
-import { isSouqFishingEnabled, SouqFishingSelfPacedView } from "@/modules/souq-fishing/bridge/magguru-bridge";
 import type {
   ScoreEvent,
   GameSessionContext,
@@ -759,16 +758,6 @@ export default function JoinRoomPage({
         </div>
       </main>
     );
-  }
-
-  // Souq & Fishing Game Module Mount (Additive-Only)
-  if (
-    isSouqFishingEnabled() &&
-    (session.game_type === "souq_fishing" ||
-      (session as unknown as Record<string, unknown>).game_theme === "souq_fishing" ||
-      (session as unknown as Record<string, unknown>).game_theme === "souq-fishing")
-  ) {
-    return <SouqFishingSelfPacedView session={session as unknown as Record<string, unknown>} />;
   }
 
   const myRow = leaderboard.find((r) => r.is_self);

@@ -9,11 +9,6 @@ import type {
   GameMode,
   NormalizedGameType,
 } from "./types";
-import {
-  isSouqFishingEnabled,
-  getSouqFishingGameDefinition,
-  SOUQ_FISHING_METADATA,
-} from "@/modules/souq-fishing/bridge/magguru-bridge";
 
 const defaultCapabilities = {
   supportedModes: ["competitive", "cooperative", "practice", "endless"] as const,
@@ -164,19 +159,12 @@ const DEFINITIONS: Record<NormalizedGameType, GameDefinition> = {
 };
 
 export class GameRegistry {
-  public static readonly SOUQ_FISHING = SOUQ_FISHING_METADATA;
-  public static readonly souq_fishing = SOUQ_FISHING_METADATA;
-
   public static resolve(
     rawType?: string | null,
     rawMode?: string | null,
   ): NormalizedGameType {
     const cleanType = (rawType ?? "").trim().toLowerCase();
     const cleanMode = (rawMode ?? "").trim().toLowerCase();
-
-    if (isSouqFishingEnabled() && (cleanType === "souq_fishing" || cleanType === "souq-fishing")) {
-      return "souq_fishing" as NormalizedGameType;
-    }
 
     if (cleanType === "arabic_chase_race") {
       if (cleanMode === "anagram") return "anagram";
@@ -208,19 +196,12 @@ export class GameRegistry {
     return "quiz";
   }
 
-  public static get(type: NormalizedGameType | string): GameDefinition {
-    if (isSouqFishingEnabled() && (type === "souq_fishing" || type === "souq-fishing")) {
-      return getSouqFishingGameDefinition();
-    }
-    return DEFINITIONS[type as NormalizedGameType] ?? DEFINITIONS["quiz"];
+  public static get(type: NormalizedGameType): GameDefinition {
+    return DEFINITIONS[type] ?? DEFINITIONS["quiz"];
   }
 
   public static getAll(): GameDefinition[] {
-    const list = Object.values(DEFINITIONS);
-    if (isSouqFishingEnabled()) {
-      return [...list, getSouqFishingGameDefinition()];
-    }
-    return list;
+    return Object.values(DEFINITIONS);
   }
 
   public static isModeSupported(
