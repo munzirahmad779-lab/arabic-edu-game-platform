@@ -78,12 +78,11 @@ export async function POST(req: NextRequest) {
       const newQIndex = typeof currentQuestionIndex === "number" ? currentQuestionIndex : prevQIndex;
 
       // If new question started, reset answeredTeams if not explicitly provided
-      let updatedAnsweredTeams = roomData.gameState.answeredTeams;
-      if (newQIndex !== prevQIndex) {
-        updatedAnsweredTeams = {};
-      }
+      let updatedAnsweredTeams: Record<string, { optionKey: string; timestamp: number }> = {};
       if (answeredTeams && typeof answeredTeams === "object") {
         updatedAnsweredTeams = { ...answeredTeams };
+      } else if (newQIndex === prevQIndex) {
+        updatedAnsweredTeams = roomData.gameState.answeredTeams;
       }
 
       roomData.gameState = {

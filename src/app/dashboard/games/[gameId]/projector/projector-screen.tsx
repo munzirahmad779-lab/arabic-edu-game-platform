@@ -409,13 +409,58 @@ export function ProjectorScreen({
   // Advance to Next Question
   const handleGoToNextQuestion = () => {
     if (currentQuestionIndex + 1 < totalQuestions) {
-      setCurrentQuestionIndex((idx) => idx + 1);
+      const nextIdx = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextIdx);
       setAnswers({});
       setCorrectArrivalOrder([]);
       setTimerSeconds(QUESTION_DURATION);
       setIsTimerPaused(false);
       setPhase("question");
       playSfx("click");
+
+      // Immediate synchronous broadcast & REST sync to unlock all controllers without waiting for effect
+      const nextSyncPayload = {
+        phase: "question",
+        currentQuestionIndex: nextIdx,
+        timerSeconds: QUESTION_DURATION,
+        totalQuestions,
+        questionText: (questions[nextIdx] || activeQuestion).question_text,
+        answeredTeams: {},
+      };
+
+      try {
+        const supabase = supabaseRef.current;
+        if (supabase && roomCode) {
+          const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
+          const channel = supabase.channel(channelName);
+          void channel.send({
+            type: "broadcast",
+            event: "projector_sync",
+            payload: nextSyncPayload,
+          });
+        }
+      } catch {}
+
+      try {
+        if (typeof window !== "undefined" && "BroadcastChannel" in window && roomCode) {
+          const bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
+          bc.postMessage({
+            event: "projector_sync",
+            payload: nextSyncPayload,
+          });
+          bc.close();
+        }
+      } catch {}
+
+      void fetch("/api/projector/controller", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode,
+          action: "sync_state",
+          ...nextSyncPayload,
+        }),
+      }).catch(() => {});
     } else {
       setPhase("finished");
       playSfx("boost");

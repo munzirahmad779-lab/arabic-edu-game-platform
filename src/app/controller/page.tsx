@@ -86,9 +86,13 @@ export default function ControllerPage() {
     setGameState((prev) => {
       const nextQIndex = typeof incoming.currentQuestionIndex === "number" ? incoming.currentQuestionIndex : prev.currentQuestionIndex;
       const nextPhase = incoming.phase ?? prev.phase;
+      const serverHasAnswered = Boolean(incoming.hasMyTeamAnswered);
 
-      // Question progression detector: if question index changed, unlock instantly!
-      if (prevQIndexRef.current !== -1 && prevQIndexRef.current !== nextQIndex) {
+      // Question progression detector: if question index changed or phase reverted to question, unlock!
+      const isNewQuestion = prevQIndexRef.current !== -1 && prevQIndexRef.current !== nextQIndex;
+      const isReenteredQuestionPhase = prev.phase !== "question" && nextPhase === "question";
+
+      if (isNewQuestion || (isReenteredQuestionPhase && !serverHasAnswered)) {
         setHasLocallyAnswered(false);
         setLastPressedKey(null);
         setStatusMessage(null);
@@ -104,13 +108,15 @@ export default function ControllerPage() {
       }
       prevQIndexRef.current = nextQIndex;
 
-      // If server confirms our team has answered, lock locally
-      const serverHasAnswered = Boolean(incoming.hasMyTeamAnswered);
+      // If server confirms our team has answered, lock locally. If server says not answered, unlock!
       if (serverHasAnswered) {
         setHasLocallyAnswered(true);
         if (incoming.myTeamAnswer) {
           setLastPressedKey(incoming.myTeamAnswer);
         }
+      } else if (incoming.hasMyTeamAnswered === false || isNewQuestion) {
+        setHasLocallyAnswered(false);
+        setLastPressedKey(null);
       }
 
       return {
@@ -120,8 +126,8 @@ export default function ControllerPage() {
         currentQuestionIndex: nextQIndex,
         timerSeconds: typeof incoming.timerSeconds === "number" ? incoming.timerSeconds : prev.timerSeconds,
         totalQuestions: typeof incoming.totalQuestions === "number" ? incoming.totalQuestions : prev.totalQuestions,
-        hasMyTeamAnswered: serverHasAnswered || prev.hasMyTeamAnswered,
-        myTeamAnswer: incoming.myTeamAnswer ?? prev.myTeamAnswer,
+        hasMyTeamAnswered: serverHasAnswered,
+        myTeamAnswer: serverHasAnswered ? (incoming.myTeamAnswer ?? prev.myTeamAnswer) : null,
         isLocked: nextPhase !== "question" || serverHasAnswered,
       };
     });
