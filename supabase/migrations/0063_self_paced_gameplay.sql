@@ -230,7 +230,10 @@ begin
     v_room.started_at as started_at,
     v_return_state as room_state,
     v_participant.id as participant_id,
-    v_participant.student_name as participant_name,
+    coalesce(
+      (select s.name from public.students s where s.id = v_participant.student_id),
+      v_participant.guest_name
+    ) as participant_name,
     v_room.participant_count as participant_count,
     v_room.capacity as capacity,
     v_user_q_index as question_index,

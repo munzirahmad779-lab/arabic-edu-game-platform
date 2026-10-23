@@ -39,15 +39,29 @@ export async function GET(req: NextRequest) {
     if (rpcHadInvalidToken) {
       let roomCode: string | null = null;
       try {
-        const { data: rp } = await supabase
-          .from("room_participants")
-          .select("rooms(code)")
-          .eq("join_token", token)
-          .maybeSingle();
-        const rData = rp?.rooms as unknown as { code?: string } | null;
-        if (rData?.code) roomCode = rData.code;
+        const { data: joinData } = await (supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: Array<{ room_code?: string }> | null }>)(
+          "get_join_session",
+          { p_join_token: token }
+        );
+        if (joinData && joinData[0]?.room_code) {
+          roomCode = joinData[0].room_code;
+        }
       } catch {
         // ignore
+      }
+
+      if (!roomCode) {
+        try {
+          const { data: rp } = await supabase
+            .from("room_participants")
+            .select("rooms(code)")
+            .eq("join_token", token)
+            .maybeSingle();
+          const rData = rp?.rooms as unknown as { code?: string } | null;
+          if (rData?.code) roomCode = rData.code;
+        } catch {
+          // ignore
+        }
       }
       return NextResponse.json({ error: "INVALID_JOIN_TOKEN", ended: true, room_code: roomCode }, { status: 404 });
     }
