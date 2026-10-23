@@ -1,4 +1,5 @@
 import { joinRoom } from "./actions";
+import { getStudentSession } from "@/lib/student-auth";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -14,12 +15,14 @@ export default async function JoinPage({
 
   const prefilledCode = (searchParams.code ?? "").trim().toUpperCase();
   const prefilledName = (searchParams.name ?? "").trim();
+  const studentSession = await getStudentSession();
+  const activeStudentName = prefilledName || studentSession?.name || "";
 
   const ERROR_MESSAGES: Record<string, string> = {
     room_not_found: "Kode ruangan tidak ditemukan atau sudah ditutup. Pastikan kode sudah benar.",
     room_not_open: "Ruangan kuis belum dibuka oleh guru.",
     room_full: "Ruangan kuis sudah penuh.",
-    pin_required: "Ruangan ini membutuhkan PIN untuk masuk.",
+    pin_required: "Ruangan kuis kelas ini mewajibkan PIN siswa Anda (4-6 digit). Masukkan PIN Anda di bawah untuk melanjutkan.",
     invalid_pin: "PIN yang dimasukkan salah.",
     student_not_found: "Nama siswa tidak terdaftar di daftar absensi kelas ini.",
     already_joined: "Nama Anda sudah terdaftar di sesi ruangan ini.",
@@ -104,7 +107,7 @@ export default async function JoinPage({
             <input
               id="join-name"
               name="name"
-              defaultValue={prefilledName}
+              defaultValue={activeStudentName}
               required
               maxLength={100}
               autoFocus={Boolean(prefilledCode && !prefilledName)}
@@ -121,6 +124,7 @@ export default async function JoinPage({
             </label>
             <input
               id="join-pin"
+              autoFocus={searchParams.error === "pin_required"}
               name="pin"
               inputMode="numeric"
               maxLength={6}

@@ -197,33 +197,7 @@ export default async function GamesPage({
         </div>
       </div>
 
-      {/* 🎣 PANEL GAME PASAR & PANCING (MANDIRI) */}
-      <div className="rounded-3xl bg-gradient-to-r from-amber-600 via-teal-700 to-sky-800 p-6 text-white shadow-xl relative overflow-hidden border-2 border-amber-400/60">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-400 text-slate-950 px-3 py-1 text-xs font-black shadow-md">
-              <span>🎣</span>
-              <span>MODUL KHUSUS • FULL-SCREEN PROYEKTOR 2D</span>
-            </div>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl text-white">
-              Ekspedisi Pasar & Dermaga Pancing (Mandiri)
-            </h2>
-            <p className="mt-2 text-sm text-teal-100 leading-relaxed">
-              Jelajahi pasar 2D, pecahkan gembok gerbang mufrodat & aksara Lontara, dan pancing ikan samudra bersama 4 tim di layar proyektor dengan kontroler HP siswa mandiri!
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <Link
-              href="/souq-fishing"
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 px-6 py-3.5 text-sm font-black text-slate-950 shadow-2xl transition hover:scale-105 active:scale-95"
-            >
-              <span>🎣 Buka Panel Game Pasar & Pancing ➔</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <section>
+       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-black text-teal-700">

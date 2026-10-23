@@ -47,6 +47,80 @@ export async function joinRoom(formData: FormData) {
       redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
     }
 
+    if (msg.includes("ALREADY_JOINED")) {
+      try {
+        const { data: roomRow } = await supabase
+          .from("rooms")
+          .select("id, class_id")
+          .eq("code", code)
+          .maybeSingle();
+
+        if (roomRow) {
+          let partRow: { id: string; join_token: string } | null = null;
+
+          // 1. Check if user is logged in with student session
+          const { getStudentSession } = await import("@/lib/student-auth");
+          const studentSession = await getStudentSession();
+          if (studentSession?.student_id) {
+            const { data } = await supabase
+              .from("room_participants")
+              .select("id, join_token")
+              .eq("room_id", roomRow.id)
+              .eq("student_id", studentSession.student_id)
+              .maybeSingle();
+            partRow = data;
+          }
+
+          // 2. Look up by student name in class
+          if (!partRow && roomRow.class_id) {
+            const { data: sMatch } = await supabase
+              .from("students")
+              .select("id")
+              .eq("class_id", roomRow.class_id)
+              .ilike("name", name)
+              .maybeSingle();
+
+            if (sMatch?.id) {
+              const { data } = await supabase
+                .from("room_participants")
+                .select("id, join_token")
+                .eq("room_id", roomRow.id)
+                .eq("student_id", sMatch.id)
+                .maybeSingle();
+              partRow = data;
+            }
+          }
+
+          // 3. Look up by guest_name
+          if (!partRow) {
+            const { data } = await supabase
+              .from("room_participants")
+              .select("id, join_token")
+              .eq("room_id", roomRow.id)
+              .ilike("guest_name", name)
+              .maybeSingle();
+            partRow = data;
+          }
+
+          if (partRow?.join_token) {
+            ActiveRoomStore.registerParticipant({
+              roomId: roomRow.id,
+              joinToken: partRow.join_token,
+              participantId: partRow.id,
+              name,
+            });
+            redirect(`/join/room?token=${encodeURIComponent(partRow.join_token)}`);
+          }
+        }
+      } catch (err) {
+        if (err && typeof err === "object" && "digest" in err) throw err;
+      }
+    }
+
+    if (msg.includes("PIN_REQUIRED")) {
+      redirect(`/join?error=pin_required&code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
+    }
+
     const codeKey =
       msg.includes("ROOM_NOT_FOUND") ? "room_not_found"
       : msg.includes("ROOM_NOT_OPEN") ? "room_not_open"

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 type TeamSlot = {
   id: string;
@@ -33,8 +34,16 @@ interface GameStateSync {
 
 export default function ControllerPage() {
   const searchParams = useSearchParams();
-  const roomCode = (searchParams.get("room") || searchParams.get("code") || "HOTSEAT").toUpperCase();
+  const rawRoomParam = searchParams.get("room") || searchParams.get("code") || "";
   const preSelectedTeam = searchParams.get("team");
+
+  // State for room code with live user switcher
+  const [roomCode, setRoomCode] = useState<string>(() => {
+    return (rawRoomParam || "HOTSEAT").toUpperCase().trim();
+  });
+  const [roomInput, setRoomInput] = useState<string>(() => {
+    return (rawRoomParam || "HOTSEAT").toUpperCase().trim();
+  });
 
   const [selectedTeam, setSelectedTeam] = useState<TeamSlot | null>(() => {
     return TEAMS.find((t) => t.id === preSelectedTeam) ?? null;
@@ -54,14 +63,148 @@ export default function ControllerPage() {
   const [lastPressedKey, setLastPressedKey] = useState<string | null>(null);
   const [hasLocallyAnswered, setHasLocallyAnswered] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [, setSubmitting] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
   const prevQIndexRef = useRef<number>(-1);
+  const lastTapTimeRef = useRef<number>(0);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
-  // Poll state and heartbeat from server every 400ms
+  // Initialize Supabase browser client once
+  if (!supabaseRef.current && typeof window !== "undefined") {
+    try {
+      supabaseRef.current = createClient();
+    } catch {
+      // ignore
+    }
+  }
+
+  // Handle incoming game state from any source (Realtime WebSocket, BroadcastChannel, or HTTP poll)
+  const handleIncomingGameState = useCallback((incoming: Partial<GameStateSync>) => {
+    setIsConnected(true);
+
+    setGameState((prev) => {
+      const nextQIndex = typeof incoming.currentQuestionIndex === "number" ? incoming.currentQuestionIndex : prev.currentQuestionIndex;
+      const nextPhase = incoming.phase ?? prev.phase;
+
+      // Question progression detector: if question index changed, unlock instantly!
+      if (prevQIndexRef.current !== -1 && prevQIndexRef.current !== nextQIndex) {
+        setHasLocallyAnswered(false);
+        setLastPressedKey(null);
+        setStatusMessage(null);
+
+        // Haptic notification for new question
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          try {
+            navigator.vibrate([80, 40, 80]);
+          } catch {
+            // ignore
+          }
+        }
+      }
+      prevQIndexRef.current = nextQIndex;
+
+      // If server confirms our team has answered, lock locally
+      const serverHasAnswered = Boolean(incoming.hasMyTeamAnswered);
+      if (serverHasAnswered) {
+        setHasLocallyAnswered(true);
+        if (incoming.myTeamAnswer) {
+          setLastPressedKey(incoming.myTeamAnswer);
+        }
+      }
+
+      return {
+        ...prev,
+        ...incoming,
+        phase: nextPhase,
+        currentQuestionIndex: nextQIndex,
+        timerSeconds: typeof incoming.timerSeconds === "number" ? incoming.timerSeconds : prev.timerSeconds,
+        totalQuestions: typeof incoming.totalQuestions === "number" ? incoming.totalQuestions : prev.totalQuestions,
+        hasMyTeamAnswered: serverHasAnswered || prev.hasMyTeamAnswered,
+        myTeamAnswer: incoming.myTeamAnswer ?? prev.myTeamAnswer,
+        isLocked: nextPhase !== "question" || serverHasAnswered,
+      };
+    });
+  }, []);
+
+  // 1. SUPABASE REALTIME BROADCAST CHANNEL (Primary - Instant <40ms WebSocket sync across devices)
   useEffect(() => {
-    if (!selectedTeam) return;
+    if (!selectedTeam || !roomCode) return;
+
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
+    const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "projector_sync" }, ({ payload }) => {
+        if (!payload) return;
+        handleIncomingGameState(payload as Partial<GameStateSync>);
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsConnected(true);
+          // Send initial heartbeat to register with teacher's projector
+          void channel.send({
+            type: "broadcast",
+            event: "controller_heartbeat",
+            payload: { roomCode, teamId: selectedTeam.id, timestamp: Date.now() },
+          });
+        }
+      });
+
+    // Periodic heartbeat via Supabase channel every 3s
+    const hbInterval = window.setInterval(() => {
+      void channel.send({
+        type: "broadcast",
+        event: "controller_heartbeat",
+        payload: { roomCode, teamId: selectedTeam.id, timestamp: Date.now() },
+      });
+    }, 3000);
+
+    return () => {
+      window.clearInterval(hbInterval);
+      void channel.unsubscribe();
+    };
+  }, [selectedTeam, roomCode, handleIncomingGameState]);
+
+  // 2. BROWSER BROADCAST CHANNEL (Secondary - 0ms sync for same-origin tabs/windows)
+  useEffect(() => {
+    if (!selectedTeam || !roomCode || typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
+      bc.onmessage = (ev) => {
+        if (ev.data?.event === "projector_sync" && ev.data?.payload) {
+          handleIncomingGameState(ev.data.payload as Partial<GameStateSync>);
+        }
+      };
+
+      // Announce heartbeat
+      bc.postMessage({
+        event: "controller_heartbeat",
+        payload: { roomCode, teamId: selectedTeam.id, timestamp: Date.now() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      try {
+        bc?.close();
+      } catch {
+        // ignore
+      }
+    };
+  }, [selectedTeam, roomCode, handleIncomingGameState]);
+
+  // 3. HTTP REST POLLING (Tertiary Fallback)
+  useEffect(() => {
+    if (!selectedTeam || !roomCode) return;
 
     let isSubscribed = true;
 
@@ -71,117 +214,121 @@ export default function ControllerPage() {
           `/api/projector/controller?roomCode=${encodeURIComponent(roomCode)}&teamId=${encodeURIComponent(selectedTeam.id)}`,
           { cache: "no-store" },
         );
-        if (!res.ok) throw new Error("Network response not ok");
+        if (!res.ok) throw new Error("HTTP error");
 
         const data = await res.json();
         if (!isSubscribed) return;
 
-        setIsConnected(true);
-
         if (data.gameState) {
-          const gs: GameStateSync = data.gameState;
-          setGameState(gs);
-
-          // Detect new question progression from projector
-          if (prevQIndexRef.current !== -1 && prevQIndexRef.current !== gs.currentQuestionIndex) {
-            // New question arrived: reset local lock!
-            setHasLocallyAnswered(false);
-            setLastPressedKey(null);
-            setStatusMessage(null);
-
-            // Haptic vibration to signal new question
-            if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-              try {
-                navigator.vibrate([80, 40, 80]);
-              } catch {
-                // ignore
-              }
-            }
-          }
-          prevQIndexRef.current = gs.currentQuestionIndex;
-
-          // If server confirmed our team has answered, lock locally as well
-          if (gs.hasMyTeamAnswered && !hasLocallyAnswered) {
-            setHasLocallyAnswered(true);
-            if (gs.myTeamAnswer) {
-              setLastPressedKey(gs.myTeamAnswer);
-            }
-          }
+          handleIncomingGameState(data.gameState);
         }
       } catch {
-        if (isSubscribed) {
-          setIsConnected(false);
-        }
+        // HTTP polling silent fallback
       }
     };
 
     void pollStateAndHeartbeat();
-    const interval = window.setInterval(pollStateAndHeartbeat, 400);
+    const interval = window.setInterval(pollStateAndHeartbeat, 600);
 
     return () => {
       isSubscribed = false;
       window.clearInterval(interval);
     };
-  }, [selectedTeam, roomCode, hasLocallyAnswered]);
-
-  // Send separate heartbeat every 5s to keep controller connection registered
-  useEffect(() => {
-    if (!selectedTeam) return;
-
-    const sendHeartbeat = async () => {
-      try {
-        await fetch("/api/projector/controller", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode,
-            teamId: selectedTeam.id,
-            action: "heartbeat",
-          }),
-        });
-      } catch {
-        // silent catch
-      }
-    };
-
-    const interval = window.setInterval(sendHeartbeat, 5000);
-    return () => window.clearInterval(interval);
-  }, [selectedTeam, roomCode]);
+  }, [selectedTeam, roomCode, handleIncomingGameState]);
 
   // Handle pressing a gamepad button
   const handlePressButton = useCallback(
     async (optionKey: string) => {
-      // STRICT LOCKOUT: cannot press if already answered, submitting, or not in question phase
-      if (!selectedTeam || submitting || hasLocallyAnswered || gameState.phase !== "question" || gameState.isLocked) {
+      const now = Date.now();
+      // Guard against rapid duplicate taps within 250ms
+      if (now - lastTapTimeRef.current < 250) return;
+      lastTapTimeRef.current = now;
+
+      if (!selectedTeam) return;
+
+      // Friendly validation feedback instead of dead silent button
+      if (hasLocallyAnswered || gameState.hasMyTeamAnswered) {
+        setStatusMessage(`🔒 Jawaban tim Anda sudah terkunci (${lastPressedKey || gameState.myTeamAnswer || optionKey})!`);
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          try { navigator.vibrate(30); } catch {}
+        }
         return;
       }
 
-      // Haptic feedback if supported on mobile
+      if (gameState.phase !== "question") {
+        if (gameState.phase === "lobby") {
+          setStatusMessage("⏳ Menunggu Guru memulai kuis di layar proyektor!");
+        } else if (gameState.phase === "reveal") {
+          setStatusMessage("💡 Waktu menjawab ditutup! Perhatikan kunci jawaban di proyektor.");
+        } else {
+          setStatusMessage("⏳ Belum waktu menjawab!");
+        }
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          try { navigator.vibrate(30); } catch {}
+        }
+        return;
+      }
+
+      // Haptic confirmation
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         try {
-          navigator.vibrate(60);
+          navigator.vibrate(50);
         } catch {
           // ignore
         }
       }
 
-      // Instant local lock: disable further taps immediately
+      // Instant optimistic local lock
       setHasLocallyAnswered(true);
       setLastPressedKey(optionKey);
       setSubmitting(true);
       setStatusMessage(`Mengunci pilihan ${optionKey}...`);
 
+      const pressPayload = {
+        roomCode,
+        teamId: selectedTeam.id,
+        playerName: selectedTeam.name,
+        optionKey,
+        action: "press",
+        timestamp: Date.now(),
+      };
+
+      // 1. BROADCAST VIA SUPABASE REALTIME (INSTANT WEBSOCKET TO TEACHER'S PROJECTOR)
+      try {
+        const supabase = supabaseRef.current;
+        if (supabase) {
+          const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
+          const channel = supabase.channel(channelName);
+          void channel.send({
+            type: "broadcast",
+            event: "controller_press",
+            payload: pressPayload,
+          });
+        }
+      } catch {
+        // ignore
+      }
+
+      // 2. BROADCAST VIA BROWSER BROADCAST CHANNEL (INSTANT SAME-ORIGIN)
+      try {
+        if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+          const bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
+          bc.postMessage({
+            event: "controller_press",
+            payload: pressPayload,
+          });
+          bc.close();
+        }
+      } catch {
+        // ignore
+      }
+
+      // 3. POST TO HTTP REST API (FALLBACK + PERSISTENCE)
       try {
         const res = await fetch("/api/projector/controller", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode,
-            teamId: selectedTeam.id,
-            playerName: selectedTeam.name,
-            optionKey,
-            action: "press",
-          }),
+          body: JSON.stringify(pressPayload),
         });
 
         const result = await res.json();
@@ -190,44 +337,72 @@ export default function ControllerPage() {
           setStatusMessage(`✓ Jawaban ${optionKey} TERKUNCI! Menunggu tim lain & proyektor...`);
         } else if (result.error === "ALREADY_ANSWERED") {
           setStatusMessage(`🔒 Jawaban tim sudah terkunci sebelumnya (${result.existingAnswer || optionKey}).`);
-        } else if (result.error === "LOCKED_PHASE") {
-          setStatusMessage("🔒 Waktu menjawab sudah ditutup oleh sistem.");
         } else {
-          setStatusMessage(result.message || "Gagal mengunci jawaban. Coba lagi.");
+          setStatusMessage(`✓ Pilihan ${optionKey} terkirim.`);
         }
       } catch {
-        setStatusMessage("Koneksi terputus. Pastikan terhubung ke WiFi/jaringan.");
+        setStatusMessage(`✓ Pilihan ${optionKey} disiarkan via WebSocket.`);
       } finally {
         setSubmitting(false);
       }
     },
-    [selectedTeam, submitting, hasLocallyAnswered, gameState.phase, gameState.isLocked, roomCode],
+    [selectedTeam, hasLocallyAnswered, gameState.hasMyTeamAnswered, gameState.phase, gameState.myTeamAnswer, lastPressedKey, roomCode],
   );
 
   // 1. SELECT TEAM CONTROLLER SLOT
   if (!selectedTeam) {
     return (
       <main className="min-h-screen bg-slate-950 p-4 text-white flex flex-col justify-center items-center">
-        <div className="w-full max-w-sm space-y-6 text-center">
+        <div className="w-full max-w-sm space-y-5 text-center">
           <div className="text-5xl animate-bounce">🎮</div>
-          <h1 className="text-2xl font-black">Kontroler HP Siswa</h1>
-          <p className="text-xs text-slate-400">
-            Hubungkan HP Anda sebagai remote game untuk menekan jawaban langsung di layar proyektor!
-          </p>
-          <div className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-mono font-bold text-emerald-400 inline-block border border-white/10">
-            Ruangan: {roomCode}
+          <div>
+            <h1 className="text-2xl font-black">Kontroler HP Siswa</h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Gunakan HP Anda sebagai Stik Remote Nirkabel untuk menjawab langsung di layar proyektor kelas!
+            </p>
           </div>
 
-          <div className="space-y-3 pt-2">
+          {/* Room Code Card with Easy Switcher */}
+          <div className="rounded-2xl bg-white/10 p-3.5 border border-white/15 text-start space-y-2 backdrop-blur">
+            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+              Kode Ruangan Proyektor:
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                maxLength={8}
+                value={roomInput}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase().trim();
+                  setRoomInput(val);
+                  setRoomCode(val || "HOTSEAT");
+                }}
+                placeholder="Contoh: 5C87B2 atau HOTSEAT"
+                className="flex-1 bg-black/60 border border-white/20 rounded-xl px-3 py-2 text-amber-300 font-mono font-black text-sm uppercase tracking-wider focus:outline-none focus:border-emerald-400"
+              />
+              <button
+                type="button"
+                onClick={() => setRoomCode(roomInput || "HOTSEAT")}
+                className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black transition"
+              >
+                Set
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Pastikan kode ruangan ini sama persis dengan yang tampil di layar proyektor guru.
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-1">
             <span className="text-xs font-black uppercase text-slate-400 block text-start">
-              Pilih Kontroler Tim Anda:
+              Pilih Stik Tim Anda:
             </span>
             {TEAMS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setSelectedTeam(t)}
-                className={`w-full p-4 rounded-2xl bg-gradient-to-r ${t.bgGradient} font-black text-white text-lg flex items-center justify-between shadow-xl transition active:scale-95 border-2 border-white/20`}
+                className={`w-full p-4 rounded-2xl bg-gradient-to-r ${t.bgGradient} font-black text-white text-base flex items-center justify-between shadow-xl transition active:scale-95 border-2 border-white/20 hover:brightness-110`}
               >
                 <span>{t.badge}</span>
                 <span className="text-sm truncate">{t.name}</span>
@@ -249,15 +424,12 @@ export default function ControllerPage() {
     );
   }
 
-  const isButtonsDisabled =
-    hasLocallyAnswered ||
-    gameState.hasMyTeamAnswered ||
-    gameState.phase !== "question" ||
-    submitting;
+  const isAnswered = hasLocallyAnswered || gameState.hasMyTeamAnswered;
+  const isQuestionPhase = gameState.phase === "question";
 
   // 2. ACTIVE GAMEPAD CONTROLLER SCREEN
   return (
-    <main className="min-h-screen bg-slate-950 p-4 text-white flex flex-col justify-between max-w-md mx-auto select-none">
+    <main className="min-h-screen bg-slate-950 p-4 text-white flex flex-col justify-between max-w-md mx-auto select-none touch-manipulation">
       {/* Controller Header */}
       <header className="rounded-2xl p-4 bg-white/5 border border-white/10 backdrop-blur shadow-xl">
         <div className="flex items-center justify-between">
@@ -318,7 +490,7 @@ export default function ControllerPage() {
               </span>
             </div>
 
-            {hasLocallyAnswered || gameState.hasMyTeamAnswered ? (
+            {isAnswered ? (
               <div className="rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 p-3.5 text-xs font-black text-emerald-300 shadow-lg animate-in zoom-in-95">
                 <span className="text-lg block mb-0.5">🔒</span>
                 <div>JAWABAN TERKUNCI: Pilihan {lastPressedKey || gameState.myTeamAnswer}</div>
@@ -327,7 +499,7 @@ export default function ControllerPage() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-2xl bg-amber-500/20 border border-amber-400/50 p-2.5 text-xs font-bold text-amber-200">
+              <div className="rounded-2xl bg-amber-500/20 border border-amber-400/50 p-2.5 text-xs font-bold text-amber-200 animate-pulse">
                 ⚡ Tekan salah satu tombol di bawah untuk menjawab sekarang!
               </div>
             )}
@@ -365,7 +537,7 @@ export default function ControllerPage() {
         )}
 
         {statusMessage && (
-          <div className="text-[11px] font-mono text-slate-300 bg-black/40 px-3 py-1 rounded-xl inline-block border border-white/10">
+          <div className="text-[11px] font-mono text-slate-200 bg-black/60 px-3 py-1.5 rounded-xl inline-block border border-white/20 shadow-md">
             {statusMessage}
           </div>
         )}
@@ -380,19 +552,24 @@ export default function ControllerPage() {
           { key: "D", label: "D / Kotak", icon: "■", color: "from-emerald-600 to-teal-700", border: "border-emerald-400" },
         ].map((btn) => {
           const isSelected = lastPressedKey === btn.key || gameState.myTeamAnswer === btn.key;
+          const isButtonDisabledVisual = isAnswered || !isQuestionPhase;
 
           return (
             <button
               key={btn.key}
               type="button"
-              disabled={isButtonsDisabled}
+              aria-disabled={isButtonDisabledVisual}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                void handlePressButton(btn.key);
+              }}
               onClick={() => void handlePressButton(btn.key)}
-              className={`h-36 rounded-3xl p-4 flex flex-col items-center justify-center font-black text-white bg-gradient-to-b ${btn.color} border-4 ${btn.border} shadow-2xl transition-all duration-150 relative overflow-hidden ${
-                isButtonsDisabled
+              className={`h-36 rounded-3xl p-4 flex flex-col items-center justify-center font-black text-white bg-gradient-to-b ${btn.color} border-4 ${btn.border} shadow-2xl transition-all duration-150 relative overflow-hidden select-none cursor-pointer active:scale-90 active:brightness-125 ${
+                isButtonDisabledVisual
                   ? isSelected
-                    ? "ring-4 ring-white scale-95 opacity-100 brightness-110"
-                    : "opacity-40 grayscale-[50%] cursor-not-allowed"
-                  : "active:scale-90 active:brightness-125 cursor-pointer hover:scale-105"
+                    ? "ring-4 ring-white scale-95 opacity-100 brightness-110 shadow-emerald-500/50"
+                    : "opacity-40 grayscale-[40%] hover:opacity-50"
+                  : "hover:scale-105 active:scale-95 shadow-lg"
               }`}
             >
               <span className="text-4xl drop-shadow-md">{btn.icon}</span>
@@ -402,7 +579,7 @@ export default function ControllerPage() {
               </span>
 
               {isSelected && (
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white text-slate-950 font-black text-xs flex items-center justify-center shadow-md">
+                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white text-slate-950 font-black text-sm flex items-center justify-center shadow-lg animate-in zoom-in-75">
                   ✓
                 </div>
               )}

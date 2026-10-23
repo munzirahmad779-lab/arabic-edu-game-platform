@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
@@ -184,6 +185,15 @@ export function ProjectorScreen({
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+
+  if (!supabaseRef.current && typeof window !== "undefined") {
+    try {
+      supabaseRef.current = createClient();
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -425,32 +435,129 @@ export function ProjectorScreen({
     setPhase("question");
   };
 
-  // Continuously synchronize projector state with controller API
+  // Supabase Realtime Broadcast Listener (Instant <40ms WebSocket sync)
+  useEffect(() => {
+    if (!roomCode) return;
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
+    const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "controller_press" }, ({ payload }) => {
+        if (!payload) return;
+        const { teamId, optionKey } = payload;
+        if (teamId && optionKey && phase === "question") {
+          handleRecordAnswer(teamId, optionKey);
+        }
+      })
+      .on("broadcast", { event: "controller_heartbeat" }, ({ payload }) => {
+        if (payload?.teamId) {
+          setActiveControllers((prev) => Array.from(new Set([...prev, payload.teamId])));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      void channel.unsubscribe();
+    };
+  }, [roomCode, phase, handleRecordAnswer]);
+
+  // Same-origin BroadcastChannel (Instant 0ms sync for multi-tab testing)
+  useEffect(() => {
+    if (!roomCode || typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
+      bc.onmessage = (ev) => {
+        if (ev.data?.event === "controller_press" && ev.data?.payload) {
+          const { teamId, optionKey } = ev.data.payload;
+          if (teamId && optionKey && phase === "question") {
+            handleRecordAnswer(teamId, optionKey);
+          }
+        } else if (ev.data?.event === "controller_heartbeat" && ev.data?.payload?.teamId) {
+          const tId = ev.data.payload.teamId;
+          setActiveControllers((prev) => Array.from(new Set([...prev, tId])));
+        }
+      };
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      try {
+        bc?.close();
+      } catch {
+        // ignore
+      }
+    };
+  }, [roomCode, phase, handleRecordAnswer]);
+
+  // Continuously synchronize projector state with controller API & Realtime channels
   useEffect(() => {
     const answeredTeamsObj: Record<string, { optionKey: string; timestamp: number }> = {};
     for (const [tId, rec] of Object.entries(answers)) {
       answeredTeamsObj[tId] = { optionKey: rec.optionKey, timestamp: rec.answeredAt };
     }
 
+    const syncPayload = {
+      phase: gameStarted ? phase : "lobby",
+      currentQuestionIndex,
+      timerSeconds,
+      totalQuestions,
+      questionText: activeQuestion.question_text,
+      answeredTeams: answeredTeamsObj,
+    };
+
+    // 1. Supabase Realtime Broadcast
+    try {
+      const supabase = supabaseRef.current;
+      if (supabase && roomCode) {
+        const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
+        const channel = supabase.channel(channelName);
+        void channel.send({
+          type: "broadcast",
+          event: "projector_sync",
+          payload: syncPayload,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2. Browser BroadcastChannel
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window && roomCode) {
+        const bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
+        bc.postMessage({
+          event: "projector_sync",
+          payload: syncPayload,
+        });
+        bc.close();
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3. HTTP REST sync
     void fetch("/api/projector/controller", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         roomCode,
         action: "sync_state",
-        phase: gameStarted ? phase : "lobby",
-        currentQuestionIndex,
-        timerSeconds,
-        totalQuestions,
-        questionText: activeQuestion.question_text,
-        answeredTeams: answeredTeamsObj,
+        ...syncPayload,
       }),
     }).catch(() => {});
   }, [gameStarted, phase, currentQuestionIndex, timerSeconds, totalQuestions, activeQuestion.question_text, answers, roomCode]);
 
   // Wireless Phone Controller Poller
   useEffect(() => {
-    if (!gameStarted || phase === "finished") return;
+    if (phase === "finished") return;
 
     const interval = setInterval(async () => {
       try {
@@ -743,8 +850,33 @@ export function ProjectorScreen({
             </div>
 
             <h2 className="text-2xl md:text-4xl font-black text-white">
-              Buka di HP Siswa: <span className="text-emerald-400 underline font-mono">{controllerOrigin}/controller</span>
+              Buka di HP Siswa:{" "}
+              <span className="text-emerald-400 underline font-mono select-all">
+                {controllerOrigin}/controller?room={roomCode}
+              </span>
             </h2>
+
+            {/* Visual indicators for 4 team controllers */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 max-w-2xl mx-auto">
+              {teams.map((t) => {
+                const isStickConnected = activeControllers.includes(t.id);
+                return (
+                  <div
+                    key={t.id}
+                    className={`p-2.5 rounded-2xl border text-center transition-all ${
+                      isStickConnected
+                        ? "bg-emerald-950/60 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/20"
+                        : "bg-black/40 border-white/10 text-slate-400 opacity-60"
+                    }`}
+                  >
+                    <div className="text-xs font-black">{t.name}</div>
+                    <div className="text-[10px] font-mono mt-1 font-bold">
+                      {isStickConnected ? "🟢 STIK TERHUBUNG" : "⚪ MENUNGGU HP"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <div className="px-5 py-3 rounded-2xl bg-black/50 border border-white/20 text-center">

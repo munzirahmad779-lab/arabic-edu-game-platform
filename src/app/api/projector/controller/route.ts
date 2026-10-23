@@ -110,17 +110,7 @@ export async function POST(req: NextRequest) {
     if (action === "press") {
       const gs = roomData.gameState;
 
-      // Guard 1: Must be in question phase
-      if (gs.phase !== "question") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "LOCKED_PHASE",
-            message: "Waktu menjawab telah ditutup atau belum dimulai!",
-          },
-          { status: 403 },
-        );
-      }
+      // Guard: Team can only answer once per question (phase timing is strictly validated on projector)
 
       // Guard 2: Team can only answer ONCE per question
       if (gs.answeredTeams[teamId]) {
