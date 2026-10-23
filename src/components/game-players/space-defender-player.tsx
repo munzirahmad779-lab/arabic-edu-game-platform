@@ -72,6 +72,9 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const options = useMemo(() => currentQ?.options ?? [], [currentQ]);
   const correctKey = (currentQ?.correct_option_key ?? "A").trim().toUpperCase();
 
+  const isShootingRef = useRef(false);
+  const handleShootOptionRef = useRef<(option: RawOption) => void>(() => {});
+
   // Initialize stars once
   useEffect(() => {
     const stars: Star[] = [];
@@ -90,7 +93,8 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   // Handle firing at a specific option
   const handleShootOption = useCallback(
     (option: RawOption) => {
-      if (selectedTargetKey || isGameOver) return;
+      if (selectedTargetKey || isGameOver || isShootingRef.current) return;
+      isShootingRef.current = true;
 
       const optKey = option.option_key.toUpperCase();
       setSelectedTargetKey(optKey);
@@ -165,6 +169,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
       setTimeout(() => {
         setFeedback(null);
         setSelectedTargetKey(null);
+        isShootingRef.current = false;
         if (currentIdx + 1 < questionList.length) {
           setCurrentIdx((idx) => idx + 1);
         } else {
@@ -175,6 +180,10 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
     },
     [selectedTargetKey, isGameOver, options, correctKey, streak, currentIdx, questionList.length, onFinish]
   );
+
+  useEffect(() => {
+    handleShootOptionRef.current = handleShootOption;
+  }, [handleShootOption]);
 
   // Keyboard navigation (A/D or Arrows to move, Space/Enter or 1-4 to shoot)
   useEffect(() => {

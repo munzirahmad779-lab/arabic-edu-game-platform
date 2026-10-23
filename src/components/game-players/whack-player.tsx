@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion, RawOption } from "@/lib/game-engine/types";
 
@@ -22,6 +22,7 @@ export function WhackPlayer({
   const [health, setHealth] = useState(3);
   const [timerLeft, setTimerLeft] = useState(25);
   const [isGameOver, setIsGameOver] = useState(false);
+  const isProcessingBonkRef = useRef(false);
   const [activeHoles, setActiveHoles] = useState<
     Array<{
       holeId: number;
@@ -111,7 +112,8 @@ export function WhackPlayer({
 
   // Handle Bonk
   const handleWhack = (opt: RawOption, e: React.MouseEvent) => {
-    if (isGameOver) return;
+    if (isGameOver || isProcessingBonkRef.current) return;
+    isProcessingBonkRef.current = true;
 
     const rect = e.currentTarget.getBoundingClientRect();
     setHammerPos({
@@ -131,6 +133,7 @@ export function WhackPlayer({
 
       // Advance question
       setTimeout(() => {
+        isProcessingBonkRef.current = false;
         if (currentQIndex + 1 < questionList.length) {
           setCurrentQIndex((idx) => idx + 1);
           setTimerLeft(25);
@@ -152,6 +155,9 @@ export function WhackPlayer({
         }
         return h - 1;
       });
+      setTimeout(() => {
+        isProcessingBonkRef.current = false;
+      }, 400);
     }
   };
 

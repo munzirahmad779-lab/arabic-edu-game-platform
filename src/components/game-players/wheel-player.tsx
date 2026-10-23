@@ -116,6 +116,17 @@ export function WheelPlayer({
             playSfx("wrong");
             setSpinResult(`✗ SALAH: ${picked.option_key} (Bukan ${correctKey})`);
           }
+
+          // Otomatis lanjut ke soal berikutnya setelah putaran selesai (delay 1.8 detik)
+          setTimeout(() => {
+            if (currentQIndex + 1 < questionList.length) {
+              setCurrentQIndex((idx) => idx + 1);
+              setSpinResult(null);
+            } else {
+              setIsFinished(true);
+              onFinish?.(score + (isCorrect ? 150 : 0));
+            }
+          }, 1800);
         }
       }
 

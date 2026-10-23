@@ -43,6 +43,9 @@ export function BalloonPlayer({
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
+  const isProcessingHitRef = useRef(false);
+  const handlePopBalloonRef = useRef<(b: (typeof balloonsRef.current)[0]) => void>(() => {});
+
   // Balloons state with adaptive sizing
   const balloonsRef = useRef<
     Array<{
@@ -101,6 +104,8 @@ export function BalloonPlayer({
   // Handle Balloon Pop Click
   const handlePopBalloon = useCallback(
     (b: (typeof balloonsRef.current)[0]) => {
+      if (isProcessingHitRef.current || isGameOver) return;
+      isProcessingHitRef.current = true;
       b.popped = true;
       const isCorrect = b.option.option_key.toUpperCase().trim() === correctKey;
 
@@ -127,11 +132,12 @@ export function BalloonPlayer({
 
         setTimeout(() => {
           setFeedback(null);
+          isProcessingHitRef.current = false;
           if (currentQIndex + 1 < questionList.length) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
-            onFinish?.(score + 100);
+            onFinish?.(score + 100 + streak * 20);
           }
         }, 700);
       } else {
@@ -148,11 +154,28 @@ export function BalloonPlayer({
           }
           return h - 1;
         });
-        setTimeout(() => setFeedback(null), 1000);
+        setTimeout(() => {
+          setFeedback(null);
+          isProcessingHitRef.current = false;
+        }, 1000);
       }
     },
-    [correctKey, currentQIndex, questionList.length, streak, score, onFinish],
+    [correctKey, currentQIndex, questionList.length, streak, score, onFinish, isGameOver],
   );
+
+  useEffect(() => {
+    handlePopBalloonRef.current = handlePopBalloon;
+  }, [handlePopBalloon]);
+
+  // Respawn balloons when active question changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const width = canvas.width || canvas.parentElement?.clientWidth || 900;
+      const height = canvas.height || canvas.parentElement?.clientHeight || 550;
+      spawnBalloons(width, height);
+    }
+  }, [currentQIndex, spawnBalloons]);
 
   // Canvas Render Loop
   useEffect(() => {
@@ -278,7 +301,7 @@ export function BalloonPlayer({
         const currentX = b.x + Math.sin(b.swayOffset) * 18;
         const dist = Math.hypot(clickX - currentX, (clickY - b.y) / 1.2);
         if (dist <= b.radiusX * 1.15) {
-          handlePopBalloon(b);
+          handlePopBalloonRef.current(b);
           break;
         }
       }
@@ -298,7 +321,7 @@ export function BalloonPlayer({
       canvas.removeEventListener("click", handleClick);
       window.removeEventListener("resize", handleResize);
     };
-  }, [spawnBalloons, handlePopBalloon]);
+  }, []); // Run canvas loop once without tearing down on state changes
 
   return (
     <div
