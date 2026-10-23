@@ -23,9 +23,13 @@ export async function GET(req: NextRequest) {
         "get_game_session",
         { p_join_token: token }
       );
-      if (rpcError && (rpcError.message?.includes("INVALID") || rpcError.code === "P0001")) {
-        rpcHadInvalidToken = true;
-      } else if (!rpcError && rpcData && rpcData[0]) {
+      if (rpcError) {
+        if (rpcError.message?.includes("INVALID_JOIN_TOKEN") || rpcError.message?.includes("TOKEN_NOT_FOUND")) {
+          rpcHadInvalidToken = true;
+        } else {
+          console.warn("[/api/rooms/session] Supabase RPC lookup notice:", rpcError);
+        }
+      } else if (rpcData && rpcData[0]) {
         rpcSession = { ...(rpcData[0] as Record<string, unknown>) };
       }
     } catch (e) {
@@ -33,7 +37,19 @@ export async function GET(req: NextRequest) {
     }
 
     if (rpcHadInvalidToken) {
-      return NextResponse.json({ error: "INVALID_JOIN_TOKEN", ended: true }, { status: 404 });
+      let roomCode: string | null = null;
+      try {
+        const { data: rp } = await supabase
+          .from("room_participants")
+          .select("rooms(code)")
+          .eq("join_token", token)
+          .maybeSingle();
+        const rData = rp?.rooms as unknown as { code?: string } | null;
+        if (rData?.code) roomCode = rData.code;
+      } catch {
+        // ignore
+      }
+      return NextResponse.json({ error: "INVALID_JOIN_TOKEN", ended: true, room_code: roomCode }, { status: 404 });
     }
 
     if (rpcSession) {

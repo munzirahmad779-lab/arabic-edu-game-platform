@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { resumeBackgroundAudio } from "@/lib/bg-audio-events";
 import { Confetti } from "@/components/confetti";
@@ -132,6 +133,7 @@ export default function JoinRoomPage({
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loadError, setLoadError] = useState("");
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [endedRoomCode, setEndedRoomCode] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [now, setNow] = useState(Date.now());
   const [submitting, setSubmitting] = useState(false);
@@ -189,6 +191,7 @@ export default function JoinRoomPage({
 
       if (!res.ok || raw.error) {
         if (raw.ended || raw.error === "INVALID_JOIN_TOKEN") {
+          if (raw.room_code) setEndedRoomCode(raw.room_code);
           setSessionEnded(true);
           return;
         }
@@ -450,26 +453,34 @@ export default function JoinRoomPage({
   }
 
   if (sessionEnded) {
+    const returnJoinUrl = endedRoomCode ? `/join?code=${encodeURIComponent(endedRoomCode)}` : "/join";
     return (
       <main
-        className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-4 text-white"
+        className="min-h-screen bg-slate-950 p-4 text-white flex flex-col justify-center items-center"
         dir={isRtl ? "rtl" : "ltr"}
       >
-        <div className="mx-auto max-w-2xl py-16 text-center">
-          <div className="rounded-[2rem] bg-white/10 p-8 shadow-2xl backdrop-blur">
-            <div className="text-6xl">🔁</div>
-            <h1 className="mt-4 text-2xl font-black">
+        <div className="mx-auto max-w-md w-full py-12 text-center">
+          <div className="rounded-[2.5rem] bg-slate-900 border-2 border-amber-500/30 p-8 shadow-2xl backdrop-blur">
+            <div className="text-6xl animate-bounce">🔁</div>
+            <h1 className="mt-5 text-2xl font-black text-amber-300">
               {t.room_session_closed_title}
             </h1>
-            <p className="mt-3 text-white/80">
+            <p className="mt-3 text-sm text-slate-200 leading-relaxed">
               {t.room_session_closed_desc}
             </p>
-            <a
-              href="/join"
-              className="mt-6 inline-flex rounded-2xl bg-white px-6 py-3 font-black text-slate-900 shadow-lg transition hover:bg-slate-100"
-            >
-              {t.room_back_join}
-            </a>
+            {endedRoomCode && (
+              <div className="mt-4 inline-block rounded-xl bg-amber-500/10 border border-amber-400/30 px-3.5 py-1.5 text-xs font-mono font-bold text-amber-300">
+                Kode Ruangan: {endedRoomCode}
+              </div>
+            )}
+            <div className="mt-8 space-y-3">
+              <Link
+                href={returnJoinUrl}
+                className="w-full inline-flex justify-center items-center rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 px-6 font-black text-slate-950 shadow-xl transition active:scale-95 hover:brightness-110"
+              >
+                🎮 {endedRoomCode ? "Gabung ke Sesi Baru" : t.room_back_join}
+              </Link>
+            </div>
           </div>
         </div>
       </main>
@@ -484,7 +495,7 @@ export default function JoinRoomPage({
       >
         <div className="mx-auto max-w-2xl py-16 text-center">
           <div className="text-5xl">🎮</div>
-          <h1 className="mt-4 text-2xl font-black">{t.room_loading}</h1>
+          <h1 className="mt-4 text-2xl font-black text-white">{t.room_loading}</h1>
           {loadError ? (
             <>
               <p className="mt-3 text-sm text-white/80">{loadError}</p>
@@ -531,7 +542,7 @@ export default function JoinRoomPage({
         <div className="relative mx-auto max-w-3xl space-y-6 py-8">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🏁</div>
-            <h1 className="mt-4 text-3xl font-black">{t.room_ended_title}</h1>
+            <h1 className="mt-4 text-3xl font-black text-white">{t.room_ended_title}</h1>
             <p className="mt-2 text-white/80">{session.game_name}</p>
 
             {me ? (
@@ -692,7 +703,7 @@ export default function JoinRoomPage({
         <div className="mx-auto max-w-2xl py-12">
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🔒</div>
-            <h1 className="mt-4 text-3xl font-black">
+            <h1 className="mt-4 text-3xl font-black text-white">
               {t.room_locked_title}
             </h1>
             <p className="mt-3 text-white/80">{t.room_locked_desc}</p>
@@ -718,7 +729,7 @@ export default function JoinRoomPage({
                 {MODE_LABEL[session.game_mode] ?? session.game_mode}
               </span>
             </div>
-            <h1 className="mt-2 text-3xl font-black">{session.game_name}</h1>
+            <h1 className="mt-2 text-3xl font-black text-white">{session.game_name}</h1>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">
@@ -821,7 +832,7 @@ export default function JoinRoomPage({
         />
       ) : (
         <div className="rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
-          <h2 className="text-2xl font-black">{t.room_preparing}</h2>
+          <h2 className="text-2xl font-black text-white">{t.room_preparing}</h2>
           {loadError ? (
             <p className="mt-3 text-sm text-white/80">{loadError}</p>
           ) : null}
