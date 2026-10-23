@@ -41,6 +41,9 @@ export function AirplanePlayer({
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
+  const isProcessingHitRef = useRef(false);
+  const handleHitCloudRef = useRef<(opt: RawOption) => void>(() => {});
+
   // Plane physics state
   const planeRef = useRef({
     x: 100,
@@ -78,14 +81,14 @@ export function AirplanePlayer({
 
   // Spawn clouds for current question
   const spawnClouds = useCallback((width: number, height: number) => {
-    const opts = activeQuestion.options.slice(0, 4);
+    const opts = (activeQuestion.options || []).slice(0, 4);
     const cloudHeight = 72;
     const availableHeight = height - 120;
     const slotHeight = availableHeight / Math.max(opts.length, 1);
 
     cloudsRef.current = opts.map((opt, i) => {
       const centerY = 90 + i * slotHeight + slotHeight / 2;
-      const textLen = (opt.option_text || "").length;
+      const textLen = String(opt.option_text || "").length;
       // Adaptive cloud width so full text fits without truncation
       const cloudWidth = Math.max(200, Math.min(340, textLen * 9.5 + 85));
 
@@ -94,7 +97,11 @@ export function AirplanePlayer({
         y: centerY - cloudHeight / 2,
         width: cloudWidth,
         height: cloudHeight,
-        option: opt,
+        option: {
+          ...opt,
+          option_key: String(opt.option_key || "A"),
+          option_text: String(opt.option_text || ""),
+        },
         hit: false,
       };
     });
@@ -103,7 +110,11 @@ export function AirplanePlayer({
   // Handle Answer Hit
   const handleHitCloud = useCallback(
     (opt: RawOption) => {
-      const isCorrect = opt.option_key.toUpperCase().trim() === correctKey;
+      if (isProcessingHitRef.current || isGameOver) return;
+      isProcessingHitRef.current = true;
+
+      const hitKey = String(opt.option_key || "").toUpperCase().trim();
+      const isCorrect = hitKey === correctKey;
 
       // Spawn burst particles
       const p = planeRef.current;
@@ -129,11 +140,12 @@ export function AirplanePlayer({
 
         setTimeout(() => {
           setFeedback(null);
+          isProcessingHitRef.current = false;
           if (currentQIndex + 1 < questions.length) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
-            onFinish?.(score + 100);
+            onFinish?.(score + 100 + streak * 20);
           }
         }, 800);
       } else {
@@ -151,6 +163,7 @@ export function AirplanePlayer({
 
         setTimeout(() => {
           setFeedback(null);
+          isProcessingHitRef.current = false;
           if (currentQIndex + 1 < questions.length) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
@@ -159,8 +172,23 @@ export function AirplanePlayer({
         }, 1200);
       }
     },
-    [correctKey, currentQIndex, questions.length, streak, score, onFinish],
+    [correctKey, currentQIndex, questions.length, streak, score, onFinish, isGameOver],
   );
+
+  // Sync ref so canvas loop always invokes the freshest callback without teardown
+  useEffect(() => {
+    handleHitCloudRef.current = handleHitCloud;
+  }, [handleHitCloud]);
+
+  // Respawn clouds when active question changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const width = canvas.width || canvas.parentElement?.clientWidth || 900;
+      const height = canvas.height || canvas.parentElement?.clientHeight || 550;
+      spawnClouds(width, height);
+    }
+  }, [currentQIndex, spawnClouds]);
 
   // Keyboard controls
   useEffect(() => {
@@ -366,9 +394,9 @@ export function AirplanePlayer({
         const isHitX = planeX >= left - 25 && planeX <= left + w + 15;
         const isHitY = Math.abs(planeY - badgeY) <= h / 2 + 20;
 
-        if (isHitX && isHitY) {
+        if (isHitX && isHitY && !isProcessingHitRef.current) {
           cl.hit = true;
-          handleHitCloud(cl.option);
+          handleHitCloudRef.current(cl.option);
         }
 
         // Respawn cloud if went off-screen without hit
@@ -412,7 +440,7 @@ export function AirplanePlayer({
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
     };
-  }, [spawnClouds, handleHitCloud]);
+  }, []); // Run canvas loop once without tearing down on question/score changes
 
   return (
     <div
@@ -455,8 +483,23 @@ export function AirplanePlayer({
       </div>
 
       {/* Main Canvas Viewport */}
-      <div className="relative flex-1 w-full h-full">
-        <canvas ref={canvasRef} className="w-full h-full block cursor-pointer" />
+      <div className="relative flex-1 w-full h-full touch-none">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full block cursor-pointer select-none"
+          onPointerDown={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            planeRef.current.targetY = Math.max(60, Math.min(rect.height - 60, y));
+          }}
+          onPointerMove={(e) => {
+            if (e.buttons === 1) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const y = e.clientY - rect.top;
+              planeRef.current.targetY = Math.max(60, Math.min(rect.height - 60, y));
+            }
+          }}
+        />
 
         {/* Feedback Alert Overlay */}
         {feedback && (
