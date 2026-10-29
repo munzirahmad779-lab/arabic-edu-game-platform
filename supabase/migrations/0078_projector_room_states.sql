@@ -235,7 +235,7 @@ begin
       'gameState', jsonb_build_object(
         'phase', 'lobby',
         'currentQuestionIndex', 0,
-        'timerSeconds', 20,
+        'timerSeconds', 30,
         'totalQuestions', 1,
         'answeredTeams', '{}'::jsonb,
         'lastUpdated', v_now_ms
@@ -358,7 +358,7 @@ begin
       'gameState', jsonb_build_object(
         'phase', 'lobby',
         'currentQuestionIndex', 0,
-        'timerSeconds', 20,
+        'timerSeconds', 30,
         'totalQuestions', 1,
         'answeredTeams', '{}'::jsonb,
         'lastUpdated', v_now_ms

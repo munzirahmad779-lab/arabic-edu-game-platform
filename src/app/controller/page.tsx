@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { MIN_QUESTION_DURATION_SECONDS } from "@/lib/game-engine/question-duration";
 
 type TeamSlot = {
   id: string;
@@ -52,7 +53,9 @@ export default function ControllerPage() {
   const [gameState, setGameState] = useState<GameStateSync>({
     phase: "lobby",
     currentQuestionIndex: 0,
-    timerSeconds: 20,
+    // Nilai awal sebelum sync pertama tiba; mengikuti lantai durasi soal
+    // bersama (30 detik, sama seperti mode room DB).
+    timerSeconds: MIN_QUESTION_DURATION_SECONDS,
     totalQuestions: 1,
     hasMyTeamAnswered: false,
     myTeamAnswer: null,

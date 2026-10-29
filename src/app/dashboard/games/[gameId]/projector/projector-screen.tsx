@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
+import { MIN_QUESTION_DURATION_SECONDS } from "@/lib/game-engine/question-duration";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 
@@ -198,7 +199,12 @@ export function ProjectorScreen({
   const [correctArrivalOrder, setCorrectArrivalOrder] = useState<string[]>([]);
 
   // Timer Configuration
-  const QUESTION_DURATION = 20;
+  // Durasi per soal mode proyektor. Mode ini tidak memiliki override guru
+  // maupun durasi per tingkat kesulitan, jadi durasi efektifnya adalah
+  // nilai dasar yang diangkat ke lantai bersama
+  // MIN_QUESTION_DURATION_SECONDS (30 detik), selaras aturan mode room DB
+  // max(override, difficulty, 30) — keputusan user 29 Okt 2026.
+  const QUESTION_DURATION = Math.max(20, MIN_QUESTION_DURATION_SECONDS);
   const [timerSeconds, setTimerSeconds] = useState(QUESTION_DURATION);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
 

@@ -1,4 +1,5 @@
 import { hasSupabaseEnv } from "../supabase/env";
+import { MIN_QUESTION_DURATION_SECONDS } from "./question-duration";
 import type { Json } from "../../types/database";
 
 export interface ControllerEvent {
@@ -52,7 +53,8 @@ export function createDefaultProjectorRoomData(
     gameState: {
       phase: "lobby",
       currentQuestionIndex: 0,
-      timerSeconds: 20,
+      // Lantai durasi soal bersama (30 detik) — selaras mode room DB.
+      timerSeconds: MIN_QUESTION_DURATION_SECONDS,
       totalQuestions: 1,
       answeredTeams: {},
       lastUpdated: now,
