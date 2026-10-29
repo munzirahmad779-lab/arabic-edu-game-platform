@@ -299,6 +299,43 @@ export default function ControllerPage() {
     };
   }, [selectedTeam, roomCode, handleIncomingGameState]);
 
+  // 4. HTTP HEARTBEAT (menulis liveness stik ke store bersama)
+  // GET polling di atas bersifat baca-saja dan heartbeat broadcast tidak
+  // pernah sampai ke basis data, jadi field heartbeats store hanya terisi
+  // saat press: penghitung "STIK TERHUBUNG" di lobi proyektor membaca 0 HP
+  // dan baris room bisa kedaluwarsa (60 detik) selama proyektor dijeda
+  // sehingga stik jatuh ke layar tunggu. POST action "heartbeat" ini
+  // memakai cabang route yang sudah ada (RPC touch_projector_controller):
+  // mencatat heartbeat tim ini dan memperbarui expires_at room. Dikirim
+  // sekali saat terhubung lalu tiap 10 detik selama tim dipilih; berhenti
+  // saat tim dilepas atau komponen unmount. Kegagalan kirim diam saja.
+  useEffect(() => {
+    if (!selectedTeam || !roomCode) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        await fetch("/api/projector/controller", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode,
+            teamId: selectedTeam.id,
+            action: "heartbeat",
+          }),
+        });
+      } catch {
+        // Heartbeat HTTP diam saat gagal; poll GET tetap menjadi cadangan.
+      }
+    };
+
+    void sendHeartbeat();
+    const hbHttpInterval = window.setInterval(sendHeartbeat, 10000);
+
+    return () => {
+      window.clearInterval(hbHttpInterval);
+    };
+  }, [selectedTeam, roomCode]);
+
   // Handle pressing a gamepad button
   const handlePressButton = useCallback(
     async (optionKey: string) => {
