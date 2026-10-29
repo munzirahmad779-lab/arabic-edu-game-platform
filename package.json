@@ -16,9 +16,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run typecheck && npm run test && npm run test:doctor && npm run test:e2e:smoke",
     "build:prod": "node scripts/prod-next.cjs build",
-    "start:prod": "node scripts/prod-next.cjs start 3200"
-    ,"game-pack:detach": "node scripts/game-pack-detach.js"
-    ,"game-pack:attach": "node scripts/game-pack-attach.js"
+    "start:prod": "node scripts/prod-next.cjs start 3200",
+    "game-pack:detach": "node scripts/game-pack-detach.js",
+    "game-pack:attach": "node scripts/game-pack-attach.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -36,6 +36,7 @@
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "fflate": "^0.8.3",
+    "framer-motion": "^14.7.1",
     "next": "14.2.35",
     "qrcode.react": "^4.2.0",
     "react": "18.3.1",

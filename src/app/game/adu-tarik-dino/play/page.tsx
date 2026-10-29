@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GamePackRuntime } from "@/components/game-pack-runtime";
+import AduTarikDinoGame from "@/modules/adu-tarik-dino/modul/Game";
 
 export const metadata: Metadata = {
   title: "Arena — Adu Tarik Cerdas SMA",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <GamePackRuntime slug="adu-tarik-dino-play" />;
+  return <AduTarikDinoGame />;
 }

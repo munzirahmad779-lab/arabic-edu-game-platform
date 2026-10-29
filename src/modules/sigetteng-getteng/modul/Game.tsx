@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { LmsBankPicker } from "@/modules/game-bank/connector";
 import { sfx } from "../lib-pendamping/sfx";
 import { CHARACTERS, FRAME, SIDE_CHARS } from "./sprites";
 import {
@@ -680,7 +681,7 @@ export default function SigettengGettengGame() {
         setCsvMsg("Header harus: Kategori, Question, options, Correct");
         return;
       }
-      const next: Bank = { arab: [...bank.arab], matematika: [...bank.matematika], biologi: [...bank.biologi], fisika: [...bank.fisika] };
+      const next: Bank = { arab: [...bank.arab], matematika: [...bank.matematika], biologi: [...bank.biologi], fisika: [...bank.fisika], lms: [...bank.lms] };
       let added = 0;
       for (let i = 1; i < rows.length; i++) {
         const cells = rows[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
@@ -827,7 +828,13 @@ export default function SigettengGettengGame() {
             {SUBJECTS.map((s, i) => (
               <button
                 key={s.id}
-                onClick={() => startMatch(s.id)}
+                onClick={() => {
+                    if (s.id === "lms" && listOf("lms").length === 0) {
+                      setScreen("bank");
+                      return;
+                    }
+                    startMatch(s.id);
+                  }}
                 className={`flex h-36 w-36 flex-col items-center justify-center rounded-3xl bg-gradient-to-br ${
                   ["from-sky-400 to-blue-700", "from-emerald-400 to-teal-700", "from-fuchsia-400 to-purple-700", "from-amber-300 to-orange-600"][i % 4]
                 } text-white shadow-xl ring-2 ring-white/25 transition active:scale-95`}
@@ -1172,6 +1179,22 @@ export default function SigettengGettengGame() {
                 {s.icon} {s.title} ({listOf(s.id).length})
               </button>
             ))}
+          </div>
+
+          <div className="shrink-0 px-4 pb-3">
+            <LmsBankPicker
+              onSelect={(choice) => {
+                const next: Bank = {
+                  ...bank,
+                  lms: choice.questions.map((q) =>
+                    makeQuestion("lms", q.prompt, q.options, q.options[q.correctIndex] ?? ""),
+                  ),
+                };
+                setBank(next);
+                saveBank(next);
+                setEditSubject("lms");
+              }}
+            />
           </div>
 
           <div className="grid min-h-0 flex-1 gap-3 overflow-hidden px-4 pb-4 lg:grid-cols-2">

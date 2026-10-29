@@ -400,6 +400,69 @@ export default async function GamesPage({
               Hot-seat · 1 perangkat
             </span>
           </Link>
+          <Link
+            href="/game/adu-tarik-dino"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🦖 Adu Tarik Cerdas
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Tarik tambang pengetahuan dengan maskot dino: DUEL 1v1 atau
+              SQUAD 2v2 bergantian menjawab di perangkat yang sama. Bisa
+              memakai soal dari Bank Soal LMS.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
+          <Link
+            href="/game/basket"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🏀 Basket Pengetahuan
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Dua tim menjawab soal lalu melempar bola ke ring untuk mencetak
+              poin. Bisa memakai soal dari Bank Soal LMS sebagai Mapel Guru.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
+          <Link
+            href="/game/banua-fruit-blast"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🍉 Banua Fruit Blast
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Potong buah yang berisi jawaban benar di lajurmu: DUEL, TRIO,
+              dan SQUAD 2-4 pemain. Bisa memakai soal dari Bank Soal LMS
+              sebagai Mapel Guru.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
+          <Link
+            href="/game/space-war"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🚀 Perang Antariksa
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Tembak asteroid soal dengan jawaban ketik atau pilihan: SOLO,
+              DUEL, TRIO, dan QUAD. Bisa memakai soal dari Bank Soal LMS
+              sebagai Mapel Guru.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
         </div>
       </section>
 

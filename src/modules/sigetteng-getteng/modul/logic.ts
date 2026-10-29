@@ -1,6 +1,6 @@
 /** Aturan, data soal, papan skor, penyimpanan lokal, editor bank soal. */
 
-export type SubjectId = "arab" | "matematika" | "biologi" | "fisika";
+export type SubjectId = "arab" | "matematika" | "biologi" | "fisika" | "lms";
 export type GameMode = "DUEL" | "SQUAD";
 
 export interface Q {
@@ -18,6 +18,7 @@ export const SUBJECTS: { id: SubjectId; title: string; icon: string }[] = [
   { id: "matematika", title: "Matematika SMA", icon: "📐" },
   { id: "biologi", title: "Biologi SMA", icon: "🧬" },
   { id: "fisika", title: "Fisika SMA", icon: "⚡" },
+  { id: "lms", title: "Bank Soal LMS", icon: "🏦" },
 ];
 
 const q = (
@@ -29,6 +30,7 @@ const q = (
 ): Q => ({ id, subjectId, prompt, isArabic: /[\u0600-\u06FF]/.test(prompt), options, correct });
 
 export const BANK_SOAL: Record<SubjectId, Q[]> = {
+  lms: [],
   arab: [
     q("ar1", "arab", "Kedudukan kata كُتَابُْ dalam kalimat كُتَابُْ مُفِيْدٌ adalah...", ["Mubtada'", "Khabar", "Fa'il", "Maf'ul Bih"], "Mubtada'"),
     q("ar2", "arab", "Lawan makna dari kata كَبِيْرٌ adalah...", ["صَغِيْرٌ", "طَوِيْلٌ", "قَصِيْرٌ", "جَدِيْدٌ"], "صَغِيْرٌ"),
@@ -154,6 +156,7 @@ export const defaultBank = (): Bank => ({
   matematika: [...BANK_SOAL.matematika],
   biologi: [...BANK_SOAL.biologi],
   fisika: [...BANK_SOAL.fisika],
+  lms: [...BANK_SOAL.lms],
 });
 
 export const loadBank = (): Bank => {
