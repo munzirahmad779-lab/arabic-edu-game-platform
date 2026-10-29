@@ -378,7 +378,7 @@ export default function JoinRoomPage({
     } finally {
       sessionInFlightRef.current = false;
     }
-  }, [token, t]);
+  }, [t]);
 
   const loadLeaderboard = useCallback(async () => {
     if (!activeTokenRef.current || leaderboardInFlightRef.current) return;
@@ -398,7 +398,7 @@ export default function JoinRoomPage({
     } finally {
       leaderboardInFlightRef.current = false;
     }
-  }, [token]);
+  }, []);
 
   const sendHeartbeat = useCallback(async () => {
     if (!activeTokenRef.current || heartbeatInFlightRef.current) return;
@@ -414,7 +414,7 @@ export default function JoinRoomPage({
     } finally {
       heartbeatInFlightRef.current = false;
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -644,7 +644,6 @@ export default function JoinRoomPage({
     session,
     submitting,
     isCooperative,
-    token,
     t,
     loadSession,
     loadLeaderboard,
@@ -1079,8 +1078,6 @@ export default function JoinRoomPage({
         feedback={gameFeedback}
         roomState={session.room_state}
         questionStartedAt={session.question_started_at}
-        startedAt={session.started_at}
-        durationSeconds={session.game_duration_seconds}
         serverTime={session.server_time}
       >
       {session.question ? (

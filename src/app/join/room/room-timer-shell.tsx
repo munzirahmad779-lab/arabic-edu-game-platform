@@ -35,8 +35,6 @@ type RoomTimerShellProps = {
   feedback?: Feedback;
   roomState: "waiting" | "running" | "ended" | "locked";
   questionStartedAt: string | null;
-  startedAt: string | null;
-  durationSeconds: number;
   serverTime: string;
   children: ReactNode;
 };
@@ -44,8 +42,6 @@ type RoomTimerShellProps = {
 export function RoomTimerShell({
   roomState,
   questionStartedAt,
-  startedAt,
-  durationSeconds,
   serverTime,
   timeLimitSeconds = 20,
   isCooperative = false,
