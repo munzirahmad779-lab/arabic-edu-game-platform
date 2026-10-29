@@ -1,0 +1,10 @@
+[prod-next] NEXT_DIST_DIR=.next-prod → next start -p 3210
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3210
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended. Run 'npm i sharp', and Next.js will use it automatically for Image Optimization.
+Read more: https://nextjs.org/docs/messages/sharp-missing-in-production
+[joinRoom] RPC error: ROOM_NOT_FOUND
+[joinRoom] RPC error: ROOM_NOT_FOUND

@@ -1,0 +1,75 @@
+
+> arabic-edu-game-platform@0.1.0 dev
+> next dev --turbo --port 3102
+
+  ▲ Next.js 14.2.35 (turbo)
+  - Local:        http://localhost:3102
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Compiled in 1553ms
+ ✓ Ready in 13.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 25.4s
+ GET / 200 in 27183ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1497ms
+ GET /login 200 in 1962ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 5.7s
+ GET /student/login 200 in 6223ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 729ms
+ GET /guest 200 in 1094ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 812ms
+ GET /join 200 in 1159ms
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 703ms
+ GET /practice 200 in 1059ms
+ ○ Compiling /controller ...
+ ✓ Compiled /controller in 771ms
+ GET /controller 200 in 1148ms
+ ○ Compiling /remote ...
+ ✓ Compiled /remote in 717ms
+ GET /remote 200 in 1046ms
+ GET /login?redirectTo=%2Fdashboard 200 in 371ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses 200 in 305ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents 200 in 298ms
+ GET /login?redirectTo=%2Fdashboard%2Fquestion-banks 200 in 308ms
+ GET /login?redirectTo=%2Fdashboard%2Fgames 200 in 336ms
+ GET /login?redirectTo=%2Fdashboard%2Freports 200 in 340ms
+ GET /login?redirectTo=%2Fdashboard%2Fassessments 200 in 345ms
+ GET / 200 in 569ms
+ GET / 200 in 451ms
+ GET /guest 200 in 326ms
+ ⨯ Internal error: TypeError [ERR_INVALID_STATE]: Invalid state: ReadableStream is already closed
+    at ReadableByteStreamController.enqueue (node:internal/webstreams/readablestream:1183:13)
+    at eY (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:211178)
+    at eV (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:210476)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)
+    at Timeout._onTimeout (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:218459)
+    at listOnTimeout (node:internal/timers:585:17)
+    at process.processTimers (node:internal/timers:521:7)
+digest: "1386261344"
+ ⨯ Internal error: TypeError [ERR_INVALID_STATE]: Invalid state: ReadableStream is already closed
+    at ReadableByteStreamController.enqueue (node:internal/webstreams/readablestream:1183:13)
+    at eY (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:211178)
+    at eV (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:210476)
+    at Timeout._onTimeout (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:200233)
+    at listOnTimeout (node:internal/timers:585:17)
+    at process.processTimers (node:internal/timers:521:7)
+digest: "2909159875"
+ GET /guest 200 in 325ms
+ GET /guest 200 in 347ms
+ ⨯ Internal error: TypeError [ERR_INVALID_STATE]: Invalid state: ReadableStream is already closed
+    at ReadableByteStreamController.enqueue (node:internal/webstreams/readablestream:1183:13)
+    at eY (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:211178)
+    at eV (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:210476)
+    at Timeout._onTimeout (D:\magguru\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:200233)
+    at listOnTimeout (node:internal/timers:585:17)
+    at process.processTimers (node:internal/timers:521:7)
+digest: "2909159875"
+ GET /practice 200 in 323ms
+ ✓ Compiled in 2.4s
+[?25h

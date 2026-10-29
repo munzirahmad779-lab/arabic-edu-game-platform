@@ -1,0 +1,35 @@
+
+> arabic-edu-game-platform@0.1.0 dev
+> next dev --turbo --port 3107
+
+  ▲ Next.js 14.2.35 (turbo)
+  - Local:        http://localhost:3107
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Compiled in 1870ms
+ ✓ Ready in 9.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 20.2s
+ GET / 200 in 22505ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.8s
+ GET /login 200 in 4108ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 3.5s
+ GET /student/login 200 in 4234ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 1268ms
+ GET /guest 200 in 2014ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 1253ms
+ GET /join 200 in 1831ms
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 1030ms
+ GET /practice 200 in 1750ms
+ ○ Compiling /controller ...
+ ✓ Compiled /controller in 1187ms
+ GET /controller 200 in 1854ms
+ ○ Compiling /remote ...
+ ✓ Compiled /remote in 1152ms
+ GET /remote 200 in 1751ms

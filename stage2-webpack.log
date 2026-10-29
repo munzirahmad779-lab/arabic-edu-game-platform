@@ -1,0 +1,63 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3101
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 8.2s
+ ○ Compiling /controller ...
+ ✓ Compiled /controller in 7.5s (808 modules)
+ GET /controller?room=HOTSEAT&team=team-1 200 in 9482ms
+ GET /controller?room=QA0011&team=team-1 200 in 130ms
+ GET /controller?room=QA0011&team=team-2 200 in 115ms
+ ○ Compiling /api/projector/controller ...
+ ✓ Compiled /api/projector/controller in 964ms (508 modules)
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 1335ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 1324ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 714ms
+ POST /api/projector/controller 200 in 1370ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 67ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-2 200 in 77ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-2 200 in 101ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 53ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-2 200 in 64ms
+ POST /api/projector/controller 200 in 99ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 111ms
+ POST /api/projector/controller 200 in 63ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-2 200 in 71ms
+ GET /api/projector/controller?roomCode=QA0011&teamId=team-1 200 in 54ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 5.1s (870 modules)
+ GET /login 200 in 6571ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 1211ms (858 modules)
+ GET /guest 200 in 1904ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 6.9s (2026 modules)
+ GET /student/login 200 in 8919ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 4.4s (2109 modules)
+ GET /join 200 in 6247ms
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 2.2s (2125 modules)
+ GET /practice 200 in 7278ms
+ GET /controller?room=QA0022&team=team-1 200 in 301ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.7s (2126 modules)
+ GET /_next/static/chunks/app/controller/page.js 404 in 3574ms
+ GET /login 200 in 324ms
+ GET /guest 200 in 290ms
+ GET /student/login 200 in 1213ms
+ GET /join 200 in 905ms
+ GET /practice 200 in 625ms
+ GET /controller?room=QA0022&team=team-1 200 in 264ms
+ GET /_next/static/chunks/app/controller/page.js 404 in 149ms
+ GET /login 200 in 149ms
+ GET /guest 200 in 180ms
+ GET /student/login 200 in 235ms
+ GET /join 200 in 141ms
+ GET /practice 200 in 182ms
+ GET /controller?room=QA0022&team=team-1 200 in 128ms
+ GET /_next/static/chunks/app/controller/page.js 404 in 128ms
+ GET /controller?room=QA0033&team=team-1 200 in 99ms
+ GET /_next/static/chunks/app/controller/page.js 404 in 119ms
+ ✓ Compiled in 12.2s (939 modules)

@@ -1,0 +1,1266 @@
+﻿
+> arabic-edu-game-platform@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/78) ...
+node.exe : Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local 
+and fill in your Supabase project values.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: Missing ...project values.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\page.js:1:18127)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\account\page.js:1:15713)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '2072702919'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\page.js:1:18127)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '2633566101'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\page.js:1:18127)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\account\page.js:1:15713)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '1977350059'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\page.js:1:18127)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '493487545'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\page.js:1:18127)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '493487545'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at f (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\settings\audio\page.js:1:25294)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '882812868'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '642927330'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at f (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\settings\audio\page.js:1:25294)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '1778412584'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\grade-essay\route.js:33:2222)
+    at m (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\admin\page.js:1:17725)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '4269217643'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\grade-essay\route.js:33:2222)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '3522018344'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\grade-essay\route.js:33:2222)
+    at m (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\admin\page.js:1:17725)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '679461447'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\grade-essay\route.js:33:2222)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '2404121924'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\grade-essay\route.js:33:2222)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '2404121924'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\projector\save-report\route.js:1:3931)
+    at x (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\page.js:1:9761)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '43060887'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\projector\save-report\route.js:1:3931)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '419092621'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\projector\save-report\route.js:1:3931)
+    at x (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\page.js:1:9761)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '2050221947'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\projector\save-report\route.js:1:3931)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '3404647585'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\projector\save-report\route.js:1:3931)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '3404647585'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at g (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\games\page.js:1:36738)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '214125537'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '3643358677'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at g (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\games\page.js:1:36738)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '67808845'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '765238777'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '765238777'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at o (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\classes\page.js:1:6360)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '2018714593'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '642927330'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at o (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\classes\page.js:1:6360)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '1179063949'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\student\essay\page.js:1:11727)
+    at x (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\question-banks\page.js:81:33323)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '547987508'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\student\essay\page.js:1:11727)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '1256099303'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\student\essay\page.js:1:11727)
+    at x (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\question-banks\page.js:81:33323)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+   Generating static pages (19/78) 
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '4251799256'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\student\essay\page.js:1:11727)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '916069451'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at a (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\student\essay\page.js:1:11727)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '916069451'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\reports\page.js:18:17382)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '2513029530'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '642927330'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\reports\page.js:18:17382)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '598336694'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\result\page.js:1:12138)
+    at v (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\students\page.js:1:20580)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '746788320'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\result\page.js:1:12138)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '3001459812'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\result\page.js:1:12138)
+    at v (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\students\page.js:1:20580)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '845825932'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\result\page.js:1:12138)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '4158972808'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at n (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\assessment\[attemptToken]\result\page.js:1:12138)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '4158972808'
+}
+   Generating static pages (38/78) 
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at c (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\students\print\page.js:1:7562)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '1622202448'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '3643358677'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at c (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\students\print\page.js:1:7562)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '928287868'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '765238777'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at s (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\api\rooms\control\route.js:1:9318)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '765238777'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at c (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\assessments\page.js:1:2580)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '3388149628'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14) {
+  digest: '642927330'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at c (C:\Users\munzi\arabic-edu-game-platform\.next\server\app\dashboard\assessments\page.js:1:2580)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '2333741968'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+Error: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in 
+your Supabase project values.
+    at l (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:13726)
+    at u (C:\Users\munzi\arabic-edu-game-platform\.next\server\chunks\2799.js:1:10866)
+    at em (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:134808)
+    at e (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:
+12:137693)
+    at e_ (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:138168)
+    at Array.toJSON (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runti
+me.prod.js:12:135777)
+    at stringify (<anonymous>)
+    at eE (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142242)
+    at eT (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js
+:12:142721)
+    at Timeout._onTimeout (C:\Users\munzi\arabic-edu-game-platform\node_modules\next\dist\compiled\next-server\app-page
+.runtime.prod.js:12:135497) {
+  digest: '105134222'
+}
+   Generating static pages (58/78) 
+ ✓ Generating static pages (78/78)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                            Size     First Load JS
+┌ ƒ /                                                  3.47 kB         105 kB
+├ ƒ /_not-found                                        157 B          87.6 kB
+├ ƒ /api/assessments/ai-generate                       0 B                0 B
+├ ƒ /api/assessments/template                          0 B                0 B
+├ ƒ /api/auth/guest                                    0 B                0 B
+├ ƒ /api/auth/login                                    0 B                0 B
+├ ƒ /api/grade-essay                                   0 B                0 B
+├ ƒ /api/health                                        0 B                0 B
+├ ƒ /api/projector/controller                          0 B                0 B
+├ ƒ /api/projector/save-report                         0 B                0 B
+├ ƒ /api/question-banks/ai-generate                    0 B                0 B
+├ ƒ /api/rooms/answer                                  0 B                0 B
+├ ƒ /api/rooms/control                                 0 B                0 B
+├ ƒ /api/rooms/leaderboard                             0 B                0 B
+├ ƒ /api/rooms/session                                 0 B                0 B
+├ ƒ /api/souq-fishing/checkpoint                       0 B                0 B
+├ ƒ /api/souq-fishing/session                          0 B                0 B
+├ ƒ /assessment                                        188 B           101 kB
+├ ƒ /assessment/[attemptToken]                         3.48 kB         162 kB
+├ ƒ /assessment/[attemptToken]/result                  210 B          96.3 kB
+├ ƒ /auth/logout                                       0 B                0 B
+├ ƒ /controller                                        177 B           100 kB
+├ ƒ /dashboard                                         834 B           102 kB
+├ ƒ /dashboard/account                                 1.19 kB        97.3 kB
+├ ƒ /dashboard/admin                                   2.65 kB         170 kB
+├ ƒ /dashboard/assessments                             210 B          96.3 kB
+├ ƒ /dashboard/assessments/[id]                        210 B          96.3 kB
+├ ƒ /dashboard/assessments/[id]/ai                     3.69 kB        99.8 kB
+├ ƒ /dashboard/classes                                 210 B          96.3 kB
+├ ƒ /dashboard/classes/[classId]                       148 kB          245 kB
+├ ƒ /dashboard/classes/[classId]/essays/[essayId]      2.48 kB         169 kB
+├ ƒ /dashboard/classes/[classId]/preview/[materialId]  210 B          96.3 kB
+├ ƒ /dashboard/games                                   5.14 kB         101 kB
+├ ƒ /dashboard/games/[gameId]/projector                20.6 kB         117 kB
+├ ƒ /dashboard/games/[gameId]/room                     6.08 kB         179 kB
+├ ƒ /dashboard/question-banks                          11 kB           178 kB
+├ ƒ /dashboard/reports                                 4.36 kB         171 kB
+├ ƒ /dashboard/settings/audio                          2.73 kB        98.9 kB
+├ ƒ /dashboard/students                                3.06 kB         170 kB
+├ ƒ /dashboard/students/print                          1.94 kB         109 kB
+├ ƒ /dev/souq-fishing-preview                          157 B          87.6 kB
+├ ƒ /dev/souq-fishing-preview/controller               157 B          87.6 kB
+├ ƒ /game/adu-tarik-dino                               210 B          96.3 kB
+├ ƒ /game/adu-tarik-dino/play                          17 kB           104 kB
+├ ƒ /games/adu-tarik-dino                              1.85 kB        89.3 kB
+├ ƒ /games/ai-basketball                               1.85 kB        89.3 kB
+├ ƒ /games/banua-fruit-blast                           1.94 kB        89.4 kB
+├ ƒ /games/celestial-weaver                            1.91 kB        89.3 kB
+├ ƒ /games/cocok-logi                                  1.94 kB        89.4 kB
+├ ƒ /games/color-link-junior                           1.91 kB        89.3 kB
+├ ƒ /games/detektif-cilik                              1.91 kB        89.3 kB
+├ ƒ /games/doodle                                      1.92 kB        89.4 kB
+├ ƒ /games/gabung-ceria                                1.97 kB        89.4 kB
+├ ƒ /games/geo-squad                                   1.9 kB         89.3 kB
+├ ƒ /games/helirescue                                  1.98 kB        89.4 kB
+├ ƒ /games/jagoan-kata                                 1.92 kB        89.4 kB
+├ ƒ /games/jejak-angka                                 1.88 kB        89.3 kB
+├ ƒ /games/kancil                                      1.96 kB        89.4 kB
+├ ƒ /games/mancing-kata                                1.92 kB        89.4 kB
+├ ƒ /games/martabak-pecahan                            1.88 kB        89.3 kB
+├ ƒ /games/math-domino-arena                           1.88 kB        89.3 kB
+├ ƒ /games/mesin-koleksi                               1.89 kB        89.3 kB
+├ ƒ /games/mewarnai                                    1.86 kB        89.3 kB
+├ ƒ /games/nusaboard                                   1.89 kB        89.3 kB
+├ ƒ /games/pendekar-balon                              1.93 kB        89.4 kB
+├ ƒ /games/porogapit-arena                             1.87 kB        89.3 kB
+├ ƒ /games/puzzle                                      1.9 kB         89.3 kB
+├ ƒ /games/rimba-pedia                                 1.92 kB        89.4 kB
+├ ƒ /games/ruang-io                                    1.86 kB        89.3 kB
+├ ƒ /games/sciencelink                                 1.95 kB        89.4 kB
+├ ƒ /games/si-pemanah                                  1.95 kB        89.4 kB
+├ ƒ /games/si-taktik                                   1.9 kB         89.3 kB
+├ ƒ /games/space-war                                   1.91 kB        89.3 kB
+├ ƒ /games/tanzib                                      1.9 kB         89.3 kB
+├ ƒ /games/tatap-hap                                   1.93 kB        89.4 kB
+├ ƒ /games/traditional                                 1.89 kB        89.3 kB
+├ ƒ /guest                                             6.41 kB         103 kB
+├ ○ /icon.png                                          0 B                0 B
+├ ƒ /join                                              157 B          87.6 kB
+├ ƒ /join/room                                         62.1 kB         220 kB
+├ ƒ /lab/motion                                        3.86 kB        91.3 kB
+├ ƒ /login                                             3.81 kB         176 kB
+├ ƒ /practice                                          1.02 kB         102 kB
+├ ƒ /practice/[topicId]                                5.96 kB         102 kB
+├ ƒ /remote                                            178 B           100 kB
+├ ƒ /reset-password                                    2.08 kB         169 kB
+├ ƒ /souq-fishing                                      9.23 kB         105 kB
+├ ƒ /souq-fishing/play/[roomCode]                      4.21 kB        97.1 kB
+├ ƒ /souq-fishing/projector/[roomCode]                 5.85 kB        98.7 kB
+├ ƒ /student                                           1.02 kB         102 kB
+├ ƒ /student/essay                                     210 B          96.3 kB
+├ ƒ /student/essay/[essayId]                           4.15 kB         171 kB
+├ ƒ /student/login                                     214 kB          315 kB
+├ ƒ /student/materials/[materialId]                    210 B          96.3 kB
+├ ƒ /student/practice                                  210 B          96.3 kB
+└ ƒ /student/practice/[gameId]                         5.1 kB          172 kB
++ First Load JS shared by all                          87.4 kB
+  ├ chunks/2117-27608d0756c71e74.js                    31.7 kB
+  ├ chunks/fd9d1056-18082477bfb848a1.js                53.6 kB
+  └ other shared chunks (total)                        2.06 kB
+
+
+ƒ Middleware                                           87.2 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

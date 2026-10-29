@@ -1,0 +1,28 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3104
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 6.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.5s (917 modules)
+ GET / 200 in 12357ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 5.9s (939 modules)
+ GET /student/login 200 in 8998ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 646ms (942 modules)
+ GET /guest 200 in 969ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 1096ms (966 modules)
+ GET /join 200 in 5031ms
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 854ms (970 modules)
+ GET /practice 200 in 1233ms
+ GET / 200 in 237ms
+ GET / 200 in 137ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1783ms (977 modules)
+ GET /guest 200 in 167ms
+ GET /guest 200 in 88ms
+[?25h

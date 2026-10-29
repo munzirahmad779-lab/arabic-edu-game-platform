@@ -309,6 +309,11 @@ grant execute on function public.get_game_session(uuid) to anon, authenticated;
 -- ------------------------------------------------------------
 -- 4. submit_game_answer (basis 0064, durasi efektif)
 -- ------------------------------------------------------------
+-- Produksi memiliki bentuk keluaran submit_game_answer yang berbeda dari
+-- snapshot (divergensi repo/produksi), sehingga CREATE OR REPLACE ditolak
+-- Postgres (42P13). Buang dulu fungsi lama dengan tanda tangan persisnya.
+drop function if exists public.submit_game_answer(uuid, uuid, text, text);
+
 create or replace function public.submit_game_answer(
   p_join_token uuid,
   p_question_id uuid,

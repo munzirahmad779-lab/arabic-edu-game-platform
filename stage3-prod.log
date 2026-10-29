@@ -1,0 +1,67 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3201
+
+ ✓ Starting...
+ ✓ Ready in 1653ms
+Error: Cannot find module './_rsc_src_components_global-background-audio_tsx.js'
+Require stack:
+- D:\magguru\.next\server\webpack-runtime.js
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\next-server.js
+- D:\magguru\node_modules\next\dist\server\next.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+- D:\magguru\node_modules\next\dist\cli\next-start.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at __webpack_require__.f.require (D:\magguru\.next\server\webpack-runtime.js:198:28) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\webpack-runtime.js',
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\next-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\next.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\cli\\next-start.js'
+  ],
+  digest: '3003380143'
+}
+Error: Cannot find module './_rsc_src_lib_i18n_id_json.js'
+Require stack:
+- D:\magguru\.next\server\webpack-runtime.js
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\next-server.js
+- D:\magguru\node_modules\next\dist\server\next.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+- D:\magguru\node_modules\next\dist\cli\next-start.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at __webpack_require__.f.require (D:\magguru\.next\server\webpack-runtime.js:198:28) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\webpack-runtime.js',
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\next-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\next.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\cli\\next-start.js'
+  ],
+  digest: '1883148943'
+}

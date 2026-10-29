@@ -1,0 +1,919 @@
+
+> arabic-edu-game-platform@0.1.0 dev
+> next dev --turbo --port 3101
+
+  ▲ Next.js 14.2.35 (turbo)
+  - Local:        http://localhost:3101
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Compiled in 2.1s
+ ✓ Ready in 8.1s
+ ○ Compiling /login ...
+ ✓ Compiled /login in 19.2s
+ GET /login 200 in 21063ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 1684ms
+ GET /guest 200 in 2213ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 9.1s
+ GET /student/login 200 in 10154ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 1424ms
+ GET /join 200 in 2205ms
+ ○ Compiling /practice ...
+ ✓ Compiled /practice in 1127ms
+ GET /practice 200 in 1830ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses 200 in 660ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents 200 in 839ms
+ GET /login?redirectTo=%2Fdashboard%2Fquestion-banks 200 in 698ms
+ GET /login 200 in 539ms
+ GET /guest 200 in 516ms
+ GET /student/login 200 in 473ms
+ GET /join 200 in 567ms
+ GET /practice 200 in 460ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses 200 in 439ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents 200 in 529ms
+ GET /login?redirectTo=%2Fdashboard%2Fquestion-banks 200 in 537ms
+ GET /login 200 in 385ms
+ GET /guest 200 in 463ms
+ GET /student/login 200 in 439ms
+ GET /join 200 in 561ms
+ GET /practice 200 in 459ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses 200 in 476ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents 200 in 515ms
+ GET /login?redirectTo=%2Fdashboard%2Fquestion-banks 200 in 491ms
+ ✓ Compiled in 1976ms
+ ○ Compiling /controller ...
+ ✓ Compiled /controller in 6.5s
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 3.7s
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-1 500 in 14398ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-1 500 in 1212ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-1 500 in 779ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-1 500 in 910ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-2 500 in 882ms
+ ○ Compiling /api/projector/controller ...
+ ✓ Compiled /api/projector/controller in 1690ms
+ POST /api/projector/controller 200 in 2143ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=DEBUG01&team=team-1 500 in 774ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=DEBUG01&team=team-2 500 in 735ms
+ POST /api/projector/controller 200 in 342ms
+ ⨯ Error: Cannot find module '../../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\app\controller\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\app\controller\page.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\app\\controller\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/controller'
+}
+ ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
+Require stack:
+- D:\magguru\.next\server\pages\_document.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (D:\magguru\.next\server\pages\_document.js:2:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\pages\\_document.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ GET /controller?room=HOTSEAT&team=team-1 500 in 767ms
+[?25h

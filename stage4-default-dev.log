@@ -1,0 +1,24 @@
+
+> arabic-edu-game-platform@0.1.0 dev
+> next dev --port 3105
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3105
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 9.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 15.3s (931 modules)
+ GET / 200 in 16574ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 11.9s (953 modules)
+ GET /student/login 200 in 13650ms
+ ○ Compiling /guest ...
+ ✓ Compiled /guest in 644ms (942 modules)
+ GET /guest 200 in 930ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 966ms (966 modules)
+ GET /join 200 in 4395ms
+ ✓ Compiled in 2.6s (362 modules)
+[?25h

@@ -1,0 +1,199 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3101
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 18.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 4.7s (917 modules)
+ GET / 200 in 7820ms
+ ○ Compiling /login ...
+ ✓ Compiled /guest in 32.6s (945 modules)
+ GET /guest 200 in 3028ms
+ ○ Compiling /student/login ...
+ ✓ Compiled /student/login in 4.2s (2099 modules)
+ GET /student/login 200 in 5853ms
+ ○ Compiling /join ...
+ ✓ Compiled /join in 1107ms (2123 modules)
+ GET /join 200 in 5015ms
+ GET /join?code=ABC123 200 in 96ms
+ GET /join?error=ROOM_NOT_FOUND 200 in 97ms
+ ○ Compiling /join/room ...
+ ✓ Compiled /join/room in 3.2s (2145 modules)
+ GET /join/room?token=invalid 200 in 3548ms
+ ○ Compiling /practice ...
+ ✓ Compiled /api/rooms/leaderboard in 1969ms (2177 modules)
+ GET /api/rooms/session?token=invalid 200 in 5149ms
+ GET /api/rooms/leaderboard?token=invalid 200 in 5152ms
+ GET /practice 200 in 6046ms
+ ○ Compiling /practice/[topicId] ...
+ ✓ Compiled /practice/[topicId] in 1150ms (2185 modules)
+ GET /practice/demo 200 in 2880ms
+ ○ Compiling /student ...
+ ✓ Compiled /student in 1153ms (2189 modules)
+ GET /student 200 in 1361ms
+ ○ Compiling /student/practice ...
+ ✓ Compiled /student/practice in 1787ms (2191 modules)
+ GET /student/practice 200 in 2092ms
+ ○ Compiling /student/essay ...
+ ✓ Compiled /student/essay in 1942ms (2193 modules)
+ GET /student/essay 200 in 2247ms
+ ○ Compiling /assessment ...
+ ✓ Compiled /assessment in 2.2s (2198 modules)
+ GET /assessment 200 in 2562ms
+ ○ Compiling /reset-password ...
+ ✓ Compiled /reset-password in 1361ms (2204 modules)
+ GET /reset-password 200 in 1575ms
+ ○ Compiling /controller ...
+ ✓ Compiled /controller in 1511ms (2211 modules)
+ GET /controller?room=QA1001&team=team-1 200 in 1800ms
+ ○ Compiling /remote ...
+ ✓ Compiled /remote in 1486ms (2215 modules)
+ GET /remote?room=QA1001&team=team-2 200 in 1834ms
+ ○ Compiling /api/projector/controller ...
+ ✓ Compiled /src/middleware in 2.3s (1405 modules)
+ GET /login?redirectTo=%2Fdashboard 200 in 213ms
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (113kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (267kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ GET /login?redirectTo=%2Fdashboard%2Fclasses 200 in 278ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents 200 in 103ms
+ GET /login?redirectTo=%2Fdashboard%2Fstudents%2Fprint 200 in 105ms
+ GET /login?redirectTo=%2Fdashboard%2Fquestion-banks 200 in 103ms
+ GET /login?redirectTo=%2Fdashboard%2Fgames 200 in 97ms
+ GET /login?redirectTo=%2Fdashboard%2Freports 200 in 102ms
+ GET /login?redirectTo=%2Fdashboard%2Fassessments 200 in 128ms
+ GET /login?redirectTo=%2Fdashboard%2Fsettings%2Faudio 200 in 131ms
+ GET /login?redirectTo=%2Fdashboard%2Faccount 200 in 115ms
+ GET /login?redirectTo=%2Fdashboard%2Fadmin 200 in 98ms
+ GET /login?redirectTo=%2Fdashboard%2Fgames%2Fdemo%2Froom 200 in 104ms
+ GET /login?redirectTo=%2Fdashboard%2Fgames%2Fdemo%2Fprojector 200 in 103ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses%2Fdemo 200 in 89ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses%2Fdemo%2Fpreview%2Fmaterial 200 in 105ms
+ GET /login?redirectTo=%2Fdashboard%2Fclasses%2Fdemo%2Fessays%2Fdemo 200 in 100ms
+ GET /login?redirectTo=%2Fdashboard%2Fassessments%2Fdemo 200 in 101ms
+ GET /login?redirectTo=%2Fdashboard%2Fassessments%2Fdemo%2Fai 200 in 179ms
+ ○ Compiling /game/adu-tarik-dino ...
+ ✓ Compiled /game/adu-tarik-dino in 1844ms (2219 modules)
+ GET /game/adu-tarik-dino 200 in 2124ms
+ ○ Compiling /game/adu-tarik-dino/play ...
+ ✓ Compiled /game/adu-tarik-dino/play in 2.2s (2234 modules)
+ GET /game/adu-tarik-dino/play 200 in 5968ms
+ ○ Compiling /game/banua-fruit-blast ...
+ ✓ Compiled /game/banua-fruit-blast in 1646ms (2227 modules)
+ GET /game/banua-fruit-blast 200 in 1973ms
+ ○ Compiling /game/banua-fruit-blast/play ...
+ ✓ Compiled /game/banua-fruit-blast/play in 1583ms (2229 modules)
+ GET /game/banua-fruit-blast/play 200 in 1829ms
+ ○ Compiling /games/[gameSlug] ...
+ ✓ Compiled /games/[gameSlug] in 1801ms (2235 modules)
+ GET /games/porogapit-arena 200 in 3388ms
+ GET /games/math-domino-arena 200 in 135ms
+ GET /games/jejak-angka 200 in 122ms
+ GET /games/helirescue 200 in 187ms
+ GET /games/sciencelink 200 in 181ms
+ GET /games/banua-fruit-blast 200 in 150ms
+ GET /games/si-pemanah 200 in 140ms
+ GET /games/rimba-pedia 200 in 176ms
+ GET /games/celestial-weaver 200 in 133ms
+ GET /games/tanzib 200 in 167ms
+ GET /games/puzzle 200 in 142ms
+ GET /games/martabak-pecahan 200 in 140ms
+ GET /games/doodle 200 in 136ms
+ GET /games/si-taktik 200 in 169ms
+ GET /games/traditional 200 in 162ms
+ GET /games/space-war 200 in 164ms
+ GET /games/ai-basketball 200 in 443ms
+ GET /games/mancing-kata 200 in 147ms
+ GET /games/kancil 200 in 117ms
+ GET /games/nusaboard 200 in 140ms
+ GET /games/jagoan-kata 200 in 177ms
+ GET /games/geo-squad 200 in 146ms
+ GET /games/ruang-io 200 in 119ms
+ GET /games/gabung-ceria 200 in 129ms
+ GET /games/color-link-junior 200 in 117ms
+ GET /games/adu-tarik-dino 200 in 145ms
+ GET /games/tatap-hap 200 in 116ms
+ GET /games/cocok-logi 200 in 132ms
+ GET /games/mesin-koleksi 200 in 187ms
+ GET /games/pendekar-balon 200 in 138ms
+ GET /games/detektif-cilik 200 in 126ms
+ GET /games/mewarnai 200 in 137ms
+ GET /practice 200 in 375ms
+ ✓ Compiled in 6.4s (2075 modules)
+ GET /student/login?error=invalid 200 in 865ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 4.6s (1191 modules)
+ ✓ Compiled (1216 modules)
+ ⨯ Error: Cannot find module './8948.js'
+Require stack:
+- D:\magguru\.next\server\webpack-runtime.js
+- D:\magguru\.next\server\app\(auth)\login\page.js
+- D:\magguru\node_modules\next\dist\server\require.js
+- D:\magguru\node_modules\next\dist\server\load-components.js
+- D:\magguru\node_modules\next\dist\build\utils.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\magguru\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\magguru\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\magguru\node_modules\next\dist\server\lib\router-server.js
+- D:\magguru\node_modules\next\dist\server\lib\start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at D:\magguru\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at __webpack_require__.f.require (D:\magguru\.next\server\webpack-runtime.js:198:28)
+    at D:\magguru\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\magguru\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\magguru\.next\server\webpack-runtime.js:162:22)
+    at D:\magguru\.next\server\app\student\login\page.js:1:17678
+    at Object.<anonymous> (D:\magguru\.next\server\app\student\login\page.js:1:17741)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (D:\magguru\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (D:\magguru\node_modules\next\dist\server\require.js:109:84)
+    at D:\magguru\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (D:\magguru\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (D:\magguru\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\magguru\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (D:\magguru\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\magguru\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\magguru\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\magguru\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\magguru\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\magguru\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\magguru\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\magguru\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\magguru\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\magguru\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\magguru\\.next\\server\\webpack-runtime.js',
+    'D:\\magguru\\.next\\server\\app\\(auth)\\login\\page.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\magguru\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\magguru\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/student/login'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 7.1s (2301 modules)
+ GET /student/login?error=invalid 500 in 8657ms
+[?25h
