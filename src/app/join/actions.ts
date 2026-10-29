@@ -23,11 +23,15 @@ export async function joinRoom(formData: FormData) {
     redirect(`/join?error=${encodeURIComponent("incomplete")}`);
   }
 
-  // Auto-detect if this is a Projector Hotseat / Remote session
-  const { isProjectorRoomActive } = await import(
+  // Auto-detect if this is a Projector Hotseat / Remote session.
+  // Pemeriksaan kini ke store bersama Supabase (projector_room_states,
+  // migrasi 0078): pemeriksaan Map in-memory lama hampir selalu false di
+  // serverless karena instance yang melayani /join berbeda dari instance
+  // proyektor, sehingga kode room proyektor ditolak room_not_found.
+  const { isProjectorRoomActiveShared } = await import(
     "@/lib/game-engine/projector-controller-store"
   );
-  if (code === "HOTSEAT" || isProjectorRoomActive(code)) {
+  if (code === "HOTSEAT" || (await isProjectorRoomActiveShared(code))) {
     redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
   }
 
@@ -43,7 +47,7 @@ export async function joinRoom(formData: FormData) {
     console.error("[joinRoom] RPC error:", msg);
 
     // Second check in case the projector room was initialized during connection
-    if (isProjectorRoomActive(code)) {
+    if (await isProjectorRoomActiveShared(code)) {
       redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
     }
 

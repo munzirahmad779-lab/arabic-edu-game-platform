@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  type ControllerEvent,
-  getProjectorRoomData,
+  buildSyncedGameState,
+  createDefaultProjectorRoomData,
+  fetchProjectorRoomData,
+  pressProjectorButton,
+  syncProjectorGameState,
+  touchProjectorController,
+  PROJECTOR_CONTROLLER_ACTIVE_MS,
+  PROJECTOR_EVENT_TTL_MS,
 } from "@/lib/game-engine/projector-controller-store";
+
+// State room dibaca/ditulis lewat store bersama berbasis Supabase
+// (projector_room_states, migrasi 0078): semua instance server melihat
+// state yang sama. Sebelumnya route ini memakai Map in-memory per
+// instance, sehingga jawaban stik bisa hilang dan stik terdesinkron dari
+// proyektor di Vercel serverless. Bentuk payload di bawah tidak berubah.
 
 // GET /api/projector/controller?roomCode=HOTSEAT&since=123456789&teamId=team-1
 export async function GET(req: NextRequest) {
@@ -11,18 +23,25 @@ export async function GET(req: NextRequest) {
   const since = Number(searchParams.get("since") || "0");
   const teamId = searchParams.get("teamId") || "";
 
-  const roomData = getProjectorRoomData(roomCode);
+  // Room yang belum ada / sudah kedaluwarsa dijawab dengan state bawaan
+  // tanpa dibuat permanen (room hanya lahir dari sync proyektor / press /
+  // heartbeat, bukan dari polling).
+  const roomData =
+    (await fetchProjectorRoomData(roomCode)) ??
+    createDefaultProjectorRoomData();
   const now = Date.now();
 
   // Clean old events (> 60s)
-  roomData.events = roomData.events.filter((e) => now - e.timestamp < 60000);
+  const freshEvents = roomData.events.filter(
+    (e) => now - e.timestamp < PROJECTOR_EVENT_TTL_MS,
+  );
 
   // Filter events strictly newer than 'since'
-  const newEvents = roomData.events.filter((e) => e.timestamp > since);
+  const newEvents = freshEvents.filter((e) => e.timestamp > since);
 
   // Active controllers connected within last 15 seconds
   const activeControllers = Object.entries(roomData.heartbeats)
-    .filter(([, lastSeen]) => now - lastSeen < 15000)
+    .filter(([, lastSeen]) => now - lastSeen < PROJECTOR_CONTROLLER_ACTIVE_MS)
     .map(([tId]) => tId);
 
   const gs = roomData.gameState;
@@ -69,98 +88,73 @@ export async function POST(req: NextRequest) {
       answeredTeams,
     } = body;
 
-    const roomData = getProjectorRoomData(roomCode);
     const now = Date.now();
 
     // 1. PROJECTOR SYNC ACTION (Sent by Teacher's Projector Screen)
     if (action === "sync_state") {
-      const prevQIndex = roomData.gameState.currentQuestionIndex;
-      const newQIndex = typeof currentQuestionIndex === "number" ? currentQuestionIndex : prevQIndex;
+      const prevData =
+        (await fetchProjectorRoomData(roomCode)) ??
+        createDefaultProjectorRoomData(now);
 
-      // If new question started, reset answeredTeams if not explicitly provided
-      let updatedAnsweredTeams: Record<string, { optionKey: string; timestamp: number }> = {};
-      if (answeredTeams && typeof answeredTeams === "object") {
-        if (newQIndex === prevQIndex) {
-          // Same question: union-merge so a projector sync can never erase an
-          // answer the server already recorded (e.g. via the HTTP press path)
-          updatedAnsweredTeams = { ...roomData.gameState.answeredTeams, ...answeredTeams };
-        } else {
-          updatedAnsweredTeams = { ...answeredTeams };
-        }
-      } else if (newQIndex === prevQIndex) {
-        updatedAnsweredTeams = roomData.gameState.answeredTeams;
-      }
+      const targetGameState = buildSyncedGameState(
+        prevData.gameState,
+        {
+          phase,
+          currentQuestionIndex,
+          timerSeconds,
+          totalQuestions,
+          questionText,
+          answeredTeams,
+        },
+        now,
+      );
 
-      roomData.gameState = {
-        phase: phase ?? roomData.gameState.phase,
-        currentQuestionIndex: newQIndex,
-        timerSeconds: typeof timerSeconds === "number" ? timerSeconds : roomData.gameState.timerSeconds,
-        totalQuestions: typeof totalQuestions === "number" ? totalQuestions : roomData.gameState.totalQuestions,
-        questionText: questionText ?? roomData.gameState.questionText,
-        answeredTeams: updatedAnsweredTeams,
-        lastUpdated: now,
-      };
+      // The store re-applies the union-merge against the authoritative
+      // stored state, so a press recorded after our read survives the sync.
+      const gameState = await syncProjectorGameState(roomCode, targetGameState);
 
-      return NextResponse.json({ success: true, gameState: roomData.gameState });
+      return NextResponse.json({ success: true, gameState });
     }
 
     if (!teamId) {
       return NextResponse.json({ error: "MISSING_TEAM_ID" }, { status: 400 });
     }
 
-    // Update heartbeat
-    roomData.heartbeats[teamId] = now;
-
     // 2. STUDENT BUTTON PRESS ACTION
     if (action === "press") {
-      const gs = roomData.gameState;
+      // Guard (inside the store/RPC): a team can only answer ONCE per
+      // question; the press also records the team's heartbeat.
+      const result = await pressProjectorButton(roomCode, {
+        teamId,
+        playerName,
+        optionId,
+        optionKey,
+      });
 
-      // Guard: Team can only answer once per question (phase timing is strictly validated on projector)
-
-      // Guard 2: Team can only answer ONCE per question
-      if (gs.answeredTeams[teamId]) {
+      if (!result.success) {
         return NextResponse.json(
           {
             success: false,
             error: "ALREADY_ANSWERED",
             message: "Jawaban tim Anda sudah tercatat dan terkunci!",
-            existingAnswer: gs.answeredTeams[teamId]?.optionKey,
+            existingAnswer: result.existingAnswer,
           },
           { status: 409 },
         );
       }
 
-      const keyUpper = (optionKey || "A").toUpperCase().trim();
-
-      // Record lock immediately on server
-      gs.answeredTeams[teamId] = {
-        optionKey: keyUpper,
-        timestamp: now,
-      };
-
-      const event: ControllerEvent = {
-        id: `evt-${now}-${Math.random().toString(36).slice(2, 6)}`,
-        roomCode: roomCode.toUpperCase(),
-        teamId,
-        playerName,
-        optionId: optionId ?? null,
-        optionKey: keyUpper,
-        action: "press",
-        timestamp: now,
-      };
-
-      roomData.events.push(event);
-
       return NextResponse.json({
         success: true,
-        eventId: event.id,
-        optionKey: keyUpper,
-        timestamp: now,
+        eventId: result.eventId,
+        optionKey: result.optionKey,
+        timestamp: result.timestamp,
         isLocked: true,
       });
     }
 
-    return NextResponse.json({ success: true, action: "heartbeat", timestamp: now });
+    // 3. HEARTBEAT ACTION
+    const timestamp = await touchProjectorController(roomCode, teamId);
+    return NextResponse.json({ success: true, action: "heartbeat", timestamp });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error";
     return NextResponse.json({ error: message }, { status: 500 });

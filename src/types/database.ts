@@ -172,6 +172,12 @@ export interface Database {
         Update: { id?: string; session_id?: string; question_id?: string; question_text?: string | null; correct_option_key?: string | null; explanation?: string | null; options?: Json; total_answered?: number; total_correct?: number; selected_a_count?: number; selected_b_count?: number; selected_c_count?: number; selected_d_count?: number; created_at?: string; };
         Relationships: [{ foreignKeyName: "room_session_question_stats_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "room_sessions"; referencedColumns: ["id"]; }];
       };
+      projector_room_states: {
+        Row: { room_code: string; game_id: string | null; state: Json; last_seen_at: string; expires_at: string; created_at: string; updated_at: string; };
+        Insert: { room_code: string; game_id?: string | null; state?: Json; last_seen_at?: string; expires_at?: string; created_at?: string; updated_at?: string; };
+        Update: { room_code?: string; game_id?: string | null; state?: Json; last_seen_at?: string; expires_at?: string; created_at?: string; updated_at?: string; };
+        Relationships: [];
+      };
       teacher_audio_tracks: {
         Row: { id: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume: number; enabled: boolean; pages: string[]; created_at: string; updated_at: string; };
         Insert: { id?: string; teacher_id: string; name: string; audio_path: string; audio_url: string; volume?: number; enabled?: boolean; pages?: string[]; created_at?: string; updated_at?: string; };
@@ -245,6 +251,11 @@ export interface Database {
       get_room_leaderboard_student: { Args: { p_join_token: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number }>; };
       get_room_leaderboard_teacher: { Args: { p_room_id: string }; Returns: Array<{ participant_id: string; participant_name: string; is_self: boolean; answered_count: number; correct_count: number; weighted_correct: number; weighted_total: number; avg_response_ms: number; final_score: number; rnk: number }>; };
       heartbeat_room_participant: { Args: { p_join_token: string }; Returns: undefined; };
+      get_projector_room_state: { Args: { p_room_code: string }; Returns: Json; };
+      is_projector_room_active: { Args: { p_room_code: string }; Returns: boolean; };
+      sync_projector_room_state: { Args: { p_room_code: string; p_game_state: Json }; Returns: Json; };
+      press_projector_button: { Args: { p_room_code: string; p_team_id: string; p_player_name: string; p_option_id: string | null; p_option_key: string | null }; Returns: Json; };
+      touch_projector_controller: { Args: { p_room_code: string; p_team_id: string }; Returns: number; };
       archive_room_session: { Args: { p_room_id: string }; Returns: string; };
       list_room_sessions: { Args: { p_room_id: string }; Returns: Array<{ session_id: string; session_number: number; started_at: string | null; ended_at: string | null; participant_count: number }>; };
       get_room_session_detail: { Args: { p_session_id: string }; Returns: Array<{ participant_name: string; final_score: number; rank: number; correct_count: number; total_questions: number; avg_response_ms: number }>; };
