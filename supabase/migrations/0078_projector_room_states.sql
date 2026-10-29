@@ -194,19 +194,30 @@ grant execute on function public.sync_projector_room_state(text, jsonb)
 
 -- ----------------------------------------------------------------------------
 -- Tekanan tombol jawaban dari stik siswa. Atomik per baris: heartbeat tim
--- dicatat lebih dulu (sama seperti route lama), lalu jawaban dicatat hanya
--- bila tim belum menjawab pada soal berjalan. Events lama (> 60 detik)
--- dibuang sebelum event baru ditambahkan, mengikuti retensi route lama.
--- Mengembalikan objek hasil yang dipetakan route ke payload HTTP lama:
+-- dicatat lebih dulu (sama seperti route lama), lalu PENJAGA JAWABAN
+-- HANTU: press wajib membawa indeks soal yang ditampilkan stik
+-- (p_question_index) dan indeks itu harus sama dengan indeks soal room
+-- saat ini; press tanpa indeks atau dengan indeks berbeda ditolak
+-- sebagai STALE_QUESTION tanpa mencatat jawaban/event apa pun (kasus
+-- terverifikasi live 30 Okt 2026: pengiriman press soal 12 yang
+-- terlambat/duplikat tercatat di soal 13 dan tim kehilangan poin).
+-- Sesudah penjaga itu, jawaban dicatat hanya bila tim belum menjawab
+-- pada soal berjalan. Events lama (> 60 detik) dibuang sebelum event
+-- baru ditambahkan, mengikuti retensi route lama. Mengembalikan objek
+-- hasil yang dipetakan route ke payload HTTP:
 -- { success: true, eventId, optionKey, timestamp, isLocked } atau
--- { success: false, error: 'ALREADY_ANSWERED', existingAnswer }.
+-- { success: false, error: 'ALREADY_ANSWERED', existingAnswer } atau
+-- { success: false, error: 'STALE_QUESTION', existingAnswer: null }.
 -- ----------------------------------------------------------------------------
+drop function if exists public.press_projector_button(text, text, text, text, text);
+
 create or replace function public.press_projector_button(
   p_room_code text,
   p_team_id text,
   p_player_name text,
   p_option_id text,
-  p_option_key text
+  p_option_key text,
+  p_question_index integer
 )
 returns jsonb
 language plpgsql
@@ -220,6 +231,7 @@ declare
   v_state jsonb;
   v_gs jsonb;
   v_answers jsonb;
+  v_room_q integer;
   v_event jsonb;
   v_events jsonb;
 begin
@@ -261,6 +273,26 @@ begin
     coalesce(v_state -> 'heartbeats', '{}'::jsonb)
       || jsonb_build_object(p_team_id, v_now_ms)
   );
+
+  -- Penjaga jawaban hantu: indeks soal dari stik harus sama dengan
+  -- indeks soal room saat ini. Penolakan hanya menyimpan heartbeat;
+  -- jawaban, event, dan kunci tim tidak disentuh.
+  v_room_q := coalesce((v_gs ->> 'currentQuestionIndex')::integer, 0);
+
+  if p_question_index is null or p_question_index <> v_room_q then
+    update public.projector_room_states prs
+       set state = v_state,
+           last_seen_at = now(),
+           expires_at = now() + interval '60 seconds',
+           updated_at = now()
+     where prs.room_code = v_code;
+
+    return jsonb_build_object(
+      'success', false,
+      'error', 'STALE_QUESTION',
+      'existingAnswer', null
+    );
+  end if;
 
   if v_answers ? p_team_id then
     update public.projector_room_states prs
@@ -327,7 +359,7 @@ begin
 end;
 $$;
 
-grant execute on function public.press_projector_button(text, text, text, text, text)
+grant execute on function public.press_projector_button(text, text, text, text, text, integer)
   to anon, authenticated;
 
 -- ----------------------------------------------------------------------------

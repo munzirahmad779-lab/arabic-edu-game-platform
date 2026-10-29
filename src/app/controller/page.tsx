@@ -354,6 +354,11 @@ export default function ControllerPage() {
         teamId: selectedTeam.id,
         playerName: selectedTeam.name,
         optionKey,
+        // Indeks soal yang sedang ditampilkan stik ini. Server menolak
+        // press yang indeksnya tidak sama dengan indeks soal room saat
+        // ini (penjaga jawaban hantu), jadi pengiriman press ini yang
+        // terlambat tidak bisa tercatat di soal berikutnya.
+        questionIndex: gameState.currentQuestionIndex,
         action: "press",
         timestamp: Date.now(),
       };
@@ -398,6 +403,11 @@ export default function ControllerPage() {
 
         if (res.ok && result.success) {
           setStatusMessage(`✓ Jawaban ${optionKey} TERKUNCI! Menunggu tim lain & proyektor...`);
+        } else if (result.error === "STALE_QUESTION") {
+          // Press ini ditolak server karena soal sudah berganti: jawaban
+          // TIDAK tercatat dan tim TIDAK terkunci oleh server. Kunci
+          // lokal mengikuti state sinkron yang masuk seperti biasa.
+          setStatusMessage("⚠️ Soal sudah berganti di proyektor; jawaban tadi tidak tercatat.");
         } else if (result.error === "ALREADY_ANSWERED") {
           setStatusMessage(`🔒 Jawaban tim sudah terkunci sebelumnya (${result.existingAnswer || optionKey}).`);
         } else {

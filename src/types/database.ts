@@ -254,7 +254,7 @@ export interface Database {
       get_projector_room_state: { Args: { p_room_code: string }; Returns: Json; };
       is_projector_room_active: { Args: { p_room_code: string }; Returns: boolean; };
       sync_projector_room_state: { Args: { p_room_code: string; p_game_state: Json }; Returns: Json; };
-      press_projector_button: { Args: { p_room_code: string; p_team_id: string; p_player_name: string; p_option_id: string | null; p_option_key: string | null }; Returns: Json; };
+      press_projector_button: { Args: { p_room_code: string; p_team_id: string; p_player_name: string; p_option_id: string | null; p_option_key: string | null; p_question_index: number | null }; Returns: Json; };
       touch_projector_controller: { Args: { p_room_code: string; p_team_id: string }; Returns: number; };
       archive_room_session: { Args: { p_room_id: string }; Returns: string; };
       list_room_sessions: { Args: { p_room_id: string }; Returns: Array<{ session_id: string; session_number: number; started_at: string | null; ended_at: string | null; participant_count: number }>; };

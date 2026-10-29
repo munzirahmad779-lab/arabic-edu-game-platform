@@ -175,6 +175,14 @@ export interface ProjectorPressInput {
   playerName: string;
   optionId?: string | null;
   optionKey?: string | null;
+  /**
+   * Indeks soal yang sedang ditampilkan stik ketika tombol ditekan.
+   * Wajib ada dan wajib sama dengan indeks soal room saat ini; press
+   * tanpa indeks atau dengan indeks berbeda ditolak sebagai
+   * STALE_QUESTION (penjaga jawaban hantu: pengiriman press soal lama
+   * yang terlambat/duplikat tidak boleh tercatat di soal berikutnya).
+   */
+  questionIndex?: number | null;
 }
 
 export type ProjectorPressResult =
@@ -187,15 +195,16 @@ export type ProjectorPressResult =
     }
   | {
       success: false;
-      error: "ALREADY_ANSWERED";
+      error: "ALREADY_ANSWERED" | "STALE_QUESTION";
       existingAnswer: string | null;
     };
 
 /**
- * Applies a stick press to room data: heartbeat first, then one locked
- * answer per team per question. Used by the in-memory fallback; the
- * Supabase path performs the same steps atomically inside the
- * press_projector_button RPC (migration 0078).
+ * Applies a stick press to room data: heartbeat first, then the
+ * ghost-answer guard, then one locked answer per team per question.
+ * Used by the in-memory fallback; the Supabase path performs the same
+ * steps atomically inside the press_projector_button RPC (migration
+ * 0078).
  */
 export function applyPressToRoomData(
   data: RoomControllerData,
@@ -206,6 +215,24 @@ export function applyPressToRoomData(
   data.heartbeats[input.teamId] = now;
 
   const gs = data.gameState;
+
+  // Penjaga jawaban hantu: press hanya berlaku untuk soal yang sedang
+  // ditampilkan stik. Press tanpa indeks, atau yang indeksnya tidak
+  // sama dengan indeks soal room saat ini (press soal sebelumnya yang
+  // terlambat/duplikat, atau press dari masa depan), ditolak TANPA
+  // mencatat jawaban, event, atau kunci apa pun untuk tim itu.
+  if (
+    typeof input.questionIndex !== "number" ||
+    !Number.isFinite(input.questionIndex) ||
+    input.questionIndex !== gs.currentQuestionIndex
+  ) {
+    return {
+      success: false,
+      error: "STALE_QUESTION",
+      existingAnswer: null,
+    };
+  }
+
   const existing = gs.answeredTeams[input.teamId];
   if (existing) {
     return {
@@ -354,6 +381,7 @@ export async function syncProjectorGameState(
 
 interface PressProjectorButtonRpcResult {
   success?: boolean;
+  error?: string;
   eventId?: string;
   optionKey?: string;
   timestamp?: number;
@@ -363,7 +391,10 @@ interface PressProjectorButtonRpcResult {
 /**
  * Records a stick press in the shared store. The RPC checks and records the
  * answer atomically per room row, so two instances can no longer accept or
- * lose the same team's answer independently.
+ * lose the same team's answer independently. The RPC also enforces the
+ * ghost-answer guard: the press's question index must equal the room's
+ * current question index, otherwise it is rejected as STALE_QUESTION and
+ * nothing is recorded.
  */
 export async function pressProjectorButton(
   roomCode: string,
@@ -387,6 +418,7 @@ export async function pressProjectorButton(
       p_player_name: input.playerName,
       p_option_id: input.optionId ?? null,
       p_option_key: input.optionKey ?? null,
+      p_question_index: input.questionIndex ?? null,
     });
     if (error) throw error;
     const raw = (data ?? null) as PressProjectorButtonRpcResult | null;
@@ -397,6 +429,13 @@ export async function pressProjectorButton(
         optionKey: String(raw.optionKey ?? ""),
         timestamp: Number(raw.timestamp ?? now),
         isLocked: true,
+      };
+    }
+    if (raw?.error === "STALE_QUESTION") {
+      return {
+        success: false,
+        error: "STALE_QUESTION",
+        existingAnswer: null,
       };
     }
     return {

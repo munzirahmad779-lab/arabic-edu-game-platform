@@ -114,7 +114,7 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
       const result = applyPressToRoomData(
         data,
         "uji-press",
-        { teamId: "team-1", playerName: "Yaya", optionId: null, optionKey: "b" },
+        { teamId: "team-1", playerName: "Yaya", optionId: null, optionKey: "b", questionIndex: 0 },
         NOW + 10,
       );
       assert.equal(result.success, true);
@@ -137,13 +137,13 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
       applyPressToRoomData(
         data,
         "UJI-PRESS",
-        { teamId: "team-1", playerName: "Yaya", optionKey: "A" },
+        { teamId: "team-1", playerName: "Yaya", optionKey: "A", questionIndex: 0 },
         NOW,
       );
       const second = applyPressToRoomData(
         data,
         "UJI-PRESS",
-        { teamId: "team-1", playerName: "Yaya", optionKey: "D" },
+        { teamId: "team-1", playerName: "Yaya", optionKey: "D", questionIndex: 0 },
         NOW + 5000,
       );
       assert.equal(second.success, false);
@@ -162,17 +162,135 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
       applyPressToRoomData(
         data,
         "UJI-PRESS",
-        { teamId: "team-1", playerName: "Yaya", optionKey: "C" },
+        { teamId: "team-1", playerName: "Yaya", optionKey: "C", questionIndex: 0 },
         NOW,
       );
       const other = applyPressToRoomData(
         data,
         "UJI-PRESS",
-        { teamId: "team-2", playerName: "Siddiq" },
+        { teamId: "team-2", playerName: "Siddiq", questionIndex: 0 },
         NOW + 1,
       );
       assert.equal(other.success, true);
       assert.equal(data.gameState.answeredTeams["team-2"].optionKey, "A");
+    });
+  });
+
+  describe("Penjaga jawaban hantu (indeks soal pada press)", () => {
+    function roomAtIndex(index: number) {
+      const data = createDefaultProjectorRoomData(NOW);
+      data.gameState.phase = "question";
+      data.gameState.currentQuestionIndex = index;
+      return data;
+    }
+
+    test("Press dengan indeks cocok pada indeks bukan nol tercatat", () => {
+      const data = roomAtIndex(3);
+      const result = applyPressToRoomData(
+        data,
+        "UJI-HANTU",
+        { teamId: "team-4", playerName: "Kuning", optionKey: "A", questionIndex: 3 },
+        NOW + 10,
+      );
+      assert.equal(result.success, true);
+      assert.deepEqual(data.gameState.answeredTeams["team-4"], {
+        optionKey: "A",
+        timestamp: NOW + 10,
+      });
+      assert.equal(data.events.length, 1);
+    });
+
+    test("Press basi (indeks N-1 saat room di N) ditolak STALE_QUESTION: tidak tercatat, tim tidak terkunci, tanpa event", () => {
+      const data = roomAtIndex(3);
+      const result = applyPressToRoomData(
+        data,
+        "UJI-HANTU",
+        { teamId: "team-4", playerName: "Kuning", optionKey: "A", questionIndex: 2 },
+        NOW + 20,
+      );
+      assert.equal(result.success, false);
+      if (!result.success) {
+        assert.equal(result.error, "STALE_QUESTION");
+        assert.equal(result.existingAnswer, null);
+      }
+      assert.deepEqual(data.gameState.answeredTeams, {});
+      assert.equal(data.events.length, 0);
+      // Heartbeat tetap dicatat walau press ditolak (paritas ALREADY_ANSWERED)
+      assert.equal(data.heartbeats["team-4"], NOW + 20);
+    });
+
+    test("Press indeks masa depan (N+1 saat room di N) ditolak dan tidak tercatat", () => {
+      const data = roomAtIndex(3);
+      const result = applyPressToRoomData(
+        data,
+        "UJI-HANTU",
+        { teamId: "team-4", playerName: "Kuning", optionKey: "B", questionIndex: 4 },
+        NOW + 30,
+      );
+      assert.equal(result.success, false);
+      if (!result.success) assert.equal(result.error, "STALE_QUESTION");
+      assert.deepEqual(data.gameState.answeredTeams, {});
+      assert.equal(data.events.length, 0);
+    });
+
+    test("Press tanpa indeks soal ditolak STALE_QUESTION", () => {
+      const data = roomAtIndex(0);
+      const result = applyPressToRoomData(
+        data,
+        "UJI-HANTU",
+        { teamId: "team-1", playerName: "Yaya", optionKey: "A" },
+        NOW + 40,
+      );
+      assert.equal(result.success, false);
+      if (!result.success) assert.equal(result.error, "STALE_QUESTION");
+      assert.deepEqual(data.gameState.answeredTeams, {});
+    });
+
+    test("Skenario K14 lewat API async: duplikat press soal lama yang tiba sesudah room maju tidak menjadi jawaban hantu", async () => {
+      const code = "UJI-HANTU-ASYNC";
+      const first = await pressProjectorButton(code, {
+        teamId: "team-4",
+        playerName: "Kuning",
+        optionKey: "A",
+        questionIndex: 0,
+      });
+      assert.equal(first.success, true);
+
+      // Proyektor maju ke soal berikutnya (indeks 1), jawaban dibersihkan
+      const before = await fetchProjectorRoomData(code);
+      assert.ok(before);
+      const advanced = buildSyncedGameState(
+        before.gameState,
+        { phase: "question", currentQuestionIndex: 1 },
+        Date.now(),
+      );
+      await syncProjectorGameState(code, advanced);
+
+      // Pengiriman ulang press soal 0 yang terlambat tiba sekarang
+      const late = await pressProjectorButton(code, {
+        teamId: "team-4",
+        playerName: "Kuning",
+        optionKey: "A",
+        questionIndex: 0,
+      });
+      assert.equal(late.success, false);
+      if (!late.success) assert.equal(late.error, "STALE_QUESTION");
+
+      const after = await fetchProjectorRoomData(code);
+      assert.ok(after);
+      assert.deepEqual(after.gameState.answeredTeams, {});
+
+      // Tim tidak terkunci oleh penolakan itu: press segar soal berjalan lolos
+      const fresh = await pressProjectorButton(code, {
+        teamId: "team-4",
+        playerName: "Kuning",
+        optionKey: "D",
+        questionIndex: 1,
+      });
+      assert.equal(fresh.success, true);
+      const finalData = await fetchProjectorRoomData(code);
+      assert.ok(finalData);
+      assert.equal(finalData.gameState.answeredTeams["team-4"].optionKey, "D");
     });
   });
 
@@ -200,6 +318,7 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
         teamId: "team-1",
         playerName: "Yaya",
         optionKey: "C",
+        questionIndex: 0,
       });
       assert.equal(result.success, true);
       const data = await fetchProjectorRoomData("UJI-SHARED-A");
@@ -214,6 +333,7 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
         teamId: "team-3",
         playerName: "Anya",
         optionKey: "D",
+        questionIndex: 0,
       });
       const before = await fetchProjectorRoomData(code);
       assert.ok(before);

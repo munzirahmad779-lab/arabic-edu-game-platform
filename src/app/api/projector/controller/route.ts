@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       playerName = "Pemain",
       optionId,
       optionKey,
+      questionIndex,
       action = "press",
       // State sync parameters (from Projector Screen)
       phase,
@@ -122,16 +123,34 @@ export async function POST(req: NextRequest) {
 
     // 2. STUDENT BUTTON PRESS ACTION
     if (action === "press") {
-      // Guard (inside the store/RPC): a team can only answer ONCE per
-      // question; the press also records the team's heartbeat.
+      // Guards (inside the store/RPC): the press must carry the question
+      // index shown on the stick and it must equal the room's current
+      // question index, otherwise the press is rejected as STALE_QUESTION
+      // and nothing is recorded (ghost-answer guard); a team can only
+      // answer ONCE per question (ALREADY_ANSWERED); the press also
+      // records the team's heartbeat.
       const result = await pressProjectorButton(roomCode, {
         teamId,
         playerName,
         optionId,
         optionKey,
+        questionIndex:
+          typeof questionIndex === "number" ? questionIndex : null,
       });
 
       if (!result.success) {
+        if (result.error === "STALE_QUESTION") {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "STALE_QUESTION",
+              message:
+                "Soal sudah berganti; jawaban untuk soal sebelumnya tidak dicatat.",
+              existingAnswer: null,
+            },
+            { status: 409 },
+          );
+        }
         return NextResponse.json(
           {
             success: false,
