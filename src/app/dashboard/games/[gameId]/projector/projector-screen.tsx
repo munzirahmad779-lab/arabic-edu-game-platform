@@ -113,16 +113,6 @@ const INITIAL_TEAMS: Array<Omit<ProjectorTeam, "members" | "currentMemberIndex" 
   },
   {
     id: "team-3",
-    name: "Tim Kuning",
-    colorName: "Kuning",
-    themeGradient: "from-amber-500 to-yellow-600",
-    badgeBg: "bg-amber-500",
-    accentBorder: "border-amber-500",
-    textColor: "text-amber-400",
-    cardBg: "bg-amber-950/40",
-  },
-  {
-    id: "team-4",
     name: "Tim Hijau",
     colorName: "Hijau",
     themeGradient: "from-emerald-600 to-teal-700",
@@ -130,6 +120,16 @@ const INITIAL_TEAMS: Array<Omit<ProjectorTeam, "members" | "currentMemberIndex" 
     accentBorder: "border-emerald-500",
     textColor: "text-emerald-400",
     cardBg: "bg-emerald-950/40",
+  },
+  {
+    id: "team-4",
+    name: "Tim Kuning",
+    colorName: "Kuning",
+    themeGradient: "from-amber-500 to-yellow-600",
+    badgeBg: "bg-amber-500",
+    accentBorder: "border-amber-500",
+    textColor: "text-amber-400",
+    cardBg: "bg-amber-950/40",
   },
 ];
 
@@ -1010,7 +1010,7 @@ export function ProjectorScreen({
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Tentukan berapa murid yang mengisi masing-masing dari 4 tim (Merah, Biru, Kuning, Hijau).
+                  Tentukan berapa murid yang mengisi masing-masing dari 4 tim (Merah, Biru, Hijau, Kuning).
                 </p>
               </div>
 
