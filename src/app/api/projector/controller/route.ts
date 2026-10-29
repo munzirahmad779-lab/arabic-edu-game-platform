@@ -80,7 +80,13 @@ export async function POST(req: NextRequest) {
       // If new question started, reset answeredTeams if not explicitly provided
       let updatedAnsweredTeams: Record<string, { optionKey: string; timestamp: number }> = {};
       if (answeredTeams && typeof answeredTeams === "object") {
-        updatedAnsweredTeams = { ...answeredTeams };
+        if (newQIndex === prevQIndex) {
+          // Same question: union-merge so a projector sync can never erase an
+          // answer the server already recorded (e.g. via the HTTP press path)
+          updatedAnsweredTeams = { ...roomData.gameState.answeredTeams, ...answeredTeams };
+        } else {
+          updatedAnsweredTeams = { ...answeredTeams };
+        }
       } else if (newQIndex === prevQIndex) {
         updatedAnsweredTeams = roomData.gameState.answeredTeams;
       }

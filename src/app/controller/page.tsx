@@ -67,6 +67,10 @@ export default function ControllerPage() {
   const [isConnected, setIsConnected] = useState(true);
 
   const prevQIndexRef = useRef<number>(-1);
+  // Sticky local answer: question index + key this team has answered, kept in
+  // refs so sync payloads can be checked without re-creating callbacks.
+  const answeredQIndexRef = useRef<number>(-1);
+  const answeredKeyRef = useRef<string | null>(null);
   const lastTapTimeRef = useRef<number>(0);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const realtimeChannelRef = useRef<
@@ -113,10 +117,35 @@ export default function ControllerPage() {
         prevQIndexRef.current = nextQIndex;
       }
 
-      // Unlock cleanly when:
-      // 1. Moving to new question
-      // 2. Incoming payload specifically confirms team has not answered (e.g. answeredTeams is empty on question phase)
-      if (isNewQuestion || (nextPhase === "question" && !teamHasAnswered)) {
+      const effectiveQIndex = typeof nextQIndex === "number" ? nextQIndex : prevQ;
+
+      // Record any server-confirmed answer for this question index so the
+      // local lock can stay sticky for the rest of this question.
+      if (teamHasAnswered) {
+        answeredQIndexRef.current = effectiveQIndex;
+        if (teamAnswerKey) {
+          answeredKeyRef.current = teamAnswerKey;
+        }
+      }
+
+      // Sticky lock: once this team has answered at the current question
+      // index, later sync payloads for the SAME index must not unlock the
+      // stick just because they (transiently) omit this team's answer.
+      const stickyAnswered =
+        answeredQIndexRef.current !== -1 && answeredQIndexRef.current === effectiveQIndex;
+      const effectiveTeamHasAnswered = teamHasAnswered || stickyAnswered;
+      const effectiveTeamAnswerKey =
+        teamAnswerKey ?? (stickyAnswered ? answeredKeyRef.current : null);
+
+      // Phases that end the game reset the local lock as well
+      const isResetPhase = nextPhase === "lobby" || nextPhase === "finished";
+
+      // Unlock cleanly only when:
+      // 1. Moving to a new question, or
+      // 2. The game returns to the lobby / finishes
+      if ((isNewQuestion && !teamHasAnswered) || isResetPhase) {
+        answeredQIndexRef.current = -1;
+        answeredKeyRef.current = null;
         setHasLocallyAnswered(false);
         setLastPressedKey(null);
         setStatusMessage(null);
@@ -126,17 +155,17 @@ export default function ControllerPage() {
             navigator.vibrate([80, 40, 80]);
           } catch {}
         }
-      } else if (teamHasAnswered) {
+      } else if (effectiveTeamHasAnswered) {
         setHasLocallyAnswered(true);
-        if (teamAnswerKey) {
-          setLastPressedKey(teamAnswerKey);
+        if (effectiveTeamAnswerKey) {
+          setLastPressedKey(effectiveTeamAnswerKey);
         }
       }
 
       setGameState((prev) => {
         const qIdx = typeof nextQIndex === "number" ? nextQIndex : prev.currentQuestionIndex;
         const phase = nextPhase ?? prev.phase;
-        const isLocked = phase !== "question" || teamHasAnswered;
+        const isLocked = phase !== "question" || effectiveTeamHasAnswered;
 
         return {
           ...prev,
@@ -145,8 +174,8 @@ export default function ControllerPage() {
           currentQuestionIndex: qIdx,
           timerSeconds: typeof incoming.timerSeconds === "number" ? incoming.timerSeconds : prev.timerSeconds,
           totalQuestions: typeof incoming.totalQuestions === "number" ? incoming.totalQuestions : prev.totalQuestions,
-          hasMyTeamAnswered: teamHasAnswered,
-          myTeamAnswer: teamAnswerKey ?? (teamHasAnswered ? prev.myTeamAnswer : null),
+          hasMyTeamAnswered: effectiveTeamHasAnswered,
+          myTeamAnswer: effectiveTeamAnswerKey ?? (effectiveTeamHasAnswered ? prev.myTeamAnswer : null),
           isLocked,
         };
       });
@@ -309,9 +338,11 @@ export default function ControllerPage() {
         }
       }
 
-      // Instant optimistic local lock
+      // Instant optimistic local lock (sticky for this question index)
       setHasLocallyAnswered(true);
       setLastPressedKey(optionKey);
+      answeredQIndexRef.current = gameState.currentQuestionIndex;
+      answeredKeyRef.current = optionKey;
       setSubmitting(true);
       setStatusMessage(`Mengunci pilihan ${optionKey}...`);
 
@@ -375,7 +406,7 @@ export default function ControllerPage() {
         setSubmitting(false);
       }
     },
-    [selectedTeam, hasLocallyAnswered, gameState.hasMyTeamAnswered, gameState.phase, gameState.myTeamAnswer, lastPressedKey, roomCode],
+    [selectedTeam, hasLocallyAnswered, gameState.hasMyTeamAnswered, gameState.phase, gameState.myTeamAnswer, gameState.currentQuestionIndex, lastPressedKey, roomCode],
   );
 
   // 1. SELECT TEAM CONTROLLER SLOT
@@ -478,6 +509,8 @@ export default function ControllerPage() {
               setSelectedTeam(null);
               setHasLocallyAnswered(false);
               setLastPressedKey(null);
+              answeredQIndexRef.current = -1;
+              answeredKeyRef.current = null;
             }}
             className="text-[11px] font-bold text-slate-400 hover:text-white underline"
           >

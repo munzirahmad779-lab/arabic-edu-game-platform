@@ -1429,7 +1429,7 @@ export function ProjectorScreen({
   // -------------------------------------------------------------
   if (phase === "leaderboard") {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative font-sans">
+      <main className="h-dvh bg-slate-950 text-white flex flex-col justify-between p-4 md:p-8 select-none relative font-sans">
         <header className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🏆</span>
@@ -1438,7 +1438,7 @@ export function ProjectorScreen({
           <span className="text-xs text-slate-400 font-mono">Soal {currentQuestionIndex + 1} / {totalQuestions}</span>
         </header>
 
-        <div className="max-w-3xl mx-auto w-full my-auto py-6 space-y-3">
+        <div className="max-w-3xl mx-auto w-full flex-1 min-h-0 overflow-y-auto py-6 space-y-3">
           {sortedLeaderboard.map((team, idx) => (
             <div
               key={team.id}
@@ -1458,7 +1458,7 @@ export function ProjectorScreen({
           ))}
         </div>
 
-        <footer className="flex items-center justify-center gap-4 pt-4 border-t border-white/10">
+        <footer className="flex shrink-0 items-center justify-center gap-4 pt-4 border-t border-white/10">
           <button
             type="button"
             onClick={handleGoToNextQuestion}
@@ -1476,7 +1476,7 @@ export function ProjectorScreen({
   // ACTIVE QUESTION & REVEAL PHASE (Kahoot Arena Showdown)
   // -------------------------------------------------------------
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-3 md:p-6 select-none relative overflow-hidden font-sans game-screen font-arabic">
+    <main className="h-dvh bg-slate-950 text-white flex flex-col justify-between p-3 md:p-6 select-none relative overflow-hidden font-sans game-screen font-arabic">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-900/15 blur-[150px] pointer-events-none rounded-full" />
 
       {/* TOP HUD: Progress, Big Timer, Fullscreen */}
@@ -1552,7 +1552,7 @@ export function ProjectorScreen({
       </header>
 
       {/* Main Question & 4 Cards */}
-      <section className="relative z-10 my-auto py-2 max-w-6xl mx-auto w-full flex flex-col gap-4">
+      <section className="relative z-10 flex-1 min-h-0 overflow-y-auto py-2 max-w-6xl mx-auto w-full flex flex-col gap-4">
         {/* Question Text Box */}
         <div className="rounded-3xl bg-slate-900/90 border border-white/15 p-5 md:p-8 text-center shadow-2xl backdrop-blur relative">
           <h2
@@ -1645,7 +1645,7 @@ export function ProjectorScreen({
       </section>
 
       {/* Footer Podiums and Controls */}
-      <footer className="relative z-20 border-t border-white/10 pt-3 mt-1">
+      <footer className="relative z-20 shrink-0 border-t border-white/10 pt-3 mt-1">
         {phase === "reveal" ? (
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-white/15 p-3.5 rounded-2xl shadow-2xl mb-2 animate-in slide-in-from-bottom-2">
             <div className="flex items-center gap-3">
