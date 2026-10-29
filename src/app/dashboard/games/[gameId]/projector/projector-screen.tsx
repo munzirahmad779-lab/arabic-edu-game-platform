@@ -632,7 +632,7 @@ export function ProjectorScreen({
   }, [roomCode, phase, handleRecordAnswer]);
 
   // Continuously synchronize projector state with controller API & Realtime channels
-  useEffect(() => {
+  const sendProjectorSync = useCallback(() => {
     const answeredTeamsObj: Record<string, { optionKey: string; timestamp: number }> = {};
     for (const [tId, rec] of Object.entries(answers)) {
       answeredTeamsObj[tId] = { optionKey: rec.optionKey, timestamp: rec.answeredAt };
@@ -686,6 +686,31 @@ export function ProjectorScreen({
       }),
     }).catch(() => {});
   }, [gameStarted, phase, currentQuestionIndex, timerSeconds, totalQuestions, activeQuestion.question_text, answers, roomCode]);
+
+  // Sync berjalan setiap kali state yang relevan berubah (identitas
+  // callback berubah persis pada dependensi yang sama seperti effect
+  // sebelumnya).
+  useEffect(() => {
+    sendProjectorSync();
+  }, [sendProjectorSync]);
+
+  // Keepalive sync: selama room aktif, kirim ulang sync yang sama tiap
+  // 15 detik dengan nilai saat itu juga. Tanpa ini, jeda panjang
+  // membekukan timerSeconds sehingga tidak ada dependensi sync yang
+  // berubah, aliran sync berhenti, dan baris room kedaluwarsa (60 detik)
+  // membuat stik jatuh ke layar tunggu (kendala B.1). Ref cermin
+  // memastikan interval selalu memanggil closure terbaru (timer yang
+  // sedang berjalan atau beku apa adanya, bukan reset).
+  const sendProjectorSyncRef = useRef(sendProjectorSync);
+  sendProjectorSyncRef.current = sendProjectorSync;
+
+  useEffect(() => {
+    if (!gameStarted || phase === "finished") return;
+    const keepaliveInterval = window.setInterval(() => {
+      sendProjectorSyncRef.current();
+    }, 15000);
+    return () => window.clearInterval(keepaliveInterval);
+  }, [gameStarted, phase]);
 
   // Wireless Phone Controller Poller
   useEffect(() => {
