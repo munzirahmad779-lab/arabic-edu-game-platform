@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GameRegistry } from "@/lib/game-engine/registry";
-import { ActiveRoomStore } from "@/lib/game-engine/room-store";
+import {
+  ActiveRoomStore,
+  hasCompleteMultipleChoiceOptions,
+} from "@/lib/game-engine/room-store";
 import type { ExplanationTiming } from "@/types/database";
 
 const MAX_GAME_NAME_LENGTH = 120;
@@ -534,6 +537,24 @@ export async function createRoom(formData: FormData) {
     const current = optionsByQuestion.get(option.question_id) ?? [];
     current.push(option);
     optionsByQuestion.set(option.question_id, current);
+  }
+
+  // A standard room quiz must deliver the real A/B/C/D choices. Do not create
+  // a room that would force the student/projector UI to invent placeholders.
+  const requiresFourChoices =
+    game.mode !== "anagram" &&
+    game.mode !== "matching" &&
+    game.game_type !== "anagram";
+  if (
+    requiresFourChoices &&
+    questionIds.some(
+      (questionId) =>
+        !hasCompleteMultipleChoiceOptions(optionsByQuestion.get(questionId)),
+    )
+  ) {
+    redirect(
+      "/dashboard/games?error=invalid_options&msg=Setiap+soal+room+harus+memiliki+pilihan+A%2C+B%2C+C%2C+D+yang+terisi.",
+    );
   }
 
   const mediaByQuestion = new Map<

@@ -41,10 +41,19 @@ function readLocale(): Locale {
   return isLocale(v) ? v : DEFAULT_LOCALE;
 }
 
-export default function Error({ reset }: { reset: () => void }) {
+export default function ErrorBoundary({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   const [t, setT] = useState<StatusDict | null>(null);
 
   useEffect(() => {
+    if (error) {
+      console.error("[Root Error Boundary]:", error);
+    }
     let alive = true;
     (async () => {
       try {
@@ -57,7 +66,7 @@ export default function Error({ reset }: { reset: () => void }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [error]);
 
   const title = t?.error_title ?? "An unexpected error occurred";
   const desc =

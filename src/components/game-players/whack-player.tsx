@@ -16,6 +16,12 @@ export function WhackPlayer({
   isRtl?: boolean;
 }) {
   const [questionList, setQuestionList] = useState(() => [...questions]);
+
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      setQuestionList([...questions]);
+    }
+  }, [questions]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);

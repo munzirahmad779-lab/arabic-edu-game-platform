@@ -34,22 +34,26 @@ interface GameShellProps {
   readonly children: ReactNode;
 }
 
+// Tema Opsi C: satu latar teal tua brand Magguru untuk semua tipe game di
+// room siswa (teal-700 #1F4A4E -> teal-600 #255759 -> teal-500 #2F6D72).
+const BRAND_GRADIENT = "from-teal-700 via-teal-600 to-teal-500";
+
 const BG_GRADIENTS: Record<NormalizedGameType, string> = {
-  runner: "from-emerald-800 via-teal-900 to-slate-950",
-  matching: "from-indigo-800 via-slate-900 to-violet-950",
-  penalty: "from-amber-800 via-stone-900 to-emerald-950",
-  anagram: "from-violet-800 via-purple-900 to-slate-950",
-  quiz: "from-violet-700 via-indigo-800 to-sky-900",
-  kahoot: "from-rose-800 via-purple-900 to-indigo-950",
-  millionaire: "from-amber-900 via-slate-900 to-indigo-950",
-  jeopardy: "from-indigo-900 via-slate-900 to-blue-950",
-  memory_card: "from-purple-900 via-indigo-900 to-slate-950",
-  wordle: "from-emerald-900 via-slate-900 to-teal-950",
-  scramble: "from-violet-900 via-purple-900 to-slate-950",
-  hangman: "from-sky-900 via-slate-900 to-indigo-950",
-  wheel_fortune: "from-amber-800 via-rose-900 to-purple-950",
-  whack_mole: "from-orange-900 via-amber-950 to-stone-950",
-  matching_column: "from-cyan-900 via-slate-900 to-indigo-950",
+  runner: BRAND_GRADIENT,
+  matching: BRAND_GRADIENT,
+  penalty: BRAND_GRADIENT,
+  anagram: BRAND_GRADIENT,
+  quiz: BRAND_GRADIENT,
+  kahoot: BRAND_GRADIENT,
+  millionaire: BRAND_GRADIENT,
+  jeopardy: BRAND_GRADIENT,
+  memory_card: BRAND_GRADIENT,
+  wordle: BRAND_GRADIENT,
+  scramble: BRAND_GRADIENT,
+  hangman: BRAND_GRADIENT,
+  wheel_fortune: BRAND_GRADIENT,
+  whack_mole: BRAND_GRADIENT,
+  matching_column: BRAND_GRADIENT,
 };
 
 export function GameShell({

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import JoinLinkActions from "./join-link-actions";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import RoomLobby from "./room-lobby";
 import StartGameButton from "./start-game-button";
 import ArchiveButton from "./archive-button";
@@ -9,6 +10,7 @@ import SessionHistory from "./session-history";
 import { TeacherLiveControls } from "./teacher-live-controls";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { ActiveRoomStore, normalizeSnapshotQuestion } from "@/lib/game-engine/room-store";
 
 type SearchParams = { roomId?: string; archived?: string; error?: string };
 
@@ -45,9 +47,7 @@ export default async function RoomPage({
   searchParams: SearchParams;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return null;
 
   const locale = await getLocale();
@@ -88,18 +88,20 @@ export default async function RoomPage({
 
   const cutoff = new Date(Date.now() - 60_000).toISOString();
 
-  const { data: participants } = await supabase
-    .from("room_participants")
-    .select(
-      "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
-    )
-    .eq("room_id", room.id)
-    .gte("last_seen_at", cutoff)
-    .order("joined_at", { ascending: true });
+  const [participantsResult, sessionResult] = await Promise.all([
+    supabase
+      .from("room_participants")
+      .select(
+        "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
+      )
+      .eq("room_id", room.id)
+      .gte("last_seen_at", cutoff)
+      .order("joined_at", { ascending: true }),
+    supabase.rpc("list_room_sessions", { p_room_id: room.id }),
+  ]);
 
-  const { data: sessionList } = await supabase.rpc("list_room_sessions", {
-    p_room_id: room.id,
-  });
+  const participants = participantsResult.data;
+  const sessionList = sessionResult.data;
 
   const sessions = (sessionList ?? []) as SessionRow[];
 
@@ -119,16 +121,15 @@ export default async function RoomPage({
   const modeLabel = gr[modeLookupKey] ?? gameMode;
   const backsoundId = snapshot.game?.backsound_track_id ?? null;
 
-  let backsoundName: string | null = null;
-  if (backsoundId) {
-    const { data: track } = await supabase
-      .from("teacher_audio_tracks")
-      .select("name")
-      .eq("id", backsoundId)
-      .eq("teacher_id", user.id)
-      .maybeSingle();
-    backsoundName = track?.name ?? null;
-  }
+  const { data: backsoundTrack } = backsoundId
+    ? await supabase
+        .from("teacher_audio_tracks")
+        .select("name")
+        .eq("id", backsoundId)
+        .eq("teacher_id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const backsoundName = backsoundTrack?.name ?? null;
 
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let publicBaseUrl: string;
@@ -149,6 +150,25 @@ export default async function RoomPage({
 
   const joinUrl = `${publicBaseUrl}/join?code=${room.code}`;
   const questionCount = snapshot.questions?.length ?? 0;
+
+  const rawQuestions = snapshot.questions ?? [];
+  const normalizedQuestions = rawQuestions
+    .map((q, idx) => normalizeSnapshotQuestion(q, idx))
+    .filter((q): q is NonNullable<typeof q> => q !== null);
+
+  ActiveRoomStore.registerRoom({
+    id: room.id,
+    code: room.code,
+    game_name: gameName,
+    game_type: snapshot.game?.mode === "anagram" ? "anagram" : "quiz",
+    game_mode: gameMode,
+    duration_seconds: snapshot.game?.duration_seconds ?? 300,
+    capacity: room.capacity,
+    state: room.state as "waiting" | "running" | "ended",
+    started_at: room.started_at,
+    current_question_index: 0,
+    questions: normalizedQuestions,
+  });
 
   return (
     <main

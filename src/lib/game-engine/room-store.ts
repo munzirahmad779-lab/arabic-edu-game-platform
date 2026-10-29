@@ -31,6 +31,35 @@ export type RoomQuestion = {
   media?: RoomMedia[];
 };
 
+export const MULTIPLE_CHOICE_OPTION_KEYS = ["A", "B", "C", "D"] as const;
+
+function isPlaceholderOptionText(text: string, key: string): boolean {
+  return text
+    .trim()
+    .replace(/^[\[({<]+|[\])}>]+$/g, "")
+    .trim()
+    .toLowerCase() === `pilihan ${key.toLowerCase()}`;
+}
+
+export function hasCompleteMultipleChoiceOptions(
+  options: Array<{ option_key?: unknown; option_text?: unknown }> | null | undefined,
+): boolean {
+  if (!Array.isArray(options)) return false;
+
+  const byKey = new Map<string, string>();
+  for (const option of options) {
+    const key = String(option.option_key ?? "").trim().toUpperCase();
+    const text = String(option.option_text ?? "").trim();
+    if (!MULTIPLE_CHOICE_OPTION_KEYS.includes(key as (typeof MULTIPLE_CHOICE_OPTION_KEYS)[number])) {
+      continue;
+    }
+    if (byKey.has(key) || !text || isPlaceholderOptionText(text, key)) return false;
+    byKey.set(key, text);
+  }
+
+  return MULTIPLE_CHOICE_OPTION_KEYS.every((key) => Boolean(byKey.get(key)));
+}
+
 export type ParticipantSubmission = {
   question_id: string;
   selected_option_id: string | null;
@@ -109,8 +138,12 @@ export function normalizeSnapshotQuestion(
   const explanationTiming = String(
     item.explanation_timing ?? inner.explanation_timing ?? "after_each_question"
   );
+  // JANGAN mengarang kunci jawaban: soal dari RPC sesi memang tidak membawa
+  // correct_option_key (disembunyikan dari siswa secara sengaja). Default "A"
+  // lama membuat penilaian cadangan di store menganggap jawaban berkunci A
+  // selalu benar. Kunci tak dikenal = "" (store tidak bisa menilai soal itu).
   const correctOptionKey = String(
-    inner.correct_option_key ?? item.correct_option_key ?? "A"
+    inner.correct_option_key ?? item.correct_option_key ?? ""
   ).trim().toUpperCase();
 
   const rawOptions = (Array.isArray(inner.options)
@@ -303,6 +336,10 @@ export const ActiveRoomStore = {
    * Retrieve room by ID
    */
   getRoomById(roomId: string): StoredRoom | null {
+    return roomStore.get(roomId) ?? null;
+  },
+
+  getRoom(roomId: string): StoredRoom | null {
     return roomStore.get(roomId) ?? null;
   },
 

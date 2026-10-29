@@ -97,6 +97,51 @@ export async function resetStudentPin(formData: FormData) {
   redirect(`/dashboard/students?classId=${encodeURIComponent(classId)}&updated=1`);
 }
 
+export async function updateStudent(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const studentId = getField(formData, "student_id");
+  const classId = getField(formData, "class_id");
+  const name = getField(formData, "name");
+  const pin = getField(formData, "pin");
+
+  if (!studentId || !classId || !name || name.length > 100) {
+    redirect(
+      `/dashboard/students?classId=${encodeURIComponent(classId)}&error=invalid_name`
+    );
+  }
+
+  // PIN kosong berarti PIN lama dipertahankan (edit nama saja).
+  if (pin && !/^\d{4,6}$/.test(pin)) {
+    redirect(
+      `/dashboard/students?classId=${encodeURIComponent(classId)}&error=invalid_pin`
+    );
+  }
+
+  const { error } = await supabase.rpc("update_student", {
+    p_student_id: studentId,
+    p_name: name,
+    p_pin: pin || null,
+  });
+
+  if (error) {
+    redirect(
+      `/dashboard/students?classId=${encodeURIComponent(classId)}&error=${errorCode(
+        String(error.message ?? "")
+      )}`
+    );
+  }
+
+  revalidatePath("/dashboard/students");
+  redirect(`/dashboard/students?classId=${encodeURIComponent(classId)}&updated=1`);
+}
+
 export async function deleteStudent(formData: FormData) {
   const supabase = await createClient();
 

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Hero3D } from "@/components/three/hero-3d";
+import { useSearchParams } from "next/navigation";
 import { loginStudent } from "../actions";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { StudentHeroVisual } from "@/components/student-hero-visual";
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/i18n/dictionaries";
 
 export default function StudentLoginPage() {
+  const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +31,20 @@ export default function StudentLoginPage() {
       ?.split("=")[1];
     const loc: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
     setLocale(loc);
-    void getDictionary(loc).then(setDict);
-  }, []);
+    void getDictionary(loc).then((nextDict) => {
+      setDict(nextDict);
+
+      const errorCode = searchParams.get("error");
+      const messages = nextDict.login_student;
+      const errorMessageByCode: Record<string, string | undefined> = {
+        invalid_length: messages.error_invalid_length,
+        invalid: messages.error_invalid,
+        too_many: messages.error_too_many,
+        network: messages.error_network,
+      };
+      setError(errorCode ? errorMessageByCode[errorCode] ?? null : null);
+    });
+  }, [searchParams]);
 
   if (!dict) {
     return (
@@ -110,7 +124,10 @@ export default function StudentLoginPage() {
             </p>
 
             {error ? (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800"
+              >
                 {error}
               </div>
             ) : null}
@@ -188,7 +205,7 @@ export default function StudentLoginPage() {
 
           <div className="relative">
             <div className="absolute inset-0 -z-10 rounded-[3rem] bg-gradient-to-br from-[#8FA68E]/40 to-[#D97757]/20 blur-2xl" />
-            <Hero3D />
+            <StudentHeroVisual />
           </div>
         </section>
       </div>

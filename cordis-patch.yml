@@ -1,0 +1,104 @@
+apiVersion: cordis.io/v1
+kind: EngineRegistryPatch
+metadata:
+  name: arabic-edu-32-games-final
+  description: "Generated from real build log 32/32 pages pass"
+spec:
+  registryPath: "./components/games/engine-registry.tsx"
+  engines:
+    - slug: "porogapit-arena"
+      engine: "porogapit-arena"
+      enabled: true
+    - slug: "math-domino-arena"
+      engine: "math-domino-arena"
+      enabled: true
+    - slug: "jejak-angka"
+      engine: "jejak-angka"
+      enabled: true
+    - slug: "helirescue"
+      engine: "helirescue"
+      enabled: true
+    - slug: "sciencelink"
+      engine: "sciencelink"
+      enabled: true
+    - slug: "banua-fruit-blast"
+      engine: "banua-fruit-blast"
+      enabled: true
+    - slug: "si-pemanah"
+      engine: "si-pemanah"
+      enabled: true
+    - slug: "rimba-pedia"
+      engine: "rimba-pedia"
+      enabled: true
+    - slug: "celestial-weaver"
+      engine: "celestial-weaver"
+      enabled: true
+    - slug: "tanzib"
+      engine: "tanzib"
+      enabled: true
+    - slug: "puzzle"
+      engine: "puzzle"
+      enabled: true
+    - slug: "martabak-pecahan"
+      engine: "martabak-pecahan"
+      enabled: true
+    - slug: "doodle"
+      engine: "doodle"
+      enabled: true
+    - slug: "si-taktik"
+      engine: "si-taktik"
+      enabled: true
+    - slug: "traditional"
+      engine: "traditional"
+      enabled: true
+    - slug: "space-war"
+      engine: "space-war"
+      enabled: true
+    - slug: "ai-basketball"
+      engine: "ai-basketball"
+      enabled: true
+    - slug: "mancing-kata"
+      engine: "mancing-kata"
+      enabled: true
+    - slug: "kancil"
+      engine: "kancil"
+      enabled: true
+    - slug: "nusaboard"
+      engine: "nusaboard"
+      enabled: true
+    - slug: "jagoan-kata"
+      engine: "jagoan-kata"
+      enabled: true
+    - slug: "geo-squad"
+      engine: "geo-squad"
+      enabled: true
+    - slug: "ruang-io"
+      engine: "ruang-io"
+      enabled: true
+    - slug: "gabung-ceria"
+      engine: "gabung-ceria"
+      enabled: true
+    - slug: "color-link-junior"
+      engine: "color-link-junior"
+      enabled: true
+    - slug: "adu-tarik-dino"
+      engine: "adu-tarik-dino"
+      enabled: true
+    - slug: "tatap-hap"
+      engine: "tatap-hap"
+      enabled: true
+    - slug: "cocok-logi"
+      engine: "cocok-logi"
+      enabled: true
+    - slug: "mesin-koleksi"
+      engine: "mesin-koleksi"
+      enabled: true
+    - slug: "pendekar-balon"
+      engine: "pendekar-balon"
+      enabled: true
+    - slug: "detektif-cilik"
+      engine: "detektif-cilik"
+      enabled: true
+    - slug: "mewarnai"
+      engine: "mewarnai"
+      enabled: true

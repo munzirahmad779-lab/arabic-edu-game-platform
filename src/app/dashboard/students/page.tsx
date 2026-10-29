@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createStudent, deleteStudent, resetStudentPin } from "./actions";
+import { createStudent, deleteStudent, resetStudentPin, updateStudent } from "./actions";
 import { StudentImportForm } from "./import-form";
 import { ClassCard } from "./class-card";
 import { ClassTabs } from "./class-tabs";
@@ -16,6 +16,7 @@ type SearchParams = {
   created?: string;
   updated?: string;
   deleted?: string;
+  editStudent?: string;
 };
 
 type StudentRow = {
@@ -302,7 +303,39 @@ export default async function StudentsPage({
                                     </p>
                                   ) : null}
                                 </div>
-                                <form action={deleteStudent}>
+                                <div className="flex shrink-0 gap-1.5">
+                                  <Link
+                                    href={`/dashboard/students?classId=${cls.id}&editStudent=${s.id}`}
+                                    className="rounded-lg bg-indigo-100 px-3 py-1.5 text-[10px] font-black text-indigo-700 transition hover:bg-indigo-200"
+                                  >
+                                    {dict.common.edit}
+                                  </Link>
+                                  <form action={deleteStudent}>
+                                    <input
+                                      type="hidden"
+                                      name="student_id"
+                                      value={s.id}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="class_id"
+                                      value={cls.id}
+                                    />
+                                    <button
+                                      type="submit"
+                                      className="rounded-lg bg-red-100 px-3 py-1.5 text-[10px] font-black text-red-700 transition hover:bg-red-200"
+                                    >
+                                      {dict.common.delete}
+                                    </button>
+                                  </form>
+                                </div>
+                              </div>
+
+                              {searchParams.editStudent === s.id ? (
+                                <form
+                                  action={updateStudent}
+                                  className="mt-2 space-y-2 rounded-xl border border-indigo-200 bg-indigo-50 p-2"
+                                >
                                   <input
                                     type="hidden"
                                     name="student_id"
@@ -313,14 +346,41 @@ export default async function StudentsPage({
                                     name="class_id"
                                     value={cls.id}
                                   />
-                                  <button
-                                    type="submit"
-                                    className="rounded-lg bg-red-100 px-3 py-1.5 text-[10px] font-black text-red-700 transition hover:bg-red-200"
-                                  >
-                                    {dict.common.delete}
-                                  </button>
+                                  <input
+                                    name="name"
+                                    type="text"
+                                    defaultValue={s.name}
+                                    required
+                                    maxLength={100}
+                                    placeholder={dict.login_student.label_name}
+                                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                                  />
+                                  <input
+                                    name="pin"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]{4,6}"
+                                    minLength={4}
+                                    maxLength={6}
+                                    placeholder={`${dict.login_student.label_pin} baru (kosongkan bila tetap)`}
+                                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-center text-xs tracking-[0.2em]"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="submit"
+                                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[10px] font-black text-white transition hover:bg-indigo-700"
+                                    >
+                                      {dict.common.save}
+                                    </button>
+                                    <Link
+                                      href={`/dashboard/students?classId=${cls.id}`}
+                                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 transition hover:bg-slate-50"
+                                    >
+                                      {dict.common.cancel}
+                                    </Link>
+                                  </div>
                                 </form>
-                              </div>
+                              ) : null}
 
                               <form
                                 action={resetStudentPin}

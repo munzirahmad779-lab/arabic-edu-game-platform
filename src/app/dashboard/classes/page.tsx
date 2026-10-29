@@ -1,7 +1,8 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createClass } from "./actions";
+import { createClass, updateClass } from "./actions";
+import { DeleteClassButton } from "./delete-class-button";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -34,6 +35,10 @@ export default async function ClassesPage({
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
 
+  const editingClass = searchParams.edit
+    ? classes?.find((cls) => cls.id === searchParams.edit) ?? null
+    : null;
+
   const errorMsg = (() => {
     switch (searchParams.error) {
       case "invalid_name":
@@ -44,6 +49,16 @@ export default async function ClassesPage({
         return "Kelas dengan nama ini sudah ada.";
       case "create_failed":
         return "Gagal membuat kelas. Coba lagi.";
+      case "invalid_update":
+        return "Data perubahan kelas tidak valid.";
+      case "update_failed":
+        return "Gagal menyimpan perubahan kelas. Coba lagi.";
+      case "invalid_delete":
+        return "Permintaan hapus kelas tidak valid.";
+      case "delete_failed":
+        return "Gagal menghapus kelas. Coba lagi.";
+      case "not_found":
+        return "Kelas tidak ditemukan atau bukan milik Anda.";
       default:
         return searchParams.error ? `Error: ${searchParams.error}` : null;
     }
@@ -81,12 +96,18 @@ export default async function ClassesPage({
       <section className="aesthetic-card">
         <div>
           <h2 className="font-display text-lg font-black text-teal-700">
-            {t.create_title}
+            {editingClass ? t.edit_title : t.create_title}
           </h2>
           <p className="mt-1 text-sm text-softslate/70">{t.create_desc}</p>
         </div>
 
-        <form action={createClass} className="mt-5 grid gap-4 sm:grid-cols-2">
+        <form
+          action={editingClass ? updateClass : createClass}
+          className="mt-5 grid gap-4 sm:grid-cols-2"
+        >
+          {editingClass ? (
+            <input type="hidden" name="id" value={editingClass.id} />
+          ) : null}
           <div>
             <label
               htmlFor="class-name"
@@ -100,6 +121,7 @@ export default async function ClassesPage({
               type="text"
               required
               maxLength={100}
+              defaultValue={editingClass?.name ?? ""}
               placeholder={t.label_name_placeholder}
               className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
@@ -117,17 +139,36 @@ export default async function ClassesPage({
               name="subject"
               type="text"
               maxLength={100}
+              defaultValue={editingClass?.subject ?? ""}
               placeholder={t.label_subject_placeholder}
               className="mt-2 w-full rounded-xl border border-sage-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-terracotta-500 focus:ring-4 focus:ring-terracotta-500/15"
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <button type="submit" className="btn-primary w-full">
-              {t.btn_create}
+          <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+            <button type="submit" className="btn-primary flex-1">
+              {editingClass ? t.btn_save : t.btn_create}
             </button>
+            {editingClass ? (
+              <Link
+                href="/dashboard/classes"
+                className="rounded-full border border-sage-200 bg-white px-4 py-2 text-sm font-bold text-teal-700 transition hover:bg-sage-50"
+              >
+                {t.cancel_edit}
+              </Link>
+            ) : null}
           </div>
         </form>
+
+        {editingClass ? (
+          <div className="mt-5 border-t border-rose-100 pt-4">
+            <DeleteClassButton
+              classId={editingClass.id}
+              label={c.delete}
+              confirmText={t.delete_confirm}
+            />
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-3">
@@ -177,6 +218,12 @@ export default async function ClassesPage({
                     className="flex-1 rounded-full bg-terracotta-500 px-4 py-2.5 text-center text-sm font-black text-white transition hover:bg-terracotta-600"
                   >
                     {t.open_class}
+                  </Link>
+                  <Link
+                    href={`/dashboard/classes?edit=${cls.id}`}
+                    className="rounded-full border border-sage-200 bg-white px-4 py-2.5 text-center text-sm font-black text-teal-700 transition hover:bg-sage-50"
+                  >
+                    {t.edit_title}
                   </Link>
                 </div>
               </article>

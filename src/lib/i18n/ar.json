@@ -88,7 +88,11 @@
     "label_name": "الاسم",
     "label_pin": "PIN",
     "btn_login": "دخول",
-    "nav_teacher": "دخول المعلم"
+    "nav_teacher": "دخول المعلم",
+    "error_invalid_length": "الاسم ورقم PIN مطلوبان. يجب أن يتكون PIN من 4 إلى 6 أرقام.",
+    "error_invalid": "الاسم أو رقم PIN غير صحيح. تحقق من البيانات التي أعطاها لك المعلم.",
+    "error_too_many": "محاولات كثيرة جدًا. حاول مرة أخرى بعد قليل.",
+    "error_network": "تعذر الاتصال بالخادم. تحقق من الاتصال وحاول مرة أخرى."
   },
   "dashboard": {
     "header_title": "لوحة التحكم",
@@ -1029,6 +1033,7 @@
       "difficulty_medium": "متوسط",
       "difficulty_hard": "صعب",
       "correct_label": "الإجابة الصحيحة",
+      "explanation_label": "الشرح",
       "saving": "جارٍ الحفظ...",
       "save_edit": "حفظ التعديل",
       "cancel": "إلغاء",

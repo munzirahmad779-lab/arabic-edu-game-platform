@@ -1,17 +1,49 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
-import { AirplanePlayer } from "@/components/game-players/airplane-player";
-import { WhackPlayer } from "@/components/game-players/whack-player";
-import { SpaceDefenderPlayer } from "@/components/game-players/space-defender-player";
-import { MemoryPlayer } from "@/components/game-players/memory-player";
-import { BalloonPlayer } from "@/components/game-players/balloon-player";
+
+const AirplanePlayer = dynamic(
+  () =>
+    import("@/components/game-players/airplane-player").then(
+      (mod) => mod.AirplanePlayer,
+    ),
+  { ssr: false },
+);
+const WhackPlayer = dynamic(
+  () =>
+    import("@/components/game-players/whack-player").then(
+      (mod) => mod.WhackPlayer,
+    ),
+  { ssr: false },
+);
+const SpaceDefenderPlayer = dynamic(
+  () =>
+    import("@/components/game-players/space-defender-player").then(
+      (mod) => mod.SpaceDefenderPlayer,
+    ),
+  { ssr: false },
+);
+const MemoryPlayer = dynamic(
+  () =>
+    import("@/components/game-players/memory-player").then(
+      (mod) => mod.MemoryPlayer,
+    ),
+  { ssr: false },
+);
+const BalloonPlayer = dynamic(
+  () =>
+    import("@/components/game-players/balloon-player").then(
+      (mod) => mod.BalloonPlayer,
+    ),
+  { ssr: false },
+);
 
 export type StudentMember = {
   id: string;
@@ -51,6 +83,11 @@ const KAHOOT_OPTIONS_SPEC = [
   { key: "C", shape: "●", shapeName: "Lingkaran", color: "bg-amber-500 hover:bg-amber-400 text-white", border: "border-amber-300/80" },
   { key: "D", shape: "■", shapeName: "Kotak", color: "bg-emerald-600 hover:bg-emerald-500 text-white", border: "border-emerald-400/80" },
 ];
+
+function isRealProjectorOptionText(value: string, key: string): boolean {
+  const text = value.trim().replace(/^[\[({<]+|[\])}>]+$/g, "").trim().toLowerCase();
+  return Boolean(text) && text !== `pilihan ${key.toLowerCase()}`;
+}
 
 const INITIAL_TEAMS: Array<Omit<ProjectorTeam, "members" | "currentMemberIndex" | "score" | "correctCount" | "streak">> = [
   {
@@ -186,6 +223,9 @@ export function ProjectorScreen({
   const lastEventTimestampRef = useRef<number>(Date.now());
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const realtimeChannelRef = useRef<
+    ReturnType<ReturnType<typeof createClient>["channel"]> | null
+  >(null);
 
   if (!supabaseRef.current && typeof window !== "undefined") {
     try {
@@ -291,12 +331,7 @@ export function ProjectorScreen({
         difficulty: "easy",
         correct_option_key: "A",
         explanation: "Tambahkan soal melalui bank soal atau menu kuis guru.",
-        options: [
-          { id: "1", option_key: "A", option_text: "Pilihan A" },
-          { id: "2", option_key: "B", option_text: "Pilihan B" },
-          { id: "3", option_key: "C", option_text: "Pilihan C" },
-          { id: "4", option_key: "D", option_text: "Pilihan D" },
-        ],
+        options: [],
       };
     }
     return questions[currentQuestionIndex % questions.length]!;
@@ -304,6 +339,18 @@ export function ProjectorScreen({
 
   const totalQuestions = questions.length || 1;
   const correctOptionKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
+  const optionKeys = new Set(
+    activeQuestion.options.map((option) => option.option_key.trim().toUpperCase()),
+  );
+  const hasCompleteOptions =
+    activeQuestion.options.length === 4 &&
+    optionKeys.size === 4 &&
+    KAHOOT_OPTIONS_SPEC.every((spec) => {
+      const option = activeQuestion.options.find(
+        (item) => item.option_key.trim().toUpperCase() === spec.key,
+      );
+      return Boolean(option && isRealProjectorOptionText(option.option_text, spec.key));
+    });
 
   // Handle Team Answer
   const handleRecordAnswer = useCallback(
@@ -426,13 +473,12 @@ export function ProjectorScreen({
         totalQuestions,
         questionText: (questions[nextIdx] || activeQuestion).question_text,
         answeredTeams: {},
+        hasMyTeamAnswered: false,
       };
 
       try {
-        const supabase = supabaseRef.current;
-        if (supabase && roomCode) {
-          const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
-          const channel = supabase.channel(channelName);
+        const channel = realtimeChannelRef.current;
+        if (channel) {
           void channel.send({
             type: "broadcast",
             event: "projector_sync",
@@ -504,9 +550,16 @@ export function ProjectorScreen({
           setActiveControllers((prev) => Array.from(new Set([...prev, payload.teamId])));
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          realtimeChannelRef.current = channel;
+        }
+      });
 
     return () => {
+      if (realtimeChannelRef.current === channel) {
+        realtimeChannelRef.current = null;
+      }
       void channel.unsubscribe();
     };
   }, [roomCode, phase, handleRecordAnswer]);
@@ -560,10 +613,8 @@ export function ProjectorScreen({
 
     // 1. Supabase Realtime Broadcast
     try {
-      const supabase = supabaseRef.current;
-      if (supabase && roomCode) {
-        const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
-        const channel = supabase.channel(channelName);
+      const channel = realtimeChannelRef.current;
+      if (channel) {
         void channel.send({
           type: "broadcast",
           event: "projector_sync",
@@ -1517,6 +1568,12 @@ export function ProjectorScreen({
               <p>{activeQuestion.explanation || "Jawaban yang benar adalah pilihan bertanda centang hijau di bawah."}</p>
             </div>
           )}
+          {!hasCompleteOptions && (
+            <div className="mt-3 rounded-2xl border border-rose-400/50 bg-rose-950/70 p-3 text-sm font-bold text-rose-200">
+              Pilihan jawaban belum lengkap. Room ini tidak boleh dimainkan
+              sampai pilihan A, B, C, dan D tersedia.
+            </div>
+          )}
         </div>
 
         {/* 4 Iconic Kahoot Options */}
@@ -1525,7 +1582,7 @@ export function ProjectorScreen({
             const rawOpt = activeQuestion.options.find((o) => o.option_key.toUpperCase() === spec.key);
             const isThisOptionCorrect = spec.key === correctOptionKey;
             const teamsPickedThis = Object.values(answers).filter((ans) => ans.optionKey === spec.key);
-            const optText = rawOpt?.option_text || `(Pilihan ${spec.key})`;
+            const optText = rawOpt?.option_text?.trim() || "Pilihan belum tersedia";
             const textLen = optText.length;
             const optFontClass =
               textLen > 45
@@ -1673,12 +1730,13 @@ export function ProjectorScreen({
                   </div>
                 ) : phase === "question" ? (
                   <div className="flex gap-1 pt-0.5">
-                    {KAHOOT_OPTIONS_SPEC.map((spec) => (
-                      <button
-                        key={spec.key}
-                        type="button"
-                        onClick={() => handleRecordAnswer(team.id, spec.key)}
-                        className={`flex-1 py-1 rounded-lg text-xs font-black text-white transition hover:scale-105 active:scale-95 shadow-sm ${spec.color}`}
+                     {KAHOOT_OPTIONS_SPEC.map((spec) => (
+                       <button
+                         key={spec.key}
+                         type="button"
+                         onClick={() => handleRecordAnswer(team.id, spec.key)}
+                         disabled={!hasCompleteOptions}
+                         className={`flex-1 py-1 rounded-lg text-xs font-black text-white transition hover:scale-105 active:scale-95 shadow-sm disabled:cursor-not-allowed disabled:opacity-30 ${spec.color}`}
                         title={`Pilih ${spec.key} untuk ${team.name}`}
                       >
                         {spec.shape}

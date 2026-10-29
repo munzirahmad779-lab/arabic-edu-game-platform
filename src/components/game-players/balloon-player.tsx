@@ -17,6 +17,12 @@ export function BalloonPlayer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [questionList, setQuestionList] = useState(() => [...questions]);
+
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      setQuestionList([...questions]);
+    }
+  }, [questions]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -246,16 +252,16 @@ export function BalloonPlayer({
           const mid = Math.ceil(words.length / 2);
           const line1 = words.slice(0, mid).join(" ");
           const line2 = words.slice(mid).join(" ");
-          ctx.font = `bold 13px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          ctx.font = `bold 13px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
           ctx.fillText(line1, currentX, b.y + 4);
           ctx.fillText(line2, currentX, b.y + 22);
         } else {
           let fontSize = 16;
-          ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+          ctx.font = `bold ${fontSize}px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
           const measured = ctx.measureText(fullText).width;
           if (measured > maxLineWidth && maxLineWidth > 20) {
             fontSize = Math.max(11, Math.floor(fontSize * (maxLineWidth / measured)));
-            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
           }
           ctx.fillText(fullText, currentX, b.y + 10);
         }
@@ -321,7 +327,7 @@ export function BalloonPlayer({
       canvas.removeEventListener("click", handleClick);
       window.removeEventListener("resize", handleResize);
     };
-  }, []); // Run canvas loop once without tearing down on state changes
+  }, [spawnBalloons]);
 
   return (
     <div
@@ -338,7 +344,7 @@ export function BalloonPlayer({
             </span>
             <h3
               className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.6]"
-              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
+              style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
               dir="auto"
             >
               {activeQuestion.question_text}

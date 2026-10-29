@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import { createGame, createRoom, deleteGame, cloneGame } from "./actions";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
@@ -39,9 +40,7 @@ export default async function GamesPage({
   searchParams: SearchParams;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) return null;
 
@@ -91,6 +90,7 @@ export default async function GamesPage({
       .select("id, question_bank_id, question_text, difficulty, category_id")
       .eq("teacher_id", user.id)
       .not("question_bank_id", "is", null)
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true }),
   ]);
 
@@ -370,6 +370,37 @@ export default async function GamesPage({
             })}
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <h2 className="font-display text-lg font-black text-teal-700">
+            Game Mandiri di Perangkat Guru
+          </h2>
+          <p className="mt-1 text-sm text-softslate/70">
+            Game yang dimainkan langsung di satu perangkat guru (kelas
+            interaktif/proyektor), tanpa room dan tanpa kode gabung.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/game/sigetteng-getteng"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🪢 Sigetteng-Getteng
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Tarik tambang pengetahuan: DUEL 1v1 atau SQUAD 2v2 bergantian
+              menjawab di perangkat yang sama. Bahasa Arab, Matematika,
+              Biologi, dan Fisika SMA.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
+        </div>
       </section>
 
       <section className="aesthetic-card">

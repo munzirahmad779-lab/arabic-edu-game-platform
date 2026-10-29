@@ -1,0 +1,11 @@
+const fs = require("fs");
+const path = require("path");
+const p = path.resolve(__dirname, "..", "tailwind.config.ts");
+let s = fs.readFileSync(p, "utf8");
+const before = s;
+const from = 'content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],';
+const to = 'content: [\n    "./src/**/*.{js,ts,jsx,tsx,mdx}",\n    "./components/**/*.{js,ts,jsx,tsx,mdx}",\n  ],';
+s = s.replace(from, to);
+fs.writeFileSync(p, s, "utf8");
+console.log("changed:", before !== s);
+console.log(s.slice(0, 320));

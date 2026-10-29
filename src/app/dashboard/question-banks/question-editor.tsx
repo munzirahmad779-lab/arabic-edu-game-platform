@@ -13,6 +13,7 @@ type Question = {
   question_text: string | null;
   difficulty: Difficulty | null;
   correct_option_key: OptionKey | null;
+  explanation: string | null;
 };
 
 type Option = {
@@ -31,6 +32,7 @@ type QuestionEditorDict = {
   difficulty_medium: string;
   difficulty_hard: string;
   correct_label: string;
+  explanation_label: string;
   saving: string;
   save_edit: string;
   cancel: string;
@@ -222,6 +224,21 @@ export function QuestionEditor({
           <option value="C">C</option>
           <option value="D">D</option>
         </select>
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium">
+          {qe.explanation_label}
+        </span>
+        <textarea
+          name="explanation"
+          defaultValue={question.explanation ?? ""}
+          maxLength={5000}
+          rows={3}
+          style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+          dir="auto"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-base leading-relaxed"
+        />
       </label>
 
       {message ? (

@@ -1,12 +1,7 @@
-import { getLocale } from "@/lib/i18n/server";
-import { getDictionary } from "@/lib/i18n/dictionaries";
-
-export default async function Loading() {
-  const locale = await getLocale();
-  const dict = await getDictionary(locale);
+export default function Loading() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-neutral-500">{dict.status.loading}</p>
+    <div className="flex min-h-screen items-center justify-center bg-warmwhite">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-sage-200 border-t-teal-600" />
     </div>
   );
 }

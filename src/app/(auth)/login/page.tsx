@@ -56,9 +56,9 @@ export default function LoginPage() {
     setInfoMessage(null);
     setIsSubmitting(true);
 
-    const supabase = createClient();
-
     try {
+      const supabase = createClient();
+
       if (mode === "sign_in") {
         let signInError: { message?: string; code?: string } | null = null;
         try {
@@ -87,8 +87,13 @@ export default function LoginPage() {
             });
             const srvData = await srvRes.json();
             if (srvRes.ok && srvData.ok) {
+              // Jangan panggil router.refresh() tepat sesudah replace:
+              // refresh me-render ulang rute SAAT INI dan bisa membatalkan
+              // navigasi yang sedang berjalan (gejala produksi: sesi
+              // terbentuk tetapi halaman tidak berpindah). Navigasi
+              // replace sendiri sudah memuat komponen server tujuan
+              // secara segar dengan cookie sesi baru.
               router.replace(redirectTo);
-              router.refresh();
               return;
             }
             if (srvData.error) {
@@ -117,8 +122,9 @@ export default function LoginPage() {
           return;
         }
 
+        // Lihat catatan di jalur fallback server: replace tanpa
+        // refresh() sesudahnya, agar navigasi tidak ter-cancel.
         router.replace(redirectTo);
-        router.refresh();
       } else {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(
           email,

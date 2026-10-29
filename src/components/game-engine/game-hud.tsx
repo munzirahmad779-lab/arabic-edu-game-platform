@@ -72,104 +72,128 @@ export function GameHud({
 
   const isLowTime = secondsLeft !== null && secondsLeft !== undefined && secondsLeft <= 5;
 
+  const pillLabel =
+    "text-[10px] font-bold uppercase tracking-wider text-white/70";
+  const pillValue = "text-sm font-black text-white sm:text-base";
+
   return (
     <header
-      className="rounded-[2rem] bg-white/10 p-4 shadow-xl backdrop-blur-md transition sm:p-5"
+      data-testid="hud-header"
+      className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-xl backdrop-blur-md transition sm:p-5"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Game Title & Badges */}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 text-base shadow-sm">
-              {TYPE_ICONS[gameType] ?? "🎮"}
-            </span>
-            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-white">
-              {gameMode}
-            </span>
-            {comboMultiplier > 1 && (
-              <span className="animate-pulse rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-0.5 text-xs font-black text-slate-950 shadow-md">
-                🔥 x{comboMultiplier} COMBO
-              </span>
-            )}
-            {streak >= 3 && (
-              <span className="rounded-full bg-emerald-400/90 px-2.5 py-0.5 text-xs font-black text-slate-950 shadow-sm">
-                ⚡ {streak} STREAK
-              </span>
-            )}
-          </div>
-          <h1 className="mt-1 truncate text-xl font-black text-white sm:text-2xl">
-            {gameName}
-          </h1>
-        </div>
-
-        {/* Action controls & indicators */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Audio toggle */}
-          <button
-            type="button"
-            onClick={toggleMute}
-            title={muted ? "Unmute SFX" : "Mute SFX"}
-            aria-label={muted ? "Unmute sound effects" : "Mute sound effects"}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-lg text-white transition hover:bg-white/25 active:scale-95"
+      {/* Baris 1: chip mode & tombol suara */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 text-base shadow-sm">
+            {TYPE_ICONS[gameType] ?? "🎮"}
+          </span>
+          <span
+            data-testid="hud-chip-mode"
+            className="rounded-full bg-terracotta-500 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-white"
           >
-            {muted ? "🔇" : "🔊"}
-          </button>
-
-          {/* Question progress */}
-          <div className="rounded-xl bg-white/15 px-3 py-1.5 text-center sm:px-4 sm:py-2">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">
-              Soal
-            </div>
-            <div className="text-sm font-black text-white sm:text-base">
-              {Math.min(questionIndex + 1, questionCount)} / {questionCount}
-            </div>
-          </div>
-
-          {/* Timer pill */}
-          {!isCooperative && secondsLeft !== null && secondsLeft !== undefined && (
-            <div
-              className={`rounded-xl px-3 py-1.5 text-center font-mono font-black tabular-nums transition sm:px-4 sm:py-2 ${
-                isLowTime
-                  ? "animate-pulse bg-rose-500 text-white shadow-lg shadow-rose-500/50"
-                  : "bg-white/20 text-white"
-              }`}
-            >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-white/80">
-                Waktu
-              </div>
-              <div className="text-sm sm:text-base">⏱ {secondsLeft}s</div>
-            </div>
+            {gameMode}
+          </span>
+          {comboMultiplier > 1 && (
+            <span className="animate-pulse rounded-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 px-2.5 py-0.5 text-xs font-black text-white shadow-md">
+              🔥 x{comboMultiplier} COMBO
+            </span>
+          )}
+          {streak >= 3 && (
+            <span className="rounded-full bg-emerald-400/90 px-2.5 py-0.5 text-xs font-black text-slate-950 shadow-sm">
+              ⚡ {streak} STREAK
+            </span>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={toggleMute}
+          title={muted ? "Unmute SFX" : "Mute SFX"}
+          aria-label={muted ? "Unmute sound effects" : "Mute sound effects"}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-lg text-white transition hover:bg-white/25 active:scale-95"
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
       </div>
 
-      {/* Secondary bar: Score, Rank & Timer Progress Line */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5 text-xs text-white/90">
-        <div className="flex items-center gap-3">
-          <span className="font-bold">
-            Skor: <strong className="text-emerald-300">{currentScore}</strong> pts
-          </span>
-          {rank !== undefined && totalParticipants !== undefined && (
-            <span className="font-bold text-white/80">
-              Peringkat: <strong className="text-violet-200">#{rank}</strong> dari {totalParticipants}
-            </span>
-          )}
+      {/* Baris 2: judul game */}
+      <h1
+        data-testid="hud-title"
+        className="mt-2.5 truncate text-xl font-black text-white sm:text-2xl"
+      >
+        {gameName}
+      </h1>
+
+      {/* Baris 3: indikator soal, waktu, skor & peringkat (baris sendiri,
+          berjarak konsisten, boleh membungkus rapi di layar sempit) */}
+      <div
+        data-testid="hud-indicators"
+        className="mt-3 flex flex-wrap items-stretch gap-2"
+      >
+        <div
+          data-testid="hud-pill-soal"
+          className="rounded-xl bg-white/15 px-3 py-1.5 text-center sm:px-4 sm:py-2"
+        >
+          <div className={pillLabel}>Soal</div>
+          <div className={pillValue}>
+            {Math.min(questionIndex + 1, questionCount)} / {questionCount}
+          </div>
         </div>
 
         {!isCooperative && secondsLeft !== null && secondsLeft !== undefined && (
-          <div className="hidden h-2 w-32 overflow-hidden rounded-full bg-white/20 sm:block">
-            <div
-              className={`h-full transition-all duration-300 ${
-                isLowTime ? "bg-rose-400" : "bg-emerald-400"
-              }`}
-              style={{
-                width: `${Math.max(0, Math.min(100, (secondsLeft / timeLimitSeconds) * 100))}%`,
-              }}
-            />
+          <div
+            data-testid="hud-pill-waktu"
+            className={`rounded-xl px-3 py-1.5 text-center tabular-nums transition sm:px-4 sm:py-2 ${
+              isLowTime
+                ? "animate-pulse bg-rose-500 text-white shadow-lg shadow-rose-500/50"
+                : "bg-white/15 text-white"
+            }`}
+          >
+            <div className={pillLabel}>Waktu</div>
+            <div className={`${pillValue} font-mono`}>⏱ {secondsLeft}s</div>
+          </div>
+        )}
+
+        <div
+          data-testid="hud-pill-skor"
+          className="rounded-xl bg-white/15 px-3 py-1.5 text-center sm:px-4 sm:py-2"
+        >
+          <div className={pillLabel}>Skor</div>
+          <div className={pillValue}>
+            <strong className="text-emerald-300">{currentScore}</strong> pts
+          </div>
+        </div>
+
+        {rank !== undefined && totalParticipants !== undefined && (
+          <div
+            data-testid="hud-pill-rank"
+            className="rounded-xl bg-white/15 px-3 py-1.5 text-center sm:px-4 sm:py-2"
+          >
+            <div className={pillLabel}>Peringkat</div>
+            <div className={pillValue}>
+              #{rank}{" "}
+              <span className="text-xs font-bold text-white/70">
+                dari {totalParticipants}
+              </span>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Baris 4: garis progres waktu */}
+      {!isCooperative && secondsLeft !== null && secondsLeft !== undefined && (
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/20">
+          <div
+            className={`h-full transition-all duration-300 ${
+              isLowTime ? "bg-rose-400" : "bg-emerald-400"
+            }`}
+            style={{
+              width: `${Math.max(0, Math.min(100, (secondsLeft / timeLimitSeconds) * 100))}%`,
+            }}
+          />
+        </div>
+      )}
     </header>
   );
 }

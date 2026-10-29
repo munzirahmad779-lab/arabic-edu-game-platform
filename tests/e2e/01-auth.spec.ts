@@ -8,7 +8,12 @@ test.describe("01. Authentication & Security Gate", () => {
     await emailInput.waitFor({ state: "visible", timeout: 15000 });
     await expect(emailInput).toBeVisible();
     await expect(page.locator("input#password")).toBeVisible();
-    await expect(page.locator("button[type='submit']")).toBeVisible();
+    await expect(
+      page
+        .locator("form")
+        .filter({ has: page.locator("input#email") })
+        .locator("button[type='submit']"),
+    ).toBeVisible();
   });
 
   test("Protected route (/dashboard) redirects unauthenticated visitors to /login", async ({ page }) => {
@@ -26,6 +31,20 @@ test.describe("01. Authentication & Security Gate", () => {
     await nameInput.waitFor({ state: "visible", timeout: 15000 });
     await expect(nameInput).toBeVisible();
     await expect(page.locator("input#pin")).toBeVisible();
+  });
+
+  test("Student login displays a useful error after an invalid PIN attempt", async ({ page }) => {
+    await page.goto("/student/login?error=invalid");
+
+    await expect(
+      page.locator("div[role='alert']").filter({ hasText: "PIN" }),
+    ).toBeVisible();
+  });
+
+  test("Guest route redirects to login when guest mode is disabled", async ({ page }) => {
+    await page.goto("/guest");
+    await page.waitForURL((url) => url.pathname.includes("/login"), { timeout: 15000 });
+    expect(page.url()).toContain("/login");
   });
 
   test("Health check endpoint (/api/health) is accessible and operational", async ({ request }) => {

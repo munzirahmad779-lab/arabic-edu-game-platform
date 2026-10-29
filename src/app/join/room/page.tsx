@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import dynamic from "next/dynamic";
 import { resumeBackgroundAudio } from "@/lib/bg-audio-events";
-import { Confetti } from "@/components/confetti";
-import { RoomReview } from "./room-review";
+import { RoomTimerShell } from "./room-timer-shell";
+import { QuestionDeadlineWatcher } from "./question-deadline-watcher";
 import { GameRegistry } from "@/lib/game-engine/registry";
-import { GameShell } from "@/components/game-engine/game-shell";
+
 import { QuizPlayer } from "@/components/game-players/quiz-player";
 import type {
   ScoreEvent,
@@ -17,21 +17,34 @@ import type {
   AnswerResult,
 } from "@/lib/game-engine/types";
 import idDict from "@/lib/i18n/id.json";
-import enDict from "@/lib/i18n/en.json";
-import arDict from "@/lib/i18n/ar.json";
+
+
 import {
   DEFAULT_LOCALE,
+  getDictionary,
   LOCALE_COOKIE,
   isLocale,
   type Locale,
 } from "@/lib/i18n/dictionaries";
 
-type Dict = typeof idDict;
-const DICTS: Record<Locale, Dict> = {
-  id: idDict,
-  en: enDict as unknown as Dict,
-  ar: arDict as unknown as Dict,
-};
+const Confetti = dynamic(
+  () => import("@/components/confetti").then((mod) => mod.Confetti),
+  { ssr: false },
+);
+const RoomReview = dynamic(
+  () => import("./room-review").then((mod) => mod.RoomReview),
+  { ssr: false },
+);
+
+type Dict = Pick<
+  typeof idDict,
+  "join" | "reports" | "anagram" | "matching"
+>;
+
+
+
+
+
 
 function readLocale(): Locale {
   if (typeof document === "undefined") return DEFAULT_LOCALE;
@@ -102,7 +115,75 @@ type LeaderboardRow = {
   rnk: number;
 };
 
-const HEARTBEAT_INTERVAL_MS = 10000;
+// Tema Opsi C: satu latar teal tua brand Magguru untuk SEMUA keadaan room
+// siswa (teal-700 #1F4A4E → teal-600 #255759 → teal-500 #2F6D72).
+const ROOM_BG = "bg-gradient-to-br from-teal-700 via-teal-600 to-teal-500";
+
+const WAITING_SESSION_POLL_MS = 4000;
+const RUNNING_SESSION_POLL_MS = 2300;
+const LEADERBOARD_POLL_MS = 6500;
+const HEARTBEAT_INTERVAL_MS = 20000;
+const ENDED_SESSION_BACKOFF_MS = [5000, 10000, 15000] as const;
+
+function getCountdownSeconds(
+  session: Session | null,
+  serverSkewMs: number,
+): number | null {
+  if (
+    !session ||
+    session.room_state !== "running" ||
+    !session.question_started_at
+  ) {
+    return null;
+  }
+  const remainingMs =
+    new Date(session.question_started_at).getTime() -
+    (Date.now() + serverSkewMs);
+  return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+}
+
+function getAnswerSecondsLeft(
+  session: Session | null,
+  serverSkewMs: number,
+): number | null {
+  if (!session || session.game_mode === "cooperative") return null;
+  if (getCountdownSeconds(session, serverSkewMs) !== 0) return null;
+  if (!session.question_started_at) return null;
+  const timeLimitSec = session.question?.time_limit_seconds ?? 20;
+  const deadline =
+    new Date(session.question_started_at).getTime() + timeLimitSec * 1000;
+  return Math.max(
+    0,
+    Math.ceil((deadline - (Date.now() + serverSkewMs)) / 1000),
+  );
+}
+
+function getTotalSecondsLeft(
+  session: Session | null,
+  serverSkewMs: number,
+): number | null {
+  if (!session || session.game_mode !== "cooperative") return null;
+  if (session.room_state !== "running" || !session.started_at) return null;
+  const deadline =
+    new Date(session.started_at).getTime() +
+    session.game_duration_seconds * 1000;
+  return Math.max(
+    0,
+    Math.ceil((deadline - (Date.now() + serverSkewMs)) / 1000),
+  );
+}
+
+function sessionSignature(session: Session): string {
+  return [
+    session.room_state,
+    session.question_index,
+    session.question_count,
+    session.participant_count,
+    session.answer_submitted ? "1" : "0",
+    session.question_started_at ?? "",
+    session.started_at ?? "",
+  ].join(":");
+}
 
 export default function JoinRoomPage({
   searchParams,
@@ -111,11 +192,32 @@ export default function JoinRoomPage({
 }) {
   const token = searchParams.token ?? "";
 
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // Token aktif disimpan di ref: server dapat menyerahkan join_token baru
+  // (new_join_token) lewat history.replaceState, tetapi prop searchParams
+  // tidak berubah oleh replaceState — tanpa ref ini semua polling berikutnya
+  // selamanya memakai token lama yang sudah tidak dikenal server.
+  const activeTokenRef = useRef(token);
   useEffect(() => {
-    setLocale(readLocale());
+    if (token) activeTokenRef.current = token;
+  }, [token]);
+
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [dict, setDict] = useState<Dict>(idDict);
+  useEffect(() => {
+    const nextLocale = readLocale();
+    setLocale(nextLocale);
+    if (nextLocale !== DEFAULT_LOCALE) {
+      void getDictionary(nextLocale).then((nextDict) => {
+        setDict({
+          join: nextDict.join,
+          reports: nextDict.reports,
+          anagram: nextDict.anagram,
+          matching: nextDict.matching,
+        });
+      });
+    }
   }, []);
-  const dict = DICTS[locale];
+
   const t = dict.join;
   const isRtl = locale === "ar";
 
@@ -135,7 +237,7 @@ export default function JoinRoomPage({
   const [sessionEnded, setSessionEnded] = useState(false);
   const [endedRoomCode, setEndedRoomCode] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
-  const [now, setNow] = useState(Date.now());
+
   const [submitting, setSubmitting] = useState(false);
   const [streak, setStreak] = useState(0);
   const [comboMultiplier, setComboMultiplier] = useState(1);
@@ -168,8 +270,15 @@ export default function JoinRoomPage({
   }, []);
 
   const skewRef = useRef(0);
-  const lastHeartbeatRef = useRef(0);
-  const lastPollRef = useRef(0);
+  const sessionInFlightRef = useRef(false);
+  const leaderboardInFlightRef = useRef(false);
+  const heartbeatInFlightRef = useRef(false);
+  const nextSessionPollAtRef = useRef(0);
+  const nextLeaderboardPollAtRef = useRef(0);
+  const nextHeartbeatAtRef = useRef(0);
+  const sessionSignatureRef = useRef("");
+  const endedBackoffIndexRef = useRef(0);
+
   const roomStateRef = useRef<Session["room_state"] | undefined>(undefined);
   const transitioningUntilRef = useRef(0);
 
@@ -177,33 +286,70 @@ export default function JoinRoomPage({
     roomStateRef.current = session?.room_state;
   }, [session?.room_state]);
 
-  const loadSession = useCallback(async (force = false) => {
-    if (!token) {
+  const loadSession = useCallback(async (
+    force = false,
+  ): Promise<Session | null> => {
+    const activeToken = activeTokenRef.current;
+    if (!activeToken) {
       setLoadError(t.room_err_invalid_token);
-      return;
+      return null;
     }
     if (!force && Date.now() < transitioningUntilRef.current) {
-      return;
+      return null;
     }
+    if (sessionInFlightRef.current) return null;
+    sessionInFlightRef.current = true;
     try {
-      const res = await fetch(`/api/rooms/session?token=${encodeURIComponent(token)}`);
+      let codeParam = "";
+      let nameParam = "";
+      if (typeof window !== "undefined") {
+        try {
+          codeParam = localStorage.getItem("magguru_last_room_code") || "";
+          nameParam = localStorage.getItem("magguru_last_student_name") || "";
+        } catch {}
+      }
+
+      const queryUrl = `/api/rooms/session?token=${encodeURIComponent(activeToken)}${
+        codeParam ? `&code=${encodeURIComponent(codeParam)}` : ""
+      }${nameParam ? `&name=${encodeURIComponent(nameParam)}` : ""}`;
+
+      const res = await fetch(queryUrl);
       const raw = await res.json();
 
       if (!res.ok || raw.error) {
-        if (raw.ended || raw.error === "INVALID_JOIN_TOKEN") {
+        // 404 + flag ended, ATAU 404 sementara kode room tersimpan masih ada:
+        // masuk mode "sesi ditutup" yang polling-nya dapat menyambungkan
+        // kembali lewat kode+namo, bukan layar error mati.
+        if (
+          res.status === 404 &&
+          (raw.ended === true || codeParam !== "")
+        ) {
           if (raw.room_code) setEndedRoomCode(raw.room_code);
+          else if (codeParam) setEndedRoomCode(codeParam);
           setSessionEnded(true);
-          return;
+          return null;
         }
         setLoadError(`${t.room_err_load} (${raw.error || "Gagal memuat status"})`);
-        return;
+        return null;
       }
 
+      if (raw.new_join_token) {
+        activeTokenRef.current = raw.new_join_token;
+        if (typeof window !== "undefined") {
+          try {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set("token", raw.new_join_token);
+            window.history.replaceState({}, "", newUrl.toString());
+          } catch {}
+        }
+      }
+
+      setSessionEnded(false);
       const incoming: Session = {
         ...raw,
         room_state: raw.room_state as Session["room_state"],
         participant_name: raw.participant_name ?? "",
-        question: raw.question as unknown as Question | null,
+        question: raw.question as Question | null,
       };
       const serverMs = new Date(incoming.server_time).getTime();
       if (Number.isFinite(serverMs)) {
@@ -212,74 +358,182 @@ export default function JoinRoomPage({
 
       setSession(incoming);
       setLoadError("");
+      if (incoming.room_code && typeof window !== "undefined") {
+        try {
+          localStorage.setItem("magguru_last_room_code", incoming.room_code);
+          if (incoming.participant_name) {
+            localStorage.setItem("magguru_last_student_name", incoming.participant_name);
+          }
+        } catch {}
+      }
+      return incoming;
     } catch {
       setLoadError(t.room_err_connect);
+      return null;
+    } finally {
+      sessionInFlightRef.current = false;
     }
   }, [token, t]);
 
   const loadLeaderboard = useCallback(async () => {
-    if (!token) return;
+    if (!activeTokenRef.current || leaderboardInFlightRef.current) return;
+    leaderboardInFlightRef.current = true;
     try {
-      const res = await fetch(`/api/rooms/leaderboard?token=${encodeURIComponent(token)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setLeaderboard(data);
-          return;
-        }
-      }
-      const supabase = createClient();
-      const { data, error: rpcError } = await supabase.rpc(
-        "get_room_leaderboard_student",
-        { p_join_token: token },
+      const res = await fetch(
+        `/api/rooms/leaderboard?token=${encodeURIComponent(activeTokenRef.current)}`,
       );
-      if (!rpcError && data) {
-        setLeaderboard(data);
+      if (res.ok) {
+        const data: unknown = await res.json();
+        if (Array.isArray(data)) {
+          setLeaderboard(data as LeaderboardRow[]);
+        }
       }
     } catch {
       // ignore
+    } finally {
+      leaderboardInFlightRef.current = false;
     }
   }, [token]);
 
   const sendHeartbeat = useCallback(async () => {
-    if (!token) return;
+    if (!activeTokenRef.current || heartbeatInFlightRef.current) return;
+    heartbeatInFlightRef.current = true;
     try {
-      const supabase = createClient();
-      await supabase.rpc("heartbeat_room_participant", {
-        p_join_token: token,
+      await fetch("/api/rooms/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ joinToken: activeTokenRef.current }),
       });
     } catch {
       // ignore
+    } finally {
+      heartbeatInFlightRef.current = false;
     }
   }, [token]);
 
   useEffect(() => {
-    void loadSession();
-    void loadLeaderboard();
-    void sendHeartbeat();
+    let cancelled = false;
+
+    const delayForState = (
+      state: Session["room_state"] | undefined,
+      closed: boolean,
+    ): number => {
+      if (closed || state === "ended") {
+        const index = Math.min(
+          endedBackoffIndexRef.current,
+          ENDED_SESSION_BACKOFF_MS.length - 1,
+        );
+        const delay = ENDED_SESSION_BACKOFF_MS[index];
+        endedBackoffIndexRef.current = Math.min(
+          index + 1,
+          ENDED_SESSION_BACKOFF_MS.length - 1,
+        );
+        return delay;
+      }
+      endedBackoffIndexRef.current = 0;
+      return state === "running"
+        ? RUNNING_SESSION_POLL_MS
+        : WAITING_SESSION_POLL_MS;
+    };
+
+    const refreshLeaderboard = async (
+      incoming: Session,
+      force = false,
+    ): Promise<void> => {
+      if (incoming.room_state !== "running" && incoming.room_state !== "ended") {
+        return;
+      }
+      const signature = sessionSignature(incoming);
+      const changed = signature !== sessionSignatureRef.current;
+      sessionSignatureRef.current = signature;
+      if (
+        force ||
+        changed ||
+        Date.now() >= nextLeaderboardPollAtRef.current
+      ) {
+        nextLeaderboardPollAtRef.current = Date.now() + LEADERBOARD_POLL_MS;
+        await loadLeaderboard();
+      }
+    };
+
+    const pollSession = async (force = false): Promise<void> => {
+      const previousState = roomStateRef.current;
+      const incoming = await loadSession(force);
+      if (cancelled || !incoming) return;
+
+      await refreshLeaderboard(incoming);
+      if (incoming.room_state !== previousState) {
+        nextSessionPollAtRef.current =
+          Date.now() + delayForState(incoming.room_state, false);
+      }
+    };
+
+    const startHeartbeat = (): void => {
+      nextHeartbeatAtRef.current = Date.now() + HEARTBEAT_INTERVAL_MS;
+      void sendHeartbeat();
+    };
+
+    nextSessionPollAtRef.current =
+      Date.now() + delayForState(roomStateRef.current, sessionEnded);
+    nextLeaderboardPollAtRef.current = 0;
+    void pollSession(true);
+    if (!sessionEnded && roomStateRef.current !== "ended") {
+      startHeartbeat();
+    }
 
     const timer = window.setInterval(() => {
+      if (cancelled || document.visibilityState === "hidden") return;
       const nowTs = Date.now();
-      setNow(nowTs);
-
       const state = roomStateRef.current;
-      if (state === "ended" || sessionEnded) return;
 
-      const pollInterval = state === "waiting" ? 2500 : 1500;
-      if (nowTs - lastPollRef.current > pollInterval) {
-        lastPollRef.current = nowTs;
-        void loadSession();
+      if (
+        !sessionEnded &&
+        state !== "ended" &&
+        nowTs >= nextHeartbeatAtRef.current
+      ) {
+        startHeartbeat();
+      }
+
+      if (nowTs >= nextSessionPollAtRef.current) {
+        nextSessionPollAtRef.current =
+          nowTs + delayForState(state, sessionEnded);
+        void pollSession(sessionEnded || state === "ended");
+        return;
+      }
+
+      if (
+        (state === "running" || state === "ended") &&
+        nowTs >= nextLeaderboardPollAtRef.current
+      ) {
+        nextLeaderboardPollAtRef.current = nowTs + LEADERBOARD_POLL_MS;
         void loadLeaderboard();
       }
+    }, 250);
 
-      if (nowTs - lastHeartbeatRef.current > HEARTBEAT_INTERVAL_MS) {
-        lastHeartbeatRef.current = nowTs;
-        void sendHeartbeat();
+    const handleVisibilityChange = () => {
+      if (cancelled || document.visibilityState !== "visible") return;
+      const state = roomStateRef.current;
+      nextSessionPollAtRef.current =
+        Date.now() + delayForState(state, sessionEnded);
+      if (state === "running" || state === "ended") {
+        nextLeaderboardPollAtRef.current = Date.now() + LEADERBOARD_POLL_MS;
       }
-    }, 1000);
+      void pollSession(true);
+      if (!sessionEnded && state !== "ended") {
+        startHeartbeat();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    return () => window.clearInterval(timer);
-  }, [loadSession, loadLeaderboard, sendHeartbeat, sessionEnded]);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    };
+  }, [loadSession, loadLeaderboard, sendHeartbeat, sessionEnded, token]);
 
   useEffect(() => {
     setSubmitError("");
@@ -298,70 +552,8 @@ export default function JoinRoomPage({
     };
   }, []);
 
-  const adjustedNow = now + skewRef.current;
   const isCooperative = session?.game_mode === "cooperative";
-
-  const countdown = useMemo(() => {
-    if (
-      !session ||
-      session.room_state !== "running" ||
-      !session.question_started_at
-    ) {
-      return null;
-    }
-    const remainingMs =
-      new Date(session.question_started_at).getTime() - adjustedNow;
-    return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
-  }, [adjustedNow, session]);
-
   const timeLimitSec = session?.question?.time_limit_seconds ?? 20;
-
-  const answerSecondsLeft = useMemo(() => {
-    if (isCooperative) return null;
-    if (
-      !session ||
-      session.room_state !== "running" ||
-      !session.question_started_at ||
-      countdown !== 0
-    ) {
-      return null;
-    }
-    const deadline =
-      new Date(session.question_started_at).getTime() + timeLimitSec * 1000;
-    return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
-  }, [countdown, adjustedNow, session, timeLimitSec, isCooperative]);
-
-  const totalSecondsLeft = useMemo(() => {
-    if (!isCooperative) return null;
-    if (!session || session.room_state !== "running" || !session.started_at) {
-      return null;
-    }
-    const deadline =
-      new Date(session.started_at).getTime() +
-      session.game_duration_seconds * 1000;
-    return Math.max(0, Math.ceil((deadline - adjustedNow) / 1000));
-  }, [adjustedNow, session, isCooperative]);
-
-  // Auto-handle timeout so student is NEVER stuck on any question
-  const timeoutHandledRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (
-      session &&
-      session.room_state === "running" &&
-      session.question &&
-      answerSecondsLeft === 0 &&
-      !session.answer_submitted &&
-      !submitting &&
-      timeoutHandledRef.current !== session.question.id
-    ) {
-      timeoutHandledRef.current = session.question.id;
-      void submitAnswer({
-        questionId: session.question.id,
-        selectedOptionId: null,
-        answerText: null,
-      });
-    }
-  }, [answerSecondsLeft, session, submitting]);
 
   /**
    * Submit jawaban ke server.
@@ -369,11 +561,14 @@ export default function JoinRoomPage({
    * - Option-based (quiz biasa): p_selected_option_id diisi, p_answer_text null
    * - Text-based (anagram): p_answer_text diisi, p_selected_option_id optional
    */
-  async function submitAnswer(payload: {
+  const submitAnswer = useCallback(async (payload: {
     questionId: string;
     selectedOptionId: string | null;
     answerText: string | null;
-  }): Promise<AnswerResult> {
+  }): Promise<AnswerResult> => {
+    const countdown = getCountdownSeconds(session, skewRef.current);
+    const totalSecondsLeft = getTotalSecondsLeft(session, skewRef.current);
+    const answerSecondsLeft = getAnswerSecondsLeft(session, skewRef.current);
     if (
       !session ||
       submitting ||
@@ -393,7 +588,7 @@ export default function JoinRoomPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          joinToken: token,
+          joinToken: activeTokenRef.current,
           questionId: payload.questionId,
           selectedOptionId: payload.selectedOptionId,
           answerText: payload.answerText,
@@ -437,15 +632,44 @@ export default function JoinRoomPage({
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [
+    session,
+    submitting,
+    isCooperative,
+    token,
+    t,
+    loadSession,
+    loadLeaderboard,
+  ]);
+
+  // Auto-handle timeout so student is NEVER stuck on any question.
+  const timeoutHandledRef = useRef<string | null>(null);
+  const handleQuestionTimeout = useCallback(() => {
+    if (
+      !session ||
+      session.room_state !== "running" ||
+      !session.question ||
+      session.answer_submitted ||
+      submitting ||
+      timeoutHandledRef.current === session.question.id
+    ) {
+      return;
+    }
+    timeoutHandledRef.current = session.question.id;
+    void submitAnswer({
+      questionId: session.question.id,
+      selectedOptionId: null,
+      answerText: null,
+    });
+  }, [session, submitAnswer, submitting]);
 
   if (!token) {
     return (
       <main
-        className="min-h-screen bg-slate-950 p-4 text-white"
+        className={`min-h-screen ${ROOM_BG} p-4 text-white`}
         dir={isRtl ? "rtl" : "ltr"}
       >
-        <div className="mx-auto max-w-2xl rounded-3xl bg-red-900/40 p-8">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur">
           {t.error_invalid}
         </div>
       </main>
@@ -453,32 +677,52 @@ export default function JoinRoomPage({
   }
 
   if (sessionEnded) {
-    const returnJoinUrl = endedRoomCode ? `/join?code=${encodeURIComponent(endedRoomCode)}` : "/join";
+    let effectiveCode = endedRoomCode;
+    let effectiveName = "";
+    if (typeof window !== "undefined") {
+      try {
+        if (!effectiveCode) effectiveCode = localStorage.getItem("magguru_last_room_code");
+        effectiveName = localStorage.getItem("magguru_last_student_name") || "";
+      } catch {}
+    }
+    const returnJoinUrl = effectiveCode
+      ? `/join?code=${encodeURIComponent(effectiveCode)}${effectiveName ? `&name=${encodeURIComponent(effectiveName)}` : ""}`
+      : "/join";
     return (
       <main
-        className="min-h-screen bg-slate-950 p-4 text-white flex flex-col justify-center items-center"
+        className={`min-h-screen ${ROOM_BG} p-4 text-white flex flex-col justify-center items-center`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-md w-full py-12 text-center">
-          <div className="rounded-[2.5rem] bg-slate-900 border-2 border-amber-500/30 p-8 shadow-2xl backdrop-blur">
+          <div className="rounded-[2.5rem] bg-white/10 border border-white/15 p-8 shadow-2xl backdrop-blur">
             <div className="text-6xl animate-bounce">🔁</div>
-            <h1 className="mt-5 text-2xl font-black text-amber-300">
+            <h1 className="mt-5 text-2xl font-black text-white">
               {t.room_session_closed_title}
             </h1>
-            <p className="mt-3 text-sm text-slate-200 leading-relaxed">
+            <p className="mt-3 text-sm text-teal-100 leading-relaxed">
               {t.room_session_closed_desc}
             </p>
-            {endedRoomCode && (
-              <div className="mt-4 inline-block rounded-xl bg-amber-500/10 border border-amber-400/30 px-3.5 py-1.5 text-xs font-mono font-bold text-amber-300">
-                Kode Ruangan: {endedRoomCode}
+            {effectiveCode && (
+              <div className="mt-4 inline-block rounded-xl bg-terracotta-500/15 border border-terracotta-500/40 px-3.5 py-1.5 text-xs font-mono font-bold text-terracotta-100">
+                Kode Ruangan: {effectiveCode}
               </div>
             )}
             <div className="mt-8 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSessionEnded(false);
+                  void loadSession(true);
+                }}
+                className="w-full inline-flex justify-center items-center rounded-2xl bg-terracotta-500 py-3.5 px-6 font-black text-white shadow-xl transition active:scale-95 hover:bg-terracotta-600"
+              >
+                🔄 Periksa Ulang Ruangan
+              </button>
               <Link
                 href={returnJoinUrl}
-                className="w-full inline-flex justify-center items-center rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 px-6 font-black text-slate-950 shadow-xl transition active:scale-95 hover:brightness-110"
+                className="w-full inline-flex justify-center items-center rounded-2xl border border-white/25 bg-white/10 py-3 px-6 text-sm font-bold text-white transition hover:bg-white/20 active:scale-95"
               >
-                🎮 {endedRoomCode ? "Gabung ke Sesi Baru" : t.room_back_join}
+                🎮 {effectiveCode ? `Gabung ke Sesi Baru (${effectiveCode})` : t.room_back_join}
               </Link>
             </div>
           </div>
@@ -490,7 +734,7 @@ export default function JoinRoomPage({
   if (!session) {
     return (
       <main
-        className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 text-white"
+        className={`min-h-screen ${ROOM_BG} p-4 text-white`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl py-16 text-center">
@@ -502,7 +746,7 @@ export default function JoinRoomPage({
               <button
                 type="button"
                 onClick={() => void loadSession()}
-                className="mt-6 rounded-2xl bg-white px-6 py-3 font-black text-violet-800 shadow-lg transition hover:bg-violet-50"
+                className="mt-6 rounded-2xl bg-white px-6 py-3 font-black text-teal-700 shadow-lg transition hover:bg-teal-50"
               >
                 {t.room_retry}
               </button>
@@ -529,7 +773,7 @@ export default function JoinRoomPage({
 
     return (
       <main
-        className="min-h-screen bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-600 p-4 text-white"
+        className={`min-h-screen ${ROOM_BG} p-4 text-white`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         {showConfetti ? (
@@ -552,7 +796,7 @@ export default function JoinRoomPage({
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-6">
                   <div className="text-center">
-                    <div className="text-5xl font-black tabular-nums text-emerald-700">
+                    <div className="text-5xl font-black tabular-nums text-teal-700">
                       {me.final_score}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
@@ -561,7 +805,7 @@ export default function JoinRoomPage({
                   </div>
                   <div className="h-16 w-px bg-slate-200" />
                   <div className="text-center">
-                    <div className="text-5xl font-black tabular-nums text-violet-700">
+                    <div className="text-5xl font-black tabular-nums text-terracotta-600">
                       #{me.rnk}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-500">
@@ -571,29 +815,29 @@ export default function JoinRoomPage({
                 </div>
 
                 {onPodium ? (
-                  <p className="mt-4 text-sm font-black text-emerald-700">
+                  <p className="mt-4 text-sm font-black text-teal-700">
                     {t.room_podium_congrats}
                   </p>
                 ) : highScore ? (
-                  <p className="mt-4 text-sm font-black text-violet-700">
+                  <p className="mt-4 text-sm font-black text-terracotta-600">
                     {t.room_high_score}
                   </p>
                 ) : null}
 
                 <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-xl bg-emerald-50 p-3 text-center">
-                    <div className="text-xs font-bold text-emerald-700">
+                  <div className="rounded-xl bg-teal-50 p-3 text-center">
+                    <div className="text-xs font-bold text-teal-600">
                       {t.room_correct_label}
                     </div>
-                    <div className="mt-1 text-lg font-black text-emerald-900">
+                    <div className="mt-1 text-lg font-black text-teal-700">
                       {me.correct_count} / {session.question_count}
                     </div>
                   </div>
-                  <div className="rounded-xl bg-amber-50 p-3 text-center">
-                    <div className="text-xs font-bold text-amber-700">
+                  <div className="rounded-xl bg-terracotta-50 p-3 text-center">
+                    <div className="text-xs font-bold text-terracotta-600">
                       {t.room_avg_speed_label}
                     </div>
-                    <div className="mt-1 text-lg font-black text-amber-900">
+                    <div className="mt-1 text-lg font-black text-terracotta-700">
                       {(me.avg_response_ms / 1000).toFixed(1)}{" "}
                       {t.room_seconds_suffix}
                     </div>
@@ -654,7 +898,7 @@ export default function JoinRoomPage({
                       key={row.participant_id}
                       className={
                         row.is_self
-                          ? "bg-violet-100 font-black text-violet-900"
+                          ? "bg-terracotta-100 font-black text-terracotta-700"
                           : "border-t border-slate-100"
                       }
                     >
@@ -662,7 +906,7 @@ export default function JoinRoomPage({
                       <td className="px-3 py-2">
                         {row.participant_name}
                         {row.is_self ? (
-                          <span className="ms-2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-black text-white">
+                          <span className="ms-2 rounded-full bg-terracotta-500 px-2 py-0.5 text-[10px] font-black text-white">
                             {t.room_you_badge}
                           </span>
                         ) : null}
@@ -680,11 +924,11 @@ export default function JoinRoomPage({
             </div>
           </div>
 
-          <RoomReview token={token} dict={dict} />
+          <RoomReview token={token} dict={dict} isRtl={isRtl} />
           <div className="text-center">
             <a
               href="/join"
-              className="inline-flex rounded-2xl bg-white px-6 py-3 font-black text-emerald-800 shadow-lg transition hover:bg-emerald-50"
+              className="inline-flex rounded-2xl bg-white px-6 py-3 font-black text-teal-700 shadow-lg transition hover:bg-teal-50"
             >
               {t.room_exit_btn}
             </a>
@@ -697,7 +941,7 @@ export default function JoinRoomPage({
   if (session.room_state === "locked") {
     return (
       <main
-        className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black p-4 text-white"
+        className={`min-h-screen ${ROOM_BG} p-4 text-white`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl py-12">
@@ -716,16 +960,16 @@ export default function JoinRoomPage({
   if (session.room_state === "waiting") {
     return (
       <main
-        className="min-h-screen bg-gradient-to-br from-violet-700 via-indigo-700 to-sky-600 p-4 py-8 text-white"
+        className={`min-h-screen ${ROOM_BG} p-4 py-8 text-white`}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="mx-auto max-w-2xl">
           <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-violet-100">
+              <p className="text-sm font-bold text-teal-100">
                 {t.room_label}
               </p>
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-black">
+              <span className="rounded-full bg-terracotta-500 px-2 py-0.5 text-xs font-black text-white">
                 {MODE_LABEL[session.game_mode] ?? session.game_mode}
               </span>
             </div>
@@ -795,25 +1039,42 @@ export default function JoinRoomPage({
   };
 
   return (
-    <GameShell
-      gameName={session.game_name}
-      gameType={gameType}
-      gameMode={MODE_LABEL[session.game_mode] ?? session.game_mode}
-      questionIndex={session.question_index}
-      questionCount={session.question_count}
-      currentScore={myRow?.final_score}
-      rank={myRow?.rnk}
-      totalParticipants={leaderboard.length}
-      streak={streak}
-      comboMultiplier={comboMultiplier}
-      secondsLeft={answerSecondsLeft}
-      timeLimitSeconds={timeLimitSec}
-      countdown={countdown}
-      isCooperative={isCooperative}
-      isRtl={isRtl}
-      submitError={submitError}
-      feedback={gameFeedback}
-    >
+    <>
+      <QuestionDeadlineWatcher
+        enabled={
+          session.room_state === "running" &&
+          !isCooperative &&
+          !session.answer_submitted &&
+          !submitting
+        }
+        questionId={session.question?.id ?? ""}
+        questionStartedAt={session.question_started_at}
+        timeLimitSeconds={timeLimitSec}
+        serverSkewMs={skewRef.current}
+        onTimeout={handleQuestionTimeout}
+      />
+      <RoomTimerShell
+        gameName={session.game_name}
+        gameType={gameType}
+        gameMode={MODE_LABEL[session.game_mode] ?? session.game_mode}
+        questionIndex={session.question_index}
+        questionCount={session.question_count}
+        currentScore={myRow?.final_score}
+        rank={myRow?.rnk}
+        totalParticipants={leaderboard.length}
+        streak={streak}
+        comboMultiplier={comboMultiplier}
+        timeLimitSeconds={timeLimitSec}
+        isCooperative={isCooperative}
+        isRtl={isRtl}
+        submitError={submitError}
+        feedback={gameFeedback}
+        roomState={session.room_state}
+        questionStartedAt={session.question_started_at}
+        startedAt={session.started_at}
+        durationSeconds={session.game_duration_seconds}
+        serverTime={session.server_time}
+      >
       {session.question ? (
         <QuizPlayer
           key={session.question.id}
@@ -860,6 +1121,7 @@ export default function JoinRoomPage({
           </div>
         </section>
       ) : null}
-    </GameShell>
+      </RoomTimerShell>
+    </>
   );
 }

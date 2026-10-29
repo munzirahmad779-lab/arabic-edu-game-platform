@@ -231,6 +231,7 @@ export async function updateQuestion(formData: FormData) {
   const questionId = readString(formData, "question_id");
   const categoryId = readString(formData, "category_id");
   const questionText = readString(formData, "question_text");
+  const explanation = readString(formData, "explanation");
   const correctOptionKey = readString(formData, "correct_option_key") as OptionKey;
   const difficulty = readString(formData, "difficulty") as Difficulty;
 
@@ -246,6 +247,9 @@ export async function updateQuestion(formData: FormData) {
   }
   if (!questionText || questionText.length > 5000) {
     return { ok: false as const, message: "Pertanyaan wajib diisi dan maksimal 5000 karakter." };
+  }
+  if (explanation.length > 5000) {
+    return { ok: false as const, message: "Pembahasan maksimal 5000 karakter." };
   }
   if (!OPTION_KEYS.includes(correctOptionKey)) {
     return { ok: false as const, message: "Jawaban benar harus A, B, C, atau D." };
@@ -264,6 +268,7 @@ export async function updateQuestion(formData: FormData) {
     p_difficulty: difficulty,
     p_correct_option_key: correctOptionKey,
     p_options: options,
+    p_explanation: explanation || null,
   });
 
   if (error) {

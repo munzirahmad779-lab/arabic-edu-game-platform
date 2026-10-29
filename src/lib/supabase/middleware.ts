@@ -40,14 +40,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Fast path 2: For public/student/gameplay routes, do not block navigation
-  // with a remote auth.getUser() network call.
-  if (!isProtected) {
-    return NextResponse.next({
-      request: { headers: request.headers },
-    });
-  }
-
   let response = NextResponse.next({
     request: { headers: request.headers },
   });

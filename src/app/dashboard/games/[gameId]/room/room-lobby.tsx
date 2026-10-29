@@ -66,36 +66,41 @@ export default function RoomLobby({
 
   useEffect(() => {
     let alive = true;
+    const refreshInFlight = { current: false };
     const supabase = createClient();
 
     const refresh = async () => {
-      const { data: pData, error: pErr } = await supabase
-        .from("room_participants")
-        .select(
-          "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
-        )
-        .eq("room_id", roomId)
-        .order("joined_at", { ascending: true });
+      if (refreshInFlight.current) return;
+      refreshInFlight.current = true;
 
-      if (!alive) return;
-      if (pErr) {
-        console.error("[RoomLobby] participants error:", pErr);
-        setLoadError(pErr.message);
-      } else if (pData) {
-        setParticipants(pData as Participant[]);
-        setLoadError("");
-      }
+      try {
+        const [{ data: pData, error: pErr }, { data: lData, error: lErr }] =
+          await Promise.all([
+            supabase
+              .from("room_participants")
+              .select(
+                "id, student_id, guest_name, connection_state, joined_at, last_seen_at",
+              )
+              .eq("room_id", roomId)
+              .order("joined_at", { ascending: true }),
+            supabase.rpc("get_room_leaderboard_teacher", {
+              p_room_id: roomId,
+            }),
+          ]);
 
-      const { data: lData, error: lErr } = await supabase.rpc(
-        "get_room_leaderboard_teacher",
-        { p_room_id: roomId },
-      );
+        if (!alive) return;
+        if (pErr) {
+          setLoadError(pErr.message);
+        } else if (pData) {
+          setParticipants(pData as Participant[]);
+          setLoadError("");
+        }
 
-      if (!alive) return;
-      if (lErr) {
-        console.error("[RoomLobby] leaderboard error:", lErr);
-      } else if (lData) {
-        setLeaderboard(lData);
+        if (!lErr && lData) {
+          setLeaderboard(lData);
+        }
+      } finally {
+        refreshInFlight.current = false;
       }
     };
 

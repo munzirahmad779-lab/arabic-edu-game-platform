@@ -50,6 +50,12 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [questionList, setQuestionList] = useState(() => [...questions]);
+
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      setQuestionList([...questions]);
+    }
+  }, [questions]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);

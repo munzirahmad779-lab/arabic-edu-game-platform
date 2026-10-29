@@ -88,7 +88,11 @@
     "label_name": "Name",
     "label_pin": "PIN",
     "btn_login": "Login",
-    "nav_teacher": "Teacher Login"
+    "nav_teacher": "Teacher Login",
+    "error_invalid_length": "Name and PIN are required. PIN must contain 4–6 digits.",
+    "error_invalid": "The name or PIN is incorrect. Check the details provided by your teacher.",
+    "error_too_many": "Too many attempts. Please try again in a little while.",
+    "error_network": "Could not connect to the server. Check your connection and try again."
   },
   "dashboard": {
     "header_title": "Dashboard",
@@ -841,6 +845,7 @@
       "difficulty_medium": "Medium",
       "difficulty_hard": "Hard",
       "correct_label": "Correct Answer",
+      "explanation_label": "Explanation",
       "saving": "Saving...",
       "save_edit": "Save Changes",
       "cancel": "Cancel",

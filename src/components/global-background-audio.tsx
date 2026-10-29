@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import {
   BG_AUDIO_PAUSE_EVENT,
   BG_AUDIO_RESUME_EVENT,
@@ -157,7 +158,7 @@ export function GlobalBackgroundAudio() {
 
   // Fetch tracks
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !hasSupabaseEnv()) return;
     let alive = true;
     const supabase = createClient();
     (async () => {
@@ -176,7 +177,7 @@ export function GlobalBackgroundAudio() {
 
   // Fetch user email
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !hasSupabaseEnv()) return;
     let alive = true;
     const supabase = createClient();
     (async () => {
@@ -197,7 +198,7 @@ export function GlobalBackgroundAudio() {
 
   // Fetch theme saat drawer dibuka
   useEffect(() => {
-    if (!mounted || !isDashboard || !settingsOpen) return;
+    if (!mounted || !isDashboard || !settingsOpen || !hasSupabaseEnv()) return;
     let alive = true;
     const supabase = createClient();
     (async () => {

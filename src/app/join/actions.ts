@@ -47,70 +47,28 @@ export async function joinRoom(formData: FormData) {
       redirect(`/controller?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`);
     }
 
-    if (msg.includes("ALREADY_JOINED")) {
+    // Pemulihan gabung ulang lewat SECURITY DEFINER RPC (migrasi 0068).
+    // Blok lama membaca/menulis tabel rooms, students, dan room_participants
+    // secara langsung sebagai anon; RLS (migrasi 0002) hanya memberi policy
+    // kepada authenticated pemilik ruangan, sehingga blok itu tidak pernah
+    // menghasilkan apa pun di produksi — dan cabang "auto-register"nya bahkan
+    // akan melewati pemeriksaan PIN room kelas bila suatu saat RLS longgar.
+    if (msg.includes("ALREADY_JOINED") || msg.includes("ROOM_NOT_OPEN")) {
       try {
-        const { data: roomRow } = await supabase
-          .from("rooms")
-          .select("id, class_id")
-          .eq("code", code)
-          .maybeSingle();
+        const { data: recData, error: recError } = await supabase.rpc(
+          "reconnect_room_participant",
+          { p_code: code, p_name: name },
+        );
+        const rec = !recError && recData && recData.length > 0 ? recData[0] : null;
 
-        if (roomRow) {
-          let partRow: { id: string; join_token: string } | null = null;
-
-          // 1. Check if user is logged in with student session
-          const { getStudentSession } = await import("@/lib/student-auth");
-          const studentSession = await getStudentSession();
-          if (studentSession?.student_id) {
-            const { data } = await supabase
-              .from("room_participants")
-              .select("id, join_token")
-              .eq("room_id", roomRow.id)
-              .eq("student_id", studentSession.student_id)
-              .maybeSingle();
-            partRow = data;
-          }
-
-          // 2. Look up by student name in class
-          if (!partRow && roomRow.class_id) {
-            const { data: sMatch } = await supabase
-              .from("students")
-              .select("id")
-              .eq("class_id", roomRow.class_id)
-              .ilike("name", name)
-              .maybeSingle();
-
-            if (sMatch?.id) {
-              const { data } = await supabase
-                .from("room_participants")
-                .select("id, join_token")
-                .eq("room_id", roomRow.id)
-                .eq("student_id", sMatch.id)
-                .maybeSingle();
-              partRow = data;
-            }
-          }
-
-          // 3. Look up by guest_name
-          if (!partRow) {
-            const { data } = await supabase
-              .from("room_participants")
-              .select("id, join_token")
-              .eq("room_id", roomRow.id)
-              .ilike("guest_name", name)
-              .maybeSingle();
-            partRow = data;
-          }
-
-          if (partRow?.join_token) {
-            ActiveRoomStore.registerParticipant({
-              roomId: roomRow.id,
-              joinToken: partRow.join_token,
-              participantId: partRow.id,
-              name,
-            });
-            redirect(`/join/room?token=${encodeURIComponent(partRow.join_token)}`);
-          }
+        if (rec && rec.room_state !== "ended" && rec.join_token && rec.participant_id) {
+          ActiveRoomStore.registerParticipant({
+            roomId: rec.room_id,
+            joinToken: rec.join_token,
+            participantId: rec.participant_id,
+            name: rec.participant_name || name,
+          });
+          redirect(`/join/room?token=${encodeURIComponent(rec.join_token)}`);
         }
       } catch (err) {
         if (err && typeof err === "object" && "digest" in err) throw err;

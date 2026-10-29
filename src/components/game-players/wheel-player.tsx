@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion } from "@/lib/game-engine/types";
 
@@ -189,7 +189,7 @@ export function WheelPlayer({
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [segments, correctKey]);
+  }, [segments, correctKey, currentQIndex, onFinish, questionList.length, score]);
 
   return (
     <div
@@ -293,12 +293,4 @@ export function WheelPlayer({
       </div>
     </div>
   );
-}
-
-function useMemo<T>(fn: () => T, deps: unknown[]): T {
-  const ref = useRef<{ value: T; deps: unknown[] } | null>(null);
-  if (!ref.current || !deps.every((d, i) => d === ref.current?.deps[i])) {
-    ref.current = { value: fn(), deps };
-  }
-  return ref.current.value;
 }

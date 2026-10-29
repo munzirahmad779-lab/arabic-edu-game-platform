@@ -1,32 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import idDict from "@/lib/i18n/id.json";
-import enDict from "@/lib/i18n/en.json";
-import arDict from "@/lib/i18n/ar.json";
-import {
-  DEFAULT_LOCALE,
-  LOCALE_COOKIE,
-  isLocale,
-  type Locale,
-} from "@/lib/i18n/dictionaries";
+import type idDict from "@/lib/i18n/id.json";
 
-type Dict = typeof idDict;
-const DICTS: Record<Locale, Dict> = {
-  id: idDict,
-  en: enDict as unknown as Dict,
-  ar: arDict as unknown as Dict,
-};
-
-function readLocale(): Locale {
-  if (typeof document === "undefined") return DEFAULT_LOCALE;
-  const m = document.cookie.match(
-    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
-  );
-  const v = m ? decodeURIComponent(m[1]) : DEFAULT_LOCALE;
-  return isLocale(v) ? v : DEFAULT_LOCALE;
-}
+type Dict = Pick<typeof idDict, "join">;
 
 type Row = {
   question_position: number;
@@ -38,21 +15,18 @@ type Row = {
   is_correct: boolean;
 };
 
+type ReviewApiRow = Omit<Row, "options"> & { options: unknown };
+
 export function RoomReview({
   token,
-  dict: injectedDict,
+  dict,
+  isRtl,
 }: {
   token: string;
-  dict?: Dict;
+  dict: Dict;
+  isRtl: boolean;
 }) {
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
-  useEffect(() => {
-    setLocale(readLocale());
-  }, []);
-
-  const dict = injectedDict ?? DICTS[locale];
   const t = dict.join;
-  const isRtl = locale === "ar";
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -62,19 +36,25 @@ export function RoomReview({
     let alive = true;
     (async () => {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase.rpc(
-          "student_get_my_room_answers",
-          { p_join_token: token },
+        const res = await fetch(
+          `/api/rooms/review?token=${encodeURIComponent(token)}`,
         );
         if (!alive) return;
-        if (!error && data) {
-          setRows(
-            data.map((r) => ({
-              ...r,
-              options: (Array.isArray(r.options) ? r.options : []) as Row["options"],
-            })),
-          );
+        if (res.ok) {
+          const data: unknown = await res.json();
+          if (Array.isArray(data)) {
+            setRows(
+              data.map((value) => {
+                const row = value as ReviewApiRow;
+                return {
+                  ...row,
+                  options: (Array.isArray(row.options)
+                    ? row.options
+                    : []) as Row["options"],
+                };
+              }),
+            );
+          }
         }
       } catch {
         // ignore
@@ -193,13 +173,13 @@ export function RoomReview({
                         [key]: !prev[key],
                       }))
                     }
-                    className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-800 transition hover:bg-violet-100"
+                    className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-2 text-xs font-black text-teal-700 transition hover:bg-teal-100"
                   >
                     {explanationShown ? t.review_why_hide : t.review_why}
                   </button>
 
                   {explanationShown ? (
-                    <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3 text-sm leading-7 text-violet-950">
+                    <div className="mt-2 rounded-xl border border-teal-100 bg-teal-50/60 p-3 text-sm leading-7 text-slate-900">
                       {r.explanation && r.explanation.trim().length > 0
                         ? r.explanation
                         : t.review_no_explanation}

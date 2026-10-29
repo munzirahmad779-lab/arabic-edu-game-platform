@@ -51,9 +51,9 @@ export interface Database {
         Relationships: [{ foreignKeyName: "question_categories_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; }];
       };
       questions: {
-        Row: { id: string; teacher_id: string; category_id: string | null; type: QuestionType; payload: Json; explanation: string | null; tags: string[]; media_url: string | null; question_bank_id: string | null; question_text: string | null; difficulty: QuestionDifficulty | null; correct_option_key: QuestionOptionKey | null; created_at: string; updated_at: string; };
-        Insert: { id?: string; teacher_id: string; category_id?: string | null; type?: QuestionType; payload: Json; explanation?: string | null; tags?: string[]; media_url?: string | null; question_bank_id?: string | null; question_text?: string | null; difficulty?: QuestionDifficulty | null; correct_option_key?: QuestionOptionKey | null; created_at?: string; updated_at?: string; };
-        Update: { id?: string; teacher_id?: string; category_id?: string | null; type?: QuestionType; payload?: Json; explanation?: string | null; tags?: string[]; media_url?: string | null; question_bank_id?: string | null; question_text?: string | null; difficulty?: QuestionDifficulty | null; correct_option_key?: QuestionOptionKey | null; created_at?: string; updated_at?: string; };
+        Row: { id: string; teacher_id: string; category_id: string | null; type: QuestionType; payload: Json; explanation: string | null; tags: string[]; media_url: string | null; question_bank_id: string | null; question_text: string | null; difficulty: QuestionDifficulty | null; correct_option_key: QuestionOptionKey | null; sort_order: number | null; created_at: string; updated_at: string; };
+        Insert: { id?: string; teacher_id: string; category_id?: string | null; type?: QuestionType; payload: Json; explanation?: string | null; tags?: string[]; media_url?: string | null; question_bank_id?: string | null; question_text?: string | null; difficulty?: QuestionDifficulty | null; correct_option_key?: QuestionOptionKey | null; sort_order?: number | null; created_at?: string; updated_at?: string; };
+        Update: { id?: string; teacher_id?: string; category_id?: string | null; type?: QuestionType; payload?: Json; explanation?: string | null; tags?: string[]; media_url?: string | null; question_bank_id?: string | null; question_text?: string | null; difficulty?: QuestionDifficulty | null; correct_option_key?: QuestionOptionKey | null; sort_order?: number | null; created_at?: string; updated_at?: string; };
         Relationships: [
           { foreignKeyName: "questions_teacher_id_fkey"; columns: ["teacher_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"]; },
           { foreignKeyName: "questions_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "question_categories"; referencedColumns: ["id"]; },
@@ -214,15 +214,18 @@ export interface Database {
       game_total_weight: { Args: { p_questions: Json }; Returns: number; };
       game_avg_limit_ms: { Args: { p_questions: Json }; Returns: number; };
       import_question_bank_rows: { Args: { p_question_bank_id: string; p_rows: Json }; Returns: number; };
-      update_question_bank_question: { Args: { p_question_id: string; p_category_id: string; p_question_text: string; p_difficulty: string; p_correct_option_key: string; p_options: Json }; Returns: boolean; };
+      update_question_bank_question: { Args: { p_question_id: string; p_category_id: string; p_question_text: string; p_difficulty: string; p_correct_option_key: string; p_options: Json; p_explanation: string | null }; Returns: boolean; };
       delete_question_bank_question: { Args: { p_question_id: string }; Returns: boolean; };
       delete_question_bank: { Args: { p_bank_id: string }; Returns: undefined; };
       create_student: { Args: { p_class_id: string; p_name: string; p_pin: string }; Returns: string; };
       reset_student_pin: { Args: { p_student_id: string; p_pin: string }; Returns: boolean; };
+      update_student: { Args: { p_student_id: string; p_name: string; p_pin?: string | null }; Returns: boolean; };
       delete_student: { Args: { p_student_id: string }; Returns: boolean; };
       import_students_to_class: { Args: { p_class_id: string; p_names: Json }; Returns: Array<{ student_name: string; student_pin: string }>; };
       join_room: { Args: { p_code: string; p_name: string; p_pin?: string | null }; Returns: Array<{ room_id: string; room_code: string; game_name: string; class_id: string | null; participant_id: string; participant_name: string; join_token: string; participant_count: number; capacity: number }>; };
       get_game_session: { Args: { p_join_token: string }; Returns: Array<{ room_id: string; room_code: string; game_name: string; game_type: string; game_mode: string; game_duration_seconds: number; started_at: string | null; room_state: string; participant_id: string; participant_name: string | null; participant_count: number; capacity: number; question_index: number; question_count: number; question_started_at: string | null; question: Json | null; answer_submitted: boolean; server_time: string }>; };
+      reconnect_room_participant: { Args: { p_code: string; p_name: string }; Returns: Array<{ room_id: string; room_state: string; participant_id: string | null; join_token: string | null; participant_name: string | null; snapshot: Json | null; capacity: number; started_at: string | null; question_started_at: string | null; current_question_index: number; question_index: number }>; };
+      reset_room_session: { Args: { p_room_id: string }; Returns: string; };
       submit_game_answer: {
         Args: {
           p_join_token: string;

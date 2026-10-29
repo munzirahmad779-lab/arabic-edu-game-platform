@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import { GameRegistry } from "@/lib/game-engine/registry";
 import { ProjectorScreen } from "./projector-screen";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
@@ -17,9 +18,7 @@ export default async function ProjectorPage({
   searchParams?: { roomId?: string };
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect(`/login?redirectTo=/dashboard/games/${params.gameId}/projector`);
@@ -53,18 +52,45 @@ export default async function ProjectorPage({
     roomQuery = roomQuery.order("created_at", { ascending: false }).limit(1);
   }
 
-  const { data: roomData } = await roomQuery.maybeSingle();
+  const [{ data: roomData }, { data: classesData }, { data: gqData }] =
+    await Promise.all([
+      roomQuery.maybeSingle(),
+      supabase
+        .from("classes")
+        .select("id, name, subject")
+        .eq("teacher_id", user.id)
+        .order("name", { ascending: true }),
+      supabase
+        .from("game_questions")
+        .select("question_id, position")
+        .eq("game_id", game.id)
+        .order("position", { ascending: true }),
+    ]);
   let onlineStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [];
+
+  const classIds = (classesData ?? []).map((c) => c.id);
+  const roomParticipantsQuery = roomData
+    ? supabase
+        .from("room_participants")
+        .select("id, student_id, guest_name")
+        .eq("room_id", roomData.id)
+        .gte("last_seen_at", new Date(Date.now() - 5 * 60_000).toISOString())
+    : Promise.resolve({ data: null });
+  const studentsQuery = classIds.length
+    ? supabase
+        .from("students")
+        .select("id, name, class_id")
+        .in("class_id", classIds)
+        .order("name", { ascending: true })
+    : Promise.resolve({ data: null });
+
+  const [{ data: pData }, { data: studentsData }] = await Promise.all([
+    roomParticipantsQuery,
+    studentsQuery,
+  ]);
 
   if (roomData) {
     activeRoomCode = roomData.code;
-    const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
-    const { data: pData } = await supabase
-      .from("room_participants")
-      .select("id, student_id, guest_name")
-      .eq("room_id", roomData.id)
-      .gte("last_seen_at", cutoff);
-
     if (pData && pData.length > 0) {
       onlineStudents = pData.map((p, idx) => ({
         id: p.id,
@@ -75,13 +101,6 @@ export default async function ProjectorPage({
     }
   }
 
-  // 2. Fetch all classes and students for this teacher
-  const { data: classesData } = await supabase
-    .from("classes")
-    .select("id, name, subject")
-    .eq("teacher_id", user.id)
-    .order("name", { ascending: true });
-
   const teacherClasses = [...(classesData ?? [])];
   if (onlineStudents.length > 0) {
     teacherClasses.unshift({
@@ -91,51 +110,35 @@ export default async function ProjectorPage({
     });
   }
 
-  const classIds = (classesData ?? []).map((c) => c.id);
-
   let allStudents: Array<{ id: string; name: string; class_id: string; class_name: string }> = [
     ...onlineStudents,
   ];
-  if (classIds.length > 0) {
-    const { data: studentsData } = await supabase
-      .from("students")
-      .select("id, name, class_id")
-      .in("class_id", classIds)
-      .order("name", { ascending: true });
-
-    if (studentsData) {
-      const classNameMap = new Map((classesData ?? []).map((c) => [c.id, c.name]));
-      const registeredStudents = studentsData.map((s) => ({
-        id: s.id,
-        name: s.name,
-        class_id: s.class_id,
-        class_name: classNameMap.get(s.class_id) ?? "Kelas",
-      }));
-      allStudents = [...allStudents, ...registeredStudents];
-    }
+  if (studentsData) {
+    const classNameMap = new Map((classesData ?? []).map((c) => [c.id, c.name]));
+    const registeredStudents = studentsData.map((s) => ({
+      id: s.id,
+      name: s.name,
+      class_id: s.class_id,
+      class_name: classNameMap.get(s.class_id) ?? "Kelas",
+    }));
+    allStudents = [...allStudents, ...registeredStudents];
   }
-
-  // 3. Fetch questions linked to game
-  const { data: gqData } = await supabase
-    .from("game_questions")
-    .select("question_id, position")
-    .eq("game_id", game.id)
-    .order("position", { ascending: true });
 
   const qIds = (gqData ?? []).map((g) => g.question_id);
 
   let rawQuestions: RawQuestion[] = [];
   if (qIds.length > 0) {
-    const { data: qData } = await supabase
-      .from("questions")
-      .select("id, question_text, difficulty, correct_option_key, explanation")
-      .in("id", qIds);
-
-    const { data: optData } = await supabase
-      .from("question_options")
-      .select("id, question_id, option_key, option_text")
-      .in("question_id", qIds)
-      .order("option_key", { ascending: true });
+    const [{ data: qData }, { data: optData }] = await Promise.all([
+      supabase
+        .from("questions")
+        .select("id, question_text, difficulty, correct_option_key, explanation")
+        .in("id", qIds),
+      supabase
+        .from("question_options")
+        .select("id, question_id, option_key, option_text")
+        .in("question_id", qIds)
+        .order("option_key", { ascending: true }),
+    ]);
 
     const qMap = new Map((qData ?? []).map((q) => [q.id, q]));
     const optMap = new Map<string, RawOption[]>();

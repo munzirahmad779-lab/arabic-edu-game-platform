@@ -1,5 +1,16 @@
 import type { QuestionImportRow } from "./excel";
 
+const REQUIRED_OPTION_KEYS = ["A", "B", "C", "D"] as const;
+
+function isRealOptionText(value: string, key: string): boolean {
+  const normalized = value
+    .trim()
+    .replace(/^[\[({<]+|[\])}>]+$/g, "")
+    .trim()
+    .toLowerCase();
+  return Boolean(normalized) && normalized !== `pilihan ${key.toLowerCase()}`;
+}
+
 export type GameThemeId =
   | "kahoot"
   | "excel_table"
@@ -294,10 +305,10 @@ function parseTableOrTsvRows(lines: string[]): QuestionImportRow[] {
       no: no || rowCounter,
       question,
       options: {
-        A: optA || "Pilihan A",
-        B: optB || "Pilihan B",
-        C: optC || "Pilihan C",
-        D: optD || "Pilihan D",
+        A: optA,
+        B: optB,
+        C: optC,
+        D: optD,
       },
       correctOptionKey: correctKey,
       topic: topic || "Umum",
@@ -325,7 +336,19 @@ export function parseMarkdownToImportRows(
   // 1. Auto-detect table or TSV rows first (Spreadsheet copy-paste or Markdown table)
   const autoTableRows = parseTableOrTsvRows(lines);
   if (autoTableRows.length > 0) {
-    return { rows: autoTableRows, errors: [] };
+    const validRows = autoTableRows.filter((row) => {
+      const missingOptions = REQUIRED_OPTION_KEYS.filter(
+        (key) => !isRealOptionText(row.options[key], key),
+      );
+      if (missingOptions.length > 0) {
+        errors.push(
+          `Soal ${row.no} wajib memiliki pilihan ${missingOptions.join(", ")} yang terisi.`,
+        );
+        return false;
+      }
+      return true;
+    });
+    return { rows: validRows, errors };
   }
 
   if (gameTheme === "memory_card" || gameTheme === "matching_column") {
@@ -455,24 +478,33 @@ export function parseMarkdownToImportRows(
 
   function commitQuestion() {
     if (currentQuestion.trim() && (currentOptions.A || currentOptions.B)) {
-      rows.push({
-        no: rowNo++,
-        question: currentQuestion.trim(),
-        options: {
-          A: currentOptions.A || "Pilihan A",
-          B: currentOptions.B || "Pilihan B",
-          C: currentOptions.C || "Pilihan C",
-          D: currentOptions.D || "Pilihan D",
-        },
-        correctOptionKey: currentCorrect,
-        topic: currentTopic,
-        difficulty: "easy",
-        hasMedia: false,
-        mediaType: null,
-        mediaFilename: null,
-        maxPlayCount: null,
-        explanation: currentExplanation,
-      });
+      const missingOptions = REQUIRED_OPTION_KEYS.filter(
+        (key) => !isRealOptionText(currentOptions[key], key),
+      );
+      if (missingOptions.length > 0) {
+        errors.push(
+          `Soal ${rowNo} wajib memiliki pilihan ${missingOptions.join(", ")} yang terisi.`,
+        );
+      } else {
+        rows.push({
+          no: rowNo++,
+          question: currentQuestion.trim(),
+          options: {
+            A: currentOptions.A,
+            B: currentOptions.B,
+            C: currentOptions.C,
+            D: currentOptions.D,
+          },
+          correctOptionKey: currentCorrect,
+          topic: currentTopic,
+          difficulty: "easy",
+          hasMedia: false,
+          mediaType: null,
+          mediaFilename: null,
+          maxPlayCount: null,
+          explanation: currentExplanation,
+        });
+      }
     }
     currentQuestion = "";
     currentOptions = { A: "", B: "", C: "", D: "" };

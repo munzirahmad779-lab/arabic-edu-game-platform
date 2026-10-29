@@ -69,6 +69,9 @@ export default function ControllerPage() {
   const prevQIndexRef = useRef<number>(-1);
   const lastTapTimeRef = useRef<number>(0);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const realtimeChannelRef = useRef<
+    ReturnType<ReturnType<typeof createClient>["channel"]> | null
+  >(null);
 
   // Initialize Supabase browser client once
   if (!supabaseRef.current && typeof window !== "undefined") {
@@ -80,58 +83,76 @@ export default function ControllerPage() {
   }
 
   // Handle incoming game state from any source (Realtime WebSocket, BroadcastChannel, or HTTP poll)
-  const handleIncomingGameState = useCallback((incoming: Partial<GameStateSync>) => {
-    setIsConnected(true);
+  const handleIncomingGameState = useCallback(
+    (incoming: Partial<GameStateSync> & { answeredTeams?: Record<string, { optionKey?: string }> }) => {
+      setIsConnected(true);
 
-    setGameState((prev) => {
-      const nextQIndex = typeof incoming.currentQuestionIndex === "number" ? incoming.currentQuestionIndex : prev.currentQuestionIndex;
-      const nextPhase = incoming.phase ?? prev.phase;
-      const serverHasAnswered = Boolean(incoming.hasMyTeamAnswered);
+      const nextQIndex = typeof incoming.currentQuestionIndex === "number" ? incoming.currentQuestionIndex : undefined;
+      const nextPhase = incoming.phase;
 
-      // Question progression detector: if question index changed or phase reverted to question, unlock!
-      const isNewQuestion = prevQIndexRef.current !== -1 && prevQIndexRef.current !== nextQIndex;
-      const isReenteredQuestionPhase = prev.phase !== "question" && nextPhase === "question";
+      // Determine if our team has answered from either incoming.answeredTeams map or incoming.hasMyTeamAnswered
+      let teamHasAnswered = false;
+      let teamAnswerKey: string | null = null;
 
-      if (isNewQuestion || (isReenteredQuestionPhase && !serverHasAnswered)) {
+      if (incoming.answeredTeams && selectedTeam) {
+        const teamRec = incoming.answeredTeams[selectedTeam.id];
+        if (teamRec) {
+          teamHasAnswered = true;
+          teamAnswerKey = teamRec.optionKey ?? null;
+        }
+      } else if (typeof incoming.hasMyTeamAnswered === "boolean") {
+        teamHasAnswered = incoming.hasMyTeamAnswered;
+        teamAnswerKey = incoming.myTeamAnswer ?? null;
+      }
+
+      // Question progression check
+      const prevQ = prevQIndexRef.current;
+      const isNewQuestion = typeof nextQIndex === "number" && prevQ !== -1 && prevQ !== nextQIndex;
+
+      if (typeof nextQIndex === "number") {
+        prevQIndexRef.current = nextQIndex;
+      }
+
+      // Unlock cleanly when:
+      // 1. Moving to new question
+      // 2. Incoming payload specifically confirms team has not answered (e.g. answeredTeams is empty on question phase)
+      if (isNewQuestion || (nextPhase === "question" && !teamHasAnswered)) {
         setHasLocallyAnswered(false);
         setLastPressedKey(null);
         setStatusMessage(null);
 
-        // Haptic notification for new question
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
           try {
             navigator.vibrate([80, 40, 80]);
-          } catch {
-            // ignore
-          }
+          } catch {}
         }
-      }
-      prevQIndexRef.current = nextQIndex;
-
-      // If server confirms our team has answered, lock locally. If server says not answered, unlock!
-      if (serverHasAnswered) {
+      } else if (teamHasAnswered) {
         setHasLocallyAnswered(true);
-        if (incoming.myTeamAnswer) {
-          setLastPressedKey(incoming.myTeamAnswer);
+        if (teamAnswerKey) {
+          setLastPressedKey(teamAnswerKey);
         }
-      } else if (incoming.hasMyTeamAnswered === false || isNewQuestion) {
-        setHasLocallyAnswered(false);
-        setLastPressedKey(null);
       }
 
-      return {
-        ...prev,
-        ...incoming,
-        phase: nextPhase,
-        currentQuestionIndex: nextQIndex,
-        timerSeconds: typeof incoming.timerSeconds === "number" ? incoming.timerSeconds : prev.timerSeconds,
-        totalQuestions: typeof incoming.totalQuestions === "number" ? incoming.totalQuestions : prev.totalQuestions,
-        hasMyTeamAnswered: serverHasAnswered,
-        myTeamAnswer: serverHasAnswered ? (incoming.myTeamAnswer ?? prev.myTeamAnswer) : null,
-        isLocked: nextPhase !== "question" || serverHasAnswered,
-      };
-    });
-  }, []);
+      setGameState((prev) => {
+        const qIdx = typeof nextQIndex === "number" ? nextQIndex : prev.currentQuestionIndex;
+        const phase = nextPhase ?? prev.phase;
+        const isLocked = phase !== "question" || teamHasAnswered;
+
+        return {
+          ...prev,
+          ...incoming,
+          phase,
+          currentQuestionIndex: qIdx,
+          timerSeconds: typeof incoming.timerSeconds === "number" ? incoming.timerSeconds : prev.timerSeconds,
+          totalQuestions: typeof incoming.totalQuestions === "number" ? incoming.totalQuestions : prev.totalQuestions,
+          hasMyTeamAnswered: teamHasAnswered,
+          myTeamAnswer: teamAnswerKey ?? (teamHasAnswered ? prev.myTeamAnswer : null),
+          isLocked,
+        };
+      });
+    },
+    [selectedTeam],
+  );
 
   // 1. SUPABASE REALTIME BROADCAST CHANNEL (Primary - Instant <40ms WebSocket sync across devices)
   useEffect(() => {
@@ -152,6 +173,7 @@ export default function ControllerPage() {
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
+          realtimeChannelRef.current = channel;
           setIsConnected(true);
           // Send initial heartbeat to register with teacher's projector
           void channel.send({
@@ -173,6 +195,9 @@ export default function ControllerPage() {
 
     return () => {
       window.clearInterval(hbInterval);
+      if (realtimeChannelRef.current === channel) {
+        realtimeChannelRef.current = null;
+      }
       void channel.unsubscribe();
     };
   }, [selectedTeam, roomCode, handleIncomingGameState]);
@@ -301,10 +326,8 @@ export default function ControllerPage() {
 
       // 1. BROADCAST VIA SUPABASE REALTIME (INSTANT WEBSOCKET TO TEACHER'S PROJECTOR)
       try {
-        const supabase = supabaseRef.current;
-        if (supabase) {
-          const channelName = `magguru_room_ctrl_${roomCode.toUpperCase()}`;
-          const channel = supabase.channel(channelName);
+        const channel = realtimeChannelRef.current;
+        if (channel) {
           void channel.send({
             type: "broadcast",
             event: "controller_press",
@@ -503,6 +526,23 @@ export default function ControllerPage() {
                 <p className="text-[11px] font-normal text-emerald-200/80 mt-0.5">
                   Remote Anda telah dikunci. Jawaban tidak bisa diubah hingga soal berikutnya.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasLocallyAnswered(false);
+                    setLastPressedKey(null);
+                    setStatusMessage(null);
+                    setGameState((prev) => ({
+                      ...prev,
+                      hasMyTeamAnswered: false,
+                      myTeamAnswer: null,
+                      isLocked: prev.phase !== "question",
+                    }));
+                  }}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/30 hover:bg-emerald-500/50 border border-emerald-400/50 px-3 py-1 text-[11px] font-bold text-white transition active:scale-95"
+                >
+                  🔄 Buka Kunci (Jika Sudah Pindah Soal)
+                </button>
               </div>
             ) : (
               <div className="rounded-2xl bg-amber-500/20 border border-amber-400/50 p-2.5 text-xs font-bold text-amber-200 animate-pulse">

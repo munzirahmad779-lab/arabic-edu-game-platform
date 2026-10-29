@@ -30,6 +30,7 @@ type QuestionRow = {
   difficulty: "easy" | "medium" | "hard" | null;
   correct_option_key: "A" | "B" | "C" | "D" | null;
   category_id: string | null;
+  explanation: string | null;
 };
 
 type OptionRow = {
@@ -255,6 +256,12 @@ export default async function QuestionBanksPage({
         : locale === "en"
           ? "Correct Answer"
           : "Jawaban Benar",
+    explanation_label:
+      locale === "ar"
+        ? "الشرح"
+        : locale === "en"
+          ? "Explanation"
+          : "Pembahasan",
     option_missing:
       locale === "ar"
         ? "الخيار غير موجود"
@@ -356,10 +363,11 @@ export default async function QuestionBanksPage({
     supabase
       .from("questions")
       .select(
-        "id, question_bank_id, question_text, difficulty, correct_option_key, category_id",
+        "id, question_bank_id, question_text, difficulty, correct_option_key, category_id, explanation",
       )
       .eq("teacher_id", user.id)
       .not("question_bank_id", "is", null)
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true }),
   ]);
 
@@ -695,6 +703,22 @@ export default async function QuestionBanksPage({
                               })}
                             </div>
 
+                            {question.explanation ? (
+                              <p
+                                className="mt-3 rounded-xl bg-sage-50 p-3 text-sm leading-relaxed text-softslate"
+                                dir="auto"
+                              >
+                                <span className="font-black text-teal-700">
+                                  {L.explanation_label}:{" "}
+                                </span>
+                                <span
+                                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+                                >
+                                  {question.explanation}
+                                </span>
+                              </p>
+                            ) : null}
+
                             <QuestionMediaManager
                               questionId={question.id}
                               media={mediaByQuestion.get(question.id) ?? []}
@@ -707,6 +731,7 @@ export default async function QuestionBanksPage({
                                 question_text: question.question_text,
                                 difficulty: question.difficulty,
                                 correct_option_key: question.correct_option_key,
+                                explanation: question.explanation,
                               }}
                               options={questionOptions.map((option) => ({
                                 option_key: option.option_key,

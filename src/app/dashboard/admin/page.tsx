@@ -5,8 +5,8 @@ import { TeacherList } from "./teacher-list";
 import { StudentSessions } from "./student-sessions";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-
-const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
+import { isSuperAdmin } from "@/lib/super-admin";
+import { GamePackControl } from "./game-pack-control";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -21,7 +21,7 @@ export default async function AdminPage() {
   const isRtl = locale === "ar";
   const t = dict.admin;
 
-  if (user.email !== SUPER_ADMIN_EMAIL) {
+  if (!isSuperAdmin(user)) {
     return (
       <main className="mx-auto max-w-3xl p-6" dir={isRtl ? "rtl" : "ltr"}>
         <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-center">
@@ -84,6 +84,7 @@ export default async function AdminPage() {
         <p className="mt-2 text-sm text-white/85">{t.header_desc}</p>
       </header>
 
+      <GamePackControl />
       <TeacherList teachers={teachers} dict={dict as never} />
       <StudentSessions sessions={sessions} dict={dict as never} />
     </main>

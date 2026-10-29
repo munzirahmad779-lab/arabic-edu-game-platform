@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import "./dashboard-themes.css";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -16,23 +17,24 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user, locale] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+    getLocale(),
+  ]);
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email, theme, is_active")
-    .eq("id", user.id)
-    .single();
-
-  const locale = await getLocale();
-  const dict = await getDictionary(locale);
+  const [{ data: profile }, dict] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name, email, theme, is_active")
+      .eq("id", user.id)
+      .single(),
+    getDictionary(locale),
+  ]);
   const isRtl = locale === "ar";
   const t = dict.dashboard;
   const sb = dict.sidebar;

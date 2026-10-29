@@ -7,10 +7,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Run on every path except static assets and image optimization files,
-     * so the session cookie stays fresh across the whole app.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Only dashboard requests require middleware auth refresh/validation.
+    // Public pages (home, login, join, controller) should not pay that edge
+    // invocation on every navigation.
+    "/dashboard/:path*",
   ],
 };

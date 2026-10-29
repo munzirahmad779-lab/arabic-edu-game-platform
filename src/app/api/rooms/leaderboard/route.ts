@@ -13,7 +13,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // 1. Check in-memory store
+    // 1. Jalur otoritatif: RPC database. Store memori per-instance hanya
+    // mengenal peserta & jawaban yang kebetulan mendarat di instance ini dan
+    // menilai dengan skala lokalnya sendiri; bila didahulukan, peringkat dan
+    // skor yang dilihat siswa menyimpang dari data guru (terbukti pada uji
+    // matriks gameplay: correct_count/final_score berbeda dari RPC).
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.rpc("get_room_leaderboard_student", {
+        p_join_token: token,
+      });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return NextResponse.json(data);
+      }
+    } catch {
+      // ignore: jatuh ke cadangan memori
+    }
+
+    // 2. Cadangan: in-memory store (hanya bila RPC tidak menjawab)
     const memoryMatch = ActiveRoomStore.getByToken(token);
     if (memoryMatch) {
       const rows = ActiveRoomStore.getLeaderboard(
@@ -23,20 +41,6 @@ export async function GET(req: NextRequest) {
       if (rows && rows.length > 0) {
         return NextResponse.json(rows);
       }
-    }
-
-    // 2. Supabase fallback
-    try {
-      const supabase = await createClient();
-      const { data, error } = await supabase.rpc("get_room_leaderboard_student", {
-        p_join_token: token,
-      });
-
-      if (!error && Array.isArray(data)) {
-        return NextResponse.json(data);
-      }
-    } catch {
-      // ignore
     }
 
     return NextResponse.json([]);

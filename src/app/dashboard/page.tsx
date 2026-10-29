@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { QuickActionsBar } from "@/components/quick-actions-bar";
@@ -48,14 +49,14 @@ const DOT_COLORS = [
 ];
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user, locale] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+    getLocale(),
+  ]);
 
   if (!user) redirect("/login");
 
-  const locale = await getLocale();
   const dict = await getDictionary(locale);
   const t = dict.dashboard;
   const th = dict.dashboard_home;
@@ -75,6 +76,63 @@ export default async function DashboardPage() {
   const classIds = classes?.map((c) => c.id) ?? [];
   const classMap = new Map((classes ?? []).map((c) => [c.id, c]));
 
+  // ============================================================
+  // PERLU PERHATIAN + DATA KELAS (independent reads in parallel)
+  // ============================================================
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const studentRowsQuery = classIds.length
+    ? supabase
+        .from("students")
+        .select("id, name, class_id")
+        .in("class_id", classIds)
+    : Promise.resolve({ data: [] as Array<{ id: string; name: string; class_id: string }> });
+
+  const recentActivityPromise = Promise.all([
+    supabase
+      .from("classes")
+      .select("id, name, created_at")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("games")
+      .select("id, name, created_at")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    db
+      .from("assessments")
+      .select("id, title, created_at")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(2),
+  ]);
+
+  const [studentRowsResult, materialsResult, essaysPendingRes, examsActiveRes] =
+    await Promise.all([
+      studentRowsQuery,
+      supabase
+        .from("class_materials")
+        .select("id", { count: "exact", head: true })
+        .in(
+          "class_id",
+          classIds.length > 0
+            ? classIds
+            : ["00000000-0000-0000-0000-000000000000"],
+        ),
+      db
+        .from("essay_submissions")
+        .select("id", { count: "exact", head: true })
+        .is("teacher_override_score", null)
+        .is("ai_score", null),
+      db
+        .from("assessment_tokens")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString()),
+    ]);
+
   const studentCounts = new Map<string, number>();
   let totalStudents = 0;
 
@@ -84,17 +142,10 @@ export default async function DashboardPage() {
     class_id: string;
   }> = [];
 
-  if (classIds.length > 0) {
-    const { data: studentRows } = await supabase
-      .from("students")
-      .select("id, name, class_id")
-      .in("class_id", classIds);
-
-    for (const s of studentRows ?? []) {
-      studentCounts.set(s.class_id, (studentCounts.get(s.class_id) ?? 0) + 1);
-      totalStudents += 1;
-      allStudents.push(s);
-    }
+  for (const s of studentRowsResult.data ?? []) {
+    studentCounts.set(s.class_id, (studentCounts.get(s.class_id) ?? 0) + 1);
+    totalStudents += 1;
+    allStudents.push(s);
   }
 
   const classCards: ClassCard[] = (classes ?? []).map((c) => ({
@@ -104,31 +155,7 @@ export default async function DashboardPage() {
     studentCount: studentCounts.get(c.id) ?? 0,
   }));
 
-  const { count: totalMaterials } = await supabase
-    .from("class_materials")
-    .select("id", { count: "exact", head: true })
-    .in(
-      "class_id",
-      classIds.length > 0 ? classIds : ["00000000-0000-0000-0000-000000000000"],
-    );
-
-  // ============================================================
-  // PERLU PERHATIAN
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
-
-  const [essaysPendingRes, examsActiveRes] = await Promise.all([
-    db
-      .from("essay_submissions")
-      .select("id", { count: "exact", head: true })
-      .is("teacher_override_score", null)
-      .is("ai_score", null),
-    db
-      .from("assessment_tokens")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true)
-      .gt("expires_at", new Date().toISOString()),
-  ]);
+  const totalMaterials = materialsResult.count;
 
   const essaysPending = essaysPendingRes?.count ?? 0;
   const examsActive = examsActiveRes?.count ?? 0;
@@ -225,26 +252,7 @@ export default async function DashboardPage() {
   // ============================================================
   const recentActivities: ActivityItem[] = [];
 
-  const [recentClasses, recentGames, recentExams] = await Promise.all([
-    supabase
-      .from("classes")
-      .select("id, name, created_at")
-      .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(3),
-    supabase
-      .from("games")
-      .select("id, name, created_at")
-      .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(3),
-    db
-      .from("assessments")
-      .select("id, title, created_at")
-      .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(2),
-  ]);
+  const [recentClasses, recentGames, recentExams] = await recentActivityPromise;
 
   for (const c of recentClasses.data ?? []) {
     recentActivities.push({

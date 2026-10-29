@@ -88,7 +88,11 @@
     "label_name": "Nama",
     "label_pin": "PIN",
     "btn_login": "Masuk",
-    "nav_teacher": "Masuk Guru"
+    "nav_teacher": "Masuk Guru",
+    "error_invalid_length": "Nama dan PIN wajib diisi. PIN harus terdiri dari 4–6 angka.",
+    "error_invalid": "Nama atau PIN salah. Periksa kembali data yang diberikan guru.",
+    "error_too_many": "Terlalu banyak percobaan. Silakan coba lagi beberapa saat lagi.",
+    "error_network": "Gagal terhubung ke server. Periksa koneksi lalu coba lagi."
   },
   "dashboard": {
     "header_title": "Dashboard",
@@ -841,6 +845,7 @@
       "difficulty_medium": "Sedang",
       "difficulty_hard": "Sulit",
       "correct_label": "Jawaban Benar",
+      "explanation_label": "Pembahasan",
       "saving": "Menyimpan...",
       "save_edit": "Simpan Perubahan",
       "cancel": "Batal",

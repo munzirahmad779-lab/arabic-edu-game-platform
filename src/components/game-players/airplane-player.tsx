@@ -14,7 +14,9 @@ export function AirplanePlayer({
   isRtl?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [questionList, setQuestionList] = useState(() => [...questions]);
+  const [questionList, setQuestionList] = useState<RawQuestion[]>(() =>
+    Array.isArray(questions) && questions.length > 0 ? [...questions] : []
+  );
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -22,21 +24,29 @@ export function AirplanePlayer({
   const [isGameOver, setIsGameOver] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; color: string } | null>(null);
 
+  useEffect(() => {
+    if (Array.isArray(questions) && questions.length > 0) {
+      setQuestionList([...questions]);
+    }
+  }, [questions]);
+
   const activeQuestion = useMemo(() => {
-    return (
-      questionList[currentQIndex % (questionList.length || 1)] || {
-        id: "q-mock",
-        position: 0,
-        question_text: "Soal Kuis Pesawat",
-        options: [
-          { id: "1", option_key: "A", option_text: "Jawaban A" },
-          { id: "2", option_key: "B", option_text: "Jawaban B" },
-          { id: "3", option_key: "C", option_text: "Jawaban C" },
-          { id: "4", option_key: "D", option_text: "Jawaban D" },
-        ],
-        correct_option_key: "A",
-      }
-    );
+    if (questionList.length > 0) {
+      return questionList[currentQIndex % questionList.length]!;
+    }
+    return {
+      id: "q-mock",
+      position: 0,
+      question_text: "Soal Kuis Pesawat",
+      difficulty: "easy",
+      options: [
+        { id: "1", option_key: "A", option_text: "Jawaban A" },
+        { id: "2", option_key: "B", option_text: "Jawaban B" },
+        { id: "3", option_key: "C", option_text: "Jawaban C" },
+        { id: "4", option_key: "D", option_text: "Jawaban D" },
+      ],
+      correct_option_key: "A",
+    };
   }, [questionList, currentQIndex]);
 
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
@@ -83,7 +93,7 @@ export function AirplanePlayer({
   const spawnClouds = useCallback((width: number, height: number) => {
     const opts = (activeQuestion.options || []).slice(0, 4);
     const cloudHeight = 72;
-    const availableHeight = height - 120;
+    const availableHeight = Math.max(200, height - 120);
     const slotHeight = availableHeight / Math.max(opts.length, 1);
 
     cloudsRef.current = opts.map((opt, i) => {
@@ -132,20 +142,23 @@ export function AirplanePlayer({
         });
       }
 
+      const totalQs = questionList.length || 1;
+
       if (isCorrect) {
         playSfx("correct");
-        setScore((s) => s + 100 + streak * 20);
+        const nextScore = score + 100 + streak * 20;
+        setScore(nextScore);
         setStreak((st) => st + 1);
         setFeedback({ text: `✓ TEPAT! +${100 + streak * 20} Poin`, color: "text-emerald-400" });
 
         setTimeout(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
-          if (currentQIndex + 1 < questions.length) {
+          if (currentQIndex + 1 < totalQs) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
-            onFinish?.(score + 100 + streak * 20);
+            onFinish?.(nextScore);
           }
         }, 800);
       } else {
@@ -164,7 +177,7 @@ export function AirplanePlayer({
         setTimeout(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
-          if (currentQIndex + 1 < questions.length) {
+          if (currentQIndex + 1 < totalQs) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
@@ -172,7 +185,7 @@ export function AirplanePlayer({
         }, 1200);
       }
     },
-    [correctKey, currentQIndex, questions.length, streak, score, onFinish, isGameOver],
+    [correctKey, currentQIndex, questionList.length, streak, score, onFinish, isGameOver],
   );
 
   // Sync ref so canvas loop always invokes the freshest callback without teardown
@@ -322,7 +335,7 @@ export function AirplanePlayer({
         const top = cl.y;
         const w = cl.width;
         const h = cl.height;
-        const r = h / 2;
+        const r = Math.max(0, Math.min(24, h / 2, w / 2));
 
         // Base rounded pill shape
         ctx.beginPath();
@@ -360,7 +373,7 @@ export function AirplanePlayer({
         const text = cl.option.option_text;
         const availTextWidth = w - 55;
         let fontSize = 15;
-        ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+        ctx.font = `bold ${fontSize}px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
         const measured = ctx.measureText(text).width;
 
         ctx.fillStyle = "#0f172a";
@@ -376,14 +389,14 @@ export function AirplanePlayer({
           const maxLineWidth = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width, 1);
           if (maxLineWidth > availTextWidth) {
             fontSize = Math.min(14, Math.max(11, Math.floor(fontSize * (availTextWidth / maxLineWidth))));
-            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
           }
           ctx.fillText(line1, left + 44, badgeY - 10);
           ctx.fillText(line2, left + 44, badgeY + 11);
         } else {
           if (measured > availTextWidth && availTextWidth > 30) {
             fontSize = Math.max(11, Math.floor(fontSize * (availTextWidth / measured)));
-            ctx.font = `bold ${fontSize}px "Traditional Arabic", var(--font-amiri), Amiri, Tahoma, sans-serif`;
+            ctx.font = `bold ${fontSize}px "Traditional Arabic", Amiri, Tahoma, sans-serif`;
           }
           ctx.fillText(text, left + 44, badgeY);
         }
@@ -440,7 +453,7 @@ export function AirplanePlayer({
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
     };
-  }, []); // Run canvas loop once without tearing down on question/score changes
+  }, [spawnClouds]);
 
   return (
     <div
@@ -448,25 +461,27 @@ export function AirplanePlayer({
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Top HUD: Question & Stats */}
-      <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15 px-4 py-3 text-white backdrop-blur">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">✈️</span>
-          <div>
-            <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">
-              SOAL #{currentQIndex + 1} / {questions.length}
+      <div className="relative z-10 p-4 bg-slate-900/80 backdrop-blur border-b border-white/10 flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-lg bg-sky-500 text-slate-950 font-black text-xs">
+              Soal {currentQIndex + 1}/{questionList.length || 1}
             </span>
-            <h3
-              className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.6]"
-              style={{ fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif" }}
-              dir="auto"
-            >
-              {activeQuestion.question_text}
-            </h3>
+            <span className="text-xs text-sky-300 font-semibold truncate">
+              {activeQuestion.difficulty || "Sedang"}
+            </span>
           </div>
+          <h3
+            className="text-base sm:text-lg font-black text-white truncate mt-1"
+            style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
+          >
+            {activeQuestion.question_text}
+          </h3>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Health Hearts */}
+        {/* Health & Score Display */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Hearts */}
           <div className="flex items-center gap-1 text-sm">
             {[1, 2, 3].map((h) => (
               <span key={h} className={h <= health ? "text-rose-500 text-lg" : "text-slate-600 text-lg"}>
@@ -489,14 +504,16 @@ export function AirplanePlayer({
           className="w-full h-full block cursor-pointer select-none"
           onPointerDown={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
+            const h = rect.height || 550;
             const y = e.clientY - rect.top;
-            planeRef.current.targetY = Math.max(60, Math.min(rect.height - 60, y));
+            planeRef.current.targetY = Math.max(60, Math.min(h - 60, y));
           }}
           onPointerMove={(e) => {
             if (e.buttons === 1) {
               const rect = e.currentTarget.getBoundingClientRect();
+              const h = rect.height || 550;
               const y = e.clientY - rect.top;
-              planeRef.current.targetY = Math.max(60, Math.min(rect.height - 60, y));
+              planeRef.current.targetY = Math.max(60, Math.min(h - 60, y));
             }
           }}
         />
@@ -549,7 +566,7 @@ export function AirplanePlayer({
           <button
             type="button"
             onClick={() => {
-              setQuestionList([...questions].sort(() => Math.random() - 0.5));
+              setQuestionList([...questionList].sort(() => Math.random() - 0.5));
               setCurrentQIndex(0);
               setScore(0);
               setHealth(3);

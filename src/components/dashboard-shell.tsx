@@ -45,7 +45,7 @@ export function DashboardShell({
   };
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen min-w-0 overflow-x-hidden">
       {/* Sidebar container with collapsible desktop width */}
       <div
         className={`hidden lg:block fixed inset-y-0 z-30 transition-transform duration-300 ease-in-out w-60 ${
@@ -78,12 +78,12 @@ export function DashboardShell({
 
       {/* Main Content Area with dynamic padding */}
       <div
-        className={`transition-all duration-300 ease-in-out ${
+        className={`min-w-0 transition-all duration-300 ease-in-out ${
           mounted && isCollapsed ? "lg:ps-0" : "lg:ps-60"
         }`}
       >
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-sage-200/60 bg-white/95 ps-16 pe-4 py-3 backdrop-blur sm:px-6 lg:ps-6">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-20 flex min-w-0 items-center justify-between gap-3 overflow-hidden border-b border-sage-200/60 bg-white/95 ps-16 pe-4 py-3 backdrop-blur sm:px-6 lg:ps-6">
+          <div className="flex min-w-0 items-center gap-3">
             {/* Desktop Expand Toggle Button (when collapsed) */}
             <button
               type="button"
@@ -104,7 +104,7 @@ export function DashboardShell({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">{headerRight}</div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">{headerRight}</div>
         </header>
 
         <main className={`mx-auto px-4 py-6 sm:px-6 sm:py-8 transition-all ${isCollapsed ? "max-w-7xl" : "max-w-5xl"}`}>

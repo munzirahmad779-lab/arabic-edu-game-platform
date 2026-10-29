@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { Marquee } from "@/components/marquee";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -14,15 +15,18 @@ type Feature = {
 };
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isLoggedIn = Boolean(user);
-
+  let isLoggedIn = false;
   const locale = await getLocale();
   const dict = await getDictionary(locale);
+
+  if (hasSupabaseEnv()) {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    isLoggedIn = Boolean(session?.user);
+  }
+
   const t = dict.home;
   const c = dict.common;
   const isRtl = locale === "ar";
