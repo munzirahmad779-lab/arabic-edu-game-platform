@@ -7,6 +7,7 @@ import { resumeBackgroundAudio } from "@/lib/bg-audio-events";
 import { RoomTimerShell } from "./room-timer-shell";
 import { QuestionDeadlineWatcher } from "./question-deadline-watcher";
 import { GameRegistry } from "@/lib/game-engine/registry";
+import { resolveEffectiveQuestionDurationSeconds } from "@/lib/game-engine/question-duration";
 
 import { QuizPlayer } from "@/components/game-players/quiz-player";
 import type {
@@ -88,6 +89,7 @@ type Session = {
   game_type?: string;
   game_mode: string;
   game_duration_seconds: number;
+  question_duration_seconds?: number | null;
   started_at: string | null;
   room_state: "waiting" | "running" | "ended" | "locked";
   participant_id: string;
@@ -149,7 +151,10 @@ function getAnswerSecondsLeft(
   if (!session || session.game_mode === "cooperative") return null;
   if (getCountdownSeconds(session, serverSkewMs) !== 0) return null;
   if (!session.question_started_at) return null;
-  const timeLimitSec = session.question?.time_limit_seconds ?? 20;
+  const timeLimitSec = resolveEffectiveQuestionDurationSeconds(
+    session.question?.difficulty,
+    session.question_duration_seconds ?? session.question?.time_limit_seconds ?? null,
+  );
   const deadline =
     new Date(session.question_started_at).getTime() + timeLimitSec * 1000;
   return Math.max(
@@ -553,7 +558,10 @@ export default function JoinRoomPage({
   }, []);
 
   const isCooperative = session?.game_mode === "cooperative";
-  const timeLimitSec = session?.question?.time_limit_seconds ?? 20;
+  const timeLimitSec = resolveEffectiveQuestionDurationSeconds(
+    session?.question?.difficulty,
+    session?.question_duration_seconds ?? session?.question?.time_limit_seconds ?? null,
+  );
 
   /**
    * Submit jawaban ke server.

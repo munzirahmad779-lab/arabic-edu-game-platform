@@ -8,6 +8,7 @@ import StartGameButton from "./start-game-button";
 import ArchiveButton from "./archive-button";
 import SessionHistory from "./session-history";
 import { TeacherLiveControls } from "./teacher-live-controls";
+import { QuestionDurationControl } from "./question-duration-control";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { ActiveRoomStore, normalizeSnapshotQuestion } from "@/lib/game-engine/room-store";
@@ -69,7 +70,7 @@ export default async function RoomPage({
   const { data: room, error: roomError } = await supabase
     .from("rooms")
     .select(
-      "id, code, state, capacity, game_id, snapshot, created_at, started_at",
+      "id, code, state, capacity, game_id, snapshot, created_at, started_at, question_duration_seconds",
     )
     .eq("id", roomId)
     .eq("teacher_id", user.id)
@@ -295,6 +296,15 @@ export default async function RoomPage({
             />
 
             {room.state === "waiting" ? (
+              <QuestionDurationControl
+                roomId={room.id}
+                initialDurationSeconds={room.question_duration_seconds ?? null}
+                gr={gr}
+                isRtl={isRtl}
+              />
+            ) : null}
+
+            {room.state === "waiting" ? (
               <StartGameButton
                 roomId={room.id}
                 initialCount={participants?.length ?? 0}
@@ -306,6 +316,7 @@ export default async function RoomPage({
               <TeacherLiveControls
                 roomId={room.id}
                 questionCount={questionCount}
+                initialQuestionDurationSeconds={room.question_duration_seconds ?? null}
                 gr={gr}
                 isRtl={isRtl}
               />

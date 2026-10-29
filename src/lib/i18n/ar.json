@@ -653,7 +653,12 @@
     "end_game_btn": "🛑 إنهاء اللعبة الآن",
     "end_game_loading": "جاري الإنهاء...",
     "end_game_confirm": "هل تريد بالتأكيد إنهاء اللعبة الآن لجميع الطلاب ونقل الغرفة إلى النتائج النهائية؟",
-    "total_questions_badge": "إجمالي الأسئلة: {count}"
+    "total_questions_badge": "إجمالي الأسئلة: {count}",
+    "question_duration_label": "مدة كل سؤال",
+    "question_duration_hint": "٣٠ ثانية على الأقل لكل سؤال. يسري التغيير بدءًا من السؤال الجاري.",
+    "question_duration_auto": "تلقائي (حسب صعوبة السؤال، ٣٠ ثانية كحد أدنى)",
+    "question_duration_seconds_unit": "ثانية",
+    "question_duration_saving": "جارٍ الحفظ..."
   },
   "games_page": {
     "title": "الألعاب",

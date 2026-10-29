@@ -972,7 +972,12 @@
     "end_game_btn": "🛑 End Game Now",
     "end_game_loading": "Ending...",
     "end_game_confirm": "Are you sure you want to end the game now for all students and move the room to final results?",
-    "total_questions_badge": "Total questions: {count}"
+    "total_questions_badge": "Total questions: {count}",
+    "question_duration_label": "Time per Question",
+    "question_duration_hint": "At least 30 seconds per question. Changes apply from the question currently in play.",
+    "question_duration_auto": "Automatic (follow question difficulty, min. 30 seconds)",
+    "question_duration_seconds_unit": "seconds",
+    "question_duration_saving": "Saving..."
   },
   "games_page": {
     "title": "Games",

@@ -972,7 +972,12 @@
     "end_game_btn": "🛑 Akhiri Permainan Sekarang",
     "end_game_loading": "Sedang mengakhiri...",
     "end_game_confirm": "Apakah Anda yakin ingin mengakhiri permainan sekarang untuk semua siswa dan memindahkan ruangan ke hasil akhir?",
-    "total_questions_badge": "Total soal: {count}"
+    "total_questions_badge": "Total soal: {count}",
+    "question_duration_label": "Durasi per Soal",
+    "question_duration_hint": "Minimal 30 detik per soal. Perubahan berlaku sejak soal yang sedang berjalan.",
+    "question_duration_auto": "Otomatis (ikut tingkat kesulitan soal, min. 30 detik)",
+    "question_duration_seconds_unit": "detik",
+    "question_duration_saving": "Menyimpan..."
   },
   "games_page": {
     "title": "Permainan",

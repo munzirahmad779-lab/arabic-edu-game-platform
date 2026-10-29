@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { QuestionDurationControl } from "./question-duration-control";
 
 type LiveControlsDict = {
   live_controls_title?: string;
@@ -14,16 +15,23 @@ type LiveControlsDict = {
   total_questions_badge?: string;
   error_prefix?: string;
   connection_error?: string;
+  question_duration_label?: string;
+  question_duration_hint?: string;
+  question_duration_auto?: string;
+  question_duration_seconds_unit?: string;
+  question_duration_saving?: string;
 };
 
 export function TeacherLiveControls({
   roomId,
   questionCount,
+  initialQuestionDurationSeconds = null,
   gr,
   isRtl = false,
 }: {
   roomId: string;
   questionCount: number;
+  initialQuestionDurationSeconds?: number | null;
   gr?: LiveControlsDict;
   isRtl?: boolean;
 }) {
@@ -138,6 +146,13 @@ export function TeacherLiveControls({
           {ending ? endLoading : endBtn}
         </button>
       </div>
+
+      <QuestionDurationControl
+        roomId={roomId}
+        initialDurationSeconds={initialQuestionDurationSeconds}
+        gr={gr}
+        isRtl={isRtl}
+      />
     </div>
   );
 }

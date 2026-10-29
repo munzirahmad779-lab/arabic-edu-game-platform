@@ -14,6 +14,21 @@ function toPublicQuestion(q: unknown): unknown {
   return copy;
 }
 
+/**
+ * Sesi siswa: database adalah SATU-SATUNYA sumber kebenaran.
+ *
+ * Latar (terverifikasi live 29 Okt 2026): versi lama menjawab polling dari
+ * ActiveRoomStore (memori per instance) bila RPC utama gagal, dan
+ * registerParticipant dapat mengarang room placeholder beku. Di Vercel
+ * multi-instance siswa mendarat di instance acak: snapshot beku dari saat
+ * join menjawab selamanya (waiting tidak pernah berubah, soal tiba sudah
+ * kedaluwarsa, keadaan mundur). Sekarang:
+ * - Jalur utama: RPC get_game_session, respons dibangun MURNI dari hasil RPC.
+ * - Jalur cadangan: RPC/kueri DB lain (get_join_session, tabel lewat RPC
+ *   reconnect) - tetap data DB, tidak pernah memori instance.
+ * - Registrasi ke ActiveRoomStore dipertahankan HANYA sebagai cache tulis
+ *   untuk konsumen server lain; ia tidak pernah menyusun respons di sini.
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -27,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient();
 
-    // 1. Prioritize authoritative Supabase RPC get_game_session
+    // 1. Authoritative Supabase RPC get_game_session
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc(
         "get_game_session",
@@ -53,6 +68,7 @@ export async function GET(req: NextRequest) {
         const rawQ = rpcSession.question;
         const normQ = normalizeSnapshotQuestion(rawQ, qIdx);
 
+        // Cache tulis saja: hasil registrasi TIDAK dipakai menyusun respons.
         ActiveRoomStore.registerRoom({
           id: roomId,
           code: String(rpcSession.room_code ?? "ROOM"),
@@ -89,57 +105,10 @@ export async function GET(req: NextRequest) {
       console.warn("[/api/rooms/session] Supabase RPC get_game_session notice:", e);
     }
 
-    // 2. Resilient In-Memory Match via ActiveRoomStore
-    // Room placeholder (kode "ROOM", tanpa soal) yang dibuat registerParticipant
-    // untuk room yang belum dikenal instance ini BUKAN sesi otoritatif:
-    // menyajikannya membekukan siswa di ruang tunggu selamanya. Lewati dan
-    // biarkan jalur RPC di bawah yang menjawab.
-    const memoryMatch = ActiveRoomStore.getByToken(token);
-    const memoryIsPlaceholder =
-      memoryMatch !== null &&
-      memoryMatch.room.code === "ROOM" &&
-      memoryMatch.room.questions.length === 0;
-    if (memoryMatch && !memoryIsPlaceholder) {
-      const { room, participant } = memoryMatch;
-      participant.last_seen_at = Date.now();
-
-      const questions = room.questions;
-      const totalQuestions = questions.length;
-
-      const participantSubmissionsCount = participant.submissions.length;
-      const qIdx = Math.max(participantSubmissionsCount, room.current_question_index);
-
-      const isCompleted = totalQuestions > 0 && qIdx >= totalQuestions;
-      const roomState = isCompleted ? "ended" : room.state;
-
-      const activeQuestion = !isCompleted && questions[qIdx] ? questions[qIdx] : null;
-      const answerSubmitted = activeQuestion
-        ? participant.submissions.some((s) => s.question_id === activeQuestion.id)
-        : false;
-
-      return NextResponse.json({
-        room_id: room.id,
-        room_code: room.code,
-        game_name: room.game_name,
-        game_type: room.game_type,
-        game_mode: room.game_mode,
-        game_duration_seconds: room.duration_seconds,
-        started_at: room.started_at,
-        room_state: roomState,
-        participant_id: participant.id,
-        participant_name: participant.name,
-        participant_count: room.participants.size || 1,
-        capacity: room.capacity,
-        question_index: qIdx,
-        question_count: totalQuestions,
-        question_started_at: room.question_started_at || room.started_at || new Date().toISOString(),
-        question: toPublicQuestion(activeQuestion),
-        answer_submitted: answerSubmitted,
-        server_time: new Date().toISOString(),
-      });
-    }
-
-    // 3. Fallback: Query get_join_session RPC
+    // 2. Fallback DB: RPC get_join_session + baris room dari tabel rooms.
+    // (Langkah lama yang menjawab dari memori ActiveRoomStore.getByToken
+    // DIHAPUS: snapshot memori per instance adalah akar keadaan beku/mundur
+    // di produksi multi-instance.)
     try {
       const { data: joinData, error: joinErr } = await (supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{
         data: Array<{
@@ -162,58 +131,32 @@ export async function GET(req: NextRequest) {
         const row = joinData[0];
         const rState = (row.room_state as "waiting" | "running" | "ended") || "waiting";
 
-        // Hydrate from rooms snapshot in database to ensure questions are fully populated
-        let cachedRoom = ActiveRoomStore.getRoomById(row.room_id);
-        if (!cachedRoom || cachedRoom.questions.length === 0) {
-          try {
-            const { data: roomRow } = await supabase
-              .from("rooms")
-              .select("id, code, state, started_at, current_question_index, question_started_at, snapshot, capacity")
-              .eq("id", row.room_id)
-              .maybeSingle();
+        // Selalu baca baris room terbaru dari DB (bukan cache memori).
+        const { data: roomRow } = await supabase
+          .from("rooms")
+          .select("id, code, state, started_at, current_question_index, question_started_at, question_duration_seconds, snapshot, capacity")
+          .eq("id", row.room_id)
+          .maybeSingle();
 
-            if (roomRow) {
-              const snap = roomRow.snapshot as {
-                game?: {
-                  name?: string;
-                  mode?: string;
-                  game_type?: string;
-                  duration_seconds?: number;
-                };
-                questions?: unknown[];
-              } | null;
+        const snap = roomRow?.snapshot as {
+          game?: {
+            name?: string;
+            mode?: string;
+            game_type?: string;
+            duration_seconds?: number;
+          };
+          questions?: unknown[];
+        } | null;
 
-              const rawQs = snap?.questions ?? [];
-              const normQs = rawQs
-                .map((q, idx) => normalizeSnapshotQuestion(q, idx))
-                .filter((q): q is NonNullable<typeof q> => q !== null);
+        const rawQs = snap?.questions ?? [];
+        const normQs = rawQs
+          .map((q, idx) => normalizeSnapshotQuestion(q, idx))
+          .filter((q): q is NonNullable<typeof q> => q !== null);
 
-              cachedRoom = ActiveRoomStore.registerRoom({
-                id: roomRow.id,
-                code: roomRow.code,
-                game_name: snap?.game?.name || row.game_name || "Game",
-                game_type: snap?.game?.game_type || (snap?.game?.mode === "anagram" ? "anagram" : "quiz"),
-                game_mode: snap?.game?.mode || "competitive",
-                duration_seconds: snap?.game?.duration_seconds || 300,
-                capacity: roomRow.capacity || 30,
-                state: (roomRow.state as "waiting" | "running" | "ended") || rState,
-                started_at: roomRow.started_at,
-                question_started_at: roomRow.question_started_at,
-                current_question_index: roomRow.current_question_index ?? 0,
-                questions: normQs,
-              });
-            }
-          } catch (rErr) {
-            console.warn("[/api/rooms/session] Snapshot hydrate notice:", rErr);
-          }
-        }
+        const qIdx = roomRow?.current_question_index ?? 0;
+        const currentQ = normQs[qIdx] ?? null;
 
-        const questions = cachedRoom?.questions ?? [];
-        const qIdx = cachedRoom?.current_question_index ?? 0;
-        const currentQ = questions[qIdx] ?? null;
-
-        // Daftarkan room dengan data ASLI dari RPC lebih dulu, supaya
-        // registerParticipant tidak mengarang room placeholder.
+        // Cache tulis saja.
         ActiveRoomStore.registerRoom({
           id: row.room_id,
           code: row.room_code,
@@ -232,19 +175,20 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           room_id: row.room_id,
           room_code: row.room_code,
-          game_name: row.game_name || cachedRoom?.game_name || "Game",
-          game_type: cachedRoom?.game_type || "quiz",
-          game_mode: cachedRoom?.game_mode || "competitive",
-          game_duration_seconds: cachedRoom?.duration_seconds || 300,
-          started_at: cachedRoom?.started_at || null,
-          room_state: rState,
+          game_name: snap?.game?.name || row.game_name || "Game",
+          game_type: snap?.game?.game_type || (snap?.game?.mode === "anagram" ? "anagram" : "quiz"),
+          game_mode: snap?.game?.mode || "competitive",
+          game_duration_seconds: snap?.game?.duration_seconds || 300,
+          question_duration_seconds: roomRow?.question_duration_seconds ?? null,
+          started_at: roomRow?.started_at ?? null,
+          room_state: (roomRow?.state as string) || rState,
           participant_id: row.participant_id,
           participant_name: row.participant_name || "Santri Magguru",
-          participant_count: row.participant_count || cachedRoom?.participants.size || 1,
-          capacity: row.capacity || cachedRoom?.capacity || 30,
+          participant_count: row.participant_count || 1,
+          capacity: row.capacity || roomRow?.capacity || 30,
           question_index: qIdx,
-          question_count: questions.length,
-          question_started_at: cachedRoom?.question_started_at || null,
+          question_count: normQs.length,
+          question_started_at: roomRow?.question_started_at ?? null,
           question: toPublicQuestion(currentQ),
           answer_submitted: false,
           server_time: new Date().toISOString(),
@@ -254,7 +198,7 @@ export async function GET(req: NextRequest) {
       console.warn("[/api/rooms/session] get_join_session fallback notice:", fallbackErr);
     }
 
-    // 4. Direct Table Check on room_participants
+    // 3. Direct Table Check on room_participants (data DB; tunduk RLS)
     try {
       const { data: partRow } = await supabase
         .from("room_participants")
@@ -271,7 +215,8 @@ export async function GET(req: NextRequest) {
             capacity,
             started_at,
             current_question_index,
-            question_started_at
+            question_started_at,
+            question_duration_seconds
           )
         `)
         .eq("join_token", token)
@@ -287,6 +232,7 @@ export async function GET(req: NextRequest) {
           started_at: string | null;
           current_question_index: number;
           question_started_at: string | null;
+          question_duration_seconds: number | null;
         };
 
         const snap = rData.snapshot as {
@@ -306,7 +252,13 @@ export async function GET(req: NextRequest) {
 
         const rState = (rData.state as "waiting" | "running" | "ended") || "waiting";
 
-        const cachedRoom = ActiveRoomStore.registerRoom({
+        const { count: dbParticipantCount } = await supabase
+          .from("room_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("room_id", rData.id);
+
+        // Cache tulis saja.
+        ActiveRoomStore.registerRoom({
           id: rData.id,
           code: rData.code,
           game_name: snap?.game?.name || "Game",
@@ -336,14 +288,15 @@ export async function GET(req: NextRequest) {
           room_id: rData.id,
           room_code: rData.code,
           game_name: snap?.game?.name || "Game",
-          game_type: cachedRoom.game_type,
-          game_mode: cachedRoom.game_mode,
-          game_duration_seconds: cachedRoom.duration_seconds,
+          game_type: snap?.game?.game_type || (snap?.game?.mode === "anagram" ? "anagram" : "quiz"),
+          game_mode: snap?.game?.mode || "competitive",
+          game_duration_seconds: snap?.game?.duration_seconds || 300,
+          question_duration_seconds: rData.question_duration_seconds ?? null,
           started_at: rData.started_at,
           room_state: rState,
           participant_id: partRow.id,
           participant_name: pName,
-          participant_count: cachedRoom.participants.size || 1,
+          participant_count: dbParticipantCount ?? 1,
           capacity: rData.capacity || 30,
           question_index: qIdx,
           question_count: normQs.length,
@@ -357,13 +310,14 @@ export async function GET(req: NextRequest) {
       console.warn("[/api/rooms/session] room_participants direct table notice:", partErr);
     }
 
-    // 5. Auto-reconnect by Room Code via SECURITY DEFINER RPC.
+    // 4. Auto-reconnect by Room Code via SECURITY DEFINER RPC.
     // Jalur lama membaca tabel rooms dan menyisipkan room_participants secara
     // langsung sebagai anon; RLS (migrasi 0002) hanya memberi policy kepada
     // authenticated pemilik ruangan, sehingga jalur itu selalu kosong di
     // produksi dan siswa yang tokennya hilang terkunci di SESSION_NOT_FOUND.
     // RPC reconnect_room_participant (migrasi 0068) melakukan pencarian yang
-    // sama dari sisi definer.
+    // sama dari sisi definer. Bila token pulih, jawaban akhir tetap dibangun
+    // dari RPC get_game_session (sumber DB yang sama dengan jalur utama).
     if (roomCodeQuery) {
       try {
         const { data: recData, error: recError } = await supabase.rpc(
@@ -392,6 +346,26 @@ export async function GET(req: NextRequest) {
         }
 
         if (rec && rec.join_token && rec.participant_id) {
+          // Jawaban otoritatif dari RPC utama memakai token yang pulih.
+          const { data: sessData, error: sessError } = await supabase.rpc(
+            "get_game_session",
+            { p_join_token: rec.join_token }
+          );
+
+          if (!sessError && sessData && sessData[0]) {
+            const sess = { ...(sessData[0] as Record<string, unknown>) };
+            const sIdx = Number(sess.question_index ?? 0);
+            sess.question = toPublicQuestion(
+              normalizeSnapshotQuestion(sess.question, sIdx)
+            );
+            return NextResponse.json({
+              ...sess,
+              new_join_token: rec.join_token,
+            });
+          }
+
+          // Cadangan terakhir: susun dari snapshot DB yang dikembalikan RPC
+          // reconnect itu sendiri (tetap data DB, bukan memori instance).
           const snapRaw =
             rec.snapshot &&
             typeof rec.snapshot === "object" &&
@@ -413,7 +387,9 @@ export async function GET(req: NextRequest) {
             .filter((q): q is NonNullable<typeof q> => q !== null);
 
           const rState = rec.room_state as "waiting" | "running" | "ended";
-          const cachedRoom = ActiveRoomStore.registerRoom({
+
+          // Cache tulis saja.
+          ActiveRoomStore.registerRoom({
             id: rec.room_id,
             code: roomCodeQuery,
             game_name: String(snapGame?.name ?? "Game"),
@@ -445,14 +421,18 @@ export async function GET(req: NextRequest) {
             room_id: rec.room_id,
             room_code: roomCodeQuery,
             game_name: String(snapGame?.name ?? "Game"),
-            game_type: cachedRoom.game_type,
-            game_mode: cachedRoom.game_mode,
-            game_duration_seconds: cachedRoom.duration_seconds,
+            game_type: String(
+              snapGame?.game_type ??
+                (snapGame?.mode === "anagram" ? "anagram" : "quiz")
+            ),
+            game_mode: String(snapGame?.mode ?? "competitive"),
+            game_duration_seconds: Number(snapGame?.duration_seconds ?? 300),
+            question_duration_seconds: null,
             started_at: rec.started_at,
             room_state: rState,
             participant_id: rec.participant_id,
             participant_name: rec.participant_name || "Santri Magguru",
-            participant_count: cachedRoom.participants.size || 1,
+            participant_count: 1,
             capacity: rec.capacity || 30,
             question_index: qIdx,
             question_count: normQs.length,
