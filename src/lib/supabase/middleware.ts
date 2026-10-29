@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Kept as a small explicit allowlist prefix-check rather than a config
  * matcher trick, so it's obvious and easy to extend in later phases.
  */
-const PROTECTED_PREFIXES = ["/dashboard"];
+const PROTECTED_PREFIXES = ["/dashboard", "/game"];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

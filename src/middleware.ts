@@ -7,9 +7,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Only dashboard requests require middleware auth refresh/validation.
+    // Dashboard dan game mandiri (/game) memerlukan refresh/validasi sesi.
     // Public pages (home, login, join, controller) should not pay that edge
     // invocation on every navigation.
     "/dashboard/:path*",
+    "/game/:path*",
   ],
 };
