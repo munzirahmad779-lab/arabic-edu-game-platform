@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import { MIN_QUESTION_DURATION_SECONDS } from "@/lib/game-engine/question-duration";
+import { tryMarkRecordedAnswer } from "@/lib/game-engine/projector-answer-guard";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 
@@ -227,6 +228,9 @@ export function ProjectorScreen({
   }, [gameId, initialRoomCode]);
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
+  // Kunci soal+tim yang sudah dicatat handleRecordAnswer pada permainan
+  // ini (penjaga anti duplikat penskoran, lihat projector-answer-guard).
+  const recordedAnswerKeysRef = useRef<Set<string>>(new Set());
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const realtimeChannelRef = useRef<
@@ -362,6 +366,23 @@ export function ProjectorScreen({
   const handleRecordAnswer = useCallback(
     (teamId: string, optionKey: string) => {
       if (phase !== "question") return;
+      // Penjaga anti duplikat sinkron: satu press tiba lewat tiga kanal
+      // (broadcast Supabase, BroadcastChannel, putaran ulang poller) dan
+      // guard closure answers[teamId] di bawah bisa basi di antara
+      // kedatangan itu, sehingga penskoran dapat tereksekusi berulang.
+      // Kunci soal+tim dicentang dan ditandai lewat ref sebelum state
+      // apa pun diubah; kedatangan duplikat berhenti tanpa efek. Jawaban
+      // pertama yang sah selalu lolos karena satu tim hanya menjawab
+      // sekali per soal (semantik answers[teamId] tetap berlaku).
+      if (
+        !tryMarkRecordedAnswer(
+          recordedAnswerKeysRef.current,
+          currentQuestionIndex,
+          teamId,
+        )
+      ) {
+        return;
+      }
       if (answers[teamId]) return;
 
       const keyUpper = optionKey.toUpperCase().trim();
@@ -410,8 +431,15 @@ export function ProjectorScreen({
         playSfx("wrong");
       }
     },
-    [phase, answers, correctOptionKey, correctArrivalOrder.length],
+    [phase, answers, correctOptionKey, correctArrivalOrder.length, currentQuestionIndex],
   );
+
+  // Kunci penjaga anti duplikat hanya berlaku per soal: bersihkan setiap
+  // kali indeks soal berubah. Mulai ulang dari soal 0 ditangani oleh
+  // pembersihan eksplisit di handleRestartGame.
+  useEffect(() => {
+    recordedAnswerKeysRef.current.clear();
+  }, [currentQuestionIndex]);
 
   const triggerRevealPhase = useCallback(() => {
     setPhase("reveal");
@@ -514,6 +542,7 @@ export function ProjectorScreen({
         }),
       }).catch(() => {});
     } else {
+      recordedAnswerKeysRef.current.clear();
       setPhase("finished");
       playSfx("boost");
     }
@@ -521,6 +550,7 @@ export function ProjectorScreen({
 
   // Restart match
   const handleRestartGame = () => {
+    recordedAnswerKeysRef.current.clear();
     setTeams((prev) =>
       prev.map((t) => ({ ...t, score: 0, correctCount: 0, streak: 0, currentMemberIndex: 0 })),
     );
