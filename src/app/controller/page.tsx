@@ -684,14 +684,18 @@ export default function ControllerPage() {
           const isButtonDisabledVisual = isAnswered || !isQuestionPhase;
 
           return (
+            // Satu pemicu saja (onClick): sebelumnya onPointerDown dan
+            // onClick sama sama memanggil handlePressButton, sehingga
+            // satu ketukan fisik bisa mengeksekusi press dua kali bila
+            // klik tiba lebih dari 250 ms sesudah pointerdown (debounce
+            // adalah satu satunya penjaga dan pemeriksaan kunci membaca
+            // state yang belum ter-commit). Satu ketukan kini tepat satu
+            // eksekusi press; debounce 250 ms tetap ada sebagai sisa
+            // perlindungan di dalam handlePressButton.
             <button
               key={btn.key}
               type="button"
               aria-disabled={isButtonDisabledVisual}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                void handlePressButton(btn.key);
-              }}
               onClick={() => void handlePressButton(btn.key)}
               className={`h-36 rounded-3xl p-4 flex flex-col items-center justify-center font-black text-white bg-gradient-to-b ${btn.color} border-4 ${btn.border} shadow-2xl transition-all duration-150 relative overflow-hidden select-none cursor-pointer active:scale-90 active:brightness-125 ${
                 isButtonDisabledVisual
