@@ -12,9 +12,15 @@
  * Penjaga ini adalah Set berkunci `${questionIndex}:${teamId}` yang
  * diperiksa dan ditandai secara sinkron di pintu masuk pencatatan,
  * sebelum pembaruan state apa pun. Pemanggil menyimpan Set di dalam ref
- * dan membersihkannya saat indeks soal berubah serta saat permainan
- * dimulai ulang, jadi jawaban pertama yang sah tidak pernah tertahan:
- * satu tim memang hanya menjawab sekali per soal.
+ * untuk satu permainan penuh: kunci berdimensi indeks soal, jadi tanda
+ * soal lama tidak menghalangi jawaban soal baru, dan set ini sengaja
+ * TIDAK dibersihkan saat indeks soal berubah, karena tanda soal lama
+ * itulah yang menahan eksekusi ulang oleh closure basi dari soal lama
+ * (anomali soal 19 putaran 3 uji live 30 Okt 2026: jawaban soal 18
+ * tercatat dua kali, salinan keduanya diproses sesudah indeks naik).
+ * Set hanya dibersihkan saat permainan selesai dan saat dimulai ulang,
+ * jadi jawaban pertama yang sah pada soal yang sedang berjalan tidak
+ * pernah tertahan: satu tim memang hanya menjawab sekali per soal.
  */
 
 export function recordedAnswerKey(questionIndex: number, teamId: string): string {

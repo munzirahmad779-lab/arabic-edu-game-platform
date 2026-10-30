@@ -434,12 +434,13 @@ export function ProjectorScreen({
     [phase, answers, correctOptionKey, correctArrivalOrder.length, currentQuestionIndex],
   );
 
-  // Kunci penjaga anti duplikat hanya berlaku per soal: bersihkan setiap
-  // kali indeks soal berubah. Mulai ulang dari soal 0 ditangani oleh
-  // pembersihan eksplisit di handleRestartGame.
-  useEffect(() => {
-    recordedAnswerKeysRef.current.clear();
-  }, [currentQuestionIndex]);
+  // Kunci penjaga anti duplikat SENGAJA tidak dibersihkan saat indeks
+  // soal berubah (anomali soal 19 putaran 3): kunci sudah berdimensi
+  // indeks soal, jadi tanda soal lama tidak menghalangi jawaban soal
+  // baru, tetapi menahan eksekusi ulang oleh closure basi dari soal
+  // lama yang memeriksa kunci di bawah indeks lamanya sendiri.
+  // Pembersihan hanya terjadi pada cabang selesai permainan di
+  // handleGoToNextQuestion dan pada handleRestartGame.
 
   const triggerRevealPhase = useCallback(() => {
     setPhase("reveal");
