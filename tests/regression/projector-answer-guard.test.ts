@@ -196,3 +196,52 @@ describe("Penolakan indeks peristiwa basi di pintu masuk pencatatan", () => {
     assert.equal(destructureCount, 2);
   });
 });
+
+describe("Poller proyektor menolak respons lintas pergantian soal", () => {
+  test("Generasi poller naik setiap kali indeks soal berubah", () => {
+    assert.match(projectorSource, /const pollGenerationRef = useRef\(0\);/);
+    assert.match(
+      projectorSource,
+      /pollGenerationRef\.current \+= 1;\s*\n\s*\}, \[currentQuestionIndex\]\);/,
+    );
+  });
+
+  test("Fetch menangkap generasi saat diterbitkan dan respons tertinggal dibuang sebelum pemrosesan event", () => {
+    const pollerStart = projectorSource.indexOf(
+      "// Wireless Phone Controller Poller",
+    );
+    assert.ok(pollerStart >= 0);
+    const capturePos = projectorSource.indexOf(
+      "const issuedGeneration = pollGenerationRef.current;",
+      pollerStart,
+    );
+    const fetchPos = projectorSource.indexOf("await fetch(", pollerStart);
+    const comparePos = projectorSource.indexOf(
+      "issuedGeneration !== pollGenerationRef.current",
+      pollerStart,
+    );
+    const recordPos = projectorSource.indexOf(
+      "handleRecordAnswer(ev.teamId, ev.optionKey)",
+      pollerStart,
+    );
+    assert.ok(capturePos > pollerStart);
+    assert.ok(fetchPos > capturePos);
+    assert.ok(comparePos > fetchPos);
+    assert.ok(recordPos > comparePos);
+    assert.match(
+      projectorSource,
+      /if \(responseCrossedQuestionChange\) continue;/,
+    );
+  });
+
+  test("Event yang tidak lebih baru dari watermark saat pemrosesan dilewati (lapis kedua)", () => {
+    assert.match(
+      projectorSource,
+      /const processedWatermark = lastEventTimestampRef\.current;/,
+    );
+    assert.match(
+      projectorSource,
+      /if \(ev\.timestamp <= processedWatermark\) continue;/,
+    );
+  });
+});

@@ -231,6 +231,11 @@ export function ProjectorScreen({
   }, [gameId, initialRoomCode]);
   const [activeControllers, setActiveControllers] = useState<string[]>([]);
   const lastEventTimestampRef = useRef<number>(Date.now());
+  // Generasi poller proyektor: naik setiap kali indeks soal berubah.
+  // Fetch poller menangkap nilai ini saat diterbitkan; respons yang
+  // tiba sesudah generasinya tertinggal dibuang seluruhnya, karena
+  // event store tidak membawa indeks soal (lihat blok poller).
+  const pollGenerationRef = useRef(0);
   // Kunci soal+tim yang sudah dicatat handleRecordAnswer pada permainan
   // ini (penjaga anti duplikat penskoran, lihat projector-answer-guard).
   const recordedAnswerKeysRef = useRef<Set<string>>(new Set());
@@ -472,6 +477,14 @@ export function ProjectorScreen({
   // lama yang memeriksa kunci di bawah indeks lamanya sendiri.
   // Pembersihan hanya terjadi pada cabang selesai permainan di
   // handleGoToNextQuestion dan pada handleRestartGame.
+
+  // Generasi poller naik pada setiap pergantian indeks soal: cap bagi
+  // blok poller untuk menolak respons yang diterbitkan sebelum
+  // pergantian soal terakhir (event store tidak punya bidang indeks,
+  // jadi generasi adalah pengganti indeks untuk kanal itu).
+  useEffect(() => {
+    pollGenerationRef.current += 1;
+  }, [currentQuestionIndex]);
 
   const triggerRevealPhase = useCallback(() => {
     setPhase("reveal");
@@ -749,6 +762,12 @@ export function ProjectorScreen({
     if (phase === "finished") return;
 
     const interval = setInterval(async () => {
+      // Cap generasi diterbitkan bersama fetch ini. Fetch poller bebas
+      // tumpang tindih dan kelanjutan asinkronnya bisa baru berjalan
+      // sesudah soal berganti; tanpa cap ini, event soal lama dari
+      // respons semacam itu diputar ulang ke dalam soal berjalan
+      // (anomali soal 19 putaran 3).
+      const issuedGeneration = pollGenerationRef.current;
       try {
         const res = await fetch(
           `/api/projector/controller?roomCode=${roomCode}&since=${lastEventTimestampRef.current}`,
@@ -761,10 +780,22 @@ export function ProjectorScreen({
         }
 
         if (Array.isArray(data.events) && data.events.length > 0) {
+          const responseCrossedQuestionChange =
+            issuedGeneration !== pollGenerationRef.current;
+          // Watermark saat pemrosesan dimulai: event yang tidak lebih
+          // baru dari nilai ini sudah pernah diproses oleh respons
+          // tumpang tindih lain dan tidak boleh diputar ulang.
+          const processedWatermark = lastEventTimestampRef.current;
           for (const ev of data.events) {
+            // Watermark tetap maju melewati semua event yang terlihat,
+            // termasuk event pada respons yang dibuang, supaya fetch
+            // berikutnya tidak menerbitkan ulang event soal lama (GET
+            // menyaring event secara ketat lebih baru dari since).
             if (ev.timestamp > lastEventTimestampRef.current) {
               lastEventTimestampRef.current = ev.timestamp;
             }
+            if (responseCrossedQuestionChange) continue;
+            if (ev.timestamp <= processedWatermark) continue;
             if (ev.action === "press" && ev.teamId && ev.optionKey && phase === "question") {
               handleRecordAnswer(ev.teamId, ev.optionKey);
             }
