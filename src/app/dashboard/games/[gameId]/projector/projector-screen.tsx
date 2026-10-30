@@ -13,6 +13,7 @@ import {
 } from "@/lib/game-engine/projector-answer-guard";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
+import { buildProjectorReportPayload } from "@/lib/projector-report";
 
 const AirplanePlayer = dynamic(
   () =>
@@ -836,6 +837,142 @@ export function ProjectorScreen({
     return [...teams].sort((a, b) => b.score - a.score);
   }, [teams]);
 
+  // ---------------------------------------------------------------
+  // Penyimpanan laporan hasil permainan (perbaikan: sebelumnya hasil
+  // proyektor tidak pernah disimpan ke mana pun; endpoint
+  // /api/projector/save-report sudah lama ada tetapi tidak pernah
+  // dipanggil layar ini, jadi skor hilang begitu halaman ditutup).
+  // ---------------------------------------------------------------
+  const [reportStatus, setReportStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const reportSavedRef = useRef(false);
+  const arcadeFinishedRef = useRef(false);
+  const lastReportTeamsRef = useRef<Array<{
+    id: string;
+    name: string;
+    score: number;
+    correctCount: number;
+    members?: Array<{ id: string; name: string }>;
+  }> | null>(null);
+
+  const postReport = useCallback(
+    async (
+      teamsPayload: Array<{
+        id: string;
+        name: string;
+        score: number;
+        correctCount: number;
+        members?: Array<{ id: string; name: string }>;
+      }>,
+    ) => {
+      lastReportTeamsRef.current = teamsPayload;
+      setReportStatus("saving");
+      try {
+        const payload = buildProjectorReportPayload({
+          gameId,
+          gameName,
+          classId: selectedClassId,
+          roomCode,
+          totalQuestions,
+          teams: teamsPayload,
+        });
+        const res = await fetch("/api/projector/save-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`save-report ${res.status}`);
+        setReportStatus("saved");
+      } catch {
+        reportSavedRef.current = false;
+        setReportStatus("error");
+      }
+    },
+    [gameId, gameName, selectedClassId, roomCode, totalQuestions],
+  );
+
+  const saveTeamReport = useCallback(() => {
+    void postReport(
+      sortedLeaderboard.map((t) => ({
+        id: t.id,
+        name: t.name,
+        score: t.score,
+        correctCount: t.correctCount,
+        members: t.members.map((m) => ({ id: m.id, name: m.name })),
+      })),
+    );
+  }, [postReport, sortedLeaderboard]);
+
+  // Pertandingan baru dimulai: persenjatai lagi penyimpanan laporan.
+  useEffect(() => {
+    if (gameStarted) {
+      reportSavedRef.current = false;
+      arcadeFinishedRef.current = false;
+      setReportStatus("idle");
+    }
+  }, [gameStarted]);
+
+  // Alur tim (Kahoot Arena): simpan otomatis sekali saat permainan selesai.
+  useEffect(() => {
+    if (
+      phase === "finished" &&
+      activeEngine === "kahoot" &&
+      !arcadeFinishedRef.current &&
+      !reportSavedRef.current
+    ) {
+      reportSavedRef.current = true;
+      saveTeamReport();
+    }
+  }, [phase, activeEngine, saveTeamReport]);
+
+  // Alur arkade: satu baris hasil untuk jalannya permainan di proyektor.
+  const handleArcadeFinish =
+    (engineLabel: string) =>
+    (finalScore: number, correctCount: number) => {
+      arcadeFinishedRef.current = true;
+      setPhase("finished");
+      if (!reportSavedRef.current) {
+        reportSavedRef.current = true;
+        void postReport([
+          {
+            id: "arcade-run",
+            name: engineLabel,
+            score: finalScore,
+            correctCount,
+            members: [],
+          },
+        ]);
+      }
+    };
+
+  const reportStatusBar =
+    reportStatus === "idle" ? null : (
+      <div className="w-full max-w-3xl mx-auto mt-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center text-xs font-bold text-white">
+        {reportStatus === "saving" && "💾 Menyimpan laporan hasil permainan…"}
+        {reportStatus === "saved" &&
+          "✓ Laporan hasil permainan tersimpan. Lihat di menu Laporan."}
+        {reportStatus === "error" && (
+          <span className="inline-flex flex-wrap items-center justify-center gap-2">
+            <span>⚠️ Laporan gagal tersimpan.</span>
+            <button
+              type="button"
+              onClick={() => {
+                const last = lastReportTeamsRef.current;
+                if (last) {
+                  reportSavedRef.current = true;
+                  void postReport(last);
+                }
+              }}
+              className="rounded-lg bg-white/20 px-2.5 py-1 font-black hover:bg-white/30 transition"
+            >
+              Coba Lagi
+            </button>
+          </span>
+        )}
+      </div>
+    );
+
   const answeredCount = Object.keys(answers).length;
 
   // If teacher opened a direct web game embed in-session:
@@ -857,7 +994,7 @@ export function ProjectorScreen({
   }
 
   // If teacher selected a Native Arcade Game Engine:
-  if (activeEngine === "airplane") {
+  if (gameStarted && activeEngine === "airplane") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -876,12 +1013,13 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <AirplanePlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        {reportStatusBar}
+        <AirplanePlayer questions={questions} onFinish={handleArcadeFinish("Pesawat Terbang Awan")} isRtl={isRtl} />
       </main>
     );
   }
 
-  if (activeEngine === "whack") {
+  if (gameStarted && activeEngine === "whack") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -900,12 +1038,13 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <WhackPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        {reportStatusBar}
+        <WhackPlayer questions={questions} onFinish={handleArcadeFinish("Pukul Tikus Kosakata")} isRtl={isRtl} />
       </main>
     );
   }
 
-  if (activeEngine === "space") {
+  if (gameStarted && activeEngine === "space") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -924,12 +1063,13 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <SpaceDefenderPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        {reportStatusBar}
+        <SpaceDefenderPlayer questions={questions} onFinish={handleArcadeFinish("Penjaga Antariksa")} isRtl={isRtl} />
       </main>
     );
   }
 
-  if (activeEngine === "memory") {
+  if (gameStarted && activeEngine === "memory") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -948,12 +1088,13 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <MemoryPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        {reportStatusBar}
+        <MemoryPlayer questions={questions} onFinish={handleArcadeFinish("Kartu Memori Flip 3D")} isRtl={isRtl} />
       </main>
     );
   }
 
-  if (activeEngine === "balloon") {
+  if (gameStarted && activeEngine === "balloon") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -972,7 +1113,8 @@ export function ProjectorScreen({
             ← Kembali ke Kahoot Arena
           </button>
         </header>
-        <BalloonPlayer questions={questions} onFinish={() => setPhase("finished")} isRtl={isRtl} />
+        {reportStatusBar}
+        <BalloonPlayer questions={questions} onFinish={handleArcadeFinish("Pecahkan Balon Jawaban")} isRtl={isRtl} />
       </main>
     );
   }
@@ -1527,6 +1669,8 @@ export function ProjectorScreen({
               </div>
             ))}
           </div>
+
+          {reportStatusBar}
 
           <div className="flex items-center justify-center gap-3 pt-4">
             <button

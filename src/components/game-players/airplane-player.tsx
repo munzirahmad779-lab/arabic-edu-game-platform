@@ -10,7 +10,7 @@ export function AirplanePlayer({
   isRtl = false,
 }: {
   questions: RawQuestion[];
-  onFinish?: (finalScore: number) => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -52,6 +52,7 @@ export function AirplanePlayer({
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
   const isProcessingHitRef = useRef(false);
+  const correctRef = useRef(0);
   const handleHitCloudRef = useRef<(opt: RawOption) => void>(() => {});
 
   // Plane physics state
@@ -146,6 +147,7 @@ export function AirplanePlayer({
 
       if (isCorrect) {
         playSfx("correct");
+        correctRef.current += 1;
         const nextScore = score + 100 + streak * 20;
         setScore(nextScore);
         setStreak((st) => st + 1);
@@ -158,7 +160,7 @@ export function AirplanePlayer({
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
-            onFinish?.(nextScore);
+            onFinish?.(nextScore, correctRef.current);
           }
         }, 800);
       } else {
@@ -168,7 +170,7 @@ export function AirplanePlayer({
           const next = h - 1;
           if (next <= 0) {
             setIsGameOver(true);
-            onFinish?.(score);
+            onFinish?.(score, correctRef.current);
           }
           return Math.max(0, next);
         });

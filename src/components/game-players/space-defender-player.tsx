@@ -6,7 +6,7 @@ import type { RawQuestion, RawOption } from "@/lib/game-engine/types";
 
 type Props = {
   questions: RawQuestion[];
-  onFinish?: () => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 };
 
@@ -58,6 +58,12 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   }, [questions]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
+  const correctRef = useRef(0);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
   const [streak, setStreak] = useState(0);
   const [health, setHealth] = useState(3);
   const [selectedTargetKey, setSelectedTargetKey] = useState<string | null>(null);
@@ -153,6 +159,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         setFeedback("correct");
         playSfx("correct");
         playSfx("boost");
+        correctRef.current += 1;
         setScore((s) => s + 100 + streak * 20);
         setStreak((st) => st + 1);
       } else {
@@ -163,7 +170,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
           if (h <= 1) {
             setTimeout(() => {
               setIsGameOver(true);
-              onFinish?.();
+              onFinish?.(scoreRef.current, correctRef.current);
             }, 600);
             return 0;
           }
@@ -180,7 +187,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
           setCurrentIdx((idx) => idx + 1);
         } else {
           setIsGameOver(true);
-          onFinish?.();
+          onFinish?.(scoreRef.current, correctRef.current);
         }
       }, 1200);
     },

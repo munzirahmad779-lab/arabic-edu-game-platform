@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion } from "@/lib/game-engine/types";
 
@@ -10,10 +10,11 @@ export function MemoryPlayer({
   isRtl = false,
 }: {
   questions: RawQuestion[];
-  onFinish?: (finalScore: number) => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 }) {
   const [score, setScore] = useState(0);
+  const correctRef = useRef(0);
   const [moves, setMoves] = useState(0);
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [matchedIds, setMatchedIds] = useState<number[]>([]);
@@ -53,12 +54,13 @@ export function MemoryPlayer({
       if (cardA && cardB && cardA.pairId === cardB.pairId) {
         // MATCH!
         playSfx("correct");
+        correctRef.current += 1;
         setScore((s) => s + 100);
         setMatchedIds((prev) => {
           const next = [...prev, cardA.pairId];
           if (next.length * 2 >= cards.length) {
             setIsGameOver(true);
-            onFinish?.(score + 100);
+            onFinish?.(score + 100, correctRef.current);
           }
           return next;
         });

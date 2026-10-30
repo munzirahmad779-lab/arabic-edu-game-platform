@@ -12,7 +12,7 @@ export function WhackPlayer({
   isRtl = false,
 }: {
   questions: RawQuestion[];
-  onFinish?: (finalScore: number) => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 }) {
   const [questionList, setQuestionList] = useState(() => [...questions]);
@@ -24,6 +24,7 @@ export function WhackPlayer({
   }, [questions]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const correctRef = useRef(0);
   const [streak, setStreak] = useState(0);
   const [health, setHealth] = useState(3);
   const [timerLeft, setTimerLeft] = useState(25);
@@ -96,7 +97,7 @@ export function WhackPlayer({
             if (h <= 1) {
               clearInterval(timer);
               setIsGameOver(true);
-              onFinish?.(score);
+              onFinish?.(score, correctRef.current);
               return 0;
             }
             return h - 1;
@@ -133,6 +134,7 @@ export function WhackPlayer({
 
     if (isCorrect) {
       playSfx("correct");
+      correctRef.current += 1;
       setScore((s) => s + 100 + streak * 25);
       setStreak((st) => st + 1);
       setTimerLeft((t) => Math.min(30, t + 5)); // Bonus +5s
@@ -145,7 +147,7 @@ export function WhackPlayer({
           setTimerLeft(25);
         } else {
           setIsGameOver(true);
-          onFinish?.(score + 100);
+          onFinish?.(score + 100 + streak * 25, correctRef.current);
         }
       }, 500);
     } else {
@@ -156,7 +158,7 @@ export function WhackPlayer({
       setHealth((h) => {
         if (h <= 1) {
           setIsGameOver(true);
-          onFinish?.(score);
+          onFinish?.(score, correctRef.current);
           return 0;
         }
         return h - 1;

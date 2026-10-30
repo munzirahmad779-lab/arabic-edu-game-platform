@@ -12,7 +12,7 @@ export function BalloonPlayer({
   isRtl = false,
 }: {
   questions: RawQuestion[];
-  onFinish?: (finalScore: number) => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -50,6 +50,7 @@ export function BalloonPlayer({
   const correctKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
 
   const isProcessingHitRef = useRef(false);
+  const correctRef = useRef(0);
   const handlePopBalloonRef = useRef<(b: (typeof balloonsRef.current)[0]) => void>(() => {});
 
   // Balloons state with adaptive sizing
@@ -132,6 +133,7 @@ export function BalloonPlayer({
 
       if (isCorrect) {
         playSfx("correct");
+        correctRef.current += 1;
         setScore((s) => s + 100 + streak * 20);
         setStreak((st) => st + 1);
         setFeedback({ text: `✓ PECAH TEPAT! +${100 + streak * 20} Poin`, color: "text-emerald-400" });
@@ -143,7 +145,7 @@ export function BalloonPlayer({
             setCurrentQIndex((idx) => idx + 1);
           } else {
             setIsGameOver(true);
-            onFinish?.(score + 100 + streak * 20);
+            onFinish?.(score + 100 + streak * 20, correctRef.current);
           }
         }, 700);
       } else {
@@ -154,7 +156,7 @@ export function BalloonPlayer({
           if (h <= 1) {
             setTimeout(() => {
               setIsGameOver(true);
-              onFinish?.(score);
+              onFinish?.(score, correctRef.current);
             }, 600);
             return 0;
           }

@@ -136,8 +136,27 @@ export default function StudentLoginPage() {
               action={async (fd) => {
                 setSubmitting(true);
                 setError(null);
-                await loginStudent(fd);
-                setSubmitting(false);
+                try {
+                  await loginStudent(fd);
+                } catch (err) {
+                  // Redirect dari server action adalah sinyal navigasi,
+                  // bukan kegagalan: teruskan agar router memprosesnya.
+                  if (
+                    err &&
+                    typeof err === "object" &&
+                    "digest" in err &&
+                    String((err as { digest?: unknown }).digest).startsWith(
+                      "NEXT_REDIRECT",
+                    )
+                  ) {
+                    throw err;
+                  }
+                  // Kegagalan sungguhan (jaringan/server): tampilkan pesan,
+                  // jangan biarkan tombol membeku di "..." selamanya.
+                  setError(t.error_network);
+                } finally {
+                  setSubmitting(false);
+                }
               }}
               className="mt-6 space-y-4 rounded-3xl border border-[#8FA68E]/30 bg-white p-6 shadow-xl"
             >
