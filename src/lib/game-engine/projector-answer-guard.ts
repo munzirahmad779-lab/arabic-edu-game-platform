@@ -28,6 +28,34 @@ export function recordedAnswerKey(questionIndex: number, teamId: string): string
 }
 
 /**
+ * Penolakan peristiwa basi di pintu masuk pencatatan.
+ *
+ * Payload press stik membawa indeks soal yang sedang ditampilkan stik
+ * saat press lahir. Bila indeks itu terisi angka dan tidak sama dengan
+ * indeks soal yang sedang berjalan di proyektor, peristiwa itu lahir
+ * pada soal lain (biasanya soal sebelumnya, baru terantar sesudah
+ * indeks naik) dan harus dibuang sebelum penjaga maupun penilaian:
+ * menilainya akan memakai kunci jawaban soal lahirnya tetapi menulis
+ * hasilnya ke state soal berjalan (anomali soal 19 putaran 3).
+ *
+ * Peristiwa tanpa indeks (tombol jawab manual guru di kartu proyektor,
+ * putaran ulang poller yang event store-nya memang tidak menyimpan
+ * indeks, dan payload klien lama) tidak ditolak di sini: jalur manual
+ * memang peristiwa soal berjalan, dan jalur poller ditutup oleh cap
+ * generasi pada poller itu sendiri.
+ */
+export function isAnswerEventStale(
+  eventQuestionIndex: number | null | undefined,
+  currentQuestionIndex: number,
+): boolean {
+  return (
+    typeof eventQuestionIndex === "number" &&
+    Number.isFinite(eventQuestionIndex) &&
+    eventQuestionIndex !== currentQuestionIndex
+  );
+}
+
+/**
  * Menandai satu pasangan soal+tim sebagai sudah dicatat.
  * Mengembalikan true bila ini kedatangan pertama (pencatatan boleh
  * lanjut) dan false bila duplikat (pencatatan harus berhenti tanpa efek).

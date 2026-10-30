@@ -7,7 +7,10 @@ import Link from "next/link";
 import { Confetti } from "@/components/confetti";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import { MIN_QUESTION_DURATION_SECONDS } from "@/lib/game-engine/question-duration";
-import { tryMarkRecordedAnswer } from "@/lib/game-engine/projector-answer-guard";
+import {
+  isAnswerEventStale,
+  tryMarkRecordedAnswer,
+} from "@/lib/game-engine/projector-answer-guard";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 
@@ -231,6 +234,11 @@ export function ProjectorScreen({
   // Kunci soal+tim yang sudah dicatat handleRecordAnswer pada permainan
   // ini (penjaga anti duplikat penskoran, lihat projector-answer-guard).
   const recordedAnswerKeysRef = useRef<Set<string>>(new Set());
+  // Cermin ref indeks soal berjalan: pintu masuk pencatatan membandingkan
+  // indeks soal peristiwa terhadap nilai TERKINI ini, bukan nilai
+  // tertangkap closure yang bisa berasal dari soal sebelumnya.
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  currentQuestionIndexRef.current = currentQuestionIndex;
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const realtimeChannelRef = useRef<
@@ -364,8 +372,22 @@ export function ProjectorScreen({
 
   // Handle Team Answer
   const handleRecordAnswer = useCallback(
-    (teamId: string, optionKey: string) => {
+    (teamId: string, optionKey: string, eventQuestionIndex?: number) => {
       if (phase !== "question") return;
+      // Penolakan peristiwa basi di pintu masuk (anomali soal 19
+      // putaran 3): press yang lahir pada soal sebelumnya tetapi baru
+      // diproses sesudah indeks naik akan dinilai memakai kunci jawaban
+      // dari closure soal lama, lalu hasilnya ditulis ke state soal
+      // berjalan. Indeks peristiwa dibandingkan terhadap ref indeks
+      // berjalan di sini, sebelum penjaga dan sebelum penilaian, dan
+      // peristiwa basi dibuang tanpa mencatat apa pun. Peristiwa tanpa
+      // indeks (tombol manual guru, putaran ulang poller, klien lama)
+      // diterima; poller ditutup oleh cap generasi di blok pollernya.
+      if (
+        isAnswerEventStale(eventQuestionIndex, currentQuestionIndexRef.current)
+      ) {
+        return;
+      }
       // Penjaga anti duplikat sinkron: satu press tiba lewat tiga kanal
       // (broadcast Supabase, BroadcastChannel, putaran ulang poller) dan
       // guard closure answers[teamId] di bawah bisa basi di antara
@@ -374,10 +396,19 @@ export function ProjectorScreen({
       // apa pun diubah; kedatangan duplikat berhenti tanpa efek. Jawaban
       // pertama yang sah selalu lolos karena satu tim hanya menjawab
       // sekali per soal (semantik answers[teamId] tetap berlaku).
+      // Penanda memakai indeks peristiwa yang sudah lolos pemeriksaan
+      // di atas; tanpa indeks peristiwa, memakai indeks tertangkap
+      // closure, sehingga closure basi menandai di bawah indeks lamanya
+      // sendiri dan tertahan tanda yang dipertahankan dari soal itu.
+      const markingIndex =
+        typeof eventQuestionIndex === "number" &&
+        Number.isFinite(eventQuestionIndex)
+          ? eventQuestionIndex
+          : currentQuestionIndex;
       if (
         !tryMarkRecordedAnswer(
           recordedAnswerKeysRef.current,
-          currentQuestionIndex,
+          markingIndex,
           teamId,
         )
       ) {
@@ -577,9 +608,9 @@ export function ProjectorScreen({
     channel
       .on("broadcast", { event: "controller_press" }, ({ payload }) => {
         if (!payload) return;
-        const { teamId, optionKey } = payload;
+        const { teamId, optionKey, questionIndex } = payload;
         if (teamId && optionKey && phase === "question") {
-          handleRecordAnswer(teamId, optionKey);
+          handleRecordAnswer(teamId, optionKey, questionIndex);
         }
       })
       .on("broadcast", { event: "controller_heartbeat" }, ({ payload }) => {
@@ -610,9 +641,9 @@ export function ProjectorScreen({
       bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
       bc.onmessage = (ev) => {
         if (ev.data?.event === "controller_press" && ev.data?.payload) {
-          const { teamId, optionKey } = ev.data.payload;
+          const { teamId, optionKey, questionIndex } = ev.data.payload;
           if (teamId && optionKey && phase === "question") {
-            handleRecordAnswer(teamId, optionKey);
+            handleRecordAnswer(teamId, optionKey, questionIndex);
           }
         } else if (ev.data?.event === "controller_heartbeat" && ev.data?.payload?.teamId) {
           const tId = ev.data.payload.teamId;

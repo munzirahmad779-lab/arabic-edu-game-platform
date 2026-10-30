@@ -37,6 +37,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
+  isAnswerEventStale,
   recordedAnswerKey,
   tryMarkRecordedAnswer,
 } from "../../src/lib/game-engine/projector-answer-guard";
@@ -138,5 +139,60 @@ describe("Penjaga terpasang di handleRecordAnswer layar proyektor", () => {
     );
     const restartBodyEnd = projectorSource.indexOf("setTeams(", restartStart);
     assert.ok(restartClearPos > restartStart && restartClearPos < restartBodyEnd);
+  });
+});
+
+describe("Penolakan indeks peristiwa basi di pintu masuk pencatatan", () => {
+  test("Peristiwa berindeks 17 yang tiba saat indeks berjalan 18 ditolak; berindeks 18 diterima", () => {
+    assert.equal(isAnswerEventStale(17, 18), true);
+    assert.equal(isAnswerEventStale(0, 18), true);
+    // Indeks dari masa depan juga bukan peristiwa soal berjalan.
+    assert.equal(isAnswerEventStale(19, 18), true);
+    assert.equal(isAnswerEventStale(18, 18), false);
+  });
+
+  test("Peristiwa tanpa indeks (jalur manual guru, poller, klien lama) diterima", () => {
+    assert.equal(isAnswerEventStale(undefined, 18), false);
+    assert.equal(isAnswerEventStale(null, 18), false);
+    assert.equal(isAnswerEventStale(Number.NaN, 18), false);
+  });
+
+  test("handleRecordAnswer memeriksa indeks peristiwa terhadap ref berjalan sebelum penjaga", () => {
+    const fnStart = projectorSource.indexOf(
+      "const handleRecordAnswer = useCallback(",
+    );
+    assert.ok(fnStart >= 0);
+    assert.match(
+      projectorSource.slice(fnStart, fnStart + 220),
+      /\(teamId: string, optionKey: string, eventQuestionIndex\?: number\)/,
+    );
+    const stalePos = projectorSource.indexOf("isAnswerEventStale(", fnStart);
+    const guardPos = projectorSource.indexOf("tryMarkRecordedAnswer(", fnStart);
+    assert.ok(stalePos > fnStart);
+    assert.ok(guardPos > stalePos);
+    // Perbandingannya terhadap ref cermin indeks berjalan, bukan closure.
+    assert.match(
+      projectorSource,
+      /const currentQuestionIndexRef = useRef\(currentQuestionIndex\);/,
+    );
+    assert.match(
+      projectorSource,
+      /currentQuestionIndexRef\.current = currentQuestionIndex;/,
+    );
+    assert.match(
+      projectorSource,
+      /isAnswerEventStale\(eventQuestionIndex, currentQuestionIndexRef\.current\)/,
+    );
+  });
+
+  test("Kedua listener broadcast meneruskan questionIndex yang dikirim stik", () => {
+    const passCount =
+      projectorSource.match(/handleRecordAnswer\(teamId, optionKey, questionIndex\)/g)
+        ?.length ?? 0;
+    assert.equal(passCount, 2);
+    const destructureCount =
+      projectorSource.match(/const \{ teamId, optionKey, questionIndex \} = /g)
+        ?.length ?? 0;
+    assert.equal(destructureCount, 2);
   });
 });
