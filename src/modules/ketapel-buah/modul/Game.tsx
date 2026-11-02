@@ -71,10 +71,10 @@ import {
 } from "./render";
 import { SPRITES, fruitJuice } from "./sprites";
 
-interface StonePhys { x: number; y: number; vx: number; vy: number; flying: boolean }
+interface StonePhys { x: number; y: number; vx: number; vy: number; flying: boolean; bounces: number }
 interface DragState { lane: number; downX: number; downY: number; pouch: { x: number; y: number } }
 
-const newStone = (): StonePhys => ({ x: 0, y: 0, vx: 0, vy: 0, flying: false });
+const newStone = (): StonePhys => ({ x: 0, y: 0, vx: 0, vy: 0, flying: false, bounces: 0 });
 
 export default function KetapelBuahGame() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -357,6 +357,20 @@ export default function KetapelBuahGame() {
               }
             }
           }
+          /* Pantulan di tanah: batu yang jatuh pendek memantul dan
+             terbang lagi, sampai jumlah pantulannya habis atau lajunya
+             sudah terlalu pelan untuk memantul. */
+          if (stone.flying && stone.vy > 0 && stone.y >= lay.groundY - RULES.stoneR) {
+            if (stone.bounces >= RULES.maxBounces || stone.vy < RULES.bounceMinVy) {
+              stone.flying = false; // pantulan habis: batu berhenti di tanah, soal sama
+              if (lane.phase === "fly") lane.phase = "aim";
+            } else {
+              stone.y = lay.groundY - RULES.stoneR;
+              stone.vy = -stone.vy * RULES.bounceRest;
+              stone.vx *= 0.94;
+              stone.bounces += 1;
+            }
+          }
           if (stone.flying && (stone.y > lay.groundY + 40 || stone.x < lay.x - 46 || stone.x > lay.x + lay.w + 46 || stone.y < -90)) {
             stone.flying = false; // meleset: batu kembali ke kantong, soal sama
             if (lane.phase === "fly") lane.phase = "aim";
@@ -479,6 +493,7 @@ export default function KetapelBuahGame() {
     stone.y = drag.pouch.y;
     stone.vx = vx;
     stone.vy = vy;
+    stone.bounces = 0;
     stone.flying = true;
     lanesRef.current[drag.lane].phase = "fly";
     sfx.play("laser");

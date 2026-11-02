@@ -107,9 +107,14 @@ export const RULES = {
   impostorCount: 3,
   /** Fisika batu ketapel (piksel, detik). */
   gravity: 900,
-  launchK: 6.5,
-  maxDrag: 200,
+  launchK: 8,
+  maxDrag: 230,
   stoneR: 13,
+  /** Pantulan batu di tanah: koefisien pantul, laju tegak minimum agar
+      masih memantul, dan batas jumlah pantulan per tembakan. */
+  bounceRest: 0.62,
+  bounceMinVy: 210,
+  maxBounces: 4,
   /** Jeda tampilan sesudah buah benar kena (ms). */
   cheerMs: 900,
 } as const;
