@@ -599,6 +599,17 @@ export function ProjectorScreen({
     setPhase("question");
   };
 
+  // Mulai pertandingan: WAJIB lewat reset penuh yang sama seperti
+  // Ulangi Kuis. Memulai tidak boleh mewarisi sisa state apa pun dari
+  // pratinjau lobi (mis. fase yang tercemar "finished" oleh pemain
+  // arkade yang berakhir sendiri, atau jawaban stik yang tercatat
+  // sebelum kuis dimulai), karena warisan itu membuat permainan yang
+  // baru dimulai melompat lurus ke podium (kejadian 6 Nov 07:01).
+  const startGame = () => {
+    handleRestartGame();
+    setGameStarted(true);
+  };
+
   // Supabase Realtime Broadcast Listener (Instant <40ms WebSocket sync)
   useEffect(() => {
     if (!roomCode) return;
@@ -921,20 +932,20 @@ export function ProjectorScreen({
   // Penyimpanan hanya untuk permainan yang sungguh dimulai (MULAI KUIS).
   // Panggung yang diluncurkan dari lobi tanpa memulai kuis hanyalah
   // pratinjau: belum ada sesi permainan, jadi tidak ada laporan untuk
-  // disimpan. Pemain arkade dapat berakhir sendiri tanpa interaksi apa
-  // pun (timer Pukul Tikus menghabiskan nyawanya sendiri dalam waktu
-  // singkat), dan percobaan simpan pada keadaan pratinjau pasti gagal
-  // karena endpoint save-report membuat baris rooms baru memakai kode
-  // room yang sedang dipinjam layar ini (kode itu unik dan sudah ada),
-  // sehingga muncul spanduk "Laporan gagal tersimpan" palsu. Kegagalan
-  // simpan pada permainan yang sungguh berjalan tetap tampil lewat
-  // reportStatus "error" seperti sebelumnya.
+  // disimpan, dan akhir pratinjau tidak boleh menyentuh state
+  // pertandingan (lihat penjaga di dalam handleArcadeFinish).
   const handleArcadeFinish =
     (engineLabel: string) =>
     (finalScore: number, correctCount: number) => {
+      // Pratinjau lobi (kuis belum dimulai): pemain arkade dapat berakhir
+      // sendiri oleh timernya tanpa dimainkan siapa pun. Hasil pratinjau
+      // BUKAN akhir pertandingan, jadi tidak boleh menyentuh state
+      // pertandingan sama sekali. Tanpa penjaga ini fase tercemar menjadi
+      // "finished" secara senyap, lalu MULAI KUIS berikutnya melompat
+      // lurus ke podium 0 poin (kejadian 6 Nov 07:01).
+      if (!gameStarted) return;
       arcadeFinishedRef.current = true;
       setPhase("finished");
-      if (!gameStarted) return;
       if (!reportSavedRef.current) {
         reportSavedRef.current = true;
         void postReport([
@@ -1454,6 +1465,13 @@ export function ProjectorScreen({
             })}
           </div>
 
+          {questions.length === 0 && (
+            <p className="mx-auto max-w-xl rounded-2xl border border-rose-400/50 bg-rose-500/10 px-4 py-3 text-center text-sm font-bold text-rose-300">
+              Permainan ini belum memiliki soal, jadi kuis belum bisa dimulai.
+              Tambahkan soal melalui bank soal permainan ini terlebih dahulu.
+            </p>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
@@ -1467,19 +1485,25 @@ export function ProjectorScreen({
 
             <button
               type="button"
+              disabled={questions.length === 0}
               onClick={() => {
+                if (questions.length === 0) return;
                 if (isInsufficient) {
                   playSfx("wrong");
                   setShowInsufficientModal(true);
                   return;
                 }
-                setGameStarted(true);
+                startGame();
                 playSfx("boost");
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-base shadow-xl transition hover:scale-105 active:scale-95 flex items-center gap-2"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-base shadow-xl transition hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
             >
               <span>▶️</span>
-              <span>MULAI KUIS KELAS ({totalQuestions} SOAL)</span>
+              <span>
+                {questions.length === 0
+                  ? "BELUM ADA SOAL"
+                  : `MULAI KUIS KELAS (${totalQuestions} SOAL)`}
+              </span>
             </button>
           </div>
         </div>
@@ -1530,7 +1554,7 @@ export function ProjectorScreen({
                       setTeamCapacity(newCap);
                       distributeStudents(newCap);
                       setShowInsufficientModal(false);
-                      setGameStarted(true);
+                      startGame();
                       playSfx("boost");
                     }}
                     className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-sm shadow-lg transition flex items-center justify-center gap-2"
@@ -1544,7 +1568,7 @@ export function ProjectorScreen({
                   type="button"
                   onClick={() => {
                     setShowInsufficientModal(false);
-                    setGameStarted(true);
+                    startGame();
                     playSfx("boost");
                   }}
                   className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/10"
