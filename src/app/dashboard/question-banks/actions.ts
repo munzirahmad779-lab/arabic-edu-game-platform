@@ -312,3 +312,70 @@ export async function deleteQuestion(questionId: string) {
   revalidatePath("/dashboard/question-banks");
   return { ok: true as const };
 }
+export async function deleteQuestions(questionIds: string[]) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false as const,
+      deleted: 0,
+      failed: 0,
+      message: "Sesi guru tidak ditemukan. Silakan masuk kembali.",
+    };
+  }
+
+  if (
+    !Array.isArray(questionIds) ||
+    questionIds.length < 1 ||
+    questionIds.length > 200
+  ) {
+    return {
+      ok: false as const,
+      deleted: 0,
+      failed: 0,
+      message: "Pilih 1 sampai 200 soal untuk dihapus.",
+    };
+  }
+
+  const uniqueIds = [...new Set(questionIds)];
+
+  if (
+    uniqueIds.some(
+      (id) => typeof id !== "string" || !QUESTION_ID_RE.test(id),
+    )
+  ) {
+    return {
+      ok: false as const,
+      deleted: 0,
+      failed: uniqueIds.length,
+      message: "Ada ID soal yang tidak valid.",
+    };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const id of uniqueIds) {
+    const { data, error } = await supabase.rpc(
+      "delete_question_bank_question",
+      { p_question_id: id },
+    );
+
+    if (error || data !== true) {
+      failed += 1;
+    } else {
+      deleted += 1;
+    }
+  }
+
+  revalidatePath("/dashboard/question-banks");
+  return {
+    ok: failed === 0,
+    deleted,
+    failed,
+    message: failed === 0 ? "" : `${failed} soal gagal dihapus.`,
+  };
+}

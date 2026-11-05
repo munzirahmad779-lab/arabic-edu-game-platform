@@ -898,6 +898,21 @@
       "title": "Delete Question Bank",
       "confirm_with_questions": "Are you sure you want to delete \"{name}\"?\n{n} questions will also be deleted along with all their data (options, media, and related answers).\nThis cannot be undone.",
       "confirm_empty": "Are you sure you want to delete \"{name}\"?"
+    },
+    "bulk": {
+      "select_all": "Select All",
+      "selected_count": "{n} questions selected",
+      "delete_selected": "Delete Selected",
+      "clear": "Clear Selection",
+      "select_question": "Select this question",
+      "media_locked": "Questions with media cannot be selected",
+      "confirm_title": "Delete selected questions?",
+      "confirm_body": "{n} questions will be permanently deleted from this bank. This action cannot be undone.",
+      "confirm_yes": "Yes, Delete",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "deleted_ok": "{n} questions deleted.",
+      "deleted_partial": "{ok} questions deleted, {fail} failed to delete."
     }
   },
   "game_room": {

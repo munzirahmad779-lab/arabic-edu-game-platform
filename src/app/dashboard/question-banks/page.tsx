@@ -7,8 +7,7 @@ import {
   updateQuestionCategory,
 } from "./actions";
 import { QuestionBankImportForm } from "./import-form";
-import { QuestionMediaManager } from "./media-manager";
-import { QuestionEditor } from "./question-editor";
+import { BankQuestionList } from "./bank-question-list";
 import { DeleteBankForm } from "./delete-bank-form";
 import { BankCard } from "./bank-card";
 import { AiPromptSection } from "./ai-prompt-section";
@@ -631,125 +630,46 @@ export default async function QuestionBanksPage({
                         : L.no_q_filter}
                     </div>
                   ) : (
-                    <div className="mt-4 space-y-4">
-                      {filteredBankQuestions.map((question, index) => {
-                        const questionOptions =
-                          optionsByQuestion.get(question.id) ?? [];
-
-                        return (
-                          <article
-                            key={question.id}
-                            className="rounded-2xl border border-sage-200/60 bg-white p-4"
-                          >
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-softslate/70">
-                              <span>
-                                {locale === "ar" ? "السؤال" : "Soal"}{" "}
-                                {index + 1}
-                              </span>
-                              {question.category_id ? (
-                                <span className="rounded-full bg-terracotta-100 px-2 py-1 text-terracotta-600">
-                                  {categoryMap.get(question.category_id) ?? "—"}
-                                </span>
-                              ) : null}
-                              {question.difficulty ? (
-                                <span className="rounded-full bg-teal-100 px-2 py-1 text-teal-700">
-                                  {difficultyLabel[question.difficulty]}
-                                </span>
-                              ) : null}
-                            </div>
-
-                            <p
-                              className="mt-3 text-lg font-bold leading-relaxed text-teal-950 font-arabic"
-                              style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
-                              dir="auto"
-                            >
-                              {question.question_text ?? "—"}
-                            </p>
-
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                              {(["A", "B", "C", "D"] as const).map((key) => {
-                                const option = questionOptions.find(
-                                  (item) => item.option_key === key,
-                                );
-                                const isCorrect =
-                                  question.correct_option_key === key;
-
-                                return (
-                                  <div
-                                    key={key}
-                                    className={`rounded-xl border p-3 flex items-center justify-between ${
-                                      isCorrect
-                                        ? "border-sage-500/40 bg-sage-50 text-sage-600"
-                                        : "border-sage-200/60 bg-white text-softslate"
-                                    }`}
-                                  >
-                                    <div>
-                                      <span className="font-black text-sm text-neutral-500">{key}.</span>{" "}
-                                      <span
-                                        className="font-bold text-base text-neutral-900"
-                                        style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
-                                        dir="auto"
-                                      >
-                                        {option?.option_text ?? L.option_missing}
-                                      </span>
-                                    </div>
-                                    {isCorrect ? (
-                                      <span className="ms-2 text-xs font-black">
-                                        ✓ {L.correct}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {question.explanation ? (
-                              <p
-                                className="mt-3 rounded-xl bg-sage-50 p-3 text-sm leading-relaxed text-softslate"
-                                dir="auto"
-                              >
-                                <span className="font-black text-teal-700">
-                                  {L.explanation_label}:{" "}
-                                </span>
-                                <span
-                                  style={{ fontFamily: "'Traditional Arabic', Amiri, Tahoma, serif" }}
-                                >
-                                  {question.explanation}
-                                </span>
-                              </p>
-                            ) : null}
-
-                            <QuestionMediaManager
-                              questionId={question.id}
-                              media={mediaByQuestion.get(question.id) ?? []}
-                              qm={dict.qb.media}
-                            />
-                            <QuestionEditor
-                              question={{
-                                id: question.id,
-                                category_id: question.category_id,
-                                question_text: question.question_text,
-                                difficulty: question.difficulty,
-                                correct_option_key: question.correct_option_key,
-                                explanation: question.explanation,
-                              }}
-                              options={questionOptions.map((option) => ({
-                                option_key: option.option_key,
-                                option_text: option.option_text,
-                              }))}
-                              categories={(categories ?? []).map((category) => ({
-                                id: category.id,
-                                name: category.name,
-                              }))}
-                              mediaCount={
-                                (mediaByQuestion.get(question.id) ?? []).length
-                              }
-                              qe={dict.qb.editor}
-                            />
-                          </article>
-                        );
-                      })}
-                    </div>
+                    <BankQuestionList
+                      items={filteredBankQuestions.map((question) => ({
+                        question: {
+                          id: question.id,
+                          category_id: question.category_id,
+                          question_text: question.question_text,
+                          difficulty: question.difficulty,
+                          correct_option_key: question.correct_option_key,
+                          explanation: question.explanation,
+                        },
+                        options: (
+                          optionsByQuestion.get(question.id) ?? []
+                        ).map((option) => ({
+                          option_key: option.option_key,
+                          option_text: option.option_text,
+                        })),
+                        categoryName: question.category_id
+                          ? (categoryMap.get(question.category_id) ?? "\u2014")
+                          : null,
+                        difficultyText: question.difficulty
+                          ? difficultyLabel[question.difficulty]
+                          : null,
+                        media: mediaByQuestion.get(question.id) ?? [],
+                        mediaCount: (mediaByQuestion.get(question.id) ?? [])
+                          .length,
+                      }))}
+                      categories={(categories ?? []).map((category) => ({
+                        id: category.id,
+                        name: category.name,
+                      }))}
+                      qm={dict.qb.media}
+                      qe={dict.qb.editor}
+                      qb={dict.qb.bulk}
+                      labels={{
+                        question_word: locale === "ar" ? "\u0627\u0644\u0633\u0624\u0627\u0644" : "Soal",
+                        correct: L.correct,
+                        option_missing: L.option_missing,
+                        explanation_label: L.explanation_label,
+                      }}
+                    />
                   )}
                 </div>
               </BankCard>

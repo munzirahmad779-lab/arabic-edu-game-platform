@@ -898,6 +898,21 @@
       "title": "Hapus Bank Soal",
       "confirm_with_questions": "Yakin ingin menghapus \"{name}\"?\n{n} soal akan ikut terhapus beserta semua datanya (opsi, media, dan jawaban terkait).\nTidak dapat dibatalkan.",
       "confirm_empty": "Yakin ingin menghapus \"{name}\"?"
+    },
+    "bulk": {
+      "select_all": "Pilih Semua",
+      "selected_count": "{n} soal terpilih",
+      "delete_selected": "Hapus Terpilih",
+      "clear": "Batalkan Pilihan",
+      "select_question": "Pilih soal ini",
+      "media_locked": "Soal bermedia tidak bisa dipilih",
+      "confirm_title": "Hapus soal terpilih?",
+      "confirm_body": "{n} soal akan dihapus permanen dari bank ini. Tindakan ini tidak dapat dibatalkan.",
+      "confirm_yes": "Ya, Hapus",
+      "cancel": "Batal",
+      "deleting": "Menghapus...",
+      "deleted_ok": "{n} soal berhasil dihapus.",
+      "deleted_partial": "{ok} soal terhapus, {fail} soal gagal dihapus."
     }
   },
   "game_room": {
