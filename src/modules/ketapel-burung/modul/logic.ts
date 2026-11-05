@@ -145,7 +145,9 @@ export function targetsFor(q: Q, rnd: () => number): BirdTarget[] {
   while (picks.length < RULES.targetCount && wrongs.length > 0) {
     picks.push(wrongs[(picks.length - 1) % wrongs.length]);
   }
-  while (picks.length < RULES.targetCount) picks.push(q.correct);
+  // Bila tidak ada label salah sama sekali (soal cacat), jumlah burung
+  // dibiarkan apa adanya; sisa burung tidak pernah diisi dengan kunci,
+  // supaya tepat satu burung yang benar.
   const shuffled = shuffleArr(picks, rnd);
   return shuffled.map((text, idx) => ({ idx, text, correct: text === q.correct }));
 }
@@ -220,8 +222,12 @@ const isQ = (v: unknown): v is Q => {
   return (
     typeof o.prompt === "string" &&
     Array.isArray(o.options) &&
+    o.options.length >= 2 &&
     o.options.every((x) => typeof x === "string") &&
-    typeof o.correct === "string"
+    typeof o.correct === "string" &&
+    // Soal hanya diterima bila kuncinya termasuk dalam pilihan; soal yang
+    // kuncinya di luar pilihan dibuang diam-diam saat pemuatan.
+    (o.options as string[]).includes(o.correct)
   );
 };
 
