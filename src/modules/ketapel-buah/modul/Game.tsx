@@ -371,7 +371,19 @@ export default function KetapelBuahGame() {
               stone.bounces += 1;
             }
           }
-          if (stone.flying && (stone.y > lay.groundY + 40 || stone.x < lay.x - 46 || stone.x > lay.x + lay.w + 46 || stone.y < -90)) {
+          /* Meleset hanya bila batu bergerak KELUAR arena. Batu yang baru
+             dilepas mulai dari kantong, dan kantong bisa ditarik sampai
+             230 px dari jangkar: tarikan dalam ke bawah menaruh batu di
+             bawah garis tanah dan tarikan mendatar penuh di lajur sempit
+             menaruhnya di luar sisi lajur, padahal batunya sedang bergerak
+             MASUK. Tanpa beda arah ini batu gugur pada bingkai pertama
+             sebelum sempat terbang dan memantul. */
+          const leaving =
+            (stone.vy > 0 && stone.y > lay.groundY + 40) ||
+            (stone.vy < 0 && stone.y < -90) ||
+            (stone.vx < 0 && stone.x < lay.x - 46) ||
+            (stone.vx > 0 && stone.x > lay.x + lay.w + 46);
+          if (stone.flying && leaving) {
             stone.flying = false; // meleset: batu kembali ke kantong, soal sama
             if (lane.phase === "fly") lane.phase = "aim";
           }
