@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -53,6 +53,7 @@ type MaterialListDict = {
   publish: string;
   delete: string;
   delete_confirm: string;
+  cancel?: string;
 };
 
 function fmt(tpl: string, vars: Record<string, string | number>): string {
@@ -75,6 +76,13 @@ export function MaterialSortableList({
   const [materials, setMaterials] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  // Konfirmasi hapus memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam), sehingga klik berhenti di
+  // e.preventDefault() sebelum form terkirim dan tombol tampak mati.
+  const deleteFormRef = useRef<HTMLFormElement>(null);
+  const [pendingDelete, setPendingDelete] = useState<Material | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -170,11 +178,53 @@ export function MaterialSortableList({
                 index={index}
                 classId={classId}
                 ml={ml}
+                onRequestDelete={setPendingDelete}
               />
             ))}
           </div>
         </SortableContext>
       </DndContext>
+
+      <form ref={deleteFormRef} action={materialAction} className="hidden">
+        <input type="hidden" name="action" value="delete" />
+        <input
+          type="hidden"
+          name="material_id"
+          value={pendingDelete?.id ?? ""}
+        />
+        <input type="hidden" name="class_id" value={classId} />
+      </form>
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+              {fmt(ml.delete_confirm, { title: pendingDelete.title })}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {ml.cancel ?? "Batal"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleting(true);
+                  deleteFormRef.current?.requestSubmit();
+                }}
+                disabled={deleting}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {ml.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -184,11 +234,13 @@ function SortableItem({
   index,
   classId,
   ml,
+  onRequestDelete,
 }: {
   material: Material;
   index: number;
   classId: string;
   ml: MaterialListDict;
+  onRequestDelete: (material: Material) => void;
 }) {
   const {
     attributes,
@@ -314,24 +366,13 @@ function SortableItem({
           </button>
         </form>
 
-        <form action={materialAction}>
-          <input type="hidden" name="action" value="delete" />
-          <input type="hidden" name="material_id" value={material.id} />
-          <input type="hidden" name="class_id" value={classId} />
-          <button
-            type="submit"
-            onClick={(e) => {
-              if (
-                !window.confirm(fmt(ml.delete_confirm, { title: material.title }))
-              ) {
-                e.preventDefault();
-              }
-            }}
-            className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
-          >
-            {ml.delete}
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={() => onRequestDelete(material)}
+          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
+        >
+          {ml.delete}
+        </button>
       </div>
     </div>
   );

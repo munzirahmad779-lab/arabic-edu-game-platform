@@ -905,6 +905,7 @@
   "cd": {
     "game_mode_competitive": "تنافسي",
     "game_mode_learning": "تعليمي",
+    "game_mode_endless": "بلا نهاية",
     "game_duration_suffix": "ث",
     "preview": {
       "notice": "👁️ معاينة كطالب — هذه هي الطريقة التي سيرى بها الطالب المادة",

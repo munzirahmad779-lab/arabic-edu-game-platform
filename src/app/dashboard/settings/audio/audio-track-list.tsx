@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { deleteAudioTrack, toggleAudioTrack } from "./actions";
 import { AudioTrackForm } from "./audio-track-form";
 import type idDict from "@/lib/i18n/id.json";
@@ -27,6 +27,13 @@ export function AudioTrackList({
   const t = dict.audio_settings;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Konfirmasi hapus memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam), sehingga klik berhenti di
+  // e.preventDefault() sebelum form terkirim dan tombol tampak mati.
+  const deleteFormRef = useRef<HTMLFormElement>(null);
+  const [pendingDelete, setPendingDelete] = useState<Track | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const PAGE_LABEL: Record<string, string> = {
     dashboard: t.page_dashboard,
@@ -145,26 +152,13 @@ export function AudioTrackList({
                       {t.list_btn_edit}
                     </button>
 
-                    <form
-                      action={deleteAudioTrack}
-                      onSubmit={(e) => {
-                        if (
-                          !window.confirm(
-                            `${t.list_confirm_delete_prefix} "${track.name}"${t.list_confirm_delete_suffix}`,
-                          )
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(track)}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
                     >
-                      <input type="hidden" name="track_id" value={track.id} />
-                      <button
-                        type="submit"
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50"
-                      >
-                        {t.list_btn_delete}
-                      </button>
-                    </form>
+                      {t.list_btn_delete}
+                    </button>
                   </div>
                 </div>
 
@@ -181,6 +175,45 @@ export function AudioTrackList({
           </div>
         );
       })}
+
+      <form ref={deleteFormRef} action={deleteAudioTrack} className="hidden">
+        <input
+          type="hidden"
+          name="track_id"
+          value={pendingDelete?.id ?? ""}
+        />
+      </form>
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+              {`${t.list_confirm_delete_prefix} "${pendingDelete.name}"${t.list_confirm_delete_suffix}`}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {dict.common.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleting(true);
+                  deleteFormRef.current?.requestSubmit();
+                }}
+                disabled={deleting}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {t.list_btn_delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

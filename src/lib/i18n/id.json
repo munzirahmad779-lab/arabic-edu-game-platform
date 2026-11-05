@@ -712,6 +712,7 @@
   "cd": {
     "game_mode_competitive": "Kompetitif",
     "game_mode_learning": "Pembelajaran",
+    "game_mode_endless": "Tanpa Batas",
     "game_duration_suffix": "dtk",
     "preview": {
       "notice": "👁️ Pratinjau sebagai siswa — beginilah siswa akan melihat materi ini",

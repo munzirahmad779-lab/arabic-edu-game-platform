@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { createRoom, deleteGame, cloneGame } from "./actions";
 import { GamePreviewModal } from "./game-preview-modal";
@@ -18,6 +18,13 @@ export function GameCardActions({
 }) {
   const [showPreview, setShowPreview] = useState(false);
   const [cloning, setCloning] = useState(false);
+  // Konfirmasi hapus memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam), sehingga klik berhenti di
+  // e.preventDefault() sebelum form terkirim dan tombol tampak mati.
+  const deleteFormRef = useRef<HTMLFormElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <>
@@ -74,17 +81,11 @@ export function GameCardActions({
         </form>
 
         {/* Delete Button */}
-        <form
-          action={deleteGame}
-          onSubmit={(e) => {
-            if (!window.confirm(`هل أنت متأكد من حذف لعبة "${gameName}"؟`)) {
-              e.preventDefault();
-            }
-          }}
-        >
+        <form ref={deleteFormRef} action={deleteGame}>
           <input type="hidden" name="game_id" value={gameId} />
           <button
-            type="submit"
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
             title="حذف اللعبة"
             className="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 shadow-sm"
           >
@@ -92,6 +93,40 @@ export function GameCardActions({
           </button>
         </form>
       </div>
+
+      {showDeleteConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            dir="rtl"
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+          >
+            <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+              {`هل أنت متأكد من حذف لعبة "${gameName}"؟`}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleting(true);
+                  deleteFormRef.current?.requestSubmit();
+                }}
+                disabled={deleting}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+              >
+                حذف
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <GamePreviewModal
         gameId={gameId}

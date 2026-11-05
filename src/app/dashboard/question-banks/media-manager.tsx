@@ -28,6 +28,7 @@ type MediaDict = {
   upload_aria: string;
   delete_media: string;
   remove_confirm: string;
+  cancel?: string;
   unsupported_type: string;
   invalid_size: string;
   no_config: string;
@@ -92,6 +93,10 @@ export function QuestionMediaManager({
   qm: MediaDict;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Konfirmasi hapus memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  const [pendingRemove, setPendingRemove] = useState<Media | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [previewErrors, setPreviewErrors] = useState<Record<string, string>>(
@@ -238,10 +243,7 @@ export function QuestionMediaManager({
   }
 
   async function remove(item: Media) {
-    if (
-      busyId ||
-      !window.confirm(fmt(qm.remove_confirm, { name: item.expected_filename }))
-    ) {
+    if (busyId) {
       return;
     }
 
@@ -376,7 +378,7 @@ export function QuestionMediaManager({
               <button
                 type="button"
                 disabled={busyId !== null}
-                onClick={() => remove(item)}
+                onClick={() => setPendingRemove(item)}
                 className="mt-3 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 disabled:opacity-50"
               >
                 {qm.delete_media}
@@ -390,6 +392,40 @@ export function QuestionMediaManager({
         <p role="status" className="mt-3 text-sm text-neutral-700">
           {message}
         </p>
+      ) : null}
+
+      {pendingRemove ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+              {fmt(qm.remove_confirm, {
+                name: pendingRemove.expected_filename,
+              })}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingRemove(null)}
+                disabled={busyId !== null}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {qm.cancel ?? "Batal"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const item = pendingRemove;
+                  setPendingRemove(null);
+                  void remove(item);
+                }}
+                disabled={busyId !== null}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {qm.delete_media}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </section>
   );

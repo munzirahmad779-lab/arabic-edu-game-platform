@@ -712,6 +712,7 @@
   "cd": {
     "game_mode_competitive": "Competitive",
     "game_mode_learning": "Learning",
+    "game_mode_endless": "Endless",
     "game_duration_suffix": "s",
     "preview": {
       "notice": "👁️ Student preview — this is how the student will see this material",

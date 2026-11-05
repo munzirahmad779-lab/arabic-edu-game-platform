@@ -53,6 +53,7 @@ export function ReportView({
   const [copiedMd, setCopiedMd] = useState(false);
   const [copiedAi, setCopiedAi] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(date);
 
@@ -144,11 +145,11 @@ export function ReportView({
     }
   }
 
+  // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
   async function cleanup() {
     if (cleaning) return;
-    if (!window.confirm(t.cleanup_confirm)) {
-      return;
-    }
 
     setCleaning(true);
     setCleanMsg(null);
@@ -518,7 +519,7 @@ export function ReportView({
           </div>
           <button
             type="button"
-            onClick={() => void cleanup()}
+            onClick={() => setShowCleanupConfirm(true)}
             disabled={cleaning}
             className="rounded-xl border border-red-300 bg-white px-4 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-60"
           >
@@ -527,6 +528,37 @@ export function ReportView({
         </div>
         {cleanMsg ? (
           <p className="mt-2 text-xs font-bold text-red-800">{cleanMsg}</p>
+        ) : null}
+
+        {showCleanupConfirm ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+              <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+                {t.cleanup_confirm}
+              </p>
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCleanupConfirm(false)}
+                  disabled={cleaning}
+                  className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  {dict.common.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCleanupConfirm(false);
+                    void cleanup();
+                  }}
+                  disabled={cleaning}
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {t.cleanup_btn}
+                </button>
+              </div>
+            </div>
+          </div>
         ) : null}
       </section>
 

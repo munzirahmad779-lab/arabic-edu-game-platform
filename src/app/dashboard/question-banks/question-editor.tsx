@@ -81,11 +81,13 @@ export function QuestionEditor({
     router.refresh();
   }
 
+  // Konfirmasi hapus memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   async function onDelete() {
     if (busy) return;
-
-    const confirmed = window.confirm(qe.confirm_delete);
-    if (!confirmed) return;
 
     setBusy(true);
     setMessage(null);
@@ -119,7 +121,7 @@ export function QuestionEditor({
         ) : (
           <button
             type="button"
-            onClick={onDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={busy}
             className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
           >
@@ -130,6 +132,37 @@ export function QuestionEditor({
           <span role="status" className="text-sm text-green-700">
             {message}
           </span>
+        ) : null}
+
+        {showDeleteConfirm ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+              <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+                {qe.confirm_delete}
+              </p>
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={busy}
+                  className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  {qe.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    void onDelete();
+                  }}
+                  disabled={busy}
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {qe.delete_question}
+                </button>
+              </div>
+            </div>
+          </div>
         ) : null}
       </div>
     );

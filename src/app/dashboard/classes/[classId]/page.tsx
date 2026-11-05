@@ -491,9 +491,15 @@ export default async function ClassDetailPage({
                   <div className="mt-1 text-xs text-softslate/70">
                     {game.mode === "competitive"
                       ? cd.game_mode_competitive
-                      : cd.game_mode_learning}{" "}
-                    · {game.duration_seconds}
-                    {cd.game_duration_suffix}
+                      : game.mode === "endless"
+                        ? cd.game_mode_endless
+                        : cd.game_mode_learning}
+                    {game.mode === "endless" ? null : (
+                      <>
+                        {" "}· {game.duration_seconds}
+                        {cd.game_duration_suffix}
+                      </>
+                    )}
                   </div>
                 </div>
                 <Link

@@ -120,6 +120,7 @@ export function PracticePlayer({
   const [showScore, setShowScore] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const totalQuestions = questions.length;
   const answeredCount = Object.keys(answers).length;
@@ -204,9 +205,11 @@ export function PracticePlayer({
     }
   }
 
+  // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
   async function resetPractice() {
     if (resetting) return;
-    if (!window.confirm(t.player_confirm_reset)) return;
 
     setResetting(true);
 
@@ -321,13 +324,44 @@ export function PracticePlayer({
             </button>
             <button
               type="button"
-              onClick={() => void resetPractice()}
+              onClick={() => setShowResetConfirm(true)}
               disabled={resetting}
               className="rounded-2xl border-2 border-violet-200 bg-white px-5 py-4 text-base font-black text-violet-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-violet-50 disabled:opacity-60"
             >
               {resetting ? t.player_reset_loading : t.player_reset}
             </button>
           </div>
+
+          {showResetConfirm ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+                <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+                  {t.player_confirm_reset}
+                </p>
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirm(false)}
+                    disabled={resetting}
+                    className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {dict.common.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResetConfirm(false);
+                      void resetPractice();
+                    }}
+                    disabled={resetting}
+                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                  >
+                    {t.player_reset}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {showReview ? (
             <section className="space-y-4">

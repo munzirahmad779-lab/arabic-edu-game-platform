@@ -35,20 +35,13 @@ export function TeacherList({
 }) {
   const t = dict.admin;
   const [processing, setProcessing] = useState<string | null>(null);
+  const [pendingTeacher, setPendingTeacher] = useState<Teacher | null>(null);
 
+  // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
   async function toggleActive(teacher: Teacher) {
     if (processing) return;
-
-    const action = teacher.is_active
-      ? t.confirm_deactivate
-      : t.confirm_activate;
-    if (
-      !window.confirm(
-        `${action} ${t.confirm_toggle_mid} "${teacher.full_name || teacher.email}"${t.confirm_toggle_end}`,
-      )
-    ) {
-      return;
-    }
 
     setProcessing(teacher.id);
     try {
@@ -151,7 +144,7 @@ export function TeacherList({
 
                 <button
                   type="button"
-                  onClick={() => void toggleActive(teacher)}
+                  onClick={() => setPendingTeacher(teacher)}
                   disabled={processing === teacher.id}
                   className={`shrink-0 rounded-xl px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
                     teacher.is_active
@@ -170,6 +163,42 @@ export function TeacherList({
           ))}
         </div>
       )}
+
+      {pendingTeacher ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
+              {`${pendingTeacher.is_active ? t.confirm_deactivate : t.confirm_activate} ${t.confirm_toggle_mid} "${pendingTeacher.full_name || pendingTeacher.email}"${t.confirm_toggle_end}`}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingTeacher(null)}
+                disabled={processing !== null}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {dict.common.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const teacher = pendingTeacher;
+                  setPendingTeacher(null);
+                  void toggleActive(teacher);
+                }}
+                disabled={processing !== null}
+                className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition disabled:opacity-50 ${
+                  pendingTeacher.is_active
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
+              >
+                {pendingTeacher.is_active ? t.btn_deactivate : t.btn_activate}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
