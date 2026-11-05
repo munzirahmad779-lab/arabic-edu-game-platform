@@ -15,6 +15,7 @@ type SidebarDict = {
   nav_classes: string;
   nav_students: string;
   nav_games: string;
+  nav_kartu_hafalan: string;
   nav_question_banks: string;
   nav_assessments: string;
   nav_reports: string;
@@ -59,6 +60,7 @@ export function DashboardSidebar({
 
   const activityItems: MenuItem[] = [
     { href: "/dashboard/games", labelKey: "nav_games", icon: "🎮" },
+    { href: "/game/kartu-hafalan", labelKey: "nav_kartu_hafalan", icon: "🃏" },
     {
       href: "/dashboard/question-banks",
       labelKey: "nav_question_banks",
