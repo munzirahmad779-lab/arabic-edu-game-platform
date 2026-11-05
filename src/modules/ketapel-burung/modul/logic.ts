@@ -248,7 +248,14 @@ export function loadGuru(): GuruBank {
     const raw = window.localStorage.getItem(STORE_GURU);
     if (!raw) return fallback;
     const p = JSON.parse(raw) as Partial<GuruBank>;
-    const questions = Array.isArray(p.questions) ? p.questions.filter(isQ).map((q) => normalizeQ(q, "guru")) : [];
+    const questions = Array.isArray(p.questions)
+      ? p.questions
+          .filter(isQ)
+          .map((q) => normalizeQ(q, "guru"))
+          // Saringan akhir sesudah normalisasi (pilihan dipotong 6): soal yang
+          // kuncinya tidak lagi termasuk dalam pilihan dibuang diam-diam.
+          .filter((q) => q.options.length >= 2 && q.options.includes(q.correct))
+      : [];
     return { name: typeof p.name === "string" ? p.name : "", questions };
   } catch {
     return fallback;
