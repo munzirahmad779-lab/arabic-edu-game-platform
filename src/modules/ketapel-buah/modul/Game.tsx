@@ -342,6 +342,30 @@ export default function KetapelBuahGame() {
             stone.x += stone.vx * sdt;
             stone.y += stone.vy * sdt;
             stone.vy += RULES.gravity * sdt;
+            /* Pantulan dinding lajur: pembatas antar lajur dan tepi arena
+               adalah dinding padat. Batu yang bergerak KELUAR menabrak
+               garis batas lajurnya dipantulkan berbalik arah dengan
+               restitusi yang sama seperti pantulan tanah, posisinya
+               dijepit tetap di dalam lajur, dan penerbangan berlanjut;
+               batu tidak pernah lagi hilang di pembatas. Syarat arah
+               gerak menjaga batu yang baru dilepas dari tarikan dalam:
+               kantong bisa ditarik sampai 230 px dari jangkar sehingga
+               batu mulai sedikit di luar garis lajur, tetapi selalu
+               sambil bergerak MASUK, jadi tidak pernah dipantulkan.
+               Pantulan dinding tidak memakan jatah pantulan tanah
+               (bounces): jatah itu mengakhiri tembakan lewat energi
+               tegak yang habis di tanah, sedangkan belokan dinding hanya
+               mengubah arah mendatar dan laju mendatarnya menyusut
+               0,62 kali pada tiap benturan sampai hilang sendiri. */
+            const wallL = lay.x + RULES.stoneR;
+            const wallR = lay.x + lay.w - RULES.stoneR;
+            if (stone.x < wallL && stone.vx < 0) {
+              stone.x = wallL;
+              stone.vx = -stone.vx * RULES.bounceRest;
+            } else if (stone.x > wallR && stone.vx > 0) {
+              stone.x = wallR;
+              stone.vx = -stone.vx * RULES.bounceRest;
+            }
             for (let ti = 0; ti < lane.targets.length; ti++) {
               const tg = lane.targets[ti];
               if (tg.state !== "hang") continue;
@@ -371,18 +395,16 @@ export default function KetapelBuahGame() {
               stone.bounces += 1;
             }
           }
-          /* Meleset hanya bila batu bergerak KELUAR arena. Batu yang baru
-             dilepas mulai dari kantong, dan kantong bisa ditarik sampai
-             230 px dari jangkar: tarikan dalam ke bawah menaruh batu di
-             bawah garis tanah dan tarikan mendatar penuh di lajur sempit
-             menaruhnya di luar sisi lajur, padahal batunya sedang bergerak
-             MASUK. Tanpa beda arah ini batu gugur pada bingkai pertama
-             sebelum sempat terbang dan memantul. */
+          /* Meleset hanya lewat arah tegak: terbang keluar dari atas
+             layar, atau jatuh menembus ke bawah garis tanah (hanya bisa
+             terjadi pada batu yang dilepas dari tarikan dalam ke bawah,
+             yang mulai di bawah garis tanah sebelum sempat naik). Arah
+             mendatar tidak lagi menggugurkan batu; pembatas lajur sudah
+             menjadi dinding padat yang memantulkannya kembali ke dalam
+             lajur (lihat pantulan dinding di substep atas). */
           const leaving =
             (stone.vy > 0 && stone.y > lay.groundY + 40) ||
-            (stone.vy < 0 && stone.y < -90) ||
-            (stone.vx < 0 && stone.x < lay.x - 46) ||
-            (stone.vx > 0 && stone.x > lay.x + lay.w + 46);
+            (stone.vy < 0 && stone.y < -90);
           if (stone.flying && leaving) {
             stone.flying = false; // meleset: batu kembali ke kantong, soal sama
             if (lane.phase === "fly") lane.phase = "aim";
