@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Confetti } from "@/components/confetti";
@@ -15,41 +14,18 @@ import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 import { buildProjectorReportPayload } from "@/lib/projector-report";
 
-const AirplanePlayer = dynamic(
-  () =>
-    import("@/components/game-players/airplane-player").then(
-      (mod) => mod.AirplanePlayer,
-    ),
-  { ssr: false },
-);
-const WhackPlayer = dynamic(
-  () =>
-    import("@/components/game-players/whack-player").then(
-      (mod) => mod.WhackPlayer,
-    ),
-  { ssr: false },
-);
-const SpaceDefenderPlayer = dynamic(
-  () =>
-    import("@/components/game-players/space-defender-player").then(
-      (mod) => mod.SpaceDefenderPlayer,
-    ),
-  { ssr: false },
-);
-const MemoryPlayer = dynamic(
-  () =>
-    import("@/components/game-players/memory-player").then(
-      (mod) => mod.MemoryPlayer,
-    ),
-  { ssr: false },
-);
-const BalloonPlayer = dynamic(
-  () =>
-    import("@/components/game-players/balloon-player").then(
-      (mod) => mod.BalloonPlayer,
-    ),
-  { ssr: false },
-);
+// Kelima pemain arkade dimuat lewat pemuat tangguh bersama (penanda muat,
+// coba ulang, dan pemulihan chunk basi) di arcade-dynamic.tsx. Definisi
+// dynamic lokal yang lama tidak punya satu pun perlindungan itu, sehingga
+// impor chunk yang gagal membuat panggung kosong total tanpa pesan.
+import {
+  AirplanePlayer,
+  WhackPlayer,
+  SpaceDefenderPlayer,
+  MemoryPlayer,
+  BalloonPlayer,
+  prefetchPemainArkade,
+} from "@/components/game-players/arcade-dynamic";
 
 export type StudentMember = {
   id: string;
@@ -195,6 +171,12 @@ export function ProjectorScreen({
   // dipilih langsung terbuka; tema awal game tetap berhenti di lobi
   // sampai guru menekan MULAI.
   const [engineLaunched, setEngineLaunched] = useState(false);
+
+  // Ambil chunk kelima pemain arkade sejak layar proyektor tampil, supaya
+  // mode yang dipilih guru terbuka seketika tanpa menunggu unduhan chunk.
+  useEffect(() => {
+    prefetchPemainArkade();
+  }, []);
 
   // Teams (4 Teams)
   const [teams, setTeams] = useState<ProjectorTeam[]>(() =>
