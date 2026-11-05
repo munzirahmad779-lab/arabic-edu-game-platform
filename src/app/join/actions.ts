@@ -88,6 +88,7 @@ export async function joinRoom(formData: FormData) {
       : msg.includes("ROOM_NOT_OPEN") ? "room_not_open"
       : msg.includes("ROOM_FULL") ? "room_full"
       : msg.includes("PIN_REQUIRED") ? "pin_required"
+      : msg.includes("CLASS_REQUIRED") ? "class_required"
       : msg.includes("INVALID_PIN") ? "invalid_pin"
       : msg.includes("STUDENT_NOT_FOUND") ? "student_not_found"
       : msg.includes("ALREADY_JOINED") ? "already_joined"

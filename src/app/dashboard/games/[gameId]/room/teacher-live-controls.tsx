@@ -12,6 +12,9 @@ type LiveControlsDict = {
   end_game_btn?: string;
   end_game_loading?: string;
   end_game_confirm?: string;
+  reset_game_btn?: string;
+  reset_game_confirm?: string;
+  confirm_cancel_btn?: string;
   total_questions_badge?: string;
   error_prefix?: string;
   connection_error?: string;
@@ -40,6 +43,14 @@ export function TeacherLiveControls({
   const [ending, setEnding] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Konfirmasi Akhiri/Reset memakai modal di dalam halaman, BUKAN
+  // window.confirm: dialog bawaan browser bisa tidak pernah sampai ke
+  // pengguna (webview/otomasi menelannya diam-diam), sehingga handler klik
+  // berhenti sebelum fetch dan tombol tampak mati tanpa pesan error
+  // (temuan audit live 5 Nov 2026: Akhiri diklik 5 kali tanpa efek).
+  const [pendingConfirm, setPendingConfirm] = useState<"end" | "reset" | null>(
+    null,
+  );
 
   const title = gr?.live_controls_title ?? "Permainan Sedang Berlangsung";
   const desc =
@@ -52,21 +63,19 @@ export function TeacherLiveControls({
   const endConfirm =
     gr?.end_game_confirm ??
     "Yakin ingin mengakhiri permainan sekarang dan menampilkan papan skor akhir?";
+  const resetBtn = gr?.reset_game_btn ?? "🔄 Reset ke Awal";
+  const resetConfirm =
+    gr?.reset_game_confirm ??
+    "Reset sesi ini kembali ke Soal 1 dan bersihkan jawaban sebelumnya?";
+  const cancelBtn = gr?.confirm_cancel_btn ?? "Batal";
   const badge = gr?.total_questions_badge
     ? gr.total_questions_badge.replace("{count}", String(questionCount))
     : `Total Soal: ${questionCount}`;
   const errPrefix = gr?.error_prefix ?? "Error:";
   const connError = gr?.connection_error ?? "Gagal terhubung ke server.";
 
-  async function handleAction(action: "advance" | "end" | "reset") {
+  async function runAction(action: "advance" | "end" | "reset") {
     if (advancing || ending || resetting) return;
-    if (action === "end" && !window.confirm(endConfirm)) return;
-    if (
-      action === "reset" &&
-      !window.confirm("Reset sesi ini kembali ke Soal 1 dan bersihkan jawaban sebelumnya?")
-    ) {
-      return;
-    }
 
     if (action === "advance") setAdvancing(true);
     if (action === "end") setEnding(true);
@@ -121,7 +130,7 @@ export function TeacherLiveControls({
       <div className="flex flex-wrap gap-2.5 pt-1">
         <button
           type="button"
-          onClick={() => void handleAction("advance")}
+          onClick={() => void runAction("advance")}
           disabled={advancing || ending || resetting}
           className="flex-1 min-w-[140px] rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
         >
@@ -130,16 +139,16 @@ export function TeacherLiveControls({
 
         <button
           type="button"
-          onClick={() => void handleAction("reset")}
+          onClick={() => setPendingConfirm("reset")}
           disabled={advancing || ending || resetting}
           className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-black text-amber-800 shadow-sm transition hover:bg-amber-100 disabled:opacity-50"
         >
-          {resetting ? "Mereset..." : "🔄 Reset ke Awal"}
+          {resetting ? "Mereset..." : resetBtn}
         </button>
 
         <button
           type="button"
-          onClick={() => void handleAction("end")}
+          onClick={() => setPendingConfirm("end")}
           disabled={advancing || ending || resetting}
           className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-black text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:opacity-50"
         >
@@ -153,6 +162,48 @@ export function TeacherLiveControls({
         gr={gr}
         isRtl={isRtl}
       />
+
+      {pendingConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <p className="text-sm font-semibold leading-relaxed text-neutral-800">
+              {pendingConfirm === "end" ? endConfirm : resetConfirm}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingConfirm(null)}
+                disabled={ending || resetting}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {cancelBtn}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const action = pendingConfirm;
+                  setPendingConfirm(null);
+                  void runAction(action);
+                }}
+                disabled={ending || resetting}
+                className={
+                  pendingConfirm === "end"
+                    ? "rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+                    : "rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-600 disabled:opacity-50"
+                }
+              >
+                {pendingConfirm === "end"
+                  ? ending
+                    ? endLoading
+                    : endBtn
+                  : resetting
+                    ? "Mereset..."
+                    : resetBtn}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

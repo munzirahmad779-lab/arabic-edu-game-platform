@@ -499,7 +499,6 @@
     "code_label": "كود الغرفة",
     "name_label": "الاسم",
     "pin_label": "PIN الطالب",
-    "pin_optional": "اختياري للضيف",
     "submit_btn": "دخول الغرفة",
     "error_invalid": "رابط الغرفة غير صحيح.",
     "room_loading": "جاري تحميل اللعبة...",

@@ -499,7 +499,6 @@
     "code_label": "Room Code",
     "name_label": "Name",
     "pin_label": "Student PIN",
-    "pin_optional": "optional for guests",
     "submit_btn": "Enter Room",
     "error_invalid": "Invalid room link.",
     "room_loading": "Loading game...",

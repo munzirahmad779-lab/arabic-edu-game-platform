@@ -499,7 +499,6 @@
     "code_label": "Kode Ruangan",
     "name_label": "Nama",
     "pin_label": "PIN Siswa",
-    "pin_optional": "opsional untuk tamu",
     "submit_btn": "Masuk Ruangan",
     "error_invalid": "Link ruangan tidak valid.",
     "room_loading": "Memuat permainan...",

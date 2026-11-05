@@ -23,6 +23,7 @@ export default async function JoinPage({
     room_not_open: "Ruangan kuis belum dibuka oleh guru.",
     room_full: "Ruangan kuis sudah penuh.",
     pin_required: "Ruangan kuis kelas ini mewajibkan PIN siswa Anda (4-6 digit). Masukkan PIN Anda di bawah untuk melanjutkan.",
+    class_required: "Ruangan ini bukan ruangan kelas, jadi tidak bisa dimasuki siswa. Gabung hanya dibuka untuk ruangan kelas, dengan nama dan PIN siswa yang terdaftar di kelas itu.",
     invalid_pin: "PIN yang dimasukkan salah.",
     student_not_found: "Nama siswa tidak terdaftar di daftar absensi kelas ini.",
     already_joined: "Nama Anda sudah terdaftar di sesi ruangan ini.",
@@ -54,14 +55,7 @@ export default async function JoinPage({
         {errorMessage ? (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 shadow-sm flex items-start gap-3">
             <span className="text-xl">⚠️</span>
-            <div className="flex-1 leading-relaxed">
-              {errorMessage}
-              {searchParams.error && searchParams.error !== errorMessage ? (
-                <span className="block text-[11px] font-mono text-red-500/80 mt-1">
-                  ({searchParams.error})
-                </span>
-              ) : null}
-            </div>
+            <div className="flex-1 leading-relaxed">{errorMessage}</div>
           </div>
         ) : null}
 
@@ -117,10 +111,7 @@ export default async function JoinPage({
 
           <div>
             <label htmlFor="join-pin" className="block text-sm font-bold">
-              {t.pin_label}{" "}
-              <span className="ms-2 text-xs font-normal text-neutral-500">
-                {t.pin_optional}
-              </span>
+              {t.pin_label}
             </label>
             <input
               id="join-pin"
