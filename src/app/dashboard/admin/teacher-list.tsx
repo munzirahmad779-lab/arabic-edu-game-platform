@@ -36,14 +36,18 @@ export function TeacherList({
   const t = dict.admin;
   const [processing, setProcessing] = useState<string | null>(null);
   const [pendingTeacher, setPendingTeacher] = useState<Teacher | null>(null);
+  const [toggleMsg, setToggleMsg] = useState<string | null>(null);
 
   // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  // Pemberitahuan hasil juga dirender di dalam halaman, BUKAN alert(),
+  // dengan alasan yang sama.
   async function toggleActive(teacher: Teacher) {
     if (processing) return;
 
     setProcessing(teacher.id);
+    setToggleMsg(null);
     try {
       const supabase = createClient();
       const { error } = teacher.is_active
@@ -54,12 +58,12 @@ export function TeacherList({
             p_teacher_id: teacher.id,
           });
       if (error) {
-        alert(`${t.error_prefix} ${error.message}`);
+        setToggleMsg(`${t.error_prefix} ${error.message}`);
       } else {
         window.location.reload();
       }
     } catch {
-      alert(t.connection_error);
+      setToggleMsg(t.connection_error);
     } finally {
       setProcessing(null);
     }
@@ -78,6 +82,12 @@ export function TeacherList({
           {teachers.length} {t.teachers_count_suffix}
         </span>
       </div>
+
+      {toggleMsg ? (
+        <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
+          {toggleMsg}
+        </p>
+      ) : null}
 
       {teachers.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">

@@ -18,14 +18,21 @@ export function ResetPasswordButton({
   const t = dict.admin;
   const [sending, setSending] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [notice, setNotice] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  // Pemberitahuan hasil juga dirender di dalam halaman, BUKAN alert(),
+  // dengan alasan yang sama.
   async function handleSend() {
     if (sending) return;
 
     setSending(true);
+    setNotice(null);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -33,14 +40,18 @@ export function ResetPasswordButton({
       });
 
       if (error) {
-        alert(`${t.error_prefix} ${error.message}`);
+        setNotice({
+          tone: "error",
+          text: `${t.error_prefix} ${error.message}`,
+        });
       } else {
-        alert(
-          `${t.reset_success_prefix} ${email}${t.reset_success_suffix}`,
-        );
+        setNotice({
+          tone: "success",
+          text: `${t.reset_success_prefix} ${email}${t.reset_success_suffix}`,
+        });
       }
     } catch {
-      alert(t.connection_error);
+      setNotice({ tone: "error", text: t.connection_error });
     } finally {
       setSending(false);
     }
@@ -57,6 +68,26 @@ export function ResetPasswordButton({
       >
         {sending ? "..." : t.reset_btn}
       </button>
+
+      {notice ? (
+        <p
+          className={`flex w-full items-start justify-between gap-2 rounded-xl border px-3 py-2 text-xs font-bold ${
+            notice.tone === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label={dict.common.cancel}
+            className="shrink-0 font-black opacity-60 transition hover:opacity-100"
+          >
+            ✕
+          </button>
+        </p>
+      ) : null}
 
       {showConfirm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

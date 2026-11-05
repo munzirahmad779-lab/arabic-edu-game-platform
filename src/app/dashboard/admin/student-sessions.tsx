@@ -32,16 +32,20 @@ export function StudentSessions({
   const [processing, setProcessing] = useState<string | null>(null);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
+  const [logoutMsg, setLogoutMsg] = useState<string | null>(null);
   const [pendingLogout, setPendingLogout] = useState<Session | null>(null);
   const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
 
   // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  // Pemberitahuan hasil juga dirender di dalam halaman, BUKAN alert(),
+  // dengan alasan yang sama.
   async function logoutOne(s: Session) {
     if (processing) return;
 
     setProcessing(s.student_id);
+    setLogoutMsg(null);
     try {
       const supabase = createClient();
       const { error } = await supabase.rpc(
@@ -49,13 +53,13 @@ export function StudentSessions({
         { p_student_id: s.student_id },
       );
       if (error) {
-        alert(`${t.error_prefix} ${error.message}`);
+        setLogoutMsg(`${t.error_prefix} ${error.message}`);
         setProcessing(null);
       } else {
         forceReload();
       }
     } catch {
-      alert(t.connection_error);
+      setLogoutMsg(t.connection_error);
       setProcessing(null);
     }
   }
@@ -113,6 +117,12 @@ export function StudentSessions({
       {cleanMsg ? (
         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
           {cleanMsg}
+        </p>
+      ) : null}
+
+      {logoutMsg ? (
+        <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
+          {logoutMsg}
         </p>
       ) : null}
 

@@ -55,6 +55,7 @@ export function ReportView({
   const [cleaning, setCleaning] = useState(false);
   const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
+  const [csvMsg, setCsvMsg] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(date);
 
   const MODE_LABEL: Record<string, string> = {
@@ -328,10 +329,13 @@ export function ReportView({
               })),
             ];
 
+            // Pemberitahuan dirender di dalam halaman, BUKAN alert():
+            // dialog bawaan browser bisa tidak pernah sampai ke pengguna.
             if (allRows.length === 0) {
-              alert("Tidak ada data untuk diunduh pada tanggal ini.");
+              setCsvMsg("Tidak ada data untuk diunduh pada tanggal ini.");
               return;
             }
+            setCsvMsg(null);
 
             const headers = Object.keys(allRows[0]!);
             const csvContent =
@@ -357,6 +361,10 @@ export function ReportView({
           📥 Unduh Rapor Excel (CSV)
         </button>
       </div>
+
+      {csvMsg ? (
+        <p className="text-xs font-bold text-red-800">{csvMsg}</p>
+      ) : null}
 
       <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-xs text-emerald-900">
         <p className="font-black">{t.help_title}</p>

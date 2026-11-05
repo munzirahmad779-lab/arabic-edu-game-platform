@@ -46,6 +46,7 @@ export function DeleteHistoryButton({
 }) {
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function modeLabel(m: string): string {
     const k = MODE_KEY[m];
@@ -61,10 +62,13 @@ export function DeleteHistoryButton({
   // Konfirmasi memakai modal di dalam halaman, BUKAN window.confirm:
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam) sehingga aksi berhenti tanpa jejak.
+  // Pemberitahuan hasil juga dirender di dalam halaman, BUKAN alert(),
+  // dengan alasan yang sama.
   async function handleDelete() {
     if (deleting) return;
 
     setDeleting(true);
+    setErrorMsg(null);
     try {
       const supabase = createClient();
       let error: { message: string } | null = null;
@@ -84,16 +88,28 @@ export function DeleteHistoryButton({
       }
 
       if (error) {
-        alert(`${dict.error_prefix}${error.message}`);
+        setErrorMsg(`${dict.error_prefix}${error.message}`);
       } else {
         window.location.reload();
       }
     } catch {
-      alert(dict.connection_error);
+      setErrorMsg(dict.connection_error);
     } finally {
       setDeleting(false);
     }
   }
+
+  const errorNote = errorMsg ? (
+    <p
+      className={
+        mode
+          ? "max-w-[160px] text-[10px] font-bold leading-tight text-red-700"
+          : "w-full rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-800"
+      }
+    >
+      {errorMsg}
+    </p>
+  ) : null;
 
   const confirmModal = showConfirm ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -139,6 +155,7 @@ export function DeleteHistoryButton({
         >
           {deleting ? dict.loading : "🗑"}
         </button>
+        {errorNote}
         {confirmModal}
       </>
     );
@@ -156,6 +173,7 @@ export function DeleteHistoryButton({
       >
         {deleting ? dict.loading : dict.btn_delete_all}
       </button>
+      {errorNote}
       {confirmModal}
     </>
   );

@@ -125,16 +125,21 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
   const [score, setScore] = useState(String(sub.teacher_override_score ?? ""));
   const [feedback, setFeedback] = useState(sub.teacher_override_feedback ?? "");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [current, setCurrent] = useState(sub);
 
+  // Pemberitahuan hasil dirender di dalam halaman, BUKAN alert():
+  // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
+  // otomasi menelannya diam-diam) sehingga kegagalan tidak terlihat.
   async function saveOverride() {
     const numScore = Number(score);
     if (!Number.isFinite(numScore) || numScore < 0 || numScore > 100) {
-      alert(rl.err_range);
+      setSaveError(rl.err_range);
       return;
     }
 
     setSaving(true);
+    setSaveError(null);
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -148,7 +153,7 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
         .eq("id", current.submission_id);
 
       if (error) {
-        alert(`${rl.err_prefix}${error.message}`);
+        setSaveError(`${rl.err_prefix}${error.message}`);
       } else {
         setCurrent((prev) => ({
           ...prev,
@@ -158,7 +163,7 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
         setEditing(false);
       }
     } catch {
-      alert(rl.err_conn);
+      setSaveError(rl.err_conn);
     } finally {
       setSaving(false);
     }
@@ -291,6 +296,11 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
                   className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
                 />
               </div>
+              {saveError ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
+                  {saveError}
+                </p>
+              ) : null}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -302,7 +312,10 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditing(false)}
+                  onClick={() => {
+                    setEditing(false);
+                    setSaveError(null);
+                  }}
                   className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700"
                 >
                   {rl.cancel_btn}
@@ -312,7 +325,10 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
           ) : (
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setSaveError(null);
+                setEditing(true);
+              }}
               className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100"
             >
               {rl.edit_grade_btn}
