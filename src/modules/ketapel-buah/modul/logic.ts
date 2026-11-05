@@ -259,8 +259,12 @@ const isQ = (v: unknown): v is Q => {
   return (
     typeof o.prompt === "string" &&
     Array.isArray(o.options) &&
+    o.options.length >= 2 &&
     o.options.every((x) => typeof x === "string") &&
-    typeof o.correct === "string"
+    typeof o.correct === "string" &&
+    // Soal hanya diterima bila kuncinya termasuk dalam pilihan; soal yang
+    // kuncinya di luar pilihan dibuang diam-diam saat pemuatan.
+    (o.options as string[]).includes(o.correct)
   );
 };
 
@@ -281,7 +285,14 @@ export function loadGuru(): GuruBank {
     const raw = window.localStorage.getItem(STORE_GURU);
     if (!raw) return fallback;
     const p = JSON.parse(raw) as Partial<GuruBank>;
-    const questions = Array.isArray(p.questions) ? p.questions.filter(isQ).map((q) => normalizeQ(q, "guru")) : [];
+    const questions = Array.isArray(p.questions)
+      ? p.questions
+          .filter(isQ)
+          .map((q) => normalizeQ(q, "guru"))
+          // Saringan akhir sesudah normalisasi (pilihan dipotong 6): soal yang
+          // kuncinya tidak lagi termasuk dalam pilihan dibuang diam-diam.
+          .filter((q) => q.options.length >= 2 && q.options.includes(q.correct))
+      : [];
     return { name: typeof p.name === "string" ? p.name : "", questions };
   } catch {
     return fallback;
