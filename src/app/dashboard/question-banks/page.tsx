@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createQuestionBank,
   createQuestionCategory,
-  deleteQuestionCategory,
   updateQuestionCategory,
 } from "./actions";
+import { DeleteCategoryButton } from "./delete-category-button";
 import { QuestionBankImportForm } from "./import-form";
 import { BankQuestionList } from "./bank-question-list";
 import { DeleteBankForm } from "./delete-bank-form";
@@ -169,6 +169,13 @@ export default async function QuestionBanksPage({
       locale === "ar" ? "إضافة موضوع" : locale === "en" ? "Add Topic" : "Tambah Topik",
     save: locale === "ar" ? "حفظ" : locale === "en" ? "Save" : "Simpan",
     delete: locale === "ar" ? "حذف" : locale === "en" ? "Delete" : "Hapus",
+    cancel: locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Batal",
+    cat_delete_confirm:
+      locale === "ar"
+        ? 'حذف الموضوع "{name}"؟ لا يمكن التراجع عن هذا الإجراء.'
+        : locale === "en"
+          ? 'Delete the topic "{name}"? This action cannot be undone.'
+          : 'Hapus topik "{name}"? Tindakan ini tidak bisa dibatalkan.',
     no_topics:
       locale === "ar"
         ? "لا توجد موضوعات بعد. أنشئ موضوعًا أولًا قبل استيراد الأسئلة."
@@ -771,15 +778,17 @@ export default async function QuestionBanksPage({
                       {L.save}
                     </button>
                   </form>
-                  <form action={deleteQuestionCategory}>
-                    <input type="hidden" name="id" value={category.id} />
-                    <button
-                      type="submit"
-                      className="rounded-full border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
-                    >
-                      {L.delete}
-                    </button>
-                  </form>
+                  <DeleteCategoryButton
+                    categoryId={category.id}
+                    labels={{
+                      deleteLabel: L.delete,
+                      cancelLabel: L.cancel,
+                      confirmMessage: L.cat_delete_confirm.replace(
+                        "{name}",
+                        category.name,
+                      ),
+                    }}
+                  />
                 </div>
               </div>
             ))}

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createStudent, deleteStudent, resetStudentPin, updateStudent } from "./actions";
+import { createStudent, resetStudentPin, updateStudent } from "./actions";
+import { DeleteStudentButton } from "./delete-student-button";
 import { StudentImportForm } from "./import-form";
 import { ClassCard } from "./class-card";
 import { ClassTabs } from "./class-tabs";
@@ -310,24 +311,19 @@ export default async function StudentsPage({
                                   >
                                     {dict.common.edit}
                                   </Link>
-                                  <form action={deleteStudent}>
-                                    <input
-                                      type="hidden"
-                                      name="student_id"
-                                      value={s.id}
-                                    />
-                                    <input
-                                      type="hidden"
-                                      name="class_id"
-                                      value={cls.id}
-                                    />
-                                    <button
-                                      type="submit"
-                                      className="rounded-lg bg-red-100 px-3 py-1.5 text-[10px] font-black text-red-700 transition hover:bg-red-200"
-                                    >
-                                      {dict.common.delete}
-                                    </button>
-                                  </form>
+                                  <DeleteStudentButton
+                                    studentId={s.id}
+                                    classId={cls.id}
+                                    labels={{
+                                      deleteLabel: dict.common.delete,
+                                      cancelLabel: dict.common.cancel,
+                                      confirmMessage:
+                                        dict.class_detail.delete_student_confirm.replace(
+                                          "{name}",
+                                          s.name,
+                                        ),
+                                    }}
+                                  />
                                 </div>
                               </div>
 

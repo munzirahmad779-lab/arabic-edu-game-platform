@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAssessment, deleteAssessment } from "./actions";
+import { createAssessment } from "./actions";
+import { DeleteAssessmentButton } from "./delete-assessment-button";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -50,6 +51,9 @@ export default async function AssessmentsPage({
     minutes_unit: "menit",
     open: "Buka",
     delete: "Hapus",
+    cancel: "Batal",
+    delete_confirm:
+      'Hapus ujian "{name}"? Tindakan ini tidak bisa dibatalkan.',
     deleted_ok: "✓ Berhasil dihapus.",
     err_invalid_title: "Judul tidak valid (1-200 karakter).",
     err_invalid_type: "Tipe tidak valid.",
@@ -268,16 +272,17 @@ export default async function AssessmentsPage({
                   >
                     {L.open}
                   </Link>
-                  <form action={deleteAssessment}>
-                    <input type="hidden" name="assessment_id" value={a.id} />
-                    <button
-                      type="submit"
-                      title={L.delete}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100"
-                    >
-                      🗑
-                    </button>
-                  </form>
+                  <DeleteAssessmentButton
+                    assessmentId={a.id}
+                    labels={{
+                      deleteLabel: L.delete,
+                      cancelLabel: L.cancel,
+                      confirmMessage: L.delete_confirm.replace(
+                        "{name}",
+                        a.title,
+                      ),
+                    }}
+                  />
                 </div>
               </article>
             ))}

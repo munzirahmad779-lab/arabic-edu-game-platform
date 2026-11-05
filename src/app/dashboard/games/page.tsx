@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/auth";
-import { createGame, createRoom, deleteGame, cloneGame } from "./actions";
+import { createGame, createRoom, cloneGame } from "./actions";
+import { DeleteGameButton } from "./delete-game-button";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
 import { getLocale } from "@/lib/i18n/server";
@@ -353,16 +354,12 @@ export default async function GamesPage({
                         </button>
                       </form>
 
-                      <form action={deleteGame}>
-                        <input type="hidden" name="game_id" value={game.id} />
-                        <button
-                          type="submit"
-                          title={t.delete_title}
-                          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
-                        >
-                          🗑
-                        </button>
-                      </form>
+                      <DeleteGameButton
+                        gameId={game.id}
+                        gameName={displayName}
+                        title={t.delete_title}
+                        triggerClassName="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                      />
                     </div>
                   </div>
                 </article>

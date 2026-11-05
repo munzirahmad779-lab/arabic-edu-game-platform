@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import {
   importAssessment,
   generateAssessmentToken,
-  revokeToken,
   togglePublish,
 } from "../actions";
+import { RevokeTokenButton } from "./revoke-token-button";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -404,20 +404,15 @@ export default async function AssessmentDetailPage({
                       {tk.used_count}/{tk.max_uses} {L.token_uses}
                     </span>
                     {isActive ? (
-                      <form action={revokeToken}>
-                        <input type="hidden" name="token_id" value={tk.id} />
-                        <input
-                          type="hidden"
-                          name="assessment_id"
-                          value={assessment.id}
-                        />
-                        <button
-                          type="submit"
-                          className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 transition hover:bg-red-100"
-                        >
-                          {L.btn_revoke}
-                        </button>
-                      </form>
+                      <RevokeTokenButton
+                        tokenId={tk.id}
+                        assessmentId={assessment.id}
+                        labels={{
+                          revokeLabel: L.btn_revoke,
+                          cancelLabel: dict.common.cancel,
+                          confirmMessage: L.revoke_confirm,
+                        }}
+                      />
                     ) : null}
                   </div>
                 </div>
