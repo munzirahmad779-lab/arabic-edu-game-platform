@@ -918,11 +918,23 @@ export function ProjectorScreen({
   }, [phase, activeEngine, saveTeamReport]);
 
   // Alur arkade: satu baris hasil untuk jalannya permainan di proyektor.
+  // Penyimpanan hanya untuk permainan yang sungguh dimulai (MULAI KUIS).
+  // Panggung yang diluncurkan dari lobi tanpa memulai kuis hanyalah
+  // pratinjau: belum ada sesi permainan, jadi tidak ada laporan untuk
+  // disimpan. Pemain arkade dapat berakhir sendiri tanpa interaksi apa
+  // pun (timer Pukul Tikus menghabiskan nyawanya sendiri dalam waktu
+  // singkat), dan percobaan simpan pada keadaan pratinjau pasti gagal
+  // karena endpoint save-report membuat baris rooms baru memakai kode
+  // room yang sedang dipinjam layar ini (kode itu unik dan sudah ada),
+  // sehingga muncul spanduk "Laporan gagal tersimpan" palsu. Kegagalan
+  // simpan pada permainan yang sungguh berjalan tetap tampil lewat
+  // reportStatus "error" seperti sebelumnya.
   const handleArcadeFinish =
     (engineLabel: string) =>
     (finalScore: number, correctCount: number) => {
       arcadeFinishedRef.current = true;
       setPhase("finished");
+      if (!gameStarted) return;
       if (!reportSavedRef.current) {
         reportSavedRef.current = true;
         void postReport([
