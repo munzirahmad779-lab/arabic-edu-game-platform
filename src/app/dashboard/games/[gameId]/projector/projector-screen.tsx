@@ -186,6 +186,15 @@ export function ProjectorScreen({
     if (initialGameTheme === "balloon") return "balloon";
     return "kahoot";
   });
+  // Penanda mode arkade dibuka langsung dari klik tombol mode di lobi.
+  // Sejak commit 22e0486 cabang render arkade mensyaratkan gameStarted
+  // (agar tema tersimpan game masuk lobi dulu untuk pembagian tim),
+  // tetapi akibatnya klik tombol Pesawat/Pukul Tikus/dll. di lobi hanya
+  // mengubah state tanpa membuka apa pun di layar. Klik eksplisit guru
+  // di lobi kini menandai mode sebagai diluncurkan, sehingga mode yang
+  // dipilih langsung terbuka; tema awal game tetap berhenti di lobi
+  // sampai guru menekan MULAI.
+  const [engineLaunched, setEngineLaunched] = useState(false);
 
   // Teams (4 Teams)
   const [teams, setTeams] = useState<ProjectorTeam[]>(() =>
@@ -994,7 +1003,7 @@ export function ProjectorScreen({
   }
 
   // If teacher selected a Native Arcade Game Engine:
-  if (gameStarted && activeEngine === "airplane") {
+  if ((gameStarted || engineLaunched) && activeEngine === "airplane") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1019,7 +1028,7 @@ export function ProjectorScreen({
     );
   }
 
-  if (gameStarted && activeEngine === "whack") {
+  if ((gameStarted || engineLaunched) && activeEngine === "whack") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1044,7 +1053,7 @@ export function ProjectorScreen({
     );
   }
 
-  if (gameStarted && activeEngine === "space") {
+  if ((gameStarted || engineLaunched) && activeEngine === "space") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1069,7 +1078,7 @@ export function ProjectorScreen({
     );
   }
 
-  if (gameStarted && activeEngine === "memory") {
+  if ((gameStarted || engineLaunched) && activeEngine === "memory") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1094,7 +1103,7 @@ export function ProjectorScreen({
     );
   }
 
-  if (gameStarted && activeEngine === "balloon") {
+  if ((gameStarted || engineLaunched) && activeEngine === "balloon") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1145,7 +1154,7 @@ export function ProjectorScreen({
               <span className="text-[11px] font-bold text-slate-400 px-1">Game:</span>
               <button
                 type="button"
-                onClick={() => setActiveEngine("airplane")}
+                onClick={() => { setActiveEngine("airplane"); setEngineLaunched(true); }}
                 className="px-2 py-1 rounded-xl bg-sky-600/30 hover:bg-sky-600/60 text-sky-200 border border-sky-400/40 text-xs font-bold transition flex items-center gap-1"
               >
                 <span>✈️</span>
@@ -1153,7 +1162,7 @@ export function ProjectorScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveEngine("whack")}
+                onClick={() => { setActiveEngine("whack"); setEngineLaunched(true); }}
                 className="px-2 py-1 rounded-xl bg-amber-600/30 hover:bg-amber-600/60 text-amber-200 border border-amber-400/40 text-xs font-bold transition flex items-center gap-1"
               >
                 <span>🔨</span>
@@ -1161,7 +1170,7 @@ export function ProjectorScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveEngine("space")}
+                onClick={() => { setActiveEngine("space"); setEngineLaunched(true); }}
                 className="px-2 py-1 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/60 text-cyan-200 border border-cyan-400/40 text-xs font-bold transition flex items-center gap-1"
               >
                 <span>🚀</span>
@@ -1169,7 +1178,7 @@ export function ProjectorScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveEngine("memory")}
+                onClick={() => { setActiveEngine("memory"); setEngineLaunched(true); }}
                 className="px-2 py-1 rounded-xl bg-purple-600/30 hover:bg-purple-600/60 text-purple-200 border border-purple-400/40 text-xs font-bold transition flex items-center gap-1"
               >
                 <span>🃏</span>
@@ -1177,7 +1186,7 @@ export function ProjectorScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveEngine("balloon")}
+                onClick={() => { setActiveEngine("balloon"); setEngineLaunched(true); }}
                 className="px-2 py-1 rounded-xl bg-rose-600/30 hover:bg-rose-600/60 text-rose-200 border border-rose-400/40 text-xs font-bold transition flex items-center gap-1"
               >
                 <span>🎈</span>
