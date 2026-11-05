@@ -492,6 +492,9 @@ export default function KetapelBuahGame() {
     if (slot < 0) return;
     const lane = lanesRef.current[slot];
     if (!lane || lane.phase !== "aim" || stonesRef.current[slot]?.flying) return;
+    // Penjaga seretan ganda: satu lajur hanya boleh punya satu seretan aktif;
+    // sentuhan kedua pada lajur yang sama diabaikan.
+    if (Array.from(dragsRef.current.values()).some((d) => d.lane === slot)) return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     dragsRef.current.set(e.pointerId, { lane: slot, downX: pos.x, downY: pos.y, pouch: { ...lays[slot].anchor } });
   };
@@ -516,13 +519,18 @@ export default function KetapelBuahGame() {
     const drag = dragsRef.current.get(e.pointerId);
     if (!drag) return;
     dragsRef.current.delete(e.pointerId);
+    // Penjaga seretan ganda: batu hanya diluncurkan bila lajur masih membidik
+    // ("aim") dan tidak ada batu yang sedang terbang untuk lajur itu. Lepasan
+    // yang tidak memenuhi syarat cukup menghapus entri seretannya sendiri
+    // (sudah dilakukan di atas), tanpa mengubah fase dan tanpa meluncurkan.
+    const lane = lanesRef.current[drag.lane];
+    const stone = stonesRef.current[drag.lane];
+    if (!lane || !stone || lane.phase !== "aim" || stone.flying) return;
     const lays = layoutFor(size.w, size.h, lanesRef.current.length || 1);
     const anchor = lays[drag.lane].anchor;
     const vx = (anchor.x - drag.pouch.x) * RULES.launchK;
     const vy = (anchor.y - drag.pouch.y) * RULES.launchK;
     if (Math.hypot(vx, vy) < 130) return; // tarikan terlalu lemah, batal
-    const stone = stonesRef.current[drag.lane];
-    if (!stone) return;
     stone.x = drag.pouch.x;
     stone.y = drag.pouch.y;
     stone.vx = vx;
