@@ -53,6 +53,27 @@ export function AirplanePlayer({
 
   const isProcessingHitRef = useRef(false);
   const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+  }, []);
+  const clearPendingTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+  useEffect(() => clearPendingTimers, [clearPendingTimers]);
+  // Satu pintu akhir permainan: onFinish tepat satu kali per sesi.
+  const finishGame = useCallback(
+    (finalScore: number) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      setIsGameOver(true);
+      onFinish?.(finalScore, correctRef.current);
+    },
+    [onFinish],
+  );
   const handleHitCloudRef = useRef<(opt: RawOption) => void>(() => {});
 
   // Plane physics state
@@ -153,14 +174,13 @@ export function AirplanePlayer({
         setStreak((st) => st + 1);
         setFeedback({ text: `✓ TEPAT! +${100 + streak * 20} Poin`, color: "text-emerald-400" });
 
-        setTimeout(() => {
+        later(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
           if (currentQIndex + 1 < totalQs) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
-            setIsGameOver(true);
-            onFinish?.(nextScore, correctRef.current);
+            finishGame(nextScore);
           }
         }, 800);
       } else {
@@ -169,25 +189,28 @@ export function AirplanePlayer({
         setHealth((h) => {
           const next = h - 1;
           if (next <= 0) {
-            setIsGameOver(true);
-            onFinish?.(score, correctRef.current);
+            finishGame(score);
           }
           return Math.max(0, next);
         });
         setFeedback({ text: `✗ KURANG TEPAT! Jawaban: ${correctKey}`, color: "text-rose-400" });
 
-        setTimeout(() => {
+        later(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
+          if (finishedRef.current) return;
           if (currentQIndex + 1 < totalQs) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
-            setIsGameOver(true);
+            // Jawaban salah pada soal terakhir dengan nyawa tersisa
+            // tetap wajib mengakhiri permainan lewat finishGame,
+            // supaya induk menerima onFinish (cacat K29).
+            finishGame(score);
           }
         }, 1200);
       }
     },
-    [correctKey, currentQIndex, questionList.length, streak, score, onFinish, isGameOver],
+    [correctKey, currentQIndex, questionList.length, streak, score, isGameOver, later, finishGame],
   );
 
   // Sync ref so canvas loop always invokes the freshest callback without teardown
@@ -568,6 +591,9 @@ export function AirplanePlayer({
           <button
             type="button"
             onClick={() => {
+              clearPendingTimers();
+              correctRef.current = 0;
+              finishedRef.current = false;
               setQuestionList([...questionList].sort(() => Math.random() - 0.5));
               setCurrentQIndex(0);
               setScore(0);

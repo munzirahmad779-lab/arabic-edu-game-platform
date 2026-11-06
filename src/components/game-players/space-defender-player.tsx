@@ -60,6 +60,26 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+  }, []);
+  const clearPendingTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+  useEffect(() => clearPendingTimers, [clearPendingTimers]);
+  // Satu pintu akhir permainan: onFinish tepat satu kali per sesi.
+  // Timer 600 ms (nyawa habis) dan timer transisi 1200 ms sama sama
+  // lewat pintu ini, sehingga onFinish tidak bisa ganda (cacat K31).
+  const finishGame = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setIsGameOver(true);
+    onFinish?.(scoreRef.current, correctRef.current);
+  }, [onFinish]);
 
   useEffect(() => {
     scoreRef.current = score;
@@ -168,9 +188,8 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         setStreak(0);
         setHealth((h) => {
           if (h <= 1) {
-            setTimeout(() => {
-              setIsGameOver(true);
-              onFinish?.(scoreRef.current, correctRef.current);
+            later(() => {
+              finishGame();
             }, 600);
             return 0;
           }
@@ -179,19 +198,19 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
       }
 
       // Transition to next question after 1.2s
-      setTimeout(() => {
+      later(() => {
         setFeedback(null);
         setSelectedTargetKey(null);
         isShootingRef.current = false;
+        if (finishedRef.current) return;
         if (currentIdx + 1 < questionList.length) {
           setCurrentIdx((idx) => idx + 1);
         } else {
-          setIsGameOver(true);
-          onFinish?.(scoreRef.current, correctRef.current);
+          finishGame();
         }
       }, 1200);
     },
-    [selectedTargetKey, isGameOver, options, correctKey, streak, currentIdx, questionList.length, onFinish]
+    [selectedTargetKey, isGameOver, options, correctKey, streak, currentIdx, questionList.length, onFinish, later, finishGame]
   );
 
   useEffect(() => {
@@ -405,6 +424,11 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
         <button
           type="button"
           onClick={() => {
+            clearPendingTimers();
+            correctRef.current = 0;
+            finishedRef.current = false;
+            isShootingRef.current = false;
+            setFeedback(null);
             setQuestionList([...questions].sort(() => Math.random() - 0.5));
             setCurrentIdx(0);
             setScore(0);

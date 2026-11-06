@@ -25,6 +25,27 @@ export function WhackPlayer({
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [score, setScore] = useState(0);
   const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+  }, []);
+  const clearPendingTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+  useEffect(() => clearPendingTimers, [clearPendingTimers]);
+  // Satu pintu akhir permainan: onFinish tepat satu kali per sesi.
+  const finishGame = useCallback(
+    (finalScore: number) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      setIsGameOver(true);
+      onFinish?.(finalScore, correctRef.current);
+    },
+    [onFinish],
+  );
   const [streak, setStreak] = useState(0);
   const [health, setHealth] = useState(3);
   const [timerLeft, setTimerLeft] = useState(25);
@@ -96,8 +117,7 @@ export function WhackPlayer({
           setHealth((h) => {
             if (h <= 1) {
               clearInterval(timer);
-              setIsGameOver(true);
-              onFinish?.(score, correctRef.current);
+              finishGame(score);
               return 0;
             }
             return h - 1;
@@ -107,7 +127,10 @@ export function WhackPlayer({
             setCurrentQIndex((idx) => idx + 1);
             return 25;
           } else {
-            setIsGameOver(true);
+            // Timeout pada soal terakhir dengan nyawa tersisa tetap
+            // wajib mengakhiri permainan lewat finishGame, supaya
+            // induk menerima onFinish (cacat K30).
+            finishGame(score);
             return 0;
           }
         }
@@ -115,7 +138,7 @@ export function WhackPlayer({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isGameOver, score, onFinish, currentQIndex, questionList.length]);
+  }, [isGameOver, score, onFinish, currentQIndex, questionList.length, finishGame]);
 
   // Handle Bonk
   const handleWhack = (opt: RawOption, e: React.MouseEvent) => {
@@ -128,7 +151,7 @@ export function WhackPlayer({
       y: rect.top,
       active: true,
     });
-    setTimeout(() => setHammerPos(null), 300);
+    later(() => setHammerPos(null), 300);
 
     const isCorrect = opt.option_key.toUpperCase().trim() === correctKey;
 
@@ -140,14 +163,13 @@ export function WhackPlayer({
       setTimerLeft((t) => Math.min(30, t + 5)); // Bonus +5s
 
       // Advance question
-      setTimeout(() => {
+      later(() => {
         isProcessingBonkRef.current = false;
         if (currentQIndex + 1 < questionList.length) {
           setCurrentQIndex((idx) => idx + 1);
           setTimerLeft(25);
         } else {
-          setIsGameOver(true);
-          onFinish?.(score + 100 + streak * 25, correctRef.current);
+          finishGame(score + 100 + streak * 25);
         }
       }, 500);
     } else {
@@ -157,19 +179,22 @@ export function WhackPlayer({
       // Deduct 1 health heart - only game over when all 3 hearts are depleted!
       setHealth((h) => {
         if (h <= 1) {
-          setIsGameOver(true);
-          onFinish?.(score, correctRef.current);
+          finishGame(score);
           return 0;
         }
         return h - 1;
       });
-      setTimeout(() => {
+      later(() => {
         isProcessingBonkRef.current = false;
       }, 400);
     }
   };
 
   const handleRestartAndReshuffle = () => {
+    clearPendingTimers();
+    correctRef.current = 0;
+    finishedRef.current = false;
+    isProcessingBonkRef.current = false;
     setQuestionList([...questions].sort(() => Math.random() - 0.5));
     setCurrentQIndex(0);
     setScore(0);

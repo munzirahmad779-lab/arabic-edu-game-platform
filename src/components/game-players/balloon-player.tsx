@@ -51,6 +51,30 @@ export function BalloonPlayer({
 
   const isProcessingHitRef = useRef(false);
   const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+  }, []);
+  const clearPendingTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+  // Semua timer akhir permainan terdaftar di timersRef dan dibersihkan
+  // saat unmount, supaya callback terlambat tidak memanggil onFinish
+  // atau mengubah fase sesudah guru meninggalkan pemain (cacat K33).
+  useEffect(() => clearPendingTimers, [clearPendingTimers]);
+  // Satu pintu akhir permainan: onFinish tepat satu kali per sesi.
+  const finishGame = useCallback(
+    (finalScore: number) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      setIsGameOver(true);
+      onFinish?.(finalScore, correctRef.current);
+    },
+    [onFinish],
+  );
   const handlePopBalloonRef = useRef<(b: (typeof balloonsRef.current)[0]) => void>(() => {});
 
   // Balloons state with adaptive sizing
@@ -138,14 +162,13 @@ export function BalloonPlayer({
         setStreak((st) => st + 1);
         setFeedback({ text: `✓ PECAH TEPAT! +${100 + streak * 20} Poin`, color: "text-emerald-400" });
 
-        setTimeout(() => {
+        later(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
           if (currentQIndex + 1 < questionList.length) {
             setCurrentQIndex((idx) => idx + 1);
           } else {
-            setIsGameOver(true);
-            onFinish?.(score + 100 + streak * 20, correctRef.current);
+            finishGame(score + 100 + streak * 20);
           }
         }, 700);
       } else {
@@ -154,21 +177,20 @@ export function BalloonPlayer({
         setFeedback({ text: `✗ SALAH! Jawaban Benar: ${correctKey}`, color: "text-rose-400" });
         setHealth((h) => {
           if (h <= 1) {
-            setTimeout(() => {
-              setIsGameOver(true);
-              onFinish?.(score, correctRef.current);
+            later(() => {
+              finishGame(score);
             }, 600);
             return 0;
           }
           return h - 1;
         });
-        setTimeout(() => {
+        later(() => {
           setFeedback(null);
           isProcessingHitRef.current = false;
         }, 1000);
       }
     },
-    [correctKey, currentQIndex, questionList.length, streak, score, onFinish, isGameOver],
+    [correctKey, currentQIndex, questionList.length, streak, score, isGameOver, later, finishGame],
   );
 
   useEffect(() => {
@@ -394,6 +416,10 @@ export function BalloonPlayer({
           <button
             type="button"
             onClick={() => {
+              clearPendingTimers();
+              correctRef.current = 0;
+              finishedRef.current = false;
+              isProcessingHitRef.current = false;
               setQuestionList([...questions].sort(() => Math.random() - 0.5));
               setCurrentQIndex(0);
               setScore(0);
