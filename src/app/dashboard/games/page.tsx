@@ -471,6 +471,23 @@ export default async function GamesPage({
               Hot-seat · 1 perangkat
             </span>
           </Link>
+          <Link
+            href="/game/jejak-angka"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              👣 Jejak Angka
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Ular tangga sembunyi: jawab soal untuk melempar dadu dan
+              balapan ke kotak 100, tangga dan ularnya baru ketahuan saat
+              terinjak. SOLO, DUEL, TRIO, dan QUAD. Bisa memakai soal dari
+              Bank Soal LMS.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
         </div>
       </section>
 
