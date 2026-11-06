@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { GameRegistry } from "@/lib/game-engine/registry";
+import {
+  embedUrlRejectMessage,
+  validateEmbedUrl,
+} from "@/lib/game-engine/embed-url";
 
 type Track = {
   id: string;
@@ -28,7 +32,14 @@ type Props = {
   tracks: Track[];
   gm: GameModeDict;
   gt?: Record<string, string>;
+  initialEngine?: string;
+  initialMode?: string;
+  initialEmbedUrl?: string;
+  initialDurationMinutes?: number;
+  initialBacksoundTrackId?: string;
 };
+
+export const EMBED_ENGINE_ID = "web-embed";
 
 export const NATIVE_GAME_ENGINES = [
   {
@@ -85,11 +96,34 @@ export const NATIVE_GAME_ENGINES = [
     color: "from-pink-600 to-rose-700",
     border: "border-pink-400",
   },
+  {
+    id: "web-embed",
+    name: "Web Game Embed (Wordwall / Quizizz / H5P)",
+    icon: "🌐",
+    badge: "Sematkan Web Game Eksternal",
+    desc: "Tempel URL embed dari Wordwall, Quizizz, Educaplay, atau H5P. Web game tampil penuh di layar proyektor tanpa perlu soal dari bank soal lokal untuk tampilannya.",
+    color: "from-indigo-600 to-purple-700",
+    border: "border-indigo-400",
+  },
 ];
 
-export function GameModeSelector({ tracks, gm }: Props) {
-  const [selectedEngine, setSelectedEngine] = useState<string>("kahoot");
-  const [mode, setMode] = useState("competitive");
+export function GameModeSelector({
+  tracks,
+  gm,
+  initialEngine,
+  initialMode,
+  initialEmbedUrl,
+  initialDurationMinutes,
+  initialBacksoundTrackId,
+}: Props) {
+  const [selectedEngine, setSelectedEngine] = useState<string>(
+    initialEngine ?? "kahoot",
+  );
+  const [mode, setMode] = useState(initialMode ?? "competitive");
+  const [embedUrl, setEmbedUrl] = useState<string>(initialEmbedUrl ?? "");
+
+  const isEmbed = selectedEngine === EMBED_ENGINE_ID;
+  const embedValidation = isEmbed ? validateEmbedUrl(embedUrl) : null;
 
   const supportedModes = GameRegistry.get("quiz").capabilities.supportedModes;
 
@@ -153,7 +187,47 @@ export function GameModeSelector({ tracks, gm }: Props) {
 
         {/* Database compatibility inputs */}
         <input type="hidden" name="game_type" value="quiz" />
-        <input type="hidden" name="game_theme" value={selectedEngine} />
+        <input
+          type="hidden"
+          name="game_theme"
+          value={isEmbed ? `embed:${embedUrl.trim()}` : selectedEngine}
+        />
+
+        {/* Embed URL field: hanya untuk mesin web-embed. Selama ini
+            pemain menyuruh guru menempel URL "pada form pembuatan
+            game", tetapi form tidak pernah menyediakan kolomnya,
+            sehingga jalur embed tidak dapat dibuat dari UI. */}
+        {isEmbed ? (
+          <div className="rounded-2xl border border-indigo-300 bg-indigo-50 p-4">
+            <label
+              htmlFor="embed-url"
+              className="block text-sm font-bold text-indigo-950"
+            >
+              🌐 URL Embed Web Game <span className="text-rose-600">*</span>
+            </label>
+            <input
+              id="embed-url"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              placeholder="https://wordwall.net/embed/..."
+              value={embedUrl}
+              onChange={(e) => setEmbedUrl(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-indigo-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15"
+            />
+            <p className="mt-1.5 text-xs text-indigo-800">
+              Salin URL embed dari penyedia (Wordwall: bagikan lalu pilih
+              sematkan; Quizizz, Educaplay, dan H5P menyediakan URL serupa).
+              URL wajib diawali https://.
+            </p>
+            {embedUrl.trim() && embedValidation && !embedValidation.ok ? (
+              <p className="mt-1.5 text-xs font-bold text-rose-700">
+                ⚠️ {embedUrlRejectMessage(embedValidation.reason)} Game
+                tidak akan tersimpan sebelum URL ini sah.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Dynamic Mechanic Info Banner */}
         <div className="p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 flex items-start gap-2.5">
@@ -208,7 +282,7 @@ export function GameModeSelector({ tracks, gm }: Props) {
             min={1}
             max={60}
             step={1}
-            defaultValue={5}
+            defaultValue={initialDurationMinutes ?? 5}
             required
             className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm"
           />
@@ -239,7 +313,7 @@ export function GameModeSelector({ tracks, gm }: Props) {
         <select
           id="backsound-track-id"
           name="backsound_track_id"
-          defaultValue=""
+          defaultValue={initialBacksoundTrackId ?? ""}
           className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm"
         >
           <option value="">{gm.backsound_none}</option>

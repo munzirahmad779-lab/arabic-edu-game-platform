@@ -8,6 +8,10 @@ import {
   ActiveRoomStore,
   hasCompleteMultipleChoiceOptions,
 } from "@/lib/game-engine/room-store";
+import {
+  embedUrlRejectMessage,
+  validateEmbedUrl,
+} from "@/lib/game-engine/embed-url";
 import type { ExplanationTiming } from "@/types/database";
 
 const MAX_GAME_NAME_LENGTH = 120;
@@ -163,8 +167,17 @@ const durationMinutes = isTimedMode
   let finalGameName = name;
   if (gameThemeRaw && gameThemeRaw !== "kahoot") {
     if (gameThemeRaw.startsWith("embed:")) {
-      const embedUrl = gameThemeRaw.replace(/^embed:/, "").trim();
-      if (embedUrl) finalGameName = `${name} [EMBED:${embedUrl}]`;
+      // URL embed divalidasi di pintu masuk: hanya https dan format
+      // sah yang boleh tersimpan. Tanpa ini, URL rusak/http tersimpan
+      // diam-diam dan baru ketahuan sebagai bingkai kosong di kelas.
+      const embedRaw = gameThemeRaw.replace(/^embed:/, "");
+      const embedValidation = validateEmbedUrl(embedRaw);
+      if (!embedValidation.ok) {
+        redirect(
+          `/dashboard/games?error=invalid_embed_url&msg=${encodeURIComponent(embedUrlRejectMessage(embedValidation.reason))}`,
+        );
+      }
+      finalGameName = `${name} [EMBED:${embedValidation.url}]`;
     } else {
       finalGameName = `${name} [THEME:${gameThemeRaw}]`;
     }
