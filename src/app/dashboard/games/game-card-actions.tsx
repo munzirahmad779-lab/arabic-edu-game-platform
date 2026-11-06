@@ -39,13 +39,15 @@ export function GameCardActions({
           </div>
         )}
 
-        {/* Projector Hot Seat Mode Link */}
+        {/* Edit Game Link: halaman ubah di /dashboard/games/[gameId].
+            Tautan proyektor tidak diulang di sini karena kartu daftar
+            permainan sudah menyediakan tombol proyektor utamanya. */}
         <Link
-          href={`/dashboard/games/${gameId}/projector`}
-          title="Mode Proyektor / Hot Seat Kelas"
-          className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 shadow-sm"
+          href={`/dashboard/games/${gameId}`}
+          title="Ubah permainan (nama, kelas, mode, soal)"
+          className="rounded-xl border border-teal-300 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-100 shadow-sm"
         >
-          📽️ بروجكتور
+          ✏️ Ubah
         </Link>
 
         {/* Preview Button */}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelectedCountReporter } from "./game-form-shell";
 
 type Category = { id: string; name: string };
 
@@ -56,17 +57,28 @@ export function QuestionsPicker({
   categories,
   questionsByBank,
   qp,
+  initialSelectedIds,
 }: {
   banks: Bank[];
   categories: Category[];
   questionsByBank: Record<string, Question[]>;
   qp: QuestionsPickerDict;
+  initialSelectedIds?: string[];
 }) {
   const [openBank, setOpenBank] = useState<string | null>(
     banks.length === 1 ? banks[0].id : null,
   );
   const [filterByBank, setFilterByBank] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(initialSelectedIds ?? []),
+  );
+
+  // Laporkan jumlah terpilih ke cangkang formulir supaya tombol
+  // simpan tahu kapan harus nonaktif (belum ada soal terpilih).
+  const reporter = useSelectedCountReporter();
+  useEffect(() => {
+    reporter?.reportSelectedCount(selected.size);
+  }, [reporter, selected]);
 
   function toggleQuestion(id: string, checked: boolean) {
     setSelected((prev) => {
@@ -139,7 +151,13 @@ export function QuestionsPicker({
   return (
     <div className="space-y-3">
       <fieldset>
-        <legend className="text-sm font-medium">{qp.legend}</legend>
+        <legend className="text-sm font-medium">
+          {qp.legend} <span className="font-black text-rose-600">*</span>
+        </legend>
+        <p className="mt-1 text-xs font-bold text-rose-600">
+          * Wajib: pilih minimal 1 soal. Tombol simpan nonaktif selama
+          belum ada soal yang dipilih.
+        </p>
 
         {selected.size > 0 ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-800">

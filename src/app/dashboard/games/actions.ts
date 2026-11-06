@@ -44,6 +44,211 @@ function parseRankingVisibility(
   return null;
 }
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+type ParsedGameForm = {
+  name: string;
+  classId: string;
+  mode: GameMode;
+  durationSeconds: number;
+  rankingVisibility: RankingVisibility;
+  backsoundTrackIdRaw: string;
+  uniqueQuestionIds: string[];
+};
+
+/**
+ * Mengurai dan memvalidasi kolom formulir permainan. Dipakai bersama
+ * oleh createGame dan updateGame supaya validasi ubah tidak pernah
+ * tertinggal dari validasi buat. Setiap kegagalan mengalihkan ke
+ * errorBase dengan kode galat spesifik (bukan satu kode "invalid"
+ * untuk semua penyebab).
+ */
+function parseGameFormFields(
+  formData: FormData,
+  errorBase: string,
+): ParsedGameForm {
+  const name = normalizeName(formData.get("name"));
+  const classId = normalizeName(formData.get("class_id"));
+  const mode = parseGameMode(formData.get("mode"));
+  const isTimedMode =
+    mode === "competitive" || mode === "cooperative" || mode === "learning";
+  const durationMinutes = isTimedMode
+    ? Number(formData.get("duration_minutes"))
+    : 5;
+  const rankingVisibility = parseRankingVisibility(
+    formData.get("ranking_visibility"),
+  );
+  const backsoundTrackIdRaw = normalizeName(formData.get("backsound_track_id"));
+
+  const questionIds = formData
+    .getAll("question_id")
+    .filter((value): value is string => typeof value === "string");
+
+  if (!name || name.length > MAX_GAME_NAME_LENGTH) {
+    redirect(`${errorBase}?error=invalid_name`);
+  }
+  if (!classId) {
+    redirect(`${errorBase}?error=invalid_class&msg=class_required`);
+  }
+  if (!mode || !rankingVisibility) {
+    redirect(`${errorBase}?error=invalid`);
+  }
+  if (
+    isTimedMode &&
+    (!Number.isInteger(durationMinutes) ||
+      durationMinutes < 1 ||
+      durationMinutes > 60)
+  ) {
+    redirect(`${errorBase}?error=invalid_duration`);
+  }
+  if (questionIds.length < 1) {
+    redirect(`${errorBase}?error=no_questions`);
+  }
+  if (questionIds.length > 140) {
+    redirect(`${errorBase}?error=too_many_questions`);
+  }
+
+  return {
+    name,
+    classId,
+    mode,
+    durationSeconds: durationMinutes * 60,
+    rankingVisibility,
+    backsoundTrackIdRaw,
+    uniqueQuestionIds: [...new Set(questionIds)],
+  };
+}
+
+async function assertClassOwned(
+  supabase: SupabaseServerClient,
+  userId: string,
+  classId: string,
+  errorBase: string,
+) {
+  const { data: classRow, error: classError } = await supabase
+    .from("classes")
+    .select("id")
+    .eq("id", classId)
+    .eq("teacher_id", userId)
+    .maybeSingle();
+
+  if (classError || !classRow) {
+    redirect(
+      `${errorBase}?error=invalid_class&msg=${encodeURIComponent(classError?.message ?? "class_not_found")}`,
+    );
+  }
+}
+
+async function assertQuestionsExist(
+  supabase: SupabaseServerClient,
+  uniqueQuestionIds: string[],
+  errorBase: string,
+) {
+  const { data: questions, error: questionsError } = await supabase
+    .from("questions")
+    .select("id, question_bank_id")
+    .in("id", uniqueQuestionIds);
+
+  if (
+    questionsError ||
+    !questions ||
+    questions.length !== uniqueQuestionIds.length
+  ) {
+    redirect(
+      `${errorBase}?error=invalid_questions&msg=${encodeURIComponent(questionsError?.message ?? "count_mismatch")}`,
+    );
+  }
+}
+
+async function resolveBacksoundTrackId(
+  supabase: SupabaseServerClient,
+  userId: string,
+  backsoundTrackIdRaw: string,
+  errorBase: string,
+): Promise<string | null> {
+  if (!backsoundTrackIdRaw) return null;
+
+  if (!/^[0-9a-f-]{36}$/i.test(backsoundTrackIdRaw)) {
+    redirect(`${errorBase}?error=invalid&msg=invalid_backsound`);
+  }
+  const { data: track } = await supabase
+    .from("teacher_audio_tracks")
+    .select("id")
+    .eq("id", backsoundTrackIdRaw)
+    .eq("teacher_id", userId)
+    .maybeSingle();
+  if (!track) {
+    redirect(`${errorBase}?error=invalid&msg=invalid_backsound`);
+  }
+  return track.id;
+}
+
+function resolveGameType(
+  formData: FormData,
+  mode: GameMode,
+  errorBase: string,
+): ReturnType<typeof GameRegistry.resolve> {
+  const gameTypeRaw = normalizeName(formData.get("game_type"));
+  const gameType = GameRegistry.resolve(gameTypeRaw, mode);
+
+  const isEngineMode =
+    mode === "competitive" ||
+    mode === "cooperative" ||
+    mode === "endless" ||
+    mode === "practice" ||
+    mode === "learning";
+
+  if (isEngineMode && !GameRegistry.isModeSupported(gameType, mode)) {
+    redirect(
+      `${errorBase}?error=invalid_mode_for_game_type&msg=${encodeURIComponent(`Mode "${mode}" tidak didukung untuk tipe game "${gameType}"`)}`,
+    );
+  }
+
+  return gameType;
+}
+
+/**
+ * Menyusun nama final permainan termasuk token tema/embed. URL embed
+ * divalidasi di pintu masuk: hanya https dan format sah yang boleh
+ * tersimpan. Tanpa ini, URL rusak/http tersimpan diam-diam dan baru
+ * ketahuan sebagai bingkai kosong di kelas.
+ */
+function buildFinalGameName(
+  name: string,
+  formData: FormData,
+  errorBase: string,
+): string {
+  const gameThemeRaw = normalizeName(formData.get("game_theme"));
+  let finalGameName = name;
+  if (gameThemeRaw && gameThemeRaw !== "kahoot") {
+    if (gameThemeRaw.startsWith("embed:")) {
+      const embedRaw = gameThemeRaw.replace(/^embed:/, "");
+      const embedValidation = validateEmbedUrl(embedRaw);
+      if (!embedValidation.ok) {
+        redirect(
+          `${errorBase}?error=invalid_embed_url&msg=${encodeURIComponent(embedUrlRejectMessage(embedValidation.reason))}`,
+        );
+      }
+      finalGameName = `${name} [EMBED:${embedValidation.url}]`;
+    } else {
+      finalGameName = `${name} [THEME:${gameThemeRaw}]`;
+    }
+  }
+  return finalGameName;
+}
+
+function explanationTimingForMode(mode: GameMode): ExplanationTiming {
+  // - competitive: never
+  // - cooperative: after_each_question (belajar santai)
+  // - endless/practice: after_each_question (untuk belajar mandiri)
+  return mode === "cooperative" ||
+    mode === "learning" ||
+    mode === "endless" ||
+    mode === "practice"
+    ? "after_each_question"
+    : "never";
+}
+
 export async function createGame(formData: FormData) {
   let supabase;
   try {
@@ -61,127 +266,29 @@ export async function createGame(formData: FormData) {
     redirect("/login");
   }
 
-  const name = normalizeName(formData.get("name"));
-  const classId = normalizeName(formData.get("class_id"));
-  const mode = parseGameMode(formData.get("mode"));
-  const modeValue = parseGameMode(formData.get("mode"));
-const isTimedMode =
-  modeValue === "competitive" ||
-  modeValue === "cooperative" ||
-  modeValue === "learning";
-const durationMinutes = isTimedMode
-  ? Number(formData.get("duration_minutes"))
-  : 5;
-  const rankingVisibility = parseRankingVisibility(
-    formData.get("ranking_visibility"),
-  );
-  const backsoundTrackIdRaw = normalizeName(formData.get("backsound_track_id"));
+  const {
+    name,
+    classId,
+    mode,
+    durationSeconds,
+    rankingVisibility,
+    backsoundTrackIdRaw,
+    uniqueQuestionIds,
+  } = parseGameFormFields(formData, "/dashboard/games");
 
-  const questionIds = formData
-    .getAll("question_id")
-    .filter((value): value is string => typeof value === "string");
-
-  if (
-    !name ||
-    name.length > MAX_GAME_NAME_LENGTH ||
-    !classId ||
-    !mode ||
-    (isTimedMode &&
-      (!Number.isInteger(durationMinutes) ||
-        durationMinutes < 1 ||
-        durationMinutes > 60)) ||
-    !rankingVisibility ||
-    questionIds.length < 1 ||
-    questionIds.length > 140
-  ) {
-    redirect("/dashboard/games?error=invalid");
-  }
-
-  const durationSeconds = durationMinutes * 60;
-
-  const { data: classRow, error: classError } = await supabase
-    .from("classes")
-    .select("id")
-    .eq("id", classId)
-    .eq("teacher_id", user.id)
-    .maybeSingle();
-
-  if (classError || !classRow) {
-    redirect(
-      `/dashboard/games?error=invalid_class&msg=${encodeURIComponent(classError?.message ?? "class_not_found")}`,
-    );
-  }
-
-  const uniqueQuestionIds = [...new Set(questionIds)];
-
-  const { data: questions, error: questionsError } = await supabase
-    .from("questions")
-    .select("id, question_bank_id")
-    .in("id", uniqueQuestionIds);
-
-  if (
-    questionsError ||
-    !questions ||
-    questions.length !== uniqueQuestionIds.length
-  ) {
-    redirect(
-      `/dashboard/games?error=invalid_questions&msg=${encodeURIComponent(questionsError?.message ?? "count_mismatch")}`,
-    );
-  }
+  await assertClassOwned(supabase, user.id, classId, "/dashboard/games");
+  await assertQuestionsExist(supabase, uniqueQuestionIds, "/dashboard/games");
 
   // Backsound opsional
-  let backsoundTrackId: string | null = null;
-  if (backsoundTrackIdRaw) {
-    if (!/^[0-9a-f-]{36}$/i.test(backsoundTrackIdRaw)) {
-      redirect("/dashboard/games?error=invalid&msg=invalid_backsound");
-    }
-    const { data: track } = await supabase
-      .from("teacher_audio_tracks")
-      .select("id")
-      .eq("id", backsoundTrackIdRaw)
-      .eq("teacher_id", user.id)
-      .maybeSingle();
-    if (!track) {
-      redirect("/dashboard/games?error=invalid&msg=invalid_backsound");
-    }
-    backsoundTrackId = track.id;
-  }
+  const backsoundTrackId = await resolveBacksoundTrackId(
+    supabase,
+    user.id,
+    backsoundTrackIdRaw,
+    "/dashboard/games",
+  );
 
-  const gameTypeRaw = normalizeName(formData.get("game_type"));
-  const gameType = GameRegistry.resolve(gameTypeRaw, mode);
-
-  const isEngineMode =
-    mode === "competitive" ||
-    mode === "cooperative" ||
-    mode === "endless" ||
-    mode === "practice" ||
-    mode === "learning";
-
-  if (isEngineMode && !GameRegistry.isModeSupported(gameType, mode)) {
-    redirect(
-      `/dashboard/games?error=invalid_mode_for_game_type&msg=${encodeURIComponent(`Mode "${mode}" tidak didukung untuk tipe game "${gameType}"`)}`,
-    );
-  }
-
-  const gameThemeRaw = normalizeName(formData.get("game_theme"));
-  let finalGameName = name;
-  if (gameThemeRaw && gameThemeRaw !== "kahoot") {
-    if (gameThemeRaw.startsWith("embed:")) {
-      // URL embed divalidasi di pintu masuk: hanya https dan format
-      // sah yang boleh tersimpan. Tanpa ini, URL rusak/http tersimpan
-      // diam-diam dan baru ketahuan sebagai bingkai kosong di kelas.
-      const embedRaw = gameThemeRaw.replace(/^embed:/, "");
-      const embedValidation = validateEmbedUrl(embedRaw);
-      if (!embedValidation.ok) {
-        redirect(
-          `/dashboard/games?error=invalid_embed_url&msg=${encodeURIComponent(embedUrlRejectMessage(embedValidation.reason))}`,
-        );
-      }
-      finalGameName = `${name} [EMBED:${embedValidation.url}]`;
-    } else {
-      finalGameName = `${name} [THEME:${gameThemeRaw}]`;
-    }
-  }
+  const gameType = resolveGameType(formData, mode, "/dashboard/games");
+  const finalGameName = buildFinalGameName(name, formData, "/dashboard/games");
 
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -205,17 +312,7 @@ const durationMinutes = isTimedMode
     );
   }
 
-  // Explanation timing:
-  // - competitive: never
-  // - cooperative: after_each_question (belajar santai)
-  // - endless/practice: after_each_question (untuk belajar mandiri)
-  const explanationTiming: ExplanationTiming =
-    mode === "cooperative" ||
-    mode === "learning" ||
-    mode === "endless" ||
-    mode === "practice"
-      ? "after_each_question"
-      : "never";
+  const explanationTiming = explanationTimingForMode(mode);
 
   const rows = uniqueQuestionIds.map((questionId, index) => ({
     game_id: game.id,
@@ -242,6 +339,141 @@ const durationMinutes = isTimedMode
   }
 
   revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/games");
+}
+
+/**
+ * Mengubah permainan yang sudah ada. Selama ini edit tidak ada sama
+ * sekali: satu-satunya jalan mengubah game adalah kloning atau hapus
+ * lalu buat ulang. Validasi memakai pengurai yang sama persis dengan
+ * createGame (parseGameFormFields dan kawan-kawannya), dan daftar
+ * soal diganti utuh. Bila penulisan daftar soal baru gagal, daftar
+ * soal lama dipulihkan dari salinan yang diambil sebelum penghapusan.
+ */
+export async function updateGame(formData: FormData) {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (e) {
+    console.error("[updateGame] createClient failed:", e);
+    redirect("/dashboard/games?error=client_failed");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const gameId = normalizeName(formData.get("game_id"));
+  if (!gameId) {
+    redirect("/dashboard/games?error=game_not_found");
+  }
+
+  const errorBase = `/dashboard/games/${gameId}`;
+
+  const { data: existingGame, error: existingError } = await supabase
+    .from("games")
+    .select("id")
+    .eq("id", gameId)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (existingError || !existingGame) {
+    redirect("/dashboard/games?error=game_not_found");
+  }
+
+  const {
+    name,
+    classId,
+    mode,
+    durationSeconds,
+    rankingVisibility,
+    backsoundTrackIdRaw,
+    uniqueQuestionIds,
+  } = parseGameFormFields(formData, errorBase);
+
+  await assertClassOwned(supabase, user.id, classId, errorBase);
+  await assertQuestionsExist(supabase, uniqueQuestionIds, errorBase);
+
+  const backsoundTrackId = await resolveBacksoundTrackId(
+    supabase,
+    user.id,
+    backsoundTrackIdRaw,
+    errorBase,
+  );
+
+  const gameType = resolveGameType(formData, mode, errorBase);
+  const finalGameName = buildFinalGameName(name, formData, errorBase);
+
+  // Salinan daftar soal lama untuk pemulihan bila penulisan gagal.
+  const { data: oldQuestionRows } = await supabase
+    .from("game_questions")
+    .select("question_id, position, explanation_timing")
+    .eq("game_id", gameId)
+    .order("position", { ascending: true });
+
+  const { error: updateError } = await supabase
+    .from("games")
+    .update({
+      class_id: classId,
+      name: finalGameName,
+      game_type: gameType,
+      mode,
+      duration_seconds: durationSeconds,
+      ranking_visibility: rankingVisibility,
+      backsound_track_id: backsoundTrackId,
+    })
+    .eq("id", gameId)
+    .eq("teacher_id", user.id);
+
+  if (updateError) {
+    console.error("[updateGame] games update failed:", updateError);
+    redirect(
+      `${errorBase}?error=update_failed&msg=${encodeURIComponent(updateError.message)}`,
+    );
+  }
+
+  const explanationTiming = explanationTimingForMode(mode);
+  const newRows = uniqueQuestionIds.map((questionId, index) => ({
+    game_id: gameId,
+    question_id: questionId,
+    position: index,
+    explanation_timing: explanationTiming,
+  }));
+
+  await supabase.from("game_questions").delete().eq("game_id", gameId);
+
+  const { error: relationError } = await supabase
+    .from("game_questions")
+    .insert(newRows);
+
+  if (relationError) {
+    console.error(
+      "[updateGame] game_questions insert failed, memulihkan daftar lama:",
+      relationError,
+    );
+    if (oldQuestionRows && oldQuestionRows.length > 0) {
+      await supabase.from("game_questions").insert(
+        oldQuestionRows.map((row) => ({
+          game_id: gameId,
+          question_id: row.question_id,
+          position: row.position,
+          explanation_timing: row.explanation_timing,
+        })),
+      );
+    }
+    redirect(
+      `${errorBase}?error=update_failed&msg=${encodeURIComponent(relationError.message)}`,
+    );
+  }
+
+  revalidatePath("/dashboard/games");
+  revalidatePath(errorBase);
+  revalidatePath(`/dashboard/games/${gameId}/projector`);
   revalidatePath("/dashboard");
   redirect("/dashboard/games");
 }

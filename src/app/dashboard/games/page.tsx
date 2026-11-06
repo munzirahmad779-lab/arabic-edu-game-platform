@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/auth";
-import { createGame, createRoom, cloneGame } from "./actions";
-import { DeleteGameButton } from "./delete-game-button";
+import { createGame } from "./actions";
+import { GameCardActions } from "./game-card-actions";
+import { GameFormShell } from "./game-form-shell";
 import { GameModeSelector } from "./game-mode-selector";
 import { QuestionsPicker } from "./questions-picker";
+import { getGameErrorMessage } from "./error-messages";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -153,8 +155,10 @@ export default async function GamesPage({
 
       {searchParams.error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {searchParams.error}
-          {searchParams.msg ? (
+          <p className="font-bold">
+            {getGameErrorMessage(searchParams.error, searchParams.msg)}
+          </p>
+          {searchParams.msg && searchParams.msg.includes(" ") ? (
             <div className="mt-1 text-xs opacity-80">{searchParams.msg}</div>
           ) : null}
         </div>
@@ -325,42 +329,16 @@ export default async function GamesPage({
                       </div>
                     )}
 
-                    {/* Secondary Actions: Room Online, Clone, Delete */}
-                    <div className="flex gap-2">
-                      {isRoom ? (
-                        <form action={createRoom} className="flex-1">
-                          <input type="hidden" name="game_id" value={game.id} />
-                          <button
-                            type="submit"
-                            className="w-full rounded-xl bg-terracotta-500 hover:bg-terracotta-600 px-3 py-2 text-xs font-black text-white transition"
-                          >
-                            🎮 {t.play} (Room Online)
-                          </button>
-                        </form>
-                      ) : (
-                        <div className="flex-1 rounded-xl border border-dashed border-teal-200 bg-teal-50 px-3 py-2 text-center text-[11px] font-bold text-teal-700">
-                          {t.no_room}
-                        </div>
-                      )}
-
-                      <form action={cloneGame}>
-                        <input type="hidden" name="game_id" value={game.id} />
-                        <button
-                          type="submit"
-                          title={t.clone_title}
-                          className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-                        >
-                          📋
-                        </button>
-                      </form>
-
-                      <DeleteGameButton
-                        gameId={game.id}
-                        gameName={displayName}
-                        title={t.delete_title}
-                        triggerClassName="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
-                      />
-                    </div>
+                    {/* Secondary Actions: Room Online, Pratinjau, Ubah,
+                        Kloning (state nonaktif), Hapus. Komponen bersama
+                        GameCardActions; sebelumnya pratinjau di komponen
+                        ini tidak terjangkau dari halaman mana pun. */}
+                    <GameCardActions
+                      gameId={game.id}
+                      gameName={displayName}
+                      gameModeAr={getModeLabel(game.mode)}
+                      isRoomMode={isRoom}
+                    />
                   </div>
                 </article>
               );
@@ -513,7 +491,7 @@ export default async function GamesPage({
             {t.no_bank_warn}
           </div>
         ) : (
-          <form action={createGame} className="mt-6 space-y-6">
+          <GameFormShell action={createGame} submitLabel={t.btn_create}>
             <div className="grid gap-5 lg:grid-cols-2">
               <div>
                 <label
@@ -593,14 +571,7 @@ export default async function GamesPage({
               questionsByBank={questionsByBank}
               qp={dict.questions_picker}
             />
-
-            <button
-              type="submit"
-              className="w-full rounded-full bg-terracotta-500 px-5 py-3 text-sm font-black text-white transition hover:bg-terracotta-600"
-            >
-              {t.btn_create}
-            </button>
-          </form>
+          </GameFormShell>
         )}
       </section>
     </main>
