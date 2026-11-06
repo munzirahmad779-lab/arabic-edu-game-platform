@@ -449,7 +449,8 @@ export default function SpaceWarGame() {
     } else {
       const ans = parseInt(draftAnswer, 10);
       if (Number.isNaN(ans)) { notify("Isi jawaban angkanya dulu."); return; }
-      item = { id: uid(), subjectId: draftSubject, prompt, kind: "angka", answer: Math.max(0, ans), options: [], correct: "", isArabic: hasArabic(prompt), custom: true };
+      if (ans < 0) { notify("Jawaban angka tidak boleh negatif. Perbaiki dulu, soal belum ditambahkan."); return; }
+      item = { id: uid(), subjectId: draftSubject, prompt, kind: "angka", answer: ans, options: [], correct: "", isArabic: hasArabic(prompt), custom: true };
     }
     if (draftSubject === "guru") {
       setGuru((g) => { const next = { ...g, questions: [...g.questions, item] }; saveGuru(next); return next; });
@@ -480,8 +481,9 @@ export default function SpaceWarGame() {
   }, []);
 
   const doImport = useCallback((kind: "md" | "csv") => {
-    const parsed = kind === "md" ? parseMarkdownBank(importText) : { name: "", questions: parseCsvBank(importText) };
-    if (parsed.questions.length === 0) { notify("Tidak ada soal yang terbaca. Periksa formatnya."); return; }
+    const parsed = kind === "md" ? parseMarkdownBank(importText) : { name: "", ...parseCsvBank(importText) };
+    const ditolak = parsed.skipped > 0 ? ` ${parsed.skipped} soal ditolak (jawaban angka negatif atau format tidak terbaca).` : "";
+    if (parsed.questions.length === 0) { notify(`Tidak ada soal yang terbaca. Periksa formatnya.${ditolak}`); return; }
     setGuru((g) => {
       const next: GuruBank = {
         name: parsed.name || g.name,
@@ -491,7 +493,7 @@ export default function SpaceWarGame() {
       return next;
     });
     setImportText("");
-    notify(`${parsed.questions.length} soal terimpor ke Mapel Guru.`);
+    notify(`${parsed.questions.length} soal terimpor ke Mapel Guru.${ditolak}`);
   }, [importText, notify]);
 
   const copyPrompt = useCallback(async () => {
@@ -660,7 +662,7 @@ export default function SpaceWarGame() {
                         {aq.opts.map((opt) => (
                           <button key={opt} type="button" data-option={def.slot} data-correct={opt === aq.q.correct ? "1" : "0"} onClick={() => fireOption(def.slot, opt)}
                             className="rounded-xl bg-indigo-100 px-2 py-3 text-base font-black leading-tight text-indigo-950 shadow-sm transition active:scale-95"
-                            dir={aq.q.isArabic ? undefined : undefined}>{opt}</button>
+                            dir={aq.q.isArabic ? "rtl" : undefined}>{opt}</button>
                         ))}
                       </div>
                     </div>

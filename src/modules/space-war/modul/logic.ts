@@ -213,12 +213,15 @@ function sanitize(list: unknown, subjectId: SubjectId): NQ[] {
       ...item,
       subjectId,
       kind,
-      answer: typeof item.answer === "number" && Number.isFinite(item.answer) ? Math.max(0, Math.round(item.answer)) : 0,
+      answer: typeof item.answer === "number" && Number.isFinite(item.answer) ? Math.round(item.answer) : 0,
       options: kind === "teks" ? options : [],
       correct: kind === "teks" ? (typeof item.correct === "string" ? item.correct : options[0] ?? "") : "",
       isArabic: typeof item.isArabic === "boolean" ? item.isArabic : hasArabic(item.prompt),
     };
-  }).filter((item) => item.kind === "angka" || (item.options.length >= 2 && item.options.includes(item.correct)));
+  // Soal angka berkunci negatif dibuang, bukan dijepit diam-diam menjadi 0:
+  // kunci negatif memang tidak didukung game ini dan guru harus tahu
+  // soalnya tidak terpakai, bukan mendapat kunci lain tanpa catatan.
+  }).filter((item) => (item.kind === "angka" ? item.answer >= 0 : item.options.length >= 2 && item.options.includes(item.correct)));
 }
 
 export function loadBankOverrides(): BankOverrides {
@@ -329,10 +332,11 @@ export const uid = (): string => `${Date.now().toString(36)}-${Math.random().toS
  *   A. <pilihan>  B. <pilihan>  C. <pilihan>  D. <pilihan>   (satu per baris)
  *   Jawaban: B                   (huruf, atau teks pilihannya persis)
  */
-export function parseMarkdownBank(text: string): { name: string; questions: NQ[] } {
+export function parseMarkdownBank(text: string): { name: string; questions: NQ[]; skipped: number } {
   const lines = text.split(/\r?\n/);
   let name = "";
   const questions: NQ[] = [];
+  let skipped = 0;
   let cur: string[] = [];
   let options: string[] = [];
   let jawaban: string | null = null;
@@ -348,9 +352,20 @@ export function parseMarkdownBank(text: string): { name: string; questions: NQ[]
         else if (/^\d+$/.test(jm) && options[parseInt(jm, 10) - 1]) correct = options[parseInt(jm, 10) - 1];
         if (correct) {
           questions.push({ id: uid(), subjectId: "guru", prompt, kind: "teks", answer: 0, options, correct, isArabic: hasArabic(prompt), custom: true });
+        } else {
+          skipped += 1;
         }
       } else if (/^-?\d+$/.test(jawaban.trim())) {
-        questions.push({ id: uid(), subjectId: "guru", prompt, kind: "angka", answer: Math.max(0, parseInt(jawaban.trim(), 10)), options: [], correct: "", isArabic: hasArabic(prompt), custom: true });
+        const ans = parseInt(jawaban.trim(), 10);
+        // Kunci angka negatif ditolak terang-terangan (dihitung sebagai
+        // dilewati dan dilaporkan ke guru), bukan dijepit menjadi 0.
+        if (ans < 0) {
+          skipped += 1;
+        } else {
+          questions.push({ id: uid(), subjectId: "guru", prompt, kind: "angka", answer: ans, options: [], correct: "", isArabic: hasArabic(prompt), custom: true });
+        }
+      } else {
+        skipped += 1;
       }
     }
     cur = []; options = []; jawaban = null;
@@ -366,7 +381,7 @@ export function parseMarkdownBank(text: string): { name: string; questions: NQ[]
     if (line) cur.push(line);
   }
   flush();
-  return { name, questions };
+  return { name, questions, skipped };
 }
 
 /**
@@ -374,8 +389,9 @@ export function parseMarkdownBank(text: string): { name: string; questions: NQ[]
  *   angka: pertanyaan,jawaban            (2 kolom)
  *   teks : pertanyaan,A,B,C,D,jawaban    (6 kolom; jawaban = huruf A-D atau teks pilihan)
  */
-export function parseCsvBank(text: string): NQ[] {
+export function parseCsvBank(text: string): { questions: NQ[]; skipped: number } {
   const out: NQ[] = [];
+  let skipped = 0;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) continue;
@@ -391,17 +407,23 @@ export function parseCsvBank(text: string): NQ[] {
       else if (/^\d+$/.test(kunci) && options[parseInt(kunci, 10) - 1]) correct = options[parseInt(kunci, 10) - 1];
       if (prompt && options.length >= 2 && correct) {
         out.push({ id: uid(), subjectId: "guru", prompt, kind: "teks", answer: 0, options, correct, isArabic: hasArabic(prompt), custom: true });
+      } else {
+        skipped += 1;
       }
       continue;
     }
     const idx = line.lastIndexOf(",");
-    if (idx < 1) continue;
+    if (idx < 1) { skipped += 1; continue; }
     const prompt = line.slice(0, idx).trim().replace(/^"|"$/g, "");
+    if (/^soal$/i.test(prompt)) continue; // baris kepala tabel, bukan soal
     const ans = parseInt(line.slice(idx + 1).trim(), 10);
-    if (!prompt || Number.isNaN(ans) || /^soal$/i.test(prompt)) continue;
-    out.push({ id: uid(), subjectId: "guru", prompt, kind: "angka", answer: Math.max(0, ans), options: [], correct: "", isArabic: hasArabic(prompt), custom: true });
+    // Baris tanpa prompt, jawaban bukan angka, atau kunci angka negatif
+    // ditolak dan dihitung sebagai dilewati; kunci negatif tidak lagi
+    // dijepit diam-diam menjadi 0.
+    if (!prompt || Number.isNaN(ans) || ans < 0) { skipped += 1; continue; }
+    out.push({ id: uid(), subjectId: "guru", prompt, kind: "angka", answer: ans, options: [], correct: "", isArabic: hasArabic(prompt), custom: true });
   }
-  return out;
+  return { questions: out, skipped };
 }
 
 export function templateMarkdown(subjectLabel: string): string {
