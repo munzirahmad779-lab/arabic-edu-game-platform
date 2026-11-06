@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 
 // ---------------------------------------------------------------------------
-// Pemuat tangguh untuk kelima pemain arkade proyektor (Pesawat Awan, Pukul
-// Tikus, Penjaga Antariksa, Kartu Memori, Balon Jawaban).
+// Pemuat tangguh untuk keenam pemain arkade proyektor (Pesawat Awan, Pukul
+// Tikus, Penjaga Antariksa, Kartu Memori, Balon Jawaban, Roda Putar).
 //
 // Riwayat masalah: pemain dimuat dengan next/dynamic tanpa penanda muat dan
 // tanpa penanganan galat. Bila impor chunk gagal atau tidak kunjung selesai
@@ -81,6 +81,8 @@ const muatMemory = () =>
   import("@/components/game-players/memory-player").then((mod) => mod.MemoryPlayer);
 const muatBalloon = () =>
   import("@/components/game-players/balloon-player").then((mod) => mod.BalloonPlayer);
+const muatWheel = () =>
+  import("@/components/game-players/wheel-player").then((mod) => mod.WheelPlayer);
 
 export const AirplanePlayer = dynamic(() => imporTangguh(muatAirplane, "airplane"), {
   ssr: false,
@@ -102,11 +104,15 @@ export const BalloonPlayer = dynamic(() => imporTangguh(muatBalloon, "balloon"),
   ssr: false,
   loading: () => <PanggungArkadeMemuat label="Pecahkan Balon Jawaban" />,
 });
+export const WheelPlayer = dynamic(() => imporTangguh(muatWheel, "wheel"), {
+  ssr: false,
+  loading: () => <PanggungArkadeMemuat label="Roda Putar" />,
+});
 
-// Memicu pengambilan kelima chunk sejak lobi tampil (tanpa memicu muat
+// Memicu pengambilan keenam chunk sejak lobi tampil (tanpa memicu muat
 // ulang bila gagal; jalur tangguh tetap dipakai saat mode benar dibuka).
 export function prefetchPemainArkade(): void {
-  for (const muat of [muatAirplane, muatWhack, muatSpace, muatMemory, muatBalloon]) {
+  for (const muat of [muatAirplane, muatWhack, muatSpace, muatMemory, muatBalloon, muatWheel]) {
     void muat().catch(() => {
       // Prefetch gagal tidak fatal: impor tangguh berjalan saat mode dibuka.
     });

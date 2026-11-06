@@ -14,7 +14,7 @@ import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
 import { WebGameEmbedPlayer } from "@/components/game-players/web-embed-player";
 import { buildProjectorReportPayload } from "@/lib/projector-report";
 
-// Kelima pemain arkade dimuat lewat pemuat tangguh bersama (penanda muat,
+// Keenam pemain arkade dimuat lewat pemuat tangguh bersama (penanda muat,
 // coba ulang, dan pemulihan chunk basi) di arcade-dynamic.tsx. Definisi
 // dynamic lokal yang lama tidak punya satu pun perlindungan itu, sehingga
 // impor chunk yang gagal membuat panggung kosong total tanpa pesan.
@@ -24,6 +24,7 @@ import {
   SpaceDefenderPlayer,
   MemoryPlayer,
   BalloonPlayer,
+  WheelPlayer,
   prefetchPemainArkade,
 } from "@/components/game-players/arcade-dynamic";
 
@@ -153,13 +154,19 @@ export function ProjectorScreen({
   const [gameStarted, setGameStarted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeEngine, setActiveEngine] = useState<
-    "kahoot" | "airplane" | "whack" | "space" | "memory" | "balloon"
+    "kahoot" | "airplane" | "whack" | "space" | "memory" | "balloon" | "wheel"
   >(() => {
     if (initialGameTheme === "airplane") return "airplane";
     if (initialGameTheme === "whack") return "whack";
-    if (initialGameTheme === "space" || initialGameTheme === "wheel") return "space";
+    if (initialGameTheme === "space") return "space";
     if (initialGameTheme === "memory") return "memory";
     if (initialGameTheme === "balloon") return "balloon";
+    // Tema roda dulu dibelokkan ke mesin antariksa, padahal registri dan
+    // lencana permainan menjanjikan Roda Putar dan WheelPlayer tersedia.
+    // Kini tema roda (token tema "wheel" atau tipe game "wheel_fortune"
+    // yang menjadi nilai cadangan initialGameTheme) masuk ke pemainnya
+    // sendiri.
+    if (initialGameTheme === "wheel" || initialGameTheme === "wheel_fortune") return "wheel";
     return "kahoot";
   });
   // Penanda mode arkade dibuka langsung dari klik tombol mode di lobi.
@@ -172,7 +179,7 @@ export function ProjectorScreen({
   // sampai guru menekan MULAI.
   const [engineLaunched, setEngineLaunched] = useState(false);
 
-  // Ambil chunk kelima pemain arkade sejak layar proyektor tampil, supaya
+  // Ambil chunk keenam pemain arkade sejak layar proyektor tampil, supaya
   // mode yang dipilih guru terbuka seketika tanpa menunggu unduhan chunk.
   useEffect(() => {
     prefetchPemainArkade();
@@ -213,7 +220,45 @@ export function ProjectorScreen({
   const [targetTeamId, setTargetTeamId] = useState("team-1");
 
   // Web Game Embed State
-  const [activeEmbedUrl, setActiveEmbedUrl] = useState<string | null>(null);
+  // Cabang embed di bawah hanya hidup bila state ini terisi, dan dulu
+  // tidak ada satu pun jalur yang mengisinya (mati jangkauan): URL embed
+  // tidak tiba sebagai prop, karena halaman induk menyaring token
+  // [EMBED:...] dari nama game sebelum layar ini dirender. Pengisiannya
+  // kini dari data permainan mode embed itu sendiri, lewat dua sumber:
+  // (1) token yang mungkin masih terbawa pada nama atau tema yang
+  // diterima layar ini, dan (2) nama tersimpan permainan di basis data
+  // (pembuatan game menulis token [EMBED:...] ke nama, lihat actions.ts).
+  const [activeEmbedUrl, setActiveEmbedUrl] = useState<string | null>(() => {
+    const dariNama = gameName.match(/\[EMBED:(.*?)\]/)?.[1]?.trim();
+    if (dariNama) return dariNama;
+    if (initialGameTheme.startsWith("embed:")) {
+      return initialGameTheme.replace(/^embed:/, "").trim() || null;
+    }
+    return null;
+  });
+
+  // Sumber (2): ambil nama tersimpan permainan ini lalu bacakan token
+  // embednya. Game bukan embed tidak memuat token, jadi state tetap null
+  // dan alur proyektor biasa tidak berubah sama sekali.
+  useEffect(() => {
+    if (activeEmbedUrl || !gameId || gameId.startsWith("test-")) return;
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    let dibatalkan = false;
+    void supabase
+      .from("games")
+      .select("name")
+      .eq("id", gameId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (dibatalkan || !data?.name) return;
+        const cocok = data.name.match(/\[EMBED:(.*?)\]/);
+        if (cocok?.[1]) setActiveEmbedUrl(cocok[1].trim());
+      });
+    return () => {
+      dibatalkan = true;
+    };
+  }, [activeEmbedUrl, gameId]);
 
   // Phone Controller State
   const roomCode = useMemo(() => {
@@ -588,6 +633,17 @@ export function ProjectorScreen({
   // Restart match
   const handleRestartGame = () => {
     recordedAnswerKeysRef.current.clear();
+    // Persenjatai ulang penyimpanan laporan untuk permainan ulangan.
+    // Effect persenjataan di bagian laporan hanya berjalan saat
+    // gameStarted BERUBAH, sedangkan Ulangi Kuis mempertahankan
+    // gameStarted tetap true, jadi tanpa reset di sini kedua ref tetap
+    // terpasang dari permainan sebelumnya: efek simpan Kahoot terhalang
+    // reportSavedRef/arcadeFinishedRef lama dan laporan permainan
+    // ulangan tidak pernah terkirim. Permainan pertama tidak berubah:
+    // refnya memang sudah false dan statusnya idle saat mulai.
+    reportSavedRef.current = false;
+    arcadeFinishedRef.current = false;
+    setReportStatus("idle");
     setTeams((prev) =>
       prev.map((t) => ({ ...t, score: 0, correctCount: 0, streak: 0, currentMemberIndex: 0 })),
     );
@@ -1008,7 +1064,14 @@ export function ProjectorScreen({
   }
 
   // If teacher selected a Native Arcade Game Engine:
-  if ((gameStarted || engineLaunched) && activeEngine === "airplane") {
+  // Semua cabang arkade di bawah berpenjaga phase !== "finished": akhir
+  // permainan arkade memasang fase "finished" lewat handleArcadeFinish,
+  // dan tanpa penjaga ini cabang pemain yang sedang aktif tetap menang
+  // render dari cabang podium, sehingga podium tertunda satu langkah
+  // dan guru harus menekan Kembali ke Kahoot Arena dulu. Dengan
+  // penjaga ini, begitu fase menjadi finished render jatuh langsung
+  // ke cabang podium di bawah.
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "airplane") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1033,7 +1096,7 @@ export function ProjectorScreen({
     );
   }
 
-  if ((gameStarted || engineLaunched) && activeEngine === "whack") {
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "whack") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1058,7 +1121,7 @@ export function ProjectorScreen({
     );
   }
 
-  if ((gameStarted || engineLaunched) && activeEngine === "space") {
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "space") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1083,7 +1146,7 @@ export function ProjectorScreen({
     );
   }
 
-  if ((gameStarted || engineLaunched) && activeEngine === "memory") {
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "memory") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1108,7 +1171,7 @@ export function ProjectorScreen({
     );
   }
 
-  if ((gameStarted || engineLaunched) && activeEngine === "balloon") {
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "balloon") {
     return (
       <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
         <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
@@ -1129,6 +1192,39 @@ export function ProjectorScreen({
         </header>
         {reportStatusBar}
         <BalloonPlayer questions={questions} onFinish={handleArcadeFinish("Pecahkan Balon Jawaban")} isRtl={isRtl} />
+      </main>
+    );
+  }
+
+  if ((gameStarted || engineLaunched) && phase !== "finished" && activeEngine === "wheel") {
+    return (
+      <main className="min-h-screen bg-slate-950 p-4 flex flex-col justify-between game-screen font-arabic">
+        <header className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🎡</span>
+            <div>
+              <h2 className="text-base font-black text-white">Roda Putar (Wheel of Fortune)</h2>
+              <p className="text-xs text-pink-400">{gameName}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveEngine("kahoot")}
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            ← Kembali ke Kahoot Arena
+          </button>
+        </header>
+        {reportStatusBar}
+        {/* Antarmuka WheelPlayer saat ini hanya melaporkan skor akhir;
+            jumlah benar diteruskan bila pemainnya kelak mengirimkannya. */}
+        <WheelPlayer
+          questions={questions}
+          onFinish={(finalScore: number, correctCount: number = 0) =>
+            handleArcadeFinish("Roda Putar")(finalScore, correctCount)
+          }
+          isRtl={isRtl}
+        />
       </main>
     );
   }
@@ -1196,6 +1292,14 @@ export function ProjectorScreen({
               >
                 <span>🎈</span>
                 <span>Balon</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveEngine("wheel"); setEngineLaunched(true); }}
+                className="px-2 py-1 rounded-xl bg-pink-600/30 hover:bg-pink-600/60 text-pink-200 border border-pink-400/40 text-xs font-bold transition flex items-center gap-1"
+              >
+                <span>🎡</span>
+                <span>Roda</span>
               </button>
             </div>
 
