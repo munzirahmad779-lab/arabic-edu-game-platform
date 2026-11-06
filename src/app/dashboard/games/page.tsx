@@ -488,6 +488,23 @@ export default async function GamesPage({
               Hot-seat · 1 perangkat
             </span>
           </Link>
+          <Link
+            href="/game/ludo-angka"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              🎲 Ludo Angka
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Ludo soal: jawab benar untuk melempar dadu, keluar kandang
+              dengan angka 6, tangkap pion lawan, dan balapan ke FINISH.
+              SOLO, DUEL, TRIO, dan QUAD. Bisa memakai soal dari Bank
+              Soal LMS.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · 1 perangkat
+            </span>
+          </Link>
         </div>
       </section>
 
