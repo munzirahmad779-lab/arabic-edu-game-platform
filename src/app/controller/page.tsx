@@ -67,7 +67,17 @@ export default function ControllerPage() {
   const [hasLocallyAnswered, setHasLocallyAnswered] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [, setSubmitting] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
+  // Indikator koneksi mulai dari BELUM terhubung: nilai awal true
+  // membuat stik menampilkan "TERHUBUNG KE PROYEKTOR" sejak halaman
+  // dibuka, sebelum satu pun saluran benar-benar tersambung.
+  const [isConnected, setIsConnected] = useState(false);
+  // Keberadaan room menurut server (field roomActive pada GET
+  // /api/projector/controller): room yang tidak dikenal harus tampil
+  // sebagai pesan jujur, bukan layar tunggu selamanya.
+  const [roomStatus, setRoomStatus] = useState<
+    "checking" | "found" | "not_found"
+  >("checking");
+  const pollFailuresRef = useRef(0);
 
   const prevQIndexRef = useRef<number>(-1);
   // Sticky local answer: question index + key this team has answered, kept in
@@ -213,6 +223,10 @@ export default function ControllerPage() {
             event: "controller_heartbeat",
             payload: { roomCode, teamId: selectedTeam.id, timestamp: Date.now() },
           });
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // Saluran realtime gagal: indikator tidak boleh tetap hijau.
+          // Poll HTTP yang sehat akan menyalakannya lagi dalam <1 detik.
+          setIsConnected(false);
         }
       });
 
@@ -282,11 +296,23 @@ export default function ControllerPage() {
         const data = await res.json();
         if (!isSubscribed) return;
 
+        pollFailuresRef.current = 0;
+        setIsConnected(true);
+        if (typeof data.roomActive === "boolean") {
+          setRoomStatus(data.roomActive ? "found" : "not_found");
+        }
+
         if (data.gameState) {
           handleIncomingGameState(data.gameState);
         }
       } catch {
-        // HTTP polling silent fallback
+        // Tiga kegagalan beruntun (sekitar 1,8 detik) berarti koneksi
+        // memang putus: indikator harus mengakuinya, bukan tetap
+        // menampilkan terhubung dari nilai awal.
+        pollFailuresRef.current += 1;
+        if (pollFailuresRef.current >= 3) {
+          setIsConnected(false);
+        }
       }
     };
 
@@ -298,6 +324,47 @@ export default function ControllerPage() {
       window.clearInterval(interval);
     };
   }, [selectedTeam, roomCode, handleIncomingGameState]);
+
+  // 3B. VALIDASI KODE ROOM (sebelum tim dipilih)
+  // Poll status di atas hanya berjalan sesudah tim dipilih, jadi
+  // tanpa pemeriksaan ini siswa yang salah mengetik kode hanya
+  // menatap layar tunggu selamanya. GET di sini baca-saja (tidak
+  // menyalakan heartbeat apa pun), dan roomActive dari server
+  // membedakan room hidup dari kode yang tidak dikenal. Pemeriksaan
+  // diulang berkala supaya stik pulih sendiri begitu guru membuka
+  // proyektor room ini.
+  useEffect(() => {
+    if (selectedTeam || !roomCode) return;
+
+    let isSubscribed = true;
+    setRoomStatus("checking");
+
+    const checkRoom = async () => {
+      try {
+        const res = await fetch(
+          `/api/projector/controller?roomCode=${encodeURIComponent(roomCode)}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) throw new Error("HTTP error");
+        const data = await res.json();
+        if (!isSubscribed) return;
+        if (typeof data.roomActive === "boolean") {
+          setRoomStatus(data.roomActive ? "found" : "not_found");
+        }
+      } catch {
+        // Gagal memeriksa tidak mengubah status terakhir; percobaan
+        // berikutnya berjalan 4 detik lagi.
+      }
+    };
+
+    void checkRoom();
+    const interval = window.setInterval(checkRoom, 4000);
+
+    return () => {
+      isSubscribed = false;
+      window.clearInterval(interval);
+    };
+  }, [selectedTeam, roomCode]);
 
   // 4. HTTP HEARTBEAT (menulis liveness stik ke store bersama)
   // GET polling di atas bersifat baca-saja dan heartbeat broadcast tidak
@@ -501,6 +568,21 @@ export default function ControllerPage() {
             <p className="text-[10px] text-slate-400">
               Pastikan kode ruangan ini sama persis dengan yang tampil di layar proyektor guru.
             </p>
+            {roomStatus === "checking" ? (
+              <p className="text-[11px] font-bold text-slate-300">
+                🔎 Memeriksa ruangan...
+              </p>
+            ) : roomStatus === "found" ? (
+              <p className="text-[11px] font-bold text-emerald-300">
+                ✅ Ruangan ditemukan: proyektor ruangan ini sedang aktif.
+              </p>
+            ) : (
+              <p className="text-[11px] font-bold text-amber-300">
+                ⚠️ Ruangan dengan kode ini belum ditemukan. Pastikan guru
+                sudah membuka layar proyektor untuk ruangan ini, atau
+                periksa kembali kodenya.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2.5 pt-1">
@@ -550,7 +632,7 @@ export default function ControllerPage() {
               }`}
             />
             <span className="text-[11px] font-mono font-bold text-slate-300">
-              {isConnected ? "TERHUBUNG KE PROYEKTOR" : "KONEKSI TERPUTUS..."}
+              {isConnected ? "TERHUBUNG KE PROYEKTOR" : "BELUM TERHUBUNG KE PROYEKTOR"}
             </span>
           </div>
           <button
@@ -584,6 +666,20 @@ export default function ControllerPage() {
 
       {/* Central Game State & Lock Banner */}
       <div className="my-3 text-center space-y-2">
+        {roomStatus === "not_found" && (
+          <div className="rounded-2xl bg-rose-500/20 border-2 border-rose-400 p-4 text-xs font-bold text-rose-200">
+            <span className="text-2xl block mb-1">🚫</span>
+            <div className="text-sm font-black">
+              Ruangan {roomCode} Tidak Ditemukan
+            </div>
+            <p className="text-[11px] font-normal text-rose-100/90 mt-1">
+              Proyektor untuk ruangan ini tidak aktif atau sudah ditutup.
+              Periksa kembali kode ruangan di layar guru, lalu ganti kode
+              atau tim lewat tombol Ganti Tim di atas.
+            </p>
+          </div>
+        )}
+
         {gameState.phase === "lobby" && (
           <div className="rounded-2xl bg-indigo-500/20 border border-indigo-400/40 p-3.5 text-xs font-bold text-indigo-200 animate-pulse">
             <span className="text-base block mb-1">⏳</span>
@@ -672,7 +768,10 @@ export default function ControllerPage() {
         )}
       </div>
 
-      {/* 4 BIG TACTILE CONSOLE BUTTONS */}
+      {/* 4 BIG TACTILE CONSOLE BUTTONS (disembunyikan selama room
+          tidak ditemukan: tombol jawaban tidak boleh tampak aktif
+          untuk ruangan yang tidak ada) */}
+      {roomStatus === "not_found" ? null : (
       <section className="grid grid-cols-2 gap-4 pb-4">
         {[
           { key: "A", label: "A / Segitiga", icon: "▲", color: "from-rose-600 to-red-700", border: "border-rose-400" },
@@ -720,6 +819,7 @@ export default function ControllerPage() {
           );
         })}
       </section>
+      )}
 
       {/* Footer Info */}
       <footer className="text-center text-[10px] text-slate-500 pb-2">

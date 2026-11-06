@@ -3,6 +3,7 @@ import {
   buildSyncedGameState,
   createDefaultProjectorRoomData,
   fetchProjectorRoomData,
+  isProjectorRoomActiveShared,
   pressProjectorButton,
   syncProjectorGameState,
   touchProjectorController,
@@ -49,8 +50,16 @@ export async function GET(req: NextRequest) {
   const myTeamAnswer = teamId ? gs.answeredTeams[teamId]?.optionKey ?? null : null;
   const isLocked = gs.phase !== "question" || hasMyTeamAnswered;
 
+  // Sinyal keberadaan room untuk halaman kontroler: true hanya selama
+  // ada penulis (proyektor atau stik) yang menulis room ini dalam
+  // rentang TTL-nya. Tanpa sinyal ini kontroler tidak bisa membedakan
+  // room yang hidup dari kode yang salah ketik, karena GET selalu
+  // menjawab state bawaan untuk room yang tidak ada.
+  const roomActive = await isProjectorRoomActiveShared(roomCode);
+
   return NextResponse.json({
     roomCode: roomCode.toUpperCase(),
+    roomActive,
     events: newEvents,
     activeControllers,
     serverTime: now,
