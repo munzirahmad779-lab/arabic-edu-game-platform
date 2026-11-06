@@ -167,7 +167,16 @@ export const loadBank = (): Bank => {
     const parsed = JSON.parse(raw) as Partial<Bank>;
     (Object.keys(base) as SubjectId[]).forEach((k) => {
       const arr = parsed[k];
-      if (Array.isArray(arr)) base[k] = arr.filter((x) => x && typeof x.prompt === "string" && Array.isArray(x.options));
+      if (Array.isArray(arr)) {
+        base[k] = arr.filter(
+          (x) =>
+            x &&
+            typeof x.prompt === "string" &&
+            Array.isArray(x.options) &&
+            x.options.length >= 2 &&
+            x.options.includes(x.correct),
+        );
+      }
     });
     (Object.keys(base) as SubjectId[]).forEach((k) => {
       if (base[k].length === 0) base[k] = defaultBank()[k];

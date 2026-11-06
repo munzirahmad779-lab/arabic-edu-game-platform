@@ -453,7 +453,7 @@ export default function AduTarikGame() {
           winnerName: w === "draw" ? "Seri" : w === "p1" ? "TIM KIRI (Tarsius · Anoa)" : "TIM KANAN (Maleo · Yaki)",
           mode,
           subject: SUBJECTS.find((s) => s.id === subject)?.title ?? subject,
-          score: Math.max(teamScore("p1"), teamScore("p2")),
+          score: w === "draw" ? Math.max(teamScore("p1"), teamScore("p2")) : teamScore(w),
           timestamp: Date.now(),
         };
         saveScore(rec);
@@ -1081,7 +1081,7 @@ export default function AduTarikGame() {
                       <div className="grid grid-cols-2 gap-1.5 lg:gap-2">
                         {opts.map((opt, oi) => (
                           <button
-                            key={opt}
+                            key={`${oi}-${opt}`}
                             data-correct={q?.correct === opt ? "1" : "0"}
                             onClick={() => answer(slot, opt)}
                             dir={q?.isArabic ? "rtl" : "ltr"}
