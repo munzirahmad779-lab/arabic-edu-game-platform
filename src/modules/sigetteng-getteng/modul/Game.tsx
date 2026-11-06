@@ -426,11 +426,32 @@ export default function SigettengGettengGame() {
     [beep, mode, subject],
   );
 
+  // Dialog keluar (confirmQuit) membekukan seluruh jam pertandingan:
+  // kedua effect timer di bawah dibongkar selama dialog tampil, dan
+  // penanda tampil soal digeser sebesar lama dialog supaya jam soal
+  // tidak ikut menua di balik modal (modal sendiri berjanji skor
+  // pertandingan ini tidak dicatat).
+  const quitShownShiftRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (confirmQuit) {
+      quitShownShiftRef.current = performance.now();
+      return;
+    }
+    const openedAt = quitShownShiftRef.current;
+    quitShownShiftRef.current = null;
+    if (openedAt === null) return;
+    const delta = performance.now() - openedAt;
+    if (delta <= 0) return;
+    Object.keys(shownAtRef.current).forEach((k) => {
+      if (shownAtRef.current[k]) shownAtRef.current[k] += delta;
+    });
+  }, [confirmQuit]);
+
   // Log 35: penentuan pemenang saat waktu habis dipindah KELUAR dari updater
   // setState (updater harus murni — memanggil finish di dalamnya bisa
   // terpanggil ganda); jam kini digerakkan timeLeftRef.
   useEffect(() => {
-    if (screen !== "playing" || winner) return;
+    if (screen !== "playing" || winner || confirmQuit) return;
     const id = window.setInterval(() => {
       if (timeLeftRef.current <= 1) {
         timeLeftRef.current = 0;
@@ -444,7 +465,7 @@ export default function SigettengGettengGame() {
       setTimeLeft(timeLeftRef.current);
     }, 1000);
     return () => window.clearInterval(id);
-  }, [screen, winner, finish]);
+  }, [screen, winner, finish, confirmQuit]);
 
   // waktu tampil soal per slot: mulai saat pertandingan berjalan
   useEffect(() => {
@@ -457,7 +478,7 @@ export default function SigettengGettengGame() {
 
   // tidak menjawab sampai waktu soal habis: kekuatan -1, soal slot itu berganti
   useEffect(() => {
-    if (screen !== "playing" || winner) return;
+    if (screen !== "playing" || winner || confirmQuit) return;
     const id = window.setInterval(() => {
       if (winnerRef.current) return;
       const now = performance.now();
@@ -491,7 +512,7 @@ export default function SigettengGettengGame() {
       }
     }, 200);
     return () => window.clearInterval(id);
-  }, [screen, winner, beep, rebuildQueue]);
+  }, [screen, winner, beep, rebuildQueue, confirmQuit]);
 
   // Log 34 — manajer pose/ekspresi (perintah user 28 Okt 22:46: "kalau menang
   // ya bahagia, kalau kalah ya sebaliknya"). Pose peristiwa (hentakan sesudah
