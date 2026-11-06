@@ -578,7 +578,7 @@ export function SpaceDefenderPlayer({ questions, onFinish, isRtl }: Props) {
 
         {/* Bottom Ship Guidance / Control Bar */}
         <div className="absolute bottom-2 inset-x-3 z-20 flex items-center justify-between text-[11px] text-slate-400 font-mono bg-slate-950/70 p-2 rounded-xl backdrop-blur border border-white/10">
-          <span>🕹️ Panah ⬅️ ➡️ / W-S untuk manuver, 1-4 / Spasi untuk tembak</span>
+          <span>🕹️ Panah ⬅️ ➡️ / A-D untuk manuver, 1-4 / Spasi untuk tembak</span>
           <div className="flex gap-2">
             <button
               type="button"

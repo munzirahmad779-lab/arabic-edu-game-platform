@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { pauseBackgroundAudio, resumeBackgroundAudio } from "@/lib/bg-audio-events";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { AnswerResult, GamePlayerProps, RawOption, RawQuestion } from "@/lib/game-engine/types";
@@ -14,11 +14,16 @@ export function QuizPlayer({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+  // Waktu soal ini mulai ditampilkan, untuk menghitung responseTimeMs
+  // yang nyata saat jawaban dikirim. Sebelumnya nilai itu mengeras
+  // 1500 ms berapa pun kecepatan siswa menjawab (cacat K28).
+  const questionShownAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     setSelectedId(null);
     setSubmitting(false);
     setHasAnswered(false);
+    questionShownAtRef.current = Date.now();
   }, [question.id]);
 
   const optionKeys = new Set(
@@ -49,13 +54,15 @@ export function QuizPlayer({
     // accepted: false, kunci dibebaskan supaya siswa dapat mencoba
     // lagi; jawaban yang tidak pernah tercatat tidak boleh mengunci
     // siswa secara permanen pada soal ini (cacat K28).
+    const responseTimeMs = Math.max(0, Date.now() - questionShownAtRef.current);
+
     let result: AnswerResult;
     try {
       result = await onSubmitAnswer({
         questionId: question.id,
         selectedOptionId: option.id,
         answerText: null,
-        responseTimeMs: 1500,
+        responseTimeMs,
       });
     } catch {
       setSelectedId(null);
@@ -71,11 +78,16 @@ export function QuizPlayer({
 
     setHasAnswered(true);
 
+    // Skor peristiwa umpan balik memakai nilai nyata dari hasil
+    // server. Cadangannya mengikuti aturan platform sendiri di
+    // room-store (benar 100, salah 0), bukan angka karangan di sini.
+    const awarded = result.scoreAwarded ?? (result.isCorrect ? 100 : 0);
+
     if (result.isCorrect) {
       playSfx("correct");
       onGameEvent?.({
         isCorrect: true,
-        scoreAwarded: result.scoreAwarded ?? 100,
+        scoreAwarded: awarded,
         comboMultiplier: 1,
         streak: 1,
         consequence: "neutral",
@@ -85,7 +97,7 @@ export function QuizPlayer({
       playSfx("wrong");
       onGameEvent?.({
         isCorrect: false,
-        scoreAwarded: 0,
+        scoreAwarded: awarded,
         comboMultiplier: 1,
         streak: 0,
         consequence: "neutral",
@@ -125,6 +137,7 @@ export function QuizPlayer({
                     src={m.public_url}
                     controls
                     onPlay={() => pauseBackgroundAudio()}
+                    onPause={() => resumeBackgroundAudio()}
                     onEnded={() => resumeBackgroundAudio()}
                     className="mx-auto w-full max-w-md"
                   />
@@ -139,6 +152,7 @@ export function QuizPlayer({
                     src={m.public_url}
                     controls
                     onPlay={() => pauseBackgroundAudio()}
+                    onPause={() => resumeBackgroundAudio()}
                     onEnded={() => resumeBackgroundAudio()}
                     className="mx-auto max-h-80 w-full rounded-2xl border-2 border-slate-200"
                   />
