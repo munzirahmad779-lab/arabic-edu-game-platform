@@ -376,8 +376,10 @@ export default function BanuaFruitBlastGame() {
 
   /* ---------------------------------------------------------------- timer */
 
+  // Dialog keluar (showExit) ikut membekukan timer: effect dibongkar
+  // selama dialog tampil dan dipasang lagi sesudah dialog ditutup.
   useEffect(() => {
-    if (screen !== "playing") return;
+    if (screen !== "playing" || showExit) return;
     const t = window.setInterval(() => {
       const next = Math.max(0, timeRef.current - 1);
       timeRef.current = next;
@@ -390,7 +392,7 @@ export default function BanuaFruitBlastGame() {
       }
     }, 1000);
     return () => window.clearInterval(t);
-  }, [screen, endGame]);
+  }, [screen, endGame, showExit]);
 
   /* ------------------------------------------------------------- kanvas */
 
@@ -565,8 +567,10 @@ export default function BanuaFruitBlastGame() {
   }, []);
 
   // loop render + fisika
+  // Sama seperti timer: loop berhenti total selama dialog keluar tampil
+  // (cleanup membatalkan rAF) dan berjalan lagi sesudah dialog ditutup.
   useEffect(() => {
-    if (screen !== "playing") return;
+    if (screen !== "playing" || showExit) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -711,7 +715,7 @@ export default function BanuaFruitBlastGame() {
       lastTsRef.current = 0;
       ro.disconnect();
     };
-  }, [screen, spawnNext, doReshuffle, headerBottomOf]);
+  }, [screen, spawnNext, doReshuffle, headerBottomOf, showExit]);
 
   /* -------------------------------------------------------- interaksi arena */
 

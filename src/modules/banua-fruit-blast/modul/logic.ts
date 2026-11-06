@@ -818,9 +818,45 @@ export function parseMarkdownBank(
 }
 
 /**
+ * Belah satu baris CSV: koma/titik koma di dalam kutip ganda tidak ikut
+ * membelah, dan "" di dalam kutip berarti satu kutip. Baris tanpa kutip
+ * dibelah persis seperti sebelumnya (pada koma atau titik koma).
+ */
+const splitCsvLine = (line: string): string[] => {
+  const cells: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === "," || ch === ";") {
+      cells.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells;
+};
+
+/**
  * Impor CSV sederhana: satu soal per baris, enam kolom, yaitu
  * soal, pilihan A, pilihan B, pilihan C, pilihan D, jawaban (huruf A-D
- * atau angka 1-4). Pemisah koma atau titik koma.
+ * atau angka 1-4). Pemisah koma atau titik koma. Teks yang mengandung
+ * pemisah boleh dibungkus kutip ganda.
  */
 export function parseCsvBank(
   text: string,
@@ -831,7 +867,12 @@ export function parseCsvBank(
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
-    const cells = line.split(/[;,]/).map((c) => c.trim());
+    // Kutip tak berpasangan (jumlah karakter " ganjil) membuat sisa baris
+    // tertelan sebagai dalam-kutip; untuk baris seperti itu pakai pembelah
+    // polos lama agar teks dan pemisah dipertahankan apa adanya.
+    const quoteCount = (line.match(/"/g) || []).length;
+    const rawCells = quoteCount % 2 === 1 ? line.split(/[;,]/) : splitCsvLine(line);
+    const cells = rawCells.map((c) => c.trim());
     if (cells.length < 6) {
       skipped += 1;
       continue;
@@ -839,7 +880,9 @@ export function parseCsvBank(
     const [prompt, a, b, c, d, ans] = cells;
     const v = ans.toUpperCase();
     const correct = v >= "A" && v <= "D" ? v.charCodeAt(0) - 65 : parseInt(v, 10) - 1;
-    if (!prompt || !a || !b || !c || !d || correct < 0 || correct > 3) {
+    // Number.isInteger menolak NaN dari huruf jawaban di luar A-D / sel
+    // kosong (perbandingan NaN < 0 dan NaN > 3 sama-sama false)
+    if (!prompt || !a || !b || !c || !d || !Number.isInteger(correct) || correct < 0 || correct > 3) {
       skipped += 1;
       continue;
     }
