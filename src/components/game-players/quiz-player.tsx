@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { pauseBackgroundAudio, resumeBackgroundAudio } from "@/lib/bg-audio-events";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
-import type { GamePlayerProps, RawOption, RawQuestion } from "@/lib/game-engine/types";
+import type { AnswerResult, GamePlayerProps, RawOption, RawQuestion } from "@/lib/game-engine/types";
 
 export function QuizPlayer({
   question,
@@ -42,15 +42,34 @@ export function QuizPlayer({
 
     setSelectedId(option.id);
     setSubmitting(true);
-    setHasAnswered(true);
     playSfx("click");
 
-    const result = await onSubmitAnswer({
-      questionId: question.id,
-      selectedOptionId: option.id,
-      answerText: null,
-      responseTimeMs: 1500,
-    });
+    // Kunci hasAnswered hanya dipasang SESUDAH server menerima
+    // jawaban. Bila pengiriman ditolak (promise melempar) atau hasil
+    // accepted: false, kunci dibebaskan supaya siswa dapat mencoba
+    // lagi; jawaban yang tidak pernah tercatat tidak boleh mengunci
+    // siswa secara permanen pada soal ini (cacat K28).
+    let result: AnswerResult;
+    try {
+      result = await onSubmitAnswer({
+        questionId: question.id,
+        selectedOptionId: option.id,
+        answerText: null,
+        responseTimeMs: 1500,
+      });
+    } catch {
+      setSelectedId(null);
+      setSubmitting(false);
+      return;
+    }
+
+    if (!result.accepted) {
+      setSelectedId(null);
+      setSubmitting(false);
+      return;
+    }
+
+    setHasAnswered(true);
 
     if (result.isCorrect) {
       playSfx("correct");
