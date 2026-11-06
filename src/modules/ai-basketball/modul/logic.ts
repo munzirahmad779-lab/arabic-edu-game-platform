@@ -154,7 +154,10 @@ function isQ(q: unknown): q is Q {
     typeof item.prompt === "string" &&
     Array.isArray(item.options) &&
     item.options.length === 4 &&
-    typeof item.correctIndex === "number"
+    typeof item.correctIndex === "number" &&
+    Number.isInteger(item.correctIndex) &&
+    item.correctIndex >= 0 &&
+    item.correctIndex < item.options.length
   );
 }
 

@@ -335,6 +335,11 @@ export default function AiBasketballGame() {
     timeoutsRef.current.add(t);
   }, []);
 
+  const clearTrackedTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach((t) => clearTimeout(t));
+    timeoutsRef.current.clear();
+  }, []);
+
   useEffect(() => {
     const pending = timeoutsRef.current;
     return () => {
@@ -383,6 +388,7 @@ export default function AiBasketballGame() {
   );
 
   const startRound = useCallback((nextSubject: PlaySubject) => {
+    clearTrackedTimeouts();
     setSubject(nextSubject);
     subjectRef.current = nextSubject;
     queuesRef.current = dealQueues(activeList(nextSubject));
@@ -395,9 +401,10 @@ export default function AiBasketballGame() {
     matchLeftRef.current = RULES.matchTime;
     setMatchLeft(RULES.matchTime);
     setWinner(null);
+    setFloats([]);
     setPaused(false);
     setScreen("countdown");
-  }, [activeList]);
+  }, [activeList, clearTrackedTimeouts]);
 
   const finishMatch = useCallback(
     (w: Winner) => {
@@ -1083,6 +1090,7 @@ export default function AiBasketballGame() {
                     type="button"
                     onClick={() => {
                       setExitAsk(false);
+                      clearTrackedTimeouts();
                       finishedRef.current = true;
                       setScreen("home");
                     }}
@@ -1120,6 +1128,7 @@ export default function AiBasketballGame() {
                   <button
                     type="button"
                     onClick={() => {
+                      clearTrackedTimeouts();
                       finishedRef.current = true;
                       setScreen("home");
                     }}
