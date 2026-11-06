@@ -96,12 +96,15 @@ interface Song {
   hatGain: number;
 }
 
+// Palet akor lengkap: sebagian akor belum dipakai lagu saat ini, dipertahankan sebagai tabel data musik.
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const C = [60, 64, 67] as const;
 const F = [65, 69, 72] as const;
 const G = [67, 71, 74] as const;
 const Am = [69, 72, 76] as const;
 const D = [62, 66, 69] as const;
 const Bm = [71, 74, 78] as const;
+/* eslint-enable @typescript-eslint/no-unused-vars */
 const A = [69, 73, 76] as const;
 const Dm = [62, 65, 69] as const;
 const Gm = [67, 70, 74] as const;
