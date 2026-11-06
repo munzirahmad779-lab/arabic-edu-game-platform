@@ -14,7 +14,7 @@ export function WheelPlayer({
   isRtl = false,
 }: {
   questions: RawQuestion[];
-  onFinish?: (finalScore: number) => void;
+  onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
 }) {
   const [questionList, setQuestionList] = useState<RawQuestion[]>(() =>
@@ -27,12 +27,72 @@ export function WheelPlayer({
   const [spinResult, setSpinResult] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
 
+  // Skor dan jumlah benar hidup di ref juga: callback selesai di dalam
+  // loop render dan timer membaca nilai terbaru dari ref, bukan state
+  // yang bisa basi di dalam closure.
+  const scoreRef = useRef(0);
+  const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  // Penjaga kemajuan: timer otomatis 1,8 detik dan tombol manual
+  // "Soal Selanjutnya" berlomba menekan jalur yang sama. Tanpa
+  // penjaga ini satu soal bisa meloncat dua kali (atau onFinish
+  // terpanggil dari tombol sesudah timer menutup permainan).
+  const advanceTimeoutRef = useRef<number | null>(null);
+  const advanceDoneRef = useRef(false);
+  const spinResolvedRef = useRef(false);
+  const advanceRef = useRef<() => void>(() => {});
+
+  const clearAdvanceTimeout = () => {
+    if (advanceTimeoutRef.current !== null) {
+      window.clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
+  };
+
+  const finishGame = () => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setIsFinished(true);
+    onFinish?.(scoreRef.current, correctRef.current);
+  };
+
+  const advanceToNext = () => {
+    if (advanceDoneRef.current) return;
+    advanceDoneRef.current = true;
+    clearAdvanceTimeout();
+    setSpinResult(null);
+    if (currentQIndex + 1 < questionList.length) {
+      setCurrentQIndex((idx) => idx + 1);
+    } else {
+      finishGame();
+    }
+  };
+  advanceRef.current = advanceToNext;
+
+  // Soal baru, lomba kemajuan dibuka lagi.
+  useEffect(() => {
+    advanceDoneRef.current = false;
+  }, [currentQIndex]);
+
+  // Timer kemajuan tidak boleh menembak komponen yang sudah ditutup.
+  useEffect(() => {
+    return () => clearAdvanceTimeout();
+  }, []);
+
   const handleReshuffle = () => {
+    clearAdvanceTimeout();
+    scoreRef.current = 0;
+    correctRef.current = 0;
+    finishedRef.current = false;
+    advanceDoneRef.current = false;
+    spinResolvedRef.current = false;
     setQuestionList([...questions].sort(() => Math.random() - 0.5));
     setCurrentQIndex(0);
     setScore(0);
     setSpinResult(null);
     setIsFinished(false);
+    setIsSpinning(false);
+    wheelRef.current.angularVelocity = 0;
   };
 
   const activeQuestion = questionList[currentQIndex % (questionList.length || 1)] || {
@@ -64,6 +124,7 @@ export function WheelPlayer({
   // Spin wheel action
   const handleSpin = () => {
     if (isSpinning) return;
+    spinResolvedRef.current = false;
     setIsSpinning(true);
     setSpinResult(null);
     playSfx("boost");
@@ -100,33 +161,38 @@ export function WheelPlayer({
         w.angularVelocity = 0;
         setIsSpinning(false);
 
-        // Determine which segment is at the pointer (top: angle = -PI/2)
-        const normalizedAngle = (Math.PI * 2 - (w.angle % (Math.PI * 2))) % (Math.PI * 2);
-        const pointerOffset = (normalizedAngle + Math.PI / 2) % (Math.PI * 2);
-        const winningIndex = Math.floor(pointerOffset / arcSize) % numSegments;
-        const picked = segments[winningIndex];
+        if (!spinResolvedRef.current) {
+          spinResolvedRef.current = true;
 
-        if (picked) {
-          const isCorrect = picked.option_key.toUpperCase().trim() === correctKey;
-          if (isCorrect) {
-            playSfx("correct");
-            setScore((s) => s + 150);
-            setSpinResult(`✓ TEPAT! ${picked.option_key} (+150 Poin)`);
-          } else {
-            playSfx("wrong");
-            setSpinResult(`✗ SALAH: ${picked.option_key} (Bukan ${correctKey})`);
-          }
+          // Determine which segment is at the pointer (top: angle = -PI/2)
+          const normalizedAngle = (Math.PI * 2 - (w.angle % (Math.PI * 2))) % (Math.PI * 2);
+          const pointerOffset = (normalizedAngle + Math.PI / 2) % (Math.PI * 2);
+          const winningIndex = Math.floor(pointerOffset / arcSize) % numSegments;
+          const picked = segments[winningIndex];
 
-          // Otomatis lanjut ke soal berikutnya setelah putaran selesai (delay 1.8 detik)
-          setTimeout(() => {
-            if (currentQIndex + 1 < questionList.length) {
-              setCurrentQIndex((idx) => idx + 1);
-              setSpinResult(null);
+          if (picked) {
+            const isCorrect = picked.option_key.toUpperCase().trim() === correctKey;
+            if (isCorrect) {
+              playSfx("correct");
+              scoreRef.current += 150;
+              correctRef.current += 1;
+              setScore(scoreRef.current);
+              setSpinResult(`✓ TEPAT! ${picked.option_key} (+150 Poin)`);
             } else {
-              setIsFinished(true);
-              onFinish?.(score + (isCorrect ? 150 : 0));
+              playSfx("wrong");
+              setSpinResult(`✗ SALAH: ${picked.option_key} (Bukan ${correctKey})`);
             }
-          }, 1800);
+
+            // Otomatis lanjut ke soal berikutnya setelah putaran
+            // selesai (delay 1,8 detik). Timer disimpan di ref dan
+            // dibersihkan oleh tombol manual atau saat unmount,
+            // supaya kemajuan tidak terjadi dua kali.
+            clearAdvanceTimeout();
+            advanceTimeoutRef.current = window.setTimeout(() => {
+              advanceTimeoutRef.current = null;
+              advanceRef.current();
+            }, 1800);
+          }
         }
       }
 
@@ -189,7 +255,7 @@ export function WheelPlayer({
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [segments, correctKey, currentQIndex, onFinish, questionList.length, score]);
+  }, [segments, correctKey, currentQIndex, questionList.length]);
 
   return (
     <div
@@ -245,8 +311,8 @@ export function WheelPlayer({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center my-auto z-10 py-2">
-          <div className="relative">
-            <canvas ref={canvasRef} className="block drop-shadow-2xl" />
+          <div className="relative w-full flex justify-center">
+            <canvas ref={canvasRef} className="block drop-shadow-2xl max-w-full h-auto" />
           </div>
 
           {/* Spin Button */}
@@ -269,15 +335,7 @@ export function WheelPlayer({
               <span className="font-black text-sm text-amber-300">{spinResult}</span>
               <button
                 type="button"
-                onClick={() => {
-                  setSpinResult(null);
-                  if (currentQIndex + 1 < questionList.length) {
-                    setCurrentQIndex((idx) => idx + 1);
-                  } else {
-                    setIsFinished(true);
-                    onFinish?.(score);
-                  }
-                }}
+                onClick={() => advanceToNext()}
                 className="ml-3 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
               >
                 Soal Selanjutnya →
