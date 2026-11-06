@@ -148,9 +148,22 @@ export function buildSyncedGameState(
     typeof input.currentQuestionIndex === "number"
       ? input.currentQuestionIndex
       : prevQIndex;
+  const nextPhase = input.phase ?? prev.phase;
+  const sameQuestionIndex = newQIndex === prevQIndex;
+
+  // Transisi mulai permainan: sync pertama yang masuk fase "question"
+  // dari fase bukan question pada indeks yang sama (startGame dari
+  // lobi, indeks 0). Jawaban tersimpan dari masa sebelum mulai BUKAN
+  // jawaban soal ini: union indeks sama tidak berlaku di pintu ini,
+  // peta jawaban payload menggantikan apa adanya. Tanpa pengecualian
+  // ini, jawaban yang terlanjur tercatat sebelum mulai (misalnya oleh
+  // RPC lama sebelum migrasi 0081) terbawa union ke soal pertama dan
+  // mengunci tim penekannya (temuan armada K35, 6 Nov 2026).
+  const enteringQuestion =
+    sameQuestionIndex && prev.phase !== "question" && nextPhase === "question";
 
   return {
-    phase: input.phase ?? prev.phase,
+    phase: nextPhase,
     currentQuestionIndex: newQIndex,
     timerSeconds:
       typeof input.timerSeconds === "number"
@@ -161,11 +174,13 @@ export function buildSyncedGameState(
         ? input.totalQuestions
         : prev.totalQuestions,
     questionText: input.questionText ?? prev.questionText,
-    answeredTeams: mergeAnsweredTeamsForSync(
-      prev.answeredTeams,
-      input.answeredTeams,
-      newQIndex === prevQIndex,
-    ),
+    answeredTeams: enteringQuestion
+      ? { ...(input.answeredTeams ?? {}) }
+      : mergeAnsweredTeamsForSync(
+          prev.answeredTeams,
+          input.answeredTeams,
+          sameQuestionIndex,
+        ),
     lastUpdated: now,
   };
 }
@@ -200,11 +215,11 @@ export type ProjectorPressResult =
     };
 
 /**
- * Applies a stick press to room data: heartbeat first, then the
- * ghost-answer guard, then one locked answer per team per question.
- * Used by the in-memory fallback; the Supabase path performs the same
- * steps atomically inside the press_projector_button RPC (migration
- * 0078).
+ * Applies a stick press to room data: heartbeat first, then the phase
+ * guard, then the ghost-answer guard, then one locked answer per team
+ * per question. Used by the in-memory fallback; the Supabase path
+ * performs the same steps atomically inside the press_projector_button
+ * RPC (migration 0078, phase guard parity in draft migration 0081).
  */
 export function applyPressToRoomData(
   data: RoomControllerData,
@@ -215,6 +230,24 @@ export function applyPressToRoomData(
   data.heartbeats[input.teamId] = now;
 
   const gs = data.gameState;
+
+  // Penjaga fase: jawaban hanya hidup selama fase "question". Press
+  // yang tiba pada fase lain (lobi sebelum mulai, reveal, leaderboard,
+  // finished) ditolak sebagai STALE_QUESTION tanpa mencatat jawaban,
+  // event, atau kunci apa pun; heartbeat di atas tetap tercatat supaya
+  // kehadiran stik tidak berubah. Sebelum penjaga ini ada, press lobi
+  // berindeks 0 lolos penjaga indeks di bawah (room yang belum dimulai
+  // memang berindeks 0), tercatat sebagai jawaban, lalu terbawa union
+  // sync startGame ke soal pertama dan mengunci tim penekannya
+  // (temuan armada K35, 6 Nov 2026). Store tidak boleh bergantung pada
+  // UI stik yang memang menolak press di luar fase question.
+  if (gs.phase !== "question") {
+    return {
+      success: false,
+      error: "STALE_QUESTION",
+      existingAnswer: null,
+    };
+  }
 
   // Penjaga jawaban hantu: press hanya berlaku untuk soal yang sedang
   // ditampilkan stik. Press tanpa indeks, atau yang indeksnya tidak
@@ -394,7 +427,9 @@ interface PressProjectorButtonRpcResult {
  * lose the same team's answer independently. The RPC also enforces the
  * ghost-answer guard: the press's question index must equal the room's
  * current question index, otherwise it is rejected as STALE_QUESTION and
- * nothing is recorded.
+ * nothing is recorded. Draft migration 0081 adds the matching phase
+ * guard to the RPC (answers only while the room phase is "question");
+ * the in-memory fallback below already enforces it.
  */
 export async function pressProjectorButton(
   roomCode: string,

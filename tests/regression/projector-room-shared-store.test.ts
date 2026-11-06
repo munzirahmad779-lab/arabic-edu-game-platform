@@ -109,8 +109,13 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
   });
 
   describe("applyPressToRoomData", () => {
+    // Presses in this block model a live question, so the room is put in
+    // phase "question" first: since the phase guard (fleet finding K35),
+    // a press in the default lobby phase is rejected by design and is
+    // covered by projector-lobby-press-guard.test.ts instead.
     test("Press pertama tercatat, terkunci, heartbeat dan event terisi", () => {
       const data = createDefaultProjectorRoomData(NOW);
+      data.gameState.phase = "question";
       const result = applyPressToRoomData(
         data,
         "uji-press",
@@ -134,6 +139,7 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
 
     test("Press kedua tim yang sama ditolak ALREADY_ANSWERED dan jawaban tidak berubah", () => {
       const data = createDefaultProjectorRoomData(NOW);
+      data.gameState.phase = "question";
       applyPressToRoomData(
         data,
         "UJI-PRESS",
@@ -159,6 +165,7 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
 
     test("Tim lain tetap bisa menjawab; optionKey kosong menjadi A", () => {
       const data = createDefaultProjectorRoomData(NOW);
+      data.gameState.phase = "question";
       applyPressToRoomData(
         data,
         "UJI-PRESS",
@@ -248,6 +255,17 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
 
     test("Skenario K14 lewat API async: duplikat press soal lama yang tiba sesudah room maju tidak menjadi jawaban hantu", async () => {
       const code = "UJI-HANTU-ASYNC";
+      // Proyektor membuka room dan memulai soal 0 lebih dulu (pola route
+      // sync_state); press hanya sah selama fase question sejak penjaga
+      // fase K35.
+      await syncProjectorGameState(
+        code,
+        buildSyncedGameState(
+          createDefaultProjectorRoomData(Date.now()).gameState,
+          { phase: "question", currentQuestionIndex: 0 },
+          Date.now(),
+        ),
+      );
       const first = await pressProjectorButton(code, {
         teamId: "team-4",
         playerName: "Kuning",
@@ -314,6 +332,16 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
     });
 
     test("Press lewat API async tercatat dan room menjadi aktif", async () => {
+      // Room dibuka proyektor dan soal 0 dimulai lebih dulu (fase
+      // question), sama seperti skenario K14 di atas.
+      await syncProjectorGameState(
+        "uji-shared-a",
+        buildSyncedGameState(
+          createDefaultProjectorRoomData(Date.now()).gameState,
+          { phase: "question", currentQuestionIndex: 0 },
+          Date.now(),
+        ),
+      );
       const result = await pressProjectorButton("uji-shared-a", {
         teamId: "team-1",
         playerName: "Yaya",
@@ -329,6 +357,16 @@ describe("Store Bersama Room Proyektor (Migrasi 0078)", () => {
 
     test("Sync sesudah press tidak menghapus jawaban press pada indeks yang sama", async () => {
       const code = "UJI-SHARED-B";
+      // Room dibuka proyektor dan soal 0 dimulai lebih dulu (fase
+      // question), sama seperti skenario K14 di atas.
+      await syncProjectorGameState(
+        code,
+        buildSyncedGameState(
+          createDefaultProjectorRoomData(Date.now()).gameState,
+          { phase: "question", currentQuestionIndex: 0 },
+          Date.now(),
+        ),
+      );
       await pressProjectorButton(code, {
         teamId: "team-3",
         playerName: "Anya",
