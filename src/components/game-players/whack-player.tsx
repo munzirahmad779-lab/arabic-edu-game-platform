@@ -49,6 +49,12 @@ export function WhackPlayer({
   const [streak, setStreak] = useState(0);
   const [health, setHealth] = useState(3);
   const [timerLeft, setTimerLeft] = useState(25);
+  // Bonus waktu dari jawaban benar, dibawa ke soal berikutnya.
+  // Sebelumnya bonus ditambahkan ke timer soal berjalan lalu tertimpa
+  // setTimerLeft(25) saat soal berganti, jadi tidak pernah berdampak
+  // (cacat K30). Kini bonus disimpan di sini dan dipasang sebagai
+  // waktu awal soal berikutnya (25 + bonus, maksimum 30).
+  const pendingBonusRef = useRef(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const isProcessingBonkRef = useRef(false);
   const [activeHoles, setActiveHoles] = useState<
@@ -160,14 +166,18 @@ export function WhackPlayer({
       correctRef.current += 1;
       setScore((s) => s + 100 + streak * 25);
       setStreak((st) => st + 1);
-      setTimerLeft((t) => Math.min(30, t + 5)); // Bonus +5s
+      // Bonus +5s: dicatat untuk soal berikutnya (total waktu awal
+      // soal berikutnya maksimum 30 detik, sama seperti batas lama).
+      pendingBonusRef.current = Math.min(5, pendingBonusRef.current + 5);
 
       // Advance question
       later(() => {
         isProcessingBonkRef.current = false;
         if (currentQIndex + 1 < questionList.length) {
           setCurrentQIndex((idx) => idx + 1);
-          setTimerLeft(25);
+          const bonus = pendingBonusRef.current;
+          pendingBonusRef.current = 0;
+          setTimerLeft(25 + bonus);
         } else {
           finishGame(score + 100 + streak * 25);
         }
@@ -194,6 +204,7 @@ export function WhackPlayer({
     clearPendingTimers();
     correctRef.current = 0;
     finishedRef.current = false;
+    pendingBonusRef.current = 0;
     isProcessingBonkRef.current = false;
     setQuestionList([...questions].sort(() => Math.random() - 0.5));
     setCurrentQIndex(0);
@@ -246,16 +257,20 @@ export function WhackPlayer({
         </div>
       </div>
 
-      {/* 6 Arcade Holes Grid */}
-      <div className="grid grid-cols-3 gap-4 sm:gap-6 my-auto max-w-3xl mx-auto w-full z-10 py-4">
+      {/* 6 Arcade Holes Grid. Pada lebar 390 kolom hanya sekitar
+          108-114 px, jadi gundukan dan papan pilihan memakai ukuran
+          kecil dulu (w-24, papan selebar kolom) dan baru membesar di
+          sm ke atas; tanpa ini keduanya lebih lebar dari kolomnya dan
+          bertumpang tindih (cacat K30). */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-6 my-auto max-w-3xl mx-auto w-full z-10 py-4">
         {HOLES.map((hId) => {
           const mole = activeHoles.find((h) => h.holeId === hId);
 
           return (
             <div key={hId} className="relative flex flex-col items-center justify-end h-36 sm:h-40">
               {/* Mole Hole Dirt Mound */}
-              <div className="absolute bottom-0 w-32 sm:w-44 h-12 bg-amber-950 border-4 border-amber-800 rounded-full shadow-inner flex items-center justify-center">
-                <div className="w-24 sm:w-36 h-7 bg-black/80 rounded-full" />
+              <div className="absolute bottom-0 w-24 sm:w-44 h-12 bg-amber-950 border-4 border-amber-800 rounded-full shadow-inner flex items-center justify-center">
+                <div className="w-[4.5rem] sm:w-36 h-7 bg-black/80 rounded-full" />
               </div>
 
               {/* Animated Mole popping up */}
@@ -263,7 +278,7 @@ export function WhackPlayer({
                 <button
                   type="button"
                   onClick={(e) => handleWhack(mole.option, e)}
-                  className="relative z-10 mb-2 transform transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center animate-in slide-in-from-bottom-8 cursor-pointer"
+                  className="relative z-10 mb-2 w-full transform transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center animate-in slide-in-from-bottom-8 cursor-pointer"
                 >
                   {/* Mole Head & Face */}
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-700 border-2 border-amber-900 rounded-t-full relative shadow-md flex flex-col items-center pt-2">
@@ -280,7 +295,7 @@ export function WhackPlayer({
                   </div>
 
                   {/* Choice Board held by Mole - Adaptive Width and No Truncation */}
-                  <div className="px-3.5 py-2 rounded-2xl bg-white border-2 border-amber-900 shadow-xl text-center min-w-[130px] max-w-[240px] -mt-1 z-20 choice-board flex items-center justify-center gap-1.5">
+                  <div className="px-2 sm:px-3.5 py-2 rounded-2xl bg-white border-2 border-amber-900 shadow-xl text-center min-w-0 w-full sm:w-auto sm:min-w-[130px] sm:max-w-[240px] -mt-1 z-20 choice-board flex items-center justify-center gap-1.5">
                     <span className="font-mono font-black text-xs text-amber-700 shrink-0">
                       {mole.option.option_key}:
                     </span>
