@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
 import type { RawQuestion } from "@/lib/game-engine/types";
 
@@ -15,6 +15,17 @@ export function MemoryPlayer({
 }) {
   const [score, setScore] = useState(0);
   const correctRef = useRef(0);
+  const finishedRef = useRef(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+  }, []);
+  const clearPendingTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+  useEffect(() => clearPendingTimers, [clearPendingTimers]);
   const [moves, setMoves] = useState(0);
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [matchedIds, setMatchedIds] = useState<number[]>([]);
@@ -60,7 +71,10 @@ export function MemoryPlayer({
           const next = [...prev, cardA.pairId];
           if (next.length * 2 >= cards.length) {
             setIsGameOver(true);
-            onFinish?.(score + 100, correctRef.current);
+            if (!finishedRef.current) {
+              finishedRef.current = true;
+              onFinish?.(score + 100, correctRef.current);
+            }
           }
           return next;
         });
@@ -68,7 +82,7 @@ export function MemoryPlayer({
       } else {
         // MISMATCH!
         playSfx("wrong");
-        setTimeout(() => {
+        later(() => {
           setFlippedIndices([]);
         }, 900);
       }
@@ -188,6 +202,11 @@ export function MemoryPlayer({
           <button
             type="button"
             onClick={() => {
+              clearPendingTimers();
+              // correctRef wajib mulai dari 0 lagi; tanpa reset ini
+              // jumlah benar sesi kedua kumulatif (cacat K32).
+              correctRef.current = 0;
+              finishedRef.current = false;
               setFlippedIndices([]);
               setMatchedIds([]);
               setMoves(0);
