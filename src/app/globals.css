@@ -44,6 +44,11 @@ h3[dir="rtl"], h3[dir="auto"] {
 }
 
 /* Proteksi Tampilan Game: font otomatis disesuaikan secara proporsional agar tidak saling menimpa / overlap */
+/* Catatan: elemen span di dalam kartu memori SENGAJA tidak ikut
+   aturan clamp di bawah. Teks kartu memori diukur per panjang teks
+   oleh komponennya sendiri (kelas text-[10px] s.d. text-base);
+   clamp !important pada span mengalahkan kelas itu sehingga teks
+   panjang tampil besar lalu terpotong tanpa penanda (cacat K32). */
 .game-screen [dir="auto"],
 .game-screen [dir="rtl"],
 .game-arena [dir="auto"],
@@ -52,7 +57,6 @@ h3[dir="rtl"], h3[dir="auto"] {
 .game-card [dir="rtl"],
 .game-card span,
 .memory-card,
-.memory-card span,
 .memory-card div,
 .choice-board,
 .choice-board span,

@@ -89,9 +89,29 @@ export function MemoryPlayer({
     }
   };
 
+  // Keadaan kosong yang jujur: tanpa soal, kisi kartu tidak punya isi
+  // dan permainan tidak bisa diselesaikan, jadi tampilkan penjelasan
+  // alih alih kisi kosong tanpa pesan (cacat K32).
+  if (questions.length === 0) {
+    return (
+      <div
+        className="relative w-full min-h-[580px] bg-gradient-to-b from-purple-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center border-4 border-purple-500 select-none p-6 text-center text-white space-y-4"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <span className="text-6xl">🃏</span>
+        <h2 className="text-2xl font-black">Belum Ada Soal untuk Kartu Memori</h2>
+        <p className="max-w-md text-sm text-purple-200/90">
+          Permainan ini belum memiliki soal, jadi belum ada pasangan kartu yang bisa
+          dimainkan. Tambahkan soal ke bank soal permainan ini dulu, lalu buka lagi
+          halamannya.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="relative w-full h-[580px] bg-gradient-to-b from-purple-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-purple-500 select-none p-4"
+      className="relative w-full min-h-[580px] bg-gradient-to-b from-purple-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-purple-500 select-none p-4"
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Top HUD */}
@@ -122,24 +142,33 @@ export function MemoryPlayer({
         </div>
       </div>
 
-      {/* 3D Flip Card Grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 my-auto max-w-2xl mx-auto w-full z-10 py-3 perspective-[1000px]">
+      {/* 3D Flip Card Grid. Kelas perspektif memakai utilitas
+          perspective-1000 dari globals.css; bentuk arbitrer untuk
+          perspektif tidak dikenal Tailwind 3.4 (K32). */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 my-auto max-w-2xl mx-auto w-full z-10 py-3 perspective-1000">
         {cards.map((card, idx) => {
           const isFlipped = flippedIndices.includes(idx) || matchedIds.includes(card.pairId);
           const isMatched = matchedIds.includes(card.pairId);
           const textLen = card.text.length;
+          // Awalan ! (important) wajib di sini: aturan dasar
+          // globals.css untuk span[dir="auto"] memasang font-size
+          // 16pt dengan kekhususan di atas kelas utilitas biasa,
+          // sehingga tanpa ! jenjang ukuran per panjang teks ini
+          // tidak pernah berlaku dan teks tampil besar (K32).
           const fontSizeClass =
-            textLen > 24
-              ? "text-[11px] sm:text-xs leading-tight"
+            textLen > 40
+              ? "!text-[10px] sm:!text-[11px] leading-tight"
+              : textLen > 24
+              ? "!text-[11px] sm:!text-xs leading-tight"
               : textLen > 14
-              ? "text-xs sm:text-[13px] leading-snug"
-              : "text-sm sm:text-base leading-snug";
+              ? "!text-xs sm:!text-[13px] leading-snug"
+              : "!text-sm sm:!text-base leading-snug";
 
           return (
             <div
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className="h-28 sm:h-32 cursor-pointer transform transition-transform duration-500 relative memory-card"
+              className="h-24 sm:h-32 cursor-pointer transform transition-transform duration-500 relative memory-card"
               style={{
                 transformStyle: "preserve-3d",
                 transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -172,7 +201,7 @@ export function MemoryPlayer({
                 </span>
                 <div className="flex-1 flex items-center justify-center w-full px-1 py-0.5 overflow-hidden">
                   <span
-                    className={`font-black text-center break-words max-h-[64px] sm:max-h-[72px] overflow-hidden ${fontSizeClass}`}
+                    className={`font-black text-center break-words ${fontSizeClass}`}
                     style={{
                       fontFamily: "'Traditional Arabic', var(--font-amiri), Amiri, Tahoma, serif",
                       lineHeight: 1.3,
