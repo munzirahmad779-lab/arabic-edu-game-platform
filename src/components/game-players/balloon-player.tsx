@@ -87,6 +87,7 @@ export function BalloonPlayer({
       vy: number;
       swayOffset: number;
       swaySpeed: number;
+      swayAmp: number;
       color: string;
       option: RawOption;
       popped: boolean;
@@ -109,22 +110,36 @@ export function BalloonPlayer({
   // Spawn Balloons with dynamic adaptive size based on option text length
   const spawnBalloons = useCallback((width: number, height: number) => {
     const opts = activeQuestion.options.slice(0, 4);
-    const spacing = width / (opts.length + 1);
+    // Tata letak responsif (cacat K33): pada lebar 390 jarak antar
+    // balon sebaris hanya 78 px, lebih kecil dari diameter minimum
+    // balon 96 px, sehingga balon bertumpang tindih. Pada layar
+    // sempit balon disusun dua kolom dengan stagger vertikal, dan
+    // diameter selalu dibatasi jarak antar kolom dikurangi ruang
+    // sway, supaya dua balon bersebelahan tidak pernah tumpang.
+    const narrow = width < 640;
+    const columns = narrow ? 2 : opts.length;
+    const spacing = width / (columns + 1);
+    const swayAmp = narrow ? 10 : 18;
 
     balloonsRef.current = opts.map((opt: RawOption, i: number) => {
       const textLen = (opt.option_text || "").length;
       // Adaptive oval radius so choices never overflow or get truncated
-      const radiusX = Math.max(48, Math.min(78, textLen * 3.5 + 28));
+      const textRadius = Math.max(48, Math.min(78, textLen * 3.5 + 28));
+      const fitCap = Math.max(34, spacing / 2 - swayAmp - 4);
+      const radiusX = Math.min(textRadius, fitCap);
       const radiusY = Math.round(radiusX * 1.25);
+      const column = narrow ? i % 2 : i;
+      const row = narrow ? Math.floor(i / 2) : 0;
 
       return {
-        x: spacing * (i + 1),
-        y: height + 60 + Math.random() * 40,
+        x: spacing * (column + 1),
+        y: height + 60 + row * 150 + Math.random() * 40,
         radiusX,
         radiusY,
         vy: 1.8 + Math.random() * 0.8,
         swayOffset: Math.random() * Math.PI * 2,
         swaySpeed: 0.03 + Math.random() * 0.02,
+        swayAmp,
         color: BALLOON_COLORS[i % BALLOON_COLORS.length]!,
         option: opt,
         popped: false,
@@ -235,7 +250,7 @@ export function BalloonPlayer({
 
         b.y -= b.vy;
         b.swayOffset += b.swaySpeed;
-        const currentX = b.x + Math.sin(b.swayOffset) * 18;
+        const currentX = b.x + Math.sin(b.swayOffset) * b.swayAmp;
 
         // Draw Balloon String
         ctx.beginPath();
@@ -320,20 +335,30 @@ export function BalloonPlayer({
 
     render();
 
-    // Canvas click detection for popping balloons
+    // Canvas click detection for popping balloons. Balon yang dipilih
+    // adalah yang paling dekat dengan titik klik (jarak ternormalisasi
+    // terhadap radiusnya), bukan yang pertama dalam array, supaya
+    // zona yang berdekatan tidak selalu dimenangkan balon yang sama
+    // (cacat K33).
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
+      let best: (typeof balloonsRef.current)[number] | null = null;
+      let bestRatio = Infinity;
       for (const b of balloonsRef.current) {
         if (b.popped) continue;
-        const currentX = b.x + Math.sin(b.swayOffset) * 18;
+        const currentX = b.x + Math.sin(b.swayOffset) * b.swayAmp;
         const dist = Math.hypot(clickX - currentX, (clickY - b.y) / 1.2);
-        if (dist <= b.radiusX * 1.15) {
-          handlePopBalloonRef.current(b);
-          break;
+        const ratio = dist / (b.radiusX * 1.15);
+        if (ratio < bestRatio) {
+          bestRatio = ratio;
+          best = b;
         }
+      }
+      if (best && bestRatio <= 1) {
+        handlePopBalloonRef.current(best);
       }
     };
 
