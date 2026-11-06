@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LmsBankPicker } from "@/modules/game-bank/connector";
 import { sfx } from "../lib-pendamping/sfx";
+import { music } from "../lib-pendamping/music";
 import { CHARACTERS, FRAME, SIDE_CHARS } from "./sprites";
 import {
   RULES,
@@ -193,6 +194,13 @@ export default function SigettengGettengGame() {
   const [settingsReady, setSettingsReady] = useState(false);
   const [records, setRecords] = useState<Rec[]>([]);
   const [muted, setMuted] = useState(false);
+  // Musik latar orisinal (lib-pendamping/music) mengalir selama
+  // pertandingan, mengikuti saklar bisu yang sama dengan efek suara.
+  useEffect(() => {
+    if (!muted && (screen === "countdown" || screen === "playing" || screen === "result")) music.play("tug");
+    else music.stop();
+  }, [muted, screen]);
+  useEffect(() => () => music.stop(), []);
   const [csvUrl, setCsvUrl] = useState("");
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
 
