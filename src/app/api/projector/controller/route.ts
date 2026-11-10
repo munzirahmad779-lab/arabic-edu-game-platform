@@ -51,6 +51,26 @@ export async function GET(req: NextRequest) {
   const myTeamAnswer = teamId ? gs.answeredTeams[teamId]?.optionKey ?? null : null;
   const isLocked = gs.phase !== "question" || hasMyTeamAnswered;
 
+  // Peta jawaban penuh hanya untuk pemanggil terautentikasi (layar
+  // proyektor guru, yang sesinya login): layar memakainya untuk
+  // rekonsiliasi hanya-menambah terhadap catatan otoritatif server
+  // (audit live 10 Nov 2026 tahap D: jawaban terkonfirmasi server
+  // hilang dari layar karena aliran event poller menyaringnya).
+  // Stik siswa yang tidak terautentikasi tetap hanya menerima
+  // hitungan dan jawaban timnya sendiri seperti sebelumnya, supaya
+  // pilihan tim lain tidak bocor ke stik mana pun sebelum reveal.
+  // Gerbang yang sama seperti aksi sync_state pada POST di bawah.
+  let viewerIsAuthenticated = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    viewerIsAuthenticated = Boolean(user);
+  } catch {
+    viewerIsAuthenticated = false;
+  }
+
   // Sinyal keberadaan room untuk halaman kontroler: true hanya selama
   // ada penulis (proyektor atau stik) yang menulis room ini dalam
   // rentang TTL-nya. Tanpa sinyal ini kontroler tidak bisa membedakan
@@ -74,6 +94,9 @@ export async function GET(req: NextRequest) {
       myTeamAnswer,
       isLocked,
       answeredCount: Object.keys(gs.answeredTeams).length,
+      ...(viewerIsAuthenticated
+        ? { answeredTeams: gs.answeredTeams }
+        : {}),
     },
   });
 }

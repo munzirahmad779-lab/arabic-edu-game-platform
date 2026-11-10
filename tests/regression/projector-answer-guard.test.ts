@@ -162,9 +162,14 @@ describe("Penolakan indeks peristiwa basi di pintu masuk pencatatan", () => {
       "const handleRecordAnswer = useCallback(",
     );
     assert.ok(fnStart >= 0);
+    // Tanda tangan bertambah parameter serverConfirmed (rekonsiliasi
+    // tahap D audit live 10 Nov 2026, lihat
+    // projector-answer-reconciliation.test.ts); indeks peristiwa
+    // tetap parameter ketiga dan pemeriksaan basi di bawah tidak
+    // berubah.
     assert.match(
       projectorSource.slice(fnStart, fnStart + 220),
-      /\(teamId: string, optionKey: string, eventQuestionIndex\?: number\)/,
+      /\(\s*teamId: string,\s*optionKey: string,\s*eventQuestionIndex\?: number,\s*serverConfirmed = false,\s*\)/,
     );
     const stalePos = projectorSource.indexOf("isAnswerEventStale(", fnStart);
     const guardPos = projectorSource.indexOf("tryMarkRecordedAnswer(", fnStart);

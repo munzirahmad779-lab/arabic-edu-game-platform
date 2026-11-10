@@ -8,6 +8,7 @@ import { playSfx } from "@/lib/game-engine/audio-bridge";
 import { MIN_QUESTION_DURATION_SECONDS } from "@/lib/game-engine/question-duration";
 import {
   isAnswerEventStale,
+  selectServerConfirmedAnswers,
   tryMarkRecordedAnswer,
 } from "@/lib/game-engine/projector-answer-guard";
 import type { NormalizedGameType, RawQuestion } from "@/lib/game-engine/types";
@@ -414,8 +415,26 @@ export function ProjectorScreen({
 
   // Handle Team Answer
   const handleRecordAnswer = useCallback(
-    (teamId: string, optionKey: string, eventQuestionIndex?: number) => {
-      if (phase !== "question") return;
+    (
+      teamId: string,
+      optionKey: string,
+      eventQuestionIndex?: number,
+      serverConfirmed = false,
+    ) => {
+      // Pencatatan biasa hanya hidup pada fase question. Pengecualian
+      // sempit untuk rekonsiliasi poller (audit live 10 Nov 2026 tahap
+      // D): jawaban yang sudah terkonfirmasi server (serverConfirmed,
+      // indeks peristiwa sama dengan indeks berjalan) boleh dicatat
+      // juga pada fase reveal soal yang sama, karena RPC press hanya
+      // menerimanya selama fase question di server, jadi keberadaannya
+      // di peta server membuktikan ia tiba tepat waktu; yang terlambat
+      // hanyalah pemrosesan poller di layar (timer habis di antara
+      // fetch diterbitkan dan respons diproses). Tombol manual guru
+      // dan aliran event tidak membawa tanda ini dan perilakunya tidak
+      // berubah.
+      if (phase !== "question" && !(serverConfirmed && phase === "reveal")) {
+        return;
+      }
       // Penolakan peristiwa basi di pintu masuk (anomali soal 19
       // putaran 3): press yang lahir pada soal sebelumnya tetapi baru
       // diproses sesudah indeks naik akan dinilai memakai kunci jawaban
@@ -717,6 +736,36 @@ export function ProjectorScreen({
             handleRecordAnswer(ev.teamId, ev.optionKey);
           }
         }
+      }
+
+      // Rekonsiliasi hanya-menambah dari catatan otoritatif server
+      // (audit live 10 Nov 2026 tahap D: 3 dari 8 jawaban terkunci
+      // hilang dari layar). Aliran event di atas adalah jalur latensi
+      // rendah, tetapi saringannya (watermark ketat, cap generasi yang
+      // membuang seluruh respons yang melintasi pergantian soal, fase
+      // saat pemrosesan) bisa melewatkan event yang sah secara
+      // permanen. Peta answeredTeams pada gameState respons ini hanya
+      // dikirim route kepada pemanggil terautentikasi (layar guru);
+      // isinya ditulis atomik oleh RPC press dan digabung union oleh
+      // sync, jadi jawaban yang ada di sana pasti sudah terkonfirmasi
+      // server. Mengumpankannya ke handleRecordAnswer memulihkan
+      // jawaban yang terlewat tanpa risiko skor ganda: penjaga
+      // duplikat di pintu pencatatan menahan entri yang sudah tercatat
+      // lewat aliran event, dan tidak ada entri yang dihapus di sini.
+      // Berjalan pada setiap poll, termasuk poll tanpa event baru.
+      const serverGameState = data.gameState;
+      const serverConfirmedAnswers = selectServerConfirmedAnswers(
+        serverGameState?.answeredTeams,
+        serverGameState?.currentQuestionIndex,
+        currentQuestionIndexRef.current,
+      );
+      for (const entry of serverConfirmedAnswers) {
+        handleRecordAnswer(
+          entry.teamId,
+          entry.optionKey,
+          serverGameState.currentQuestionIndex,
+          true,
+        );
       }
     } catch {
       // network polling silent catch
