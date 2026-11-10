@@ -210,7 +210,10 @@ export default async function DashboardPage() {
         .from("essay_submissions")
         .select("student_id")
         .in("student_id", studentIds)
-        .gte("submitted_at", iso7),
+        // Kolom waktu kumpul tabel ini adalah created_at; filter lama
+        // memakai submitted_at yang tidak ada sehingga kueri selalu
+        // gagal 42703 dan hitungan esai mingguan selalu nol.
+        .gte("created_at", iso7),
     ]);
 
     for (const s of sessionsRes.data ?? []) {
