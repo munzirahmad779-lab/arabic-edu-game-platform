@@ -69,8 +69,8 @@ export function StudentImportForm({ classId }: { classId: string }) {
         />
         <p className="mt-2 text-xs text-neutral-500">
           <span className="font-bold">{names.length} nama terdeteksi.</span>{" "}
-          PIN akan dibuat otomatis dengan format 4 digit berurutan, dimulai dari
-          angka setelah siswa terakhir di kelas ini.
+          PIN akan dibuat otomatis oleh sistem berupa angka acak 6 digit yang
+          berbeda untuk tiap siswa.
         </p>
       </div>
 

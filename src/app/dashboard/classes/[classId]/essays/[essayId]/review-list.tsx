@@ -38,6 +38,7 @@ type ReviewDict = {
   student_answer_title: string;
   duration_prefix: string;
   minutes_suffix: string;
+  seconds_suffix: string;
   subscore_content: string;
   subscore_grammar: string;
   subscore_vocab: string;
@@ -70,6 +71,22 @@ const DICT_LOADERS: Record<
       (m) => m.default as unknown as { review_list: ReviewDict },
     ),
 };
+
+// Durasi menulis ditampilkan menit + detik: pembulatan ke menit penuh
+// membuat penulisan 45 detik terbaca "0 menit" dan 1 menit 59 detik
+// terbaca "1 menit", padahal duration_seconds tersimpan utuh dari
+// player siswa. Di bawah satu menit tampilkan detiknya saja.
+function formatDuration(
+  totalSeconds: number,
+  rl: ReviewDict,
+): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  if (minutes === 0) return `${seconds} ${rl.seconds_suffix}`;
+  if (seconds === 0) return `${minutes} ${rl.minutes_suffix}`;
+  return `${minutes} ${rl.minutes_suffix} ${seconds} ${rl.seconds_suffix}`;
+}
 
 function readLocale(): Locale {
   if (typeof document === "undefined") return DEFAULT_LOCALE;
@@ -256,8 +273,7 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
             {current.duration_seconds !== null ? (
               <p className="mt-1 text-xs text-neutral-500">
                 {rl.duration_prefix}
-                {Math.floor(current.duration_seconds / 60)}{" "}
-                {rl.minutes_suffix}
+                {formatDuration(current.duration_seconds, rl)}
               </p>
             ) : null}
           </div>
