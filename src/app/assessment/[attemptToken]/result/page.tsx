@@ -11,23 +11,21 @@ export default async function ResultPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: attempt } = await db
-    .from("assessment_attempts")
-    .select(
-      "id, attempt_token, assessment_id, student_name, status, started_at, finished_at, raw_listening, raw_structure, raw_reading, score_listening, score_structure, score_reading, score_total",
-    )
-    .eq("attempt_token", params.attemptToken)
-    .maybeSingle();
+  // Hasil ujian diambil lewat RPC bergerbang attempt_token
+  // (assessment_get_result, migrasi 0093). Dulu halaman ini membaca
+  // assessment_attempts + assessments langsung sebagai anon, padahal
+  // policy anon_read_attempts ber-qual true sehingga seluruh attempt
+  // (nama siswa + skor) terbaca siapa pun pemegang anon key.
+  const { data: payload, error } = await db.rpc("assessment_get_result", {
+    p_attempt_token: params.attemptToken,
+  });
 
-  if (!attempt) notFound();
+  if (error || !payload) notFound();
 
-  const { data: assessment } = await db
-    .from("assessments")
-    .select("id, title, assessment_type, level")
-    .eq("id", attempt.assessment_id)
-    .maybeSingle();
+  const attempt = payload.attempt;
+  const assessment = payload.assessment;
 
-  if (!assessment) notFound();
+  if (!attempt || !assessment) notFound();
 
   const isCompleted = attempt.status === "completed";
 
