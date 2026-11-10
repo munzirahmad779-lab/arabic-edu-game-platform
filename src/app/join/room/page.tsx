@@ -10,6 +10,7 @@ import { GameRegistry } from "@/lib/game-engine/registry";
 import { resolveEffectiveQuestionDurationSeconds } from "@/lib/game-engine/question-duration";
 
 import { QuizPlayer } from "@/components/game-players/quiz-player";
+import { WhackPlayer } from "@/components/game-players/arcade-dynamic";
 import type {
   ScoreEvent,
   GameSessionContext,
@@ -1128,21 +1129,41 @@ export default function JoinRoomPage({
         serverTime={session.server_time}
       >
       {session.question ? (
-        <QuizPlayer
-          key={session.question.id}
-          question={session.question}
-          session={gameSessionContext}
-          onSubmitAnswer={async (payload) => {
-            return await submitAnswer({
-              questionId: payload.questionId,
-              selectedOptionId: payload.selectedOptionId,
-              answerText: payload.answerText,
-            });
-          }}
-          isRtl={isRtl}
-          dict={dict}
-          onGameEvent={handleGameEvent}
-        />
+        gameType === "whack_mole" ? (
+          // Tipe whack_mole memakai pemain khususnya di HP siswa:
+          // satu soal per remount (pola yang sama dengan QuizPlayer),
+          // dan vonis datang dari server lewat onSubmitAnswer yang
+          // sama, karena soal room tidak membawa kunci jawaban.
+          <WhackPlayer
+            key={session.question.id}
+            questions={[session.question]}
+            singleQuestionMode
+            onSubmitAnswer={async (payload) => {
+              return await submitAnswer({
+                questionId: payload.questionId,
+                selectedOptionId: payload.selectedOptionId,
+                answerText: payload.answerText,
+              });
+            }}
+            isRtl={isRtl}
+          />
+        ) : (
+          <QuizPlayer
+            key={session.question.id}
+            question={session.question}
+            session={gameSessionContext}
+            onSubmitAnswer={async (payload) => {
+              return await submitAnswer({
+                questionId: payload.questionId,
+                selectedOptionId: payload.selectedOptionId,
+                answerText: payload.answerText,
+              });
+            }}
+            isRtl={isRtl}
+            dict={dict}
+            onGameEvent={handleGameEvent}
+          />
+        )
       ) : (
         <div className="rounded-[2rem] bg-white/10 p-10 text-center shadow-2xl backdrop-blur">
           <h2 className="text-2xl font-black text-white">{t.room_preparing}</h2>
