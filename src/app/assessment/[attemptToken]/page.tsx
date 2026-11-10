@@ -11,74 +11,39 @@ export default async function AttemptPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: attempt } = await db
-    .from("assessment_attempts")
-    .select(
-      "id, attempt_token, assessment_id, student_name, status, started_at, current_section_order, current_question_number",
-    )
-    .eq("attempt_token", params.attemptToken)
-    .maybeSingle();
+  // Payload ujian diambil lewat RPC bergerbang attempt_token
+  // (assessment_get_payload, migrasi 0091): soal yang sampai ke
+  // peramban tidak memuat correct_answer, jawaban tersimpan siswa
+  // ikut untuk resume, dan sisa waktu tiap section dihitung server
+  // dari started_at + duration_minutes. Dulu halaman ini membaca
+  // tabel assessment_* langsung; bentuk props ke player dipertahankan.
+  const { data: payload, error } = await db.rpc("assessment_get_payload", {
+    p_attempt_token: params.attemptToken,
+  });
 
-  if (!attempt) notFound();
-
-  if (attempt.status === "completed") {
-    redirect(`/assessment/${params.attemptToken}/result`);
+  if (error || !payload) {
+    const message = error?.message ?? "";
+    if (message.includes("attempt_completed")) {
+      redirect(`/assessment/${params.attemptToken}/result`);
+    }
+    if (message.includes("token_expired")) {
+      redirect("/assessment?error=token_expired");
+    }
+    notFound();
   }
 
-  const { data: assessment } = await db
-    .from("assessments")
-    .select("id, title, description")
-    .eq("id", attempt.assessment_id)
-    .maybeSingle();
-
-  if (!assessment) notFound();
-
-  const { data: sections } = await db
-    .from("assessment_sections")
-    .select(
-      "id, section_order, section_type, title, instructions, duration_minutes, audio_play_once, allow_review",
-    )
-    .eq("assessment_id", attempt.assessment_id)
-    .order("section_order");
-
-  const { data: questions } = await db
-    .from("assessment_questions")
-    .select(
-      "id, section_id, question_number, question_text, option_a, option_b, option_c, option_d, passage_id, audio_group_id",
-    )
-    .eq("assessment_id", attempt.assessment_id)
-    .order("question_number");
-
-  const { data: passages } = await db
-    .from("assessment_passages")
-    .select("id, section_id, passage_order, title, content")
-    .eq("assessment_id", attempt.assessment_id);
-
-  const { data: audioGroups } = await db
-    .from("assessment_audio_groups")
-    .select("id, section_id, group_order, title, audio_url, storage_path")
-    .eq("assessment_id", attempt.assessment_id);
-
-  const { data: answers } = await db
-    .from("assessment_answers")
-    .select("question_id, selected_answer")
-    .eq("attempt_id", attempt.id);
-
-  const { data: attemptSections } = await db
-    .from("assessment_attempt_sections")
-    .select("section_id, status, started_at, finished_at, time_spent_seconds")
-    .eq("attempt_id", attempt.id);
+  if (!payload.assessment) notFound();
 
   return (
     <AssessmentPlayer
-      attempt={attempt}
-      assessment={assessment}
-      sections={sections ?? []}
-      questions={questions ?? []}
-      passages={passages ?? []}
-      audioGroups={audioGroups ?? []}
-      answers={answers ?? []}
-      attemptSections={attemptSections ?? []}
+      attempt={payload.attempt}
+      assessment={payload.assessment}
+      sections={payload.sections ?? []}
+      questions={payload.questions ?? []}
+      passages={payload.passages ?? []}
+      audioGroups={payload.audio_groups ?? []}
+      answers={payload.answers ?? []}
+      attemptSections={payload.attempt_sections ?? []}
     />
   );
 }

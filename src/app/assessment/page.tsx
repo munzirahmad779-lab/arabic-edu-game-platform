@@ -11,83 +11,35 @@ async function startAttempt(fd: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const token = String(fd.get("token") ?? "").trim().toUpperCase();
-  const name = String(fd.get("name") ?? "").trim();
+  // Seluruh validasi token dan pembuatan attempt kini dikerjakan RPC
+  // bergerbang token kelas (assessment_start_attempt, migrasi 0093):
+  // pemeriksaan is_active/expires_at/max_uses/is_published, pembuatan
+  // attempt + baris attempt_sections, dan kenaikan used_count atomik
+  // di server. Dulu action ini membaca/menulis tabel assessment_*
+  // langsung sebagai anon, dan kenaikan used_count-nya ditolak RLS
+  // secara diam-diam sehingga max_uses tidak pernah ditegakkan.
+  // Exception berkode dari RPC dipetakan satu-satu ke kode ?error=
+  // yang sama seperti sebelumnya; error tak dikenal -> start_failed.
+  const { data: attemptToken, error } = await db.rpc(
+    "assessment_start_attempt",
+    {
+      p_token: String(fd.get("token") ?? ""),
+      p_student_name: String(fd.get("name") ?? ""),
+    },
+  );
 
-  if (!token || !name) {
-    redirect("/assessment?error=missing");
-  }
-
-  const { data: tokenRow } = await db
-    .from("assessment_tokens")
-    .select("id, assessment_id, expires_at, is_active, max_uses, used_count")
-    .eq("token", token)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (!tokenRow) {
-    redirect("/assessment?error=token_invalid");
-  }
-
-  if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
-    redirect("/assessment?error=token_expired");
-  }
-
-  if (tokenRow.used_count >= tokenRow.max_uses) {
-    redirect("/assessment?error=token_limit");
-  }
-
-  const { data: assessmentRow } = await db
-    .from("assessments")
-    .select("id, is_published")
-    .eq("id", tokenRow.assessment_id)
-    .maybeSingle();
-
-  if (!assessmentRow || !assessmentRow.is_published) {
-    redirect("/assessment?error=not_published");
-  }
-
-  const attemptToken = Array.from({ length: 64 }, () =>
-    Math.floor(Math.random() * 16).toString(16),
-  ).join("");
-
-  const { data: attemptRow, error: attemptErr } = await db
-    .from("assessment_attempts")
-    .insert({
-      attempt_token: attemptToken,
-      assessment_id: tokenRow.assessment_id,
-      token_id: tokenRow.id,
-      student_name: name,
-      status: "in_progress",
-      current_section_order: 1,
-      current_question_number: 1,
-    })
-    .select("id")
-    .single();
-
-  if (attemptErr || !attemptRow) {
-    redirect("/assessment?error=start_failed");
-  }
-
-  await db
-    .from("assessment_tokens")
-    .update({ used_count: tokenRow.used_count + 1 })
-    .eq("id", tokenRow.id);
-
-  const { data: sections } = await db
-    .from("assessment_sections")
-    .select("id, section_order")
-    .eq("assessment_id", tokenRow.assessment_id)
-    .order("section_order");
-
-  if (sections && sections.length > 0) {
-    const rows = sections.map((s: { id: string }, idx: number) => ({
-      attempt_id: attemptRow.id,
-      section_id: s.id,
-      status: idx === 0 ? "in_progress" : "pending",
-      started_at: idx === 0 ? new Date().toISOString() : null,
-    }));
-    await db.from("assessment_attempt_sections").insert(rows);
+  if (error || !attemptToken) {
+    const message = error?.message ?? "";
+    const knownCodes = [
+      "missing",
+      "token_invalid",
+      "token_expired",
+      "token_limit",
+      "not_published",
+    ];
+    const code =
+      knownCodes.find((c) => message.includes(c)) ?? "start_failed";
+    redirect(`/assessment?error=${code}`);
   }
 
   redirect(`/assessment/${attemptToken}`);

@@ -55,6 +55,7 @@ type AttemptSection = {
   started_at: string | null;
   finished_at: string | null;
   time_spent_seconds: number | null;
+  remaining_seconds: number | null;
 };
 
 type Attempt = {
@@ -74,12 +75,15 @@ type Assessment = {
   description: string | null;
 };
 
-type QuestionCorrect = {
-  id: string;
-  section_id: string;
-  correct_answer: string;
-};
-
+// Player asesmen versi RPC (perbaikan W3-K3, migrasi 0091).
+// Versi lama membaca correct_answer ke peramban, menulis is_correct
+// dan skor akhir dari klien, dan menulis cap waktu section dari jam
+// perangkat. Versi ini tidak menyentuh tabel assessment_* sama
+// sekali: payload datang dari assessment_get_payload (tanpa kunci),
+// jawaban dikirim ke assessment_submit_answer (dinilai di server),
+// perpindahan section lewat assessment_set_section_state (cap waktu
+// server), dan penutupan attempt lewat assessment_finish (skor
+// dihitung di server). Tampilan dan alur yang terlihat siswa sama.
 export function AssessmentPlayer({
   attempt,
   assessment,
@@ -99,7 +103,17 @@ export function AssessmentPlayer({
   answers: Answer[];
   attemptSections: AttemptSection[];
 }) {
-  const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
+  // Posisi awal mengikuti current_section_order yang dicatat server,
+  // supaya resume sesudah memuat ulang halaman mendarat di section
+  // yang sedang berjalan (attempt baru selalu bernilai 1 = section
+  // pertama, sama seperti perilaku lama).
+  const [currentSectionIdx, setCurrentSectionIdx] = useState(() => {
+    const fromOrder = (attempt.current_section_order ?? 1) - 1;
+    return Math.min(
+      Math.max(fromOrder, 0),
+      Math.max(sections.length - 1, 0),
+    );
+  });
   const [currentQuestionNum, setCurrentQuestionNum] = useState(1);
   const [answerMap, setAnswerMap] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
@@ -108,10 +122,13 @@ export function AssessmentPlayer({
     }
     return map;
   });
+  const [attemptSectionsState, setAttemptSectionsState] =
+    useState<AttemptSection[]>(attemptSections);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPassage, setShowPassage] = useState(true);
-  const startedAtRef = useRef<number>(Date.now());
+  const endsAtRef = useRef<number>(Date.now());
+  const autoFiredRef = useRef<boolean>(false);
 
   const currentSection = sections[currentSectionIdx];
   const sectionQuestions = useMemo(
@@ -136,20 +153,30 @@ export function AssessmentPlayer({
 
   useEffect(() => {
     if (!currentSection) return;
-    const duration = currentSection.duration_minutes * 60;
-    const attemptSec = attemptSections.find(
+    const secState = attemptSectionsState.find(
       (s) => s.section_id === currentSection.id,
     );
-    const sectionStart = attemptSec?.started_at
-      ? new Date(attemptSec.started_at).getTime()
-      : Date.now();
-    startedAtRef.current = sectionStart;
+    const duration = currentSection.duration_minutes * 60;
+    // Sisa waktu awal berasal dari hitungan server di payload
+    // (remaining_seconds); jam perangkat hanya menghitung mundur
+    // untuk tampilan. Keputusan habis waktu ditegakkan server:
+    // submit sesudah batas ditolak assessment_submit_answer.
+    const initialRemaining = secState?.remaining_seconds ?? duration;
+    endsAtRef.current = Date.now() + initialRemaining * 1000;
+    autoFiredRef.current = false;
+
+    if (secState?.status === "pending") {
+      void startSection(currentSection.id);
+    }
 
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - sectionStart) / 1000);
-      const remaining = Math.max(0, duration - elapsed);
+      const remaining = Math.max(
+        0,
+        Math.round((endsAtRef.current - Date.now()) / 1000),
+      );
       setTimeLeft(remaining);
-      if (remaining === 0) {
+      if (remaining === 0 && !autoFiredRef.current) {
+        autoFiredRef.current = true;
         void autoNextSection();
       }
     };
@@ -166,17 +193,54 @@ export function AssessmentPlayer({
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      await db.from("assessment_answers").upsert(
-        {
-          attempt_id: attempt.id,
-          question_id: questionId,
-          selected_answer: answer,
-          answered_at: new Date().toISOString(),
-        },
-        { onConflict: "attempt_id,question_id" },
-      );
+      const { error } = await db.rpc("assessment_submit_answer", {
+        p_attempt_token: attempt.attempt_token,
+        p_question_id: questionId,
+        p_answer: answer,
+      });
+      if (error) {
+        const message = error.message ?? "";
+        if (message.includes("attempt_completed")) {
+          window.location.href = `/assessment/${attempt.attempt_token}/result`;
+        } else if (message.includes("section_time_expired")) {
+          // Server menyatakan waktu section habis: tutup section
+          // lewat jalur yang sama dengan timer.
+          void autoNextSection();
+        }
+        // Error lain diamkan seperti perilaku lama: pilihan siswa
+        // tetap tampil terpilih di UI (optimistis).
+      }
     } catch {
       // silent
+    }
+  }
+
+  async function startSection(sectionId: string) {
+    try {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const { data, error } = await db.rpc("assessment_set_section_state", {
+        p_attempt_token: attempt.attempt_token,
+        p_section_id: sectionId,
+        p_action: "start",
+      });
+      if (error || !data) return;
+      setAttemptSectionsState((prev) =>
+        prev.map((s) =>
+          s.section_id === sectionId
+            ? {
+                ...s,
+                status: data.status,
+                started_at: data.started_at,
+                remaining_seconds: data.remaining_seconds,
+              }
+            : s,
+        ),
+      );
+    } catch {
+      // silent: jaring pengaman saja, kegagalan mulai section akan
+      // terlihat saat submit/finish dan ditangani di sana
     }
   }
 
@@ -185,44 +249,82 @@ export function AssessmentPlayer({
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const duration = currentSection.duration_minutes * 60;
-    const elapsed = Math.min(
-      duration,
-      Math.floor((Date.now() - startedAtRef.current) / 1000),
+    const { data, error } = await db.rpc("assessment_set_section_state", {
+      p_attempt_token: attempt.attempt_token,
+      p_section_id: currentSection.id,
+      p_action: "finish",
+    });
+
+    if (error || !data) {
+      const message = error?.message ?? "";
+      if (message.includes("attempt_completed")) {
+        window.location.href = `/assessment/${attempt.attempt_token}/result`;
+        return;
+      }
+      if (message.includes("token_expired")) {
+        window.location.href = "/assessment?error=token_expired";
+        return;
+      }
+      if (
+        message.includes("section_out_of_order") ||
+        message.includes("section_already_completed")
+      ) {
+        // Keadaan lokal dan server tidak sepakat (mis. panggilan
+        // ganda tombol + timer): sinkronkan ulang dari payload server.
+        await resyncFromServer();
+        return;
+      }
+      // Error lain: jangan berpindah section; siswa tetap di sini
+      // dan dapat menekan tombol selesai lagi.
+      return;
+    }
+
+    setAttemptSectionsState((prev) =>
+      prev.map((s) => {
+        if (s.section_id === currentSection.id) {
+          return {
+            ...s,
+            status: data.status,
+            started_at: data.started_at,
+            finished_at: data.finished_at,
+            time_spent_seconds: data.time_spent_seconds,
+            remaining_seconds: 0,
+          };
+        }
+        if (data.next_section_id && s.section_id === data.next_section_id) {
+          return {
+            ...s,
+            status: "in_progress",
+            started_at: data.next_started_at,
+            remaining_seconds: data.next_remaining_seconds,
+          };
+        }
+        return s;
+      }),
     );
 
-    await db
-      .from("assessment_attempt_sections")
-      .update({
-        status: "completed",
-        finished_at: new Date().toISOString(),
-        time_spent_seconds: elapsed,
-      })
-      .eq("attempt_id", attempt.id)
-      .eq("section_id", currentSection.id);
-
-    const nextIdx = currentSectionIdx + 1;
-    if (nextIdx < sections.length) {
-      await db
-        .from("assessment_attempt_sections")
-        .update({
-          status: "in_progress",
-          started_at: new Date().toISOString(),
-        })
-        .eq("attempt_id", attempt.id)
-        .eq("section_id", sections[nextIdx].id);
-
-      await db
-        .from("assessment_attempts")
-        .update({ current_section_order: nextIdx + 1 })
-        .eq("id", attempt.id);
-
-      setCurrentSectionIdx(nextIdx);
-      setCurrentQuestionNum(1);
-      setTimeLeft(sections[nextIdx].duration_minutes * 60);
-    } else {
+    if (data.is_last_section) {
       await finishAttempt();
+      return;
     }
+
+    if (data.next_section_id) {
+      const nextIdx = sections.findIndex(
+        (s) => s.id === data.next_section_id,
+      );
+      if (nextIdx >= 0) {
+        setCurrentSectionIdx(nextIdx);
+        setCurrentQuestionNum(1);
+        if (typeof data.next_remaining_seconds === "number") {
+          setTimeLeft(data.next_remaining_seconds);
+        }
+        return;
+      }
+    }
+
+    // Respons tidak membawa arah yang jelas (mis. finish ganda yang
+    // dijawab idempoten server): sinkronkan ulang dari payload.
+    await resyncFromServer();
   }
 
   async function autoNextSection() {
@@ -239,80 +341,43 @@ export function AssessmentPlayer({
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-
-    const { data: allQuestions } = await db
-      .from("assessment_questions")
-      .select("id, section_id, correct_answer")
-      .eq("assessment_id", attempt.assessment_id);
-
-    const correctMap: Record<string, string> = {};
-    const qSection: Record<string, string> = {};
-    for (const q of (allQuestions ?? []) as QuestionCorrect[]) {
-      correctMap[q.id] = q.correct_answer;
-      qSection[q.id] = q.section_id;
+    // Skor dihitung dan ditulis server oleh assessment_finish;
+    // halaman hasil membaca kolom skor dari attempt seperti biasa.
+    const { error } = await db.rpc("assessment_finish", {
+      p_attempt_token: attempt.attempt_token,
+    });
+    if (error && !(error.message ?? "").includes("attempt_completed")) {
+      // Gagal menutup attempt di server: tetap di halaman ini supaya
+      // penutupan bisa dicoba lagi, jangan arahkan ke hasil yang
+      // belum tersimpan.
+      return;
     }
-
-    const rawBySection: Record<string, number> = {};
-    for (const [qid, ans] of Object.entries(answerMap)) {
-      const correct = correctMap[qid];
-      const isCorrect = correct === ans;
-      const sid = qSection[qid];
-      if (!sid) continue;
-      if (!rawBySection[sid]) rawBySection[sid] = 0;
-      if (isCorrect) rawBySection[sid] += 1;
-
-      await db
-        .from("assessment_answers")
-        .update({ is_correct: isCorrect })
-        .eq("attempt_id", attempt.id)
-        .eq("question_id", qid);
-    }
-
-    const sectionTypeMap: Record<string, string> = {};
-    for (const s of sections) sectionTypeMap[s.id] = s.section_type;
-
-    let scaledL = 31;
-    let scaledS = 31;
-    let scaledR = 31;
-    for (const [sid, raw] of Object.entries(rawBySection)) {
-      const type = sectionTypeMap[sid];
-      const { data: scaled } = await db.rpc("assessment_convert_section", {
-        p_section_type: type,
-        p_raw: raw,
-      });
-      const val = typeof scaled === "number" ? scaled : 31;
-      if (type === "listening") scaledL = val;
-      else if (type === "structure") scaledS = val;
-      else if (type === "reading") scaledR = val;
-    }
-
-    const total = Math.round(((scaledL + scaledS + scaledR) / 3) * 10);
-
-    await db
-      .from("assessment_attempts")
-      .update({
-        status: "completed",
-        finished_at: new Date().toISOString(),
-        raw_listening:
-          rawBySection[
-            sections.find((s) => s.section_type === "listening")?.id ?? ""
-          ] ?? 0,
-        raw_structure:
-          rawBySection[
-            sections.find((s) => s.section_type === "structure")?.id ?? ""
-          ] ?? 0,
-        raw_reading:
-          rawBySection[
-            sections.find((s) => s.section_type === "reading")?.id ?? ""
-          ] ?? 0,
-        score_listening: scaledL,
-        score_structure: scaledS,
-        score_reading: scaledR,
-        score_total: total,
-      })
-      .eq("id", attempt.id);
-
     window.location.href = `/assessment/${attempt.attempt_token}/result`;
+  }
+
+  async function resyncFromServer() {
+    try {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const { data, error } = await db.rpc("assessment_get_payload", {
+        p_attempt_token: attempt.attempt_token,
+      });
+      if (error || !data) {
+        if ((error?.message ?? "").includes("attempt_completed")) {
+          window.location.href = `/assessment/${attempt.attempt_token}/result`;
+        }
+        return;
+      }
+      setAttemptSectionsState(data.attempt_sections ?? []);
+      const order = data.attempt?.current_section_order ?? 1;
+      setCurrentSectionIdx(
+        Math.min(Math.max(order - 1, 0), Math.max(sections.length - 1, 0)),
+      );
+      setCurrentQuestionNum(1);
+    } catch {
+      // silent
+    }
   }
 
   function formatTime(sec: number) {

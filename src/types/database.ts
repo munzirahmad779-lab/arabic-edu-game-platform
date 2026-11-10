@@ -294,6 +294,12 @@ export interface Database {
       student_login: { Args: { p_name: string; p_pin: string; p_ip: string }; Returns: Array<{ token: string; student_id: string; name: string; class_id: string; class_name: string }>; };
       verify_student_session: { Args: { p_token: string }; Returns: Array<{ student_id: string; name: string; class_id: string; class_name: string }>; };
       student_logout: { Args: { p_token: string }; Returns: undefined; };
+      assessment_get_payload: { Args: { p_attempt_token: string }; Returns: Json; };
+      assessment_submit_answer: { Args: { p_attempt_token: string; p_question_id: string; p_answer: string }; Returns: boolean; };
+      assessment_set_section_state: { Args: { p_attempt_token: string; p_section_id: string; p_action: string }; Returns: Json; };
+      assessment_finish: { Args: { p_attempt_token: string }; Returns: Json; };
+      assessment_start_attempt: { Args: { p_token: string; p_student_name: string }; Returns: string; };
+      assessment_get_result: { Args: { p_attempt_token: string }; Returns: Json; };
     };
     Enums: Record<string, never>;
   };
