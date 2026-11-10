@@ -80,6 +80,12 @@ export default function ControllerPage() {
   const pollFailuresRef = useRef(0);
 
   const prevQIndexRef = useRef<number>(-1);
+  // Cermin fase terakhir yang diterima, meniru pola prevQIndexRef:
+  // kunci lokal berdimensi indeks soal saja, jadi masuknya fase
+  // question dari fase lain pada indeks yang sama (permainan baru
+  // yang mulai lagi dari indeks yang sama) hanya terlihat dari
+  // transisi fase ini.
+  const prevPhaseRef = useRef<string | null>(null);
   // Sticky local answer: question index + key this team has answered, kept in
   // refs so sync payloads can be checked without re-creating callbacks.
   const answeredQIndexRef = useRef<number>(-1);
@@ -130,6 +136,18 @@ export default function ControllerPage() {
         prevQIndexRef.current = nextQIndex;
       }
 
+      // Transisi masuk fase question dari fase bukan-question:
+      // permainan baru yang dimulai (atau dimulai ulang) pada indeks
+      // yang sama tidak menggerakkan isNewQuestion, jadi tanpa tanda
+      // ini kunci lokal dari permainan sebelumnya ikut terbawa.
+      const prevPhase = prevPhaseRef.current;
+      const isEnteringQuestion =
+        nextPhase === "question" && prevPhase !== null && prevPhase !== "question";
+
+      if (nextPhase) {
+        prevPhaseRef.current = nextPhase;
+      }
+
       const effectiveQIndex = typeof nextQIndex === "number" ? nextQIndex : prevQ;
 
       // Record any server-confirmed answer for this question index so the
@@ -139,6 +157,18 @@ export default function ControllerPage() {
         if (teamAnswerKey) {
           answeredKeyRef.current = teamAnswerKey;
         }
+      }
+
+      // Masuk soal pada permainan baru, indeks sama, dan payload
+      // berjalan menyatakan tim ini BELUM menjawab: kunci lokal lama
+      // dibersihkan SEBELUM hitungan lengket di bawah, supaya kunci
+      // permainan sebelumnya tidak dibaca sebagai jawaban permainan
+      // ini. Bila payload menyatakan tim ini memang sudah menjawab,
+      // kunci dipertahankan (dicatat ulang oleh blok pencatatan di
+      // atas) dan stik tetap terkunci secara sah.
+      if (isEnteringQuestion && !teamHasAnswered) {
+        answeredQIndexRef.current = -1;
+        answeredKeyRef.current = null;
       }
 
       // Sticky lock: once this team has answered at the current question
@@ -155,8 +185,14 @@ export default function ControllerPage() {
 
       // Unlock cleanly only when:
       // 1. Moving to a new question, or
-      // 2. The game returns to the lobby / finishes
-      if ((isNewQuestion && !teamHasAnswered) || isResetPhase) {
+      // 2. The game returns to the lobby / finishes, or
+      // 3. A new game enters the question phase at the SAME index
+      //    (restart) and this team has not answered in the new game
+      if (
+        (isNewQuestion && !teamHasAnswered) ||
+        (isEnteringQuestion && !teamHasAnswered) ||
+        isResetPhase
+      ) {
         answeredQIndexRef.current = -1;
         answeredKeyRef.current = null;
         setHasLocallyAnswered(false);

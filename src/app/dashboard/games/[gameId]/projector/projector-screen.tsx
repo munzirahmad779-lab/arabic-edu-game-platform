@@ -434,6 +434,14 @@ export function ProjectorScreen({
 
   const totalQuestions = questions.length || 1;
   const correctOptionKey = (activeQuestion.correct_option_key ?? "A").toUpperCase().trim();
+  // Cermin ref kunci jawaban berjalan, meniru currentQuestionIndexRef:
+  // handleRecordAnswer menilai terhadap nilai TERKINI ref ini, bukan
+  // nilai tertangkap closure render yang menciptakannya. Closure dari
+  // soal sebelumnya (mis. kelanjutan poll yang diterbitkan sebelum
+  // pergantian soal) dengan begitu menilai jawaban soal baru memakai
+  // kunci soal baru, bukan kunci lamanya sendiri.
+  const correctOptionKeyRef = useRef(correctOptionKey);
+  correctOptionKeyRef.current = correctOptionKey;
   const optionKeys = new Set(
     activeQuestion.options.map((option) => option.option_key.trim().toUpperCase()),
   );
@@ -512,7 +520,11 @@ export function ProjectorScreen({
       if (answers[teamId]) return;
 
       const keyUpper = optionKey.toUpperCase().trim();
-      const isCorrect = keyUpper === correctOptionKey;
+      // Penilaian membaca ref kunci berjalan, bukan closure: vonis
+      // yang dibekukan di catatan ini harus memakai kunci soal yang
+      // sedang berjalan saat pencatatan diproses, walau callback ini
+      // lahir dari render soal sebelumnya.
+      const isCorrect = keyUpper === correctOptionKeyRef.current;
 
       let speedBonus = 0;
       if (isCorrect) {
@@ -752,9 +764,15 @@ export function ProjectorScreen({
         setActiveControllers(data.activeControllers);
       }
 
+      // Penanda generasi diangkat ke cakupan fungsi poll ini (semula
+      // hanya di dalam blok events): blok rekonsiliasi di bawah memakai
+      // penanda yang sama, karena respons yang melintasi pergantian
+      // soal membawa closure berkunci lama dan tidak boleh menilai
+      // jawaban soal baru sama sekali.
+      const responseCrossedQuestionChange =
+        issuedGeneration !== pollGenerationRef.current;
+
       if (Array.isArray(data.events) && data.events.length > 0) {
-        const responseCrossedQuestionChange =
-          issuedGeneration !== pollGenerationRef.current;
         // Watermark saat pemrosesan dimulai: event yang tidak lebih
         // baru dari nilai ini sudah pernah diproses oleh respons
         // tumpang tindih lain dan tidak boleh diputar ulang.
@@ -790,19 +808,28 @@ export function ProjectorScreen({
       // duplikat di pintu pencatatan menahan entri yang sudah tercatat
       // lewat aliran event, dan tidak ada entri yang dihapus di sini.
       // Berjalan pada setiap poll, termasuk poll tanpa event baru.
-      const serverGameState = data.gameState;
-      const serverConfirmedAnswers = selectServerConfirmedAnswers(
-        serverGameState?.answeredTeams,
-        serverGameState?.currentQuestionIndex,
-        currentQuestionIndexRef.current,
-      );
-      for (const entry of serverConfirmedAnswers) {
-        handleRecordAnswer(
-          entry.teamId,
-          entry.optionKey,
-          serverGameState.currentQuestionIndex,
-          true,
+      // Penjaga generasi yang sama dengan gelung event di atas: bila
+      // generasi berubah selama fetch, seluruh rekonsiliasi dilewati,
+      // karena handleRecordAnswer yang tertangkap respons ini lahir
+      // dari closure soal sebelumnya dan vonisnya akan dibekukan
+      // memakai kunci lama (anomali penilaian soal 2). Poll berikutnya
+      // mengulang rekonsiliasi yang sama dengan closure yang benar,
+      // jadi jawaban sah tidak hilang, hanya tertunda satu poll.
+      if (!responseCrossedQuestionChange) {
+        const serverGameState = data.gameState;
+        const serverConfirmedAnswers = selectServerConfirmedAnswers(
+          serverGameState?.answeredTeams,
+          serverGameState?.currentQuestionIndex,
+          currentQuestionIndexRef.current,
         );
+        for (const entry of serverConfirmedAnswers) {
+          handleRecordAnswer(
+            entry.teamId,
+            entry.optionKey,
+            serverGameState.currentQuestionIndex,
+            true,
+          );
+        }
       }
     } catch {
       // network polling silent catch
