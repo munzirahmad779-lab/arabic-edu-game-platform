@@ -10,6 +10,7 @@ import { GameRegistry } from "@/lib/game-engine/registry";
 import { resolveEffectiveQuestionDurationSeconds } from "@/lib/game-engine/question-duration";
 
 import { QuizPlayer } from "@/components/game-players/quiz-player";
+import { AnagramPlayer } from "@/components/game-players/anagram-player";
 import { WhackPlayer } from "@/components/game-players/arcade-dynamic";
 import type {
   ScoreEvent,
@@ -1146,6 +1147,28 @@ export default function JoinRoomPage({
               });
             }}
             isRtl={isRtl}
+          />
+        ) : gameType === "anagram" ? (
+          // Tipe anagram memakai pemain susun huruf: siswa menyusun
+          // atau mengetik jawaban teks, dan vonis datang dari server
+          // lewat answerText pada onSubmitAnswer yang sama, karena
+          // soal room tidak membawa kunci jawaban dan soal anagram
+          // memang tidak wajib memiliki empat pilihan.
+          <AnagramPlayer
+            key={session.question.id}
+            question={session.question}
+            session={gameSessionContext}
+            onSubmitAnswer={async (payload) => {
+              return await submitAnswer({
+                questionId: payload.questionId,
+                selectedOptionId: payload.selectedOptionId,
+                answerText: payload.answerText,
+              });
+            }}
+            isRtl={isRtl}
+            dict={dict}
+            singleQuestionMode
+            onGameEvent={handleGameEvent}
           />
         ) : (
           <QuizPlayer
