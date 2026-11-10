@@ -3,16 +3,14 @@
  * ke salinan LMS yang tertinggal (laporan armada K40-K43, 6 Nov 2026).
  *
  * Cakupan:
- * 1. Adu Tarik Dino LMS: loadBank menolak soal berkunci di luar pilihan
- *    dan soal berpilihan kurang dari 2 (dulu lolos semua).
- * 2. Fruit Blast LMS: parseCsvBank menolak kunci NaN (huruf di luar A-D,
+ * 1. Fruit Blast LMS: parseCsvBank menolak kunci NaN (huruf di luar A-D,
  *    sel kosong) dan menghormati kutip pada pemecah CSV (dulu kunci
  *    menjadi undefined dan baris berkutip terpecah bergeser).
- * 3. Basket LMS: isQ menolak correctIndex di luar rentang (99, -1, 1.5)
+ * 2. Basket LMS: isQ menolak correctIndex di luar rentang (99, -1, 1.5)
  *    pada loadCustomBank dan loadBankOverrides.
- * 4. Space War LMS: kunci angka negatif pada impor Markdown/CSV ditolak
+ * 3. Space War LMS: kunci angka negatif pada impor Markdown/CSV ditolak
  *    dan dihitung sebagai dilewati (dulu dijepit diam-diam menjadi 0).
- * 5. Pemasangan statis: Basket startRound + kedua handler keluar
+ * 4. Pemasangan statis: Basket startRound + kedua handler keluar
  *    mengosongkan timeoutsRef; dialog keluar Fruit membekukan timer dan
  *    loop rAF; dialog keluar Sigetteng membekukan kedua timer dan
  *    menggeser penanda tampil soal; opsi Arab Space War memakai dir rtl.
@@ -40,7 +38,6 @@ const store = new Map<string, string>();
   clear: () => store.clear(),
 };
 
-import { loadBank as loadDinoBank } from "../../src/modules/adu-tarik-dino/modul/logic";
 import { parseCsvBank as parseFruitCsv } from "../../src/modules/banua-fruit-blast/modul/logic";
 import {
   loadCustomBank as loadBasketCustom,
@@ -52,28 +49,6 @@ import {
 } from "../../src/modules/space-war/modul/logic";
 
 const read = (rel: string) => readFileSync(path.join(process.cwd(), rel), "utf8");
-
-/* ------------------------------------------------------------- dino */
-
-describe("Adu Tarik Dino LMS: loadBank ketat (porting c187607)", () => {
-  test("soal berkunci di luar pilihan dan berpilihan <2 tersaring, 3 kali identik", () => {
-    const broken = [
-      { id: "ok1", subjectId: "arab", prompt: "Soal sah?", isArabic: false, options: ["A", "B", "C", "D"], correct: "B" },
-      { id: "bad1", subjectId: "arab", prompt: "Kunci di luar pilihan?", isArabic: false, options: ["A", "B", "C", "D"], correct: "Z" },
-      { id: "bad2", subjectId: "arab", prompt: "Satu pilihan?", isArabic: false, options: ["A"], correct: "A" },
-      { id: "bad3", subjectId: "arab", prompt: "Tanpa kunci?", isArabic: false, options: ["A", "B"], correct: "" },
-    ];
-    store.set("adu-tarik-dino:bank:v1", JSON.stringify({ arab: broken }));
-    for (let run = 1; run <= 3; run++) {
-      const bank = loadDinoBank();
-      assert.deepEqual(
-        bank.arab.map((q) => q.id),
-        ["ok1"],
-        `pengulangan ${run}: hanya soal sah yang lolos`,
-      );
-    }
-  });
-});
 
 /* ------------------------------------------------------------ fruit */
 
@@ -209,10 +184,4 @@ describe("Pemasangan statis perbaikan perilaku", () => {
     assert.ok(src.includes("Jawaban angka tidak boleh negatif"), "form tambah soal menolak negatif lewat notify");
   });
 
-  test("Dino: panel bermain memakai key berbasis indeks", () => {
-    const src = read("src/modules/adu-tarik-dino/modul/Game.tsx");
-    assert.ok(src.includes("key={`${oi}-${opt}`}"), "key panel bermain berbasis indeks seperti standalone");
-    const score = src.match(/score: w === "draw" \? Math\.max\(teamScore\("p1"\), teamScore\("p2"\)\) : teamScore\(w\)/);
-    assert.ok(score, "skor rekor dipasangkan ke tim pemenang, bukan Math.max buta");
-  });
 });

@@ -7,7 +7,7 @@
  * 23:46): dua pemain, dua tim, satu layar. Tiap pemain punya panel soal di
  * sisinya sendiri (kiri/kanan), arena di tengah; Anoa menembak ke ring tim
  * pemain yang menjawab. Mata pelajaran & bank soal sama dengan game pertama
- * (Adu Tarik): Bahasa Arab, Matematika SMA, Biologi SMA, Fisika SMA.
+ * (Sigetteng-Getteng): Bahasa Arab, Matematika SMA, Biologi SMA, Fisika SMA.
  *
  * Alur: beranda → pilih mapel → hitung mundur → tanding (timer per panel
  * 20 dtk, timer pertandingan 180 dtk, target 10 poin) → hasil.

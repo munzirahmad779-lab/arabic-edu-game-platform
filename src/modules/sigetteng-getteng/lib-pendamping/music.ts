@@ -7,7 +7,7 @@
  * Dua tema berciri khas Magguru (Log 54): tangga nada hijaz + motif
  * pembuka yang sama di kedua game, sesuai identitas web Magguru sebagai
  * platform Bahasa Arab. "basket" = groove darbuka untuk AI Basketball;
- * "tug" = pola genderang pesta untuk Adu Tarik / Sigetteng-Getteng.
+ * "tug" = pola genderang pesta untuk Sigetteng-Getteng.
  * Pola ditulis per birama 16 langkah, "-" = diam.
  */
 

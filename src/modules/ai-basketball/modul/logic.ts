@@ -4,7 +4,7 @@
  *
  * Log 38 — game didesain ulang menjadi DUEL 2 PEMAIN (2 tim) mengikuti
  * rujukan papan interaktif: bank soal & pilihan mata pelajaran diselaraskan
- * dengan game pertama (Adu Tarik): Bahasa Arab, Matematika SMA, Biologi SMA,
+ * dengan game pertama (Sigetteng-Getteng): Bahasa Arab, Matematika SMA, Biologi SMA,
  * Fisika SMA — soal yang sama persis, format disesuaikan (correctIndex +
  * penjelasan "Jawaban yang benar: ...").
  */

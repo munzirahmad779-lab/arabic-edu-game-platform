@@ -1,5 +1,5 @@
 /**
- * Mesin render arena Adu Tarik (v3 - pass realisme).
+ * Mesin render arena Sigetteng-Getteng (v3 - pass realisme).
  *
  *  - Tali memakai katenari (cosh) + gelombang tegangan yang menjalar.
  *  - Tali berbayang (badan, cahaya atas, serat) + simpul + bayangan di tanah.

@@ -30,7 +30,6 @@ export const GAME_CATALOG: readonly GameCatalogEntry[] = [
   ["ruang-io", "Ruang IO"],
   ["gabung-ceria", "Gabung Ceria"],
   ["color-link-junior", "Color Link Junior"],
-  ["adu-tarik-dino", "Adu Tarik Dino"],
   ["tatap-hap", "Tatap Hap"],
   ["cocok-logi", "Cocok Logi"],
   ["mesin-koleksi", "Mesin Koleksi"],

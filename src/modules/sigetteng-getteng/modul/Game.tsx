@@ -1353,7 +1353,7 @@ export default function SigettengGettengGame() {
               </div>
               {csvMsg && <p className="text-[11px] font-bold text-amber-300">{csvMsg}</p>}
               <p className="text-[10px] text-slate-500">
-                Soal disimpan di perangkat ini (localStorage) dan hanya dipakai game Adu Tarik Dino.
+                Soal disimpan di perangkat ini (localStorage) dan hanya dipakai game Sigetteng-Getteng.
               </p>
             </div>
           </div>

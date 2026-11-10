@@ -404,22 +404,6 @@ export default async function GamesPage({
             </span>
           </Link>
           <Link
-            href="/game/adu-tarik-dino"
-            className="aesthetic-card flex flex-col transition hover:shadow-md"
-          >
-            <h3 className="font-display text-lg font-black text-teal-700">
-              🦖 Adu Tarik Cerdas
-            </h3>
-            <p className="mt-1 text-sm text-softslate/70">
-              Tarik tambang pengetahuan dengan maskot dino: DUEL 1v1 atau
-              SQUAD 2v2 bergantian menjawab di perangkat yang sama. Bisa
-              memakai soal dari Bank Soal LMS.
-            </p>
-            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
-              Hot-seat · 1 perangkat
-            </span>
-          </Link>
-          <Link
             href="/game/basket"
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
