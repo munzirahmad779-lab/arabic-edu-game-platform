@@ -56,6 +56,71 @@ export function isAnswerEventStale(
 }
 
 /**
+ * Rekonsiliasi jawaban terkonfirmasi server (audit live 10 Nov 2026,
+ * tahap D: jawaban stik yang terkunci hilang dari proyektor).
+ *
+ * Peta answeredTeams di state room server adalah catatan otoritatif:
+ * RPC press_projector_button menulisnya secara atomik bersama event
+ * (satu transaksi per press), dan sync_projector_room_state
+ * menggabungkannya dengan union pada indeks soal yang sama, jadi
+ * jawaban yang sudah diterima server tidak pernah terhapus oleh
+ * sinkronisasi mana pun. Sebaliknya state lokal layar dibangun hanya
+ * dari aliran event poller, yang menyaring secara ketat (watermark,
+ * cap generasi, fase saat pemrosesan): event yang sah bisa terlewat
+ * dan, tanpa rekonsiliasi, jawaban itu hilang dari layar dan dari
+ * laporan padahal server menyimpannya.
+ *
+ * Fungsi murni ini memilih entri yang boleh diumpankan ke pencatatan
+ * layar: hanya bila indeks soal server sama dengan indeks soal yang
+ * sedang berjalan di layar (peta soal lain tidak berlaku), entri
+ * berbentuk sah saja, dan terurut menaik menurut cap waktu server
+ * supaya urutan kedatangan (bonus kecepatan) mendekati urutan
+ * sebenarnya. Hasilnya hanya-menambah: pemanggil mengumpankan tiap
+ * entri ke handleRecordAnswer, yang penjaga duplikatnya
+ * (tryMarkRecordedAnswer + answers[teamId]) memastikan jawaban yang
+ * sudah tercatat lewat aliran event tidak diskor dua kali, dan tidak
+ * ada jalur yang menghapus jawaban yang sudah tercatat.
+ */
+export function selectServerConfirmedAnswers(
+  serverAnsweredTeams:
+    | Record<string, { optionKey?: unknown; timestamp?: unknown } | null | undefined>
+    | null
+    | undefined,
+  serverQuestionIndex: number | null | undefined,
+  currentQuestionIndex: number,
+): { teamId: string; optionKey: string; timestamp: number }[] {
+  if (
+    typeof serverQuestionIndex !== "number" ||
+    !Number.isFinite(serverQuestionIndex) ||
+    serverQuestionIndex !== currentQuestionIndex
+  ) {
+    return [];
+  }
+  if (!serverAnsweredTeams || typeof serverAnsweredTeams !== "object") {
+    return [];
+  }
+  const selected: { teamId: string; optionKey: string; timestamp: number }[] =
+    [];
+  for (const [teamId, entry] of Object.entries(serverAnsweredTeams)) {
+    if (!entry || typeof entry !== "object") continue;
+    if (typeof entry.optionKey !== "string" || entry.optionKey === "") {
+      continue;
+    }
+    selected.push({
+      teamId,
+      optionKey: entry.optionKey,
+      timestamp:
+        typeof entry.timestamp === "number" &&
+        Number.isFinite(entry.timestamp)
+          ? entry.timestamp
+          : 0,
+    });
+  }
+  selected.sort((a, b) => a.timestamp - b.timestamp);
+  return selected;
+}
+
+/**
  * Menandai satu pasangan soal+tim sebagai sudah dicatat.
  * Mengembalikan true bila ini kedatangan pertama (pencatatan boleh
  * lanjut) dan false bila duplikat (pencatatan harus berhenti tanpa efek).
