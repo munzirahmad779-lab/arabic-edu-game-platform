@@ -1,3 +1,27 @@
+-- CATATAN PENERAPAN (10 Nov 2026, tahap 17-21):
+-- Berkas ini SUDAH DITERAPKAN ke produksi (zwenvfoolgwlcjprnxlk)
+-- 10 Nov 2026 tahap 17 dan diverifikasi katalog: reconnect hanya
+-- punya overload baru (text, text, text, uuid); press tidak berubah
+-- tanda tangannya. Bagian B dilengkapi 0095 (grant PUBLIC yang tersisa
+-- membuat anon tetap bisa mengeksekusi sync sesudah 0087; 0095
+-- mencabutnya dan verifikasi has_function_privilege menjadi
+-- false/true/true untuk anon/authenticated/service_role).
+-- Probe REST nyata (kunci anon) sesudah penerapan:
+-- - sync_projector_room_state sebagai anon: 401 kode 42501
+--   permission denied (sebelum 0095 probe yang sama tereksekusi).
+-- - press pada room tak dikenal: ditolak STALE_QUESTION dan tidak
+--   membuat baris projector_room_states (get state = null).
+-- - reconnect rantai uji ZZUJI87 (dibuat tahap 19-20, dibersihkan
+--   tahap 21, verifikasi 0/0/0): nama saja -> himpunan kosong;
+--   PIN salah -> kosong; PIN benar -> 1 baris dengan snapshot
+--   tersanitasi (0 kemunculan correct_option_key dan explanation);
+--   join_token benar -> 1 baris.
+-- Sisa risiko yang memang TIDAK ditutup paket ini (lihat kepala
+-- berkas): impersonasi press hotseat berbekal kode room (tidak ada
+-- kredensial stik yang kuat di mode ini), touch/get projector room
+-- state masih terbuka anon (Minor wilayah 5), dan belum ada
+-- pembatasan laju tebakan PIN pada reconnect.
+
 -- ============================================================================
 -- 0087_proyektor_dan_reconnect.sql
 -- Status: DRAF menunggu persetujuan pemilik per berkas. BELUM diterapkan
