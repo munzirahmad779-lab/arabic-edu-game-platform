@@ -62,9 +62,23 @@
 -- assessment_audio_groups: id; assessment_id; section_id; group_order int
 --   not null; title text; audio_url text; storage_path text;
 --   duration_seconds int; created_at.
--- assessment_tokens: id; token text not null; assessment_id uuid not null;
---   student_id uuid; student_name text; is_used boolean not null default
---   false; used_at timestamptz; created_at; expires_at timestamptz.
+-- assessment_tokens (KOREKSI ekspor ulang 10 Nov 16:10 WITA; bacaan
+--   pertama memuat bentuk lama berisi student_id/student_name/is_used/
+--   used_at yang TIDAK berlaku — pola kekeliruan yang sama dengan
+--   ekspor pertama student_login di 0088): id; token text not null;
+--   assessment_id uuid not null; created_by uuid not null; expires_at
+--   timestamptz not null; max_uses int not null default 999; used_count
+--   int not null default 0; is_active boolean not null default true;
+--   created_at. Bentuk ini konsisten dengan kode halaman masuk dan
+--   policy teacher_own_tokens (created_by = auth.uid()).
+-- Policy wilayah ini terverifikasi teks qual-nya (ekspor 16:10 WITA):
+--   anon pada answers dan attempt_sections = ALL dengan qual true;
+--   attempts anon INSERT/SELECT/UPDATE (qual/with_check true);
+--   questions dan sections anon SELECT qual true; tokens anon SELECT
+--   qual (is_active = true); assessments anon SELECT qual
+--   (is_published = true). Policy guru semuanya terlingkup benar
+--   (teacher_id/created_by = auth.uid()). Tabel assessment_attempts
+--   KOSONG pada saat tangkapan (belum pernah ada attempt).
 -- assessment_attempts: id; attempt_token text not null; assessment_id uuid
 --   not null; token_id uuid; student_name text not null; student_id uuid;
 --   started_at timestamptz not null default now(); finished_at timestamptz;
