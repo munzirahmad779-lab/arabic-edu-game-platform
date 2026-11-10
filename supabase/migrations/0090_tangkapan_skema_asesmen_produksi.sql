@@ -113,10 +113,8 @@
 -- student_get_practice_game, student_submit_practice_answer,
 -- student_get_practice_progress, student_reset_practice,
 -- student_list_essays, student_get_essay, student_submit_essay)
--- tersimpan pada keluaran ekspor katalog 10 Nov 2026 tahap 8 dan
--- diringkas di sini sebagai penunjuk; definisi yang mengikat untuk
--- pembangunan ulang adalah pg_get_functiondef produksi. Fungsi yang
--- paling menentukan pola (penilaian server) diabadikan utuh di bawah.
+-- diabadikan utuh di bawah dan di Bagian 3 lanjutan, persis seperti
+-- keluaran ekspor katalog 10 Nov 2026.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.student_submit_practice_answer(p_token text, p_game_id uuid, p_question_id uuid, p_selected_option_key text)
  RETURNS TABLE(accepted boolean, is_correct boolean, correct_option_key text, explanation text)
