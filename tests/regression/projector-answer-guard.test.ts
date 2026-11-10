@@ -30,6 +30,22 @@
  * questionIndex yang dikirim stik; (3) poller membuang respons yang
  * diterbitkan sebelum pergantian soal terakhir (cap generasi) dan
  * melewati event yang tidak lebih baru dari watermark pemrosesan.
+ *
+ * Supersesi W5-K2 (commit dadf6c7, mega-audit wilayah 5, Kritis 2):
+ * lapis (2) berubah bentuk dan lapis (3) berpindah tempat. Payload
+ * broadcast tak terautentikasi tidak boleh menjadi skor sama sekali,
+ * jadi kedua listener tidak lagi membaca payload untuk menskor dan
+ * tidak lagi meneruskan questionIndex ke pencatatan; keduanya hanya
+ * memicu pollControllerEvents. Penskoran kini hanya dari event store
+ * server (RPC press atomik berpenjaga fase yang menolak
+ * STALE_QUESTION dan ALREADY_ANSWERED), dan penolakan indeks basi di
+ * handleRecordAnswer tetap berlaku bagi jalur yang memang membawa
+ * indeks (rekonsiliasi jawaban terkonfirmasi server). Seluruh logika
+ * poller lapis (3) pindah utuh ke pollControllerEvents supaya satu
+ * fungsi yang sama bisa dipicu seketika oleh broadcast maupun oleh
+ * interval berkala. Dua uji struktur di bawah yang masih menegaskan
+ * bentuk lama gagal sejak gabungan itu dan diperbarui 10 Nov 2026
+ * untuk menegaskan arsitektur yang benar ini, bukan bentuk lamanya.
  */
 
 import { test, describe } from "node:test";
@@ -190,15 +206,48 @@ describe("Penolakan indeks peristiwa basi di pintu masuk pencatatan", () => {
     );
   });
 
-  test("Kedua listener broadcast meneruskan questionIndex yang dikirim stik", () => {
-    const passCount =
-      projectorSource.match(/handleRecordAnswer\(teamId, optionKey, questionIndex\)/g)
-        ?.length ?? 0;
-    assert.equal(passCount, 2);
-    const destructureCount =
-      projectorSource.match(/const \{ teamId, optionKey, questionIndex \} = /g)
-        ?.length ?? 0;
-    assert.equal(destructureCount, 2);
+  test("Kedua listener broadcast tidak menskor langsung; controller_press hanya memicu pollControllerEvents (W5-K2)", () => {
+    // Uji ini sebelumnya menegaskan bentuk lama: kedua listener
+    // membaca { teamId, optionKey, questionIndex } dari payload lalu
+    // memanggil handleRecordAnswer(teamId, optionKey, questionIndex).
+    // Bentuk itu adalah celah Kritis W5-K2 (payload broadcast tak
+    // terautentikasi menjadi skor, bisa dipalsukan dari konsol
+    // peramban mana pun yang tahu kode room) dan memang dihapus
+    // commit dadf6c7. Yang ditegaskan kini adalah arsitektur
+    // penggantinya, dengan pagar negatif yang mengunci celah itu
+    // agar tidak kembali.
+    assert.doesNotMatch(
+      projectorSource,
+      /handleRecordAnswer\(teamId, optionKey, questionIndex\)/,
+    );
+    assert.doesNotMatch(
+      projectorSource,
+      /const \{ teamId, optionKey, questionIndex \} = (payload|ev\.data\.payload);/,
+    );
+    // Listener Supabase: controller_press hanya memicu poll segera.
+    const sbListenerPos = projectorSource.indexOf(
+      '.on("broadcast", { event: "controller_press" }',
+    );
+    assert.ok(sbListenerPos >= 0);
+    const sbTriggerPos = projectorSource.indexOf(
+      "void pollControllerEvents();",
+      sbListenerPos,
+    );
+    assert.ok(sbTriggerPos > sbListenerPos && sbTriggerPos < sbListenerPos + 200);
+    // Listener BroadcastChannel: controller_press juga hanya pemicu.
+    const bcListenerPos = projectorSource.indexOf("bc.onmessage = (ev) => {");
+    assert.ok(bcListenerPos >= 0);
+    const bcTriggerPos = projectorSource.indexOf(
+      "void pollControllerEvents();",
+      bcListenerPos,
+    );
+    assert.ok(bcTriggerPos > bcListenerPos && bcTriggerPos < bcListenerPos + 400);
+    // Tepat tiga pemicu pollControllerEvents di seluruh berkas: dua
+    // listener di atas dan interval berkala. Tidak ada jalur skor
+    // keempat yang menyelinap di luar event store server.
+    const triggerCount =
+      projectorSource.match(/void pollControllerEvents\(\);/g)?.length ?? 0;
+    assert.equal(triggerCount, 3);
   });
 });
 
@@ -212,31 +261,54 @@ describe("Poller proyektor menolak respons lintas pergantian soal", () => {
   });
 
   test("Fetch menangkap generasi saat diterbitkan dan respons tertinggal dibuang sebelum pemrosesan event", () => {
-    const pollerStart = projectorSource.indexOf(
-      "// Wireless Phone Controller Poller",
+    // Jangkar uji digeser dari komentar "// Wireless Phone
+    // Controller Poller" ke definisi pollControllerEvents. Sejak
+    // W5-K2 seluruh logika fetch + saring generasi/watermark tinggal
+    // di callback itu (supaya broadcast bisa memicunya seketika),
+    // sedangkan komentar lama kini menandai effect interval yang
+    // hanya memanggilnya berkala. Isi dan urutan penjaganya tidak
+    // berubah; yang berubah hanya tempat tinggalnya.
+    const fnStart = projectorSource.indexOf(
+      "const pollControllerEvents = useCallback(async () => {",
     );
-    assert.ok(pollerStart >= 0);
+    assert.ok(fnStart >= 0);
     const capturePos = projectorSource.indexOf(
       "const issuedGeneration = pollGenerationRef.current;",
-      pollerStart,
+      fnStart,
     );
-    const fetchPos = projectorSource.indexOf("await fetch(", pollerStart);
+    const fetchPos = projectorSource.indexOf("await fetch(", capturePos);
     const comparePos = projectorSource.indexOf(
       "issuedGeneration !== pollGenerationRef.current",
-      pollerStart,
+      fetchPos,
+    );
+    const continuePos = projectorSource.indexOf(
+      "if (responseCrossedQuestionChange) continue;",
+      comparePos,
     );
     const recordPos = projectorSource.indexOf(
       "handleRecordAnswer(ev.teamId, ev.optionKey)",
-      pollerStart,
+      continuePos,
     );
-    assert.ok(capturePos > pollerStart);
+    assert.ok(capturePos > fnStart);
     assert.ok(fetchPos > capturePos);
     assert.ok(comparePos > fetchPos);
-    assert.ok(recordPos > comparePos);
+    assert.ok(continuePos > comparePos);
+    assert.ok(recordPos > continuePos);
     assert.match(
       projectorSource,
       /if \(responseCrossedQuestionChange\) continue;/,
     );
+    // Effect interval di bawah penanda lama menjalankan fungsi yang
+    // sama, bukan salinan logika kedua.
+    const pollerStart = projectorSource.indexOf(
+      "// Wireless Phone Controller Poller",
+    );
+    assert.ok(pollerStart >= 0);
+    const intervalTriggerPos = projectorSource.indexOf(
+      "void pollControllerEvents();",
+      pollerStart,
+    );
+    assert.ok(intervalTriggerPos > pollerStart);
   });
 
   test("Event yang tidak lebih baru dari watermark saat pemrosesan dilewati (lapis kedua)", () => {
