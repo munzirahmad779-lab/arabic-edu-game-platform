@@ -127,6 +127,10 @@ export function AssessmentPlayer({
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPassage, setShowPassage] = useState(true);
+  // Konfirmasi dan keadaan sibuk untuk tombol "Akhiri Ujian" (mengakhiri
+  // lebih awal dengan hasil lewat finishAttempt yang sudah ada).
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [endingExam, setEndingExam] = useState(false);
   const endsAtRef = useRef<number>(Date.now());
   const autoFiredRef = useRef<boolean>(false);
   // Penjaga lewati section kosong: satu pemanggilan otomatis per id
@@ -389,6 +393,29 @@ export function AssessmentPlayer({
     }
   }
 
+  // Akhiri ujian lebih awal dengan hasil (temuan audit live tahap
+  // E3: sebelumnya siswa tidak bisa mengakhiri sebelum soal terakhir
+  // atau timer section habis, jadi percobaan yang ditinggalkan
+  // menggantung "Sedang dikerjakan" tanpa skor). Jalurnya memakai
+  // finishAttempt yang sudah ada: assessment_finish menilai di
+  // server jawaban yang sudah terkirim, dan section yang belum
+  // dijawab bernilai 0 benar, sama seperti section kosong yang
+  // dilewati atau dibiarkan habis waktunya saat ini.
+  async function endExamEarly() {
+    if (endingExam) return;
+    setEndingExam(true);
+    try {
+      await finishAttempt();
+    } finally {
+      // finishAttempt mengarahkan ke halaman hasil bila penutupan
+      // berhasil (atau attempt ternyata sudah selesai). Baris ini
+      // praktis hanya tercapai bila server menolak penutupan, jadi
+      // keadaan tombol dipulihkan agar siswa dapat mencoba lagi.
+      setEndingExam(false);
+      setShowEndConfirm(false);
+    }
+  }
+
   async function finishAttempt() {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -501,6 +528,14 @@ export function AssessmentPlayer({
             >
               ⏱ {timeLeft !== null ? formatTime(timeLeft) : "--:--"}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowEndConfirm(true)}
+              className="rounded-xl border-2 border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black text-red-700 transition hover:bg-red-100"
+              title="Akhiri ujian sekarang: jawaban yang sudah terkirim dinilai, section yang belum dikerjakan bernilai 0"
+            >
+              Akhiri Ujian
+            </button>
           </div>
         </div>
       </header>
@@ -702,6 +737,40 @@ export function AssessmentPlayer({
           </aside>
         </div>
       </div>
+
+      {showEndConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-teal-950/50 p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl">
+            <p className="font-display text-lg font-black text-teal-700">
+              Akhiri ujian sekarang?
+            </p>
+            <p className="mt-2 text-sm leading-6 text-softslate">
+              Jawaban yang sudah Anda kirim akan dinilai. Section yang
+              belum dikerjakan bernilai 0, sama seperti section yang
+              dibiarkan kosong sampai waktu habis. Sesudah diakhiri,
+              ujian tidak bisa dilanjutkan.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEndConfirm(false)}
+                disabled={endingExam}
+                className="flex-1 rounded-full border border-sage-200 bg-white px-4 py-2.5 text-sm font-black text-teal-700 transition hover:bg-sage-50 disabled:opacity-40"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => void endExamEarly()}
+                disabled={endingExam}
+                className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {endingExam ? "Mengakhiri..." : "Ya, Akhiri Ujian"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
