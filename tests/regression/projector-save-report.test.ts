@@ -23,6 +23,7 @@ class FakeDb implements ProjectorReportDb {
   rooms: Row[] = [];
   sessions: Row[] = [];
   participants: Row[] = [];
+  games: Row[] = [];
   private roomSeq = 0;
   private sessionSeq = 0;
 
@@ -33,6 +34,9 @@ class FakeDb implements ProjectorReportDb {
   }
 
   visibleRows(table: string): Row[] {
+    // Tabel games dibaca saveProjectorReport untuk memeriksa cakupan
+    // kelas game (class_id) sebelum membuat room baru.
+    if (table === "games") return [...this.games];
     const all =
       table === "rooms"
         ? this.rooms
@@ -326,4 +330,78 @@ test("code terdaftar milik guru lain: laporan tidak menulis ke room guru lain, t
     db.sessions.some((s) => s.room_id === "room-guru-lain"),
     false,
   );
+});
+
+test("game terikat kelas lain dari kelas bermain: room baru ber-class_id null, playedClassId tercatat di snapshot", async () => {
+  const db = new FakeDb(GURU);
+  // Game terikat ke "kelas-game", tetapi guru memainkannya untuk
+  // "kelas-bermain" dari Kelola Tim. Di basis data asli, insert room
+  // dengan class_id "kelas-bermain" ditolak trigger P0001; class_id
+  // null yang lolos.
+  db.games.push({ id: "game-terikat", teacher_id: GURU, class_id: "kelas-game" });
+
+  const result = await saveProjectorReport(db, {
+    ...baseInput(db, "SCOPED1"),
+    gameId: "game-terikat",
+    classId: "kelas-bermain",
+  });
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.reusedRoom, false);
+  assert.equal(db.rooms.length, 1);
+  const room = db.rooms[0];
+  assert.equal(room?.game_id, "game-terikat");
+  assert.equal(room?.class_id, null);
+  assert.deepEqual(room?.snapshot, {
+    game: { id: "game-terikat", name: "Dars 7 Rumah", mode: "projector" },
+    targetRounds: 30,
+    playedClassId: "kelas-bermain",
+  });
+  // Sesi dan peserta tetap tercatat menempel ke room baru
+  assert.equal(db.sessions.length, 1);
+  assert.equal(db.sessions[0]?.room_id, result.roomId);
+  assert.equal(db.participants.length, 2);
+});
+
+test("game terikat kelas yang sama dengan kelas bermain: class_id room tetap kelas itu, tanpa playedClassId", async () => {
+  const db = new FakeDb(GURU);
+  db.games.push({ id: "game-terikat", teacher_id: GURU, class_id: "kelas-sama" });
+
+  const result = await saveProjectorReport(db, {
+    ...baseInput(db, "SCOPED2"),
+    gameId: "game-terikat",
+    classId: "kelas-sama",
+  });
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(db.rooms.length, 1);
+  const room = db.rooms[0];
+  assert.equal(room?.class_id, "kelas-sama");
+  assert.deepEqual(room?.snapshot, {
+    game: { id: "game-terikat", name: "Dars 7 Rumah", mode: "projector" },
+    targetRounds: 30,
+  });
+});
+
+test("game tanpa class_id: perilaku lama persis, class_id room mengikuti kelas bermain", async () => {
+  const db = new FakeDb(GURU);
+  db.games.push({ id: "game-bebas", teacher_id: GURU, class_id: null });
+
+  const result = await saveProjectorReport(db, {
+    ...baseInput(db, "BEBAS1"),
+    gameId: "game-bebas",
+    classId: "kelas-bermain",
+  });
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(db.rooms.length, 1);
+  const room = db.rooms[0];
+  assert.equal(room?.class_id, "kelas-bermain");
+  assert.deepEqual(room?.snapshot, {
+    game: { id: "game-bebas", name: "Dars 7 Rumah", mode: "projector" },
+    targetRounds: 30,
+  });
 });

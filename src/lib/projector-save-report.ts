@@ -21,6 +21,14 @@
  *   TIDAK ditulis ke room guru lain; penyimpanan dicoba ulang sekali
  *   dengan kode cadangan baru agar laporan tetap tercatat atas nama
  *   guru pemanggil di room barunya sendiri.
+ * - Game bisa terikat satu kelas (games.class_id terisi), sementara guru
+ *   boleh memainkannya untuk kelas lain yang dipilih di Kelola Tim.
+ *   Trigger assert_project_relationship_integrity menolak room baru
+ *   (P0001) bila class_id room berbeda dari kelas game yang terikat,
+ *   tetapi class_id NULL selalu lolos. Jadi pada cabang buat-baru, bila
+ *   game terikat kelas yang berbeda dari kelas bermain, room dibuat
+ *   dengan class_id NULL dan kelas yang benar-benar bermain dicatat di
+ *   snapshot sebagai playedClassId agar informasinya tidak hilang.
  *
  * Klien basis data disuntikkan sebagai antarmuka struktural minimal agar
  * fungsi ini bisa diuji unit dengan klien palsu (lihat
@@ -168,6 +176,36 @@ export async function saveProjectorReport(
     //    (code milik guru lain yang tidak terlihat RLS), coba sekali lagi
     //    dengan kode cadangan agar laporan tercatat di room baru milik
     //    pemanggil sendiri, bukan di room guru lain.
+    //
+    // Kelas efektif room baru: trigger basis data
+    // assert_project_relationship_integrity (migrasi 0001) menolak
+    // room (P0001 "room class must match the game class when the game
+    // is class-scoped") bila game terikat satu kelas (games.class_id
+    // terisi) sedangkan class_id room berbeda, dan class_id NULL
+    // selalu lolos. Karena guru sah memainkan game terikat untuk
+    // kelas lain dari Kelola Tim, dalam keadaan itu class_id room
+    // dikosongkan dan kelas yang benar-benar bermain dipindah ke
+    // snapshot sebagai playedClassId. Nilai efektif ini dihitung
+    // sekali di sini agar percobaan ulang 23505 di bawah memakai
+    // class_id yang sama. Bila pembacaan game gagal, game dianggap
+    // tidak terikat kelas: pemeriksaan ini tidak boleh menggagalkan
+    // penyimpanan laporan.
+    let effectiveClassId = input.classId;
+    let playedClassId: string | null = null;
+    if (input.gameId && input.classId) {
+      const { data: gameRow } = await db
+        .from("games")
+        .select("class_id")
+        .eq("id", input.gameId)
+        .maybeSingle();
+      const gameClassId =
+        typeof gameRow?.class_id === "string" ? gameRow.class_id : null;
+      if (gameClassId && gameClassId !== input.classId) {
+        effectiveClassId = null;
+        playedClassId = input.classId;
+      }
+    }
+
     for (let attempt = 0; attempt < 2; attempt++) {
       const { data: room, error: roomError } = await db
         .from("rooms")
@@ -175,7 +213,7 @@ export async function saveProjectorReport(
           code,
           teacher_id: input.teacherId,
           game_id: input.gameId,
-          class_id: input.classId,
+          class_id: effectiveClassId,
           state: "ended",
           capacity: 40,
           current_question_index: targetRounds,
@@ -188,6 +226,7 @@ export async function saveProjectorReport(
               mode: "projector",
             },
             targetRounds,
+            ...(playedClassId ? { playedClassId } : {}),
           },
         })
         .select("id")
