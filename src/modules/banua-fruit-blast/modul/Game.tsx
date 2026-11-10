@@ -778,7 +778,7 @@ export default function BanuaFruitBlastGame() {
       } catch {
         /* penunjuk tidak mendukung capture, abaikan */
       }
-      const pt: TrailPt = { x, y, t: performance.now() };
+      const pt: TrailPt = { x, y, t: e.timeStamp };
       trailsRef.current.set(e.pointerId, [pt]);
       lastPtRef.current.set(e.pointerId, pt);
       sliceTap(x, y);
@@ -791,14 +791,51 @@ export default function BanuaFruitBlastGame() {
       const last = lastPtRef.current.get(e.pointerId);
       if (!last || screen !== "playing" || !runningRef.current) return;
       const { x, y } = toLocal(e.clientX, e.clientY);
-      const now = performance.now();
+      // Waktu kejadian memakai e.timeStamp (jam kejadian masukan yang
+      // sebenarnya), BUKAN performance.now() saat handler React sempat
+      // berjalan: di perangkat yang utas utamanya sibuk menggambar arena,
+      // handler bisa terlambat ratusan ms sesudah gerakan terjadi, dan
+      // kecepatan segmen yang dihitung dari waktu proses itu runtuh di
+      // bawah ambang potong sehingga geseran cepat tidak pernah tercatat
+      // (terbukti di desktop: segmen 25 px terbaca 25-63 px/detik).
+      const now = e.timeStamp;
       const dt = Math.max(1, now - last.t) / 1000;
       const dist = Math.hypot(x - last.x, y - last.y);
       const pt: TrailPt = { x, y, t: now };
       const trail = trailsRef.current.get(e.pointerId) ?? [];
-      trailsRef.current.set(e.pointerId, [...trail.slice(-14), pt]);
+      const nextTrail = [...trail.slice(-14), pt];
+      trailsRef.current.set(e.pointerId, nextTrail);
       lastPtRef.current.set(e.pointerId, pt);
-      sliceSegment(last.x, last.y, x, y, dist / dt);
+      // Kecepatan dinilai juga dari akumulasi lintasan 120 ms terakhir,
+      // bukan hanya segmen antar dua kejadian: satu segmen kecil yang
+      // kebetulan terproses lambat tidak lagi menggugurkan satu geseran
+      // yang sebenarnya cepat. Ambang di sliceSegment tidak berubah.
+      const WINDOW_MS = 120;
+      let pathLen = 0;
+      let startT = now;
+      for (let i = nextTrail.length - 1; i > 0; i--) {
+        const a = nextTrail[i - 1];
+        const b = nextTrail[i];
+        if (now - a.t > WINDOW_MS) break;
+        pathLen += Math.hypot(b.x - a.x, b.y - a.y);
+        startT = a.t;
+      }
+      const windowSpeed =
+        startT < now ? pathLen / ((now - startT) / 1000) : dist / dt;
+      // Khusus tetikus: tidak ada gerbang kecepatan. Di desktop, kejadian
+      // pointermove tetikus hanya tiba selama tombol ditekan (lastPt hanya
+      // ada sesudah pointerdown), jadi lintasan yang melintasi buah selama
+      // tombol ditahan memang geseran yang disengaja; menuntut kecepatan
+      // minimum di sini justru membunuh semua geseran desktop begitu utas
+      // utama sibuk, karena kejadian tetikus dari peramban/OS tiba jarang
+      // (terukur: 8 segmen sapuan tiba 0,6-1,5 detik antar kejadian,
+      // terbaca 17-43 px/detik). Sentuh dan pen tetap memakai ambang
+      // kecepatan yang sama seperti sebelumnya.
+      const speed =
+        e.pointerType === "mouse"
+          ? Number.POSITIVE_INFINITY
+          : Math.max(dist / dt, windowSpeed);
+      sliceSegment(last.x, last.y, x, y, speed);
     },
     [screen, sliceSegment, toLocal],
   );
@@ -1028,7 +1065,8 @@ export default function BanuaFruitBlastGame() {
                 Makketapel
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm font-medium text-emerald-900/70">
-                Potong buah jawaban yang benar dengan geseran jarimu. Buah terus
+                Potong buah jawaban yang benar dengan geseran cepat jarimu
+                atau tetikus, atau ketuk langsung buahnya. Buah terus
                 mengalir sampai ada yang menjawab benar, dan label jawabannya
                 terus diacak ulang. Hati-hati: di dalam buah bisa sembunyi emas
                 atau bom.

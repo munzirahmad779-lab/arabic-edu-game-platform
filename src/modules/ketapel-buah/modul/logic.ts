@@ -160,9 +160,28 @@ export function targetsFor(q: Q, subjectList: readonly Q[], rnd: () => number): 
     correct: o === q.correct,
     impostor: false,
   }));
+  // Jaminan buah benar: jalur buat/impor/muat memang menyaring soal yang
+  // kuncinya di luar pilihan, tetapi fungsi pemunculan ini pertahanan
+  // terakhir dan sebelumnya tidak menjamin apa pun — soal yang kuncinya
+  // tidak ada di antara pilihannya (mis. data bank lama di perangkat
+  // guru) menghasilkan pohon tanpa satu pun buah benar, mustahil
+  // dijawab dan tanpa pesan galat. Bila tidak ada label benar dan teks
+  // kuncinya terisi, satu label opsi salah diganti dengan teks kunci
+  // sebagai buah benar, jadi pohon selalu bisa diselesaikan.
+  if (!labels.some((l) => l.correct) && q.correct.trim().length > 0) {
+    const lastWrong = labels.map((l) => l.correct).lastIndexOf(false);
+    if (lastWrong >= 0) {
+      labels[lastWrong] = { text: q.correct, correct: true, impostor: false };
+    }
+  }
   const pool: string[] = [];
   for (const other of subjectList) {
-    if (other.id !== q.id && !q.options.includes(other.correct) && !pool.includes(other.correct)) {
+    if (
+      other.id !== q.id &&
+      other.correct !== q.correct &&
+      !q.options.includes(other.correct) &&
+      !pool.includes(other.correct)
+    ) {
       pool.push(other.correct);
     }
   }
