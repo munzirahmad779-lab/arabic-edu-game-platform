@@ -219,7 +219,9 @@ export type ProjectorPressResult =
  * guard, then the ghost-answer guard, then one locked answer per team
  * per question. Used by the in-memory fallback; the Supabase path
  * performs the same steps atomically inside the press_projector_button
- * RPC (migration 0078, phase guard parity in draft migration 0081).
+ * RPC (migration 0078; phase guard parity plus the room-existence and
+ * expiry guards are added by migration 0087, still a draft awaiting
+ * the owner's per-file approval).
  */
 export function applyPressToRoomData(
   data: RoomControllerData,
@@ -427,9 +429,11 @@ interface PressProjectorButtonRpcResult {
  * lose the same team's answer independently. The RPC also enforces the
  * ghost-answer guard: the press's question index must equal the room's
  * current question index, otherwise it is rejected as STALE_QUESTION and
- * nothing is recorded. Draft migration 0081 adds the matching phase
- * guard to the RPC (answers only while the room phase is "question");
- * the in-memory fallback below already enforces it.
+ * nothing is recorded. Migration 0087 (draft, awaiting the owner's
+ * per-file approval) adds the matching phase guard to the RPC
+ * (answers only while the room phase is "question"), plus rejection
+ * of presses for missing or expired rooms; the in-memory fallback
+ * below already enforces the phase guard.
  */
 export async function pressProjectorButton(
   roomCode: string,

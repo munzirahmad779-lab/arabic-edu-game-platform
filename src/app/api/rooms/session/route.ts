@@ -40,6 +40,10 @@ export async function GET(req: NextRequest) {
     const token: string = searchParams.get("token")?.trim() || "";
     const roomCodeQuery: string = searchParams.get("code")?.trim().toUpperCase() || "";
     const studentNameQuery: string = searchParams.get("name")?.trim() || "";
+    // Migrasi 0087: reconnect room kelas bergerbang PIN atau join_token.
+    // Parameter pin opsional di sini adalah bukti cadangan bila token
+    // yang disajikan klien bukan lagi join_token peserta.
+    const pinQuery: string = searchParams.get("pin")?.trim() || "";
 
     if (!token && !roomCodeQuery) {
       return NextResponse.json({ error: "INVALID_JOIN_TOKEN" }, { status: 400 });
@@ -332,11 +336,31 @@ export async function GET(req: NextRequest) {
     // RPC reconnect_room_participant (migrasi 0068) melakukan pencarian yang
     // sama dari sisi definer. Bila token pulih, jawaban akhir tetap dibangun
     // dari RPC get_game_session (sumber DB yang sama dengan jalur utama).
+    // Migrasi 0087 menambahkan gerbang pada RPC itu: pemanggil wajib
+    // menyertakan join_token peserta (token yang disajikan klien di sini,
+    // bila berbentuk UUID) atau PIN siswa (parameter pin). Jalur tanpa
+    // keduanya kini gagal tertutup menjadi SESSION_NOT_FOUND, bukan lagi
+    // menyambungkan ulang hanya dari kode + nama. Snapshot yang kembali
+    // dari RPC ini juga sudah disanitasi di SQL (tanpa correct_option_key
+    // dan explanation), dan cabang cadangan terakhir di bawah memang
+    // hanya menyajikan soal lewat toPublicQuestion, jadi tidak ada yang
+    // berubah bagi tampilannya.
     if (roomCodeQuery) {
       try {
+        const presentedJoinToken =
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+            token
+          )
+            ? token
+            : null;
         const { data: recData, error: recError } = await supabase.rpc(
           "reconnect_room_participant",
-          { p_code: roomCodeQuery, p_name: studentNameQuery }
+          {
+            p_code: roomCodeQuery,
+            p_name: studentNameQuery,
+            p_pin: pinQuery || null,
+            p_join_token: presentedJoinToken,
+          }
         );
 
         if (recError) {
