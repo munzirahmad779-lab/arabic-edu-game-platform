@@ -3,8 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getStudentSession } from "@/lib/student-auth";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// Rantai model yang sama dengan route ai-generate asesmen:
+// gemini-2.5-flash sudah tidak tersedia bagi pengguna baru (API
+// menjawab 404 NOT_FOUND), jadi mulai dari 3.8 dan turun bila model
+// tidak tersedia untuk kunci ini.
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"];
+const geminiUrl = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 type GradeRequest = {
   submission_id: string;
@@ -115,24 +120,36 @@ export async function POST(req: Request) {
       rubricVocabulary: assignment.rubric_vocabulary,
     });
 
-    const geminiRes = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.3,
+    // Coba model berurutan: kegagalan ketersediaan model (404)
+    // turun ke model berikutnya; kegagalan lain juga dicoba turun
+    // karena rantai ini murah dan urutannya memang jaring pengaman.
+    let geminiRes: Response | null = null;
+    let usedModel = GEMINI_MODELS[0];
+    for (const model of GEMINI_MODELS) {
+      const res = await fetch(geminiUrl(model), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.3,
+          },
+        }),
+      });
+      if (res.ok) {
+        geminiRes = res;
+        usedModel = model;
+        break;
+      }
+      const errText = await res.text();
+      console.error(`[grade-essay] gemini error (${model}):`, errText);
+    }
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("[grade-essay] gemini error:", errText);
+    if (!geminiRes) {
       return NextResponse.json(
         { ok: false, message: "Layanan AI bermasalah" },
         { status: 502 },
@@ -224,7 +241,7 @@ export async function POST(req: Request) {
       p_ai_score: score,
       p_ai_feedback: feedback,
       p_ai_scores_json: subscores,
-      p_ai_model: GEMINI_MODEL,
+      p_ai_model: usedModel,
     });
 
     if (updErr) {
@@ -252,7 +269,7 @@ export async function POST(req: Request) {
       score,
       feedback,
       subscores,
-      model: GEMINI_MODEL,
+      model: usedModel,
     });
   } catch (err) {
     console.error("[grade-essay] exception:", err);
