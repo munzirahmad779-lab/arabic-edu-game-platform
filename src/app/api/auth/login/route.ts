@@ -51,11 +51,15 @@ export async function POST(request: Request) {
       const isInvalid =
         error.message === "Invalid login credentials" ||
         error.code === "invalid_credentials";
+      if (!isInvalid) {
+        // Detail error Supabase hanya ke log server, bukan ke klien.
+        console.error("[/api/auth/login] Supabase auth error:", error);
+      }
       return NextResponse.json(
         {
           error: isInvalid
             ? "Email atau kata sandi salah. Silakan periksa kembali."
-            : error.message,
+            : "Terjadi kesalahan saat masuk. Silakan coba lagi.",
         },
         { status: 400 }
       );
@@ -63,7 +67,10 @@ export async function POST(request: Request) {
 
     return response;
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Terjadi kesalahan saat masuk.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[/api/auth/login] Unexpected error:", err);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat masuk." },
+      { status: 500 }
+    );
   }
 }

@@ -41,11 +41,13 @@ export function ReportView({
   date,
   roomRows,
   practiceRows,
+  loadError = false,
   dict,
 }: {
   date: string;
   roomRows: Row[];
   practiceRows: Row[];
+  loadError?: boolean;
   dict: Dict;
 }) {
   const t = dict.reports;
@@ -181,6 +183,17 @@ export function ReportView({
 
   return (
     <div className="space-y-5">
+      {loadError ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-800"
+        >
+          Data laporan gagal dimuat dari server. Angka di bawah ini bisa
+          tidak lengkap; jangan simpulkan belum ada siswa bermain. Muat
+          ulang halaman untuk mencoba lagi.
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

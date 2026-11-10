@@ -96,9 +96,11 @@ export async function joinRoom(formData: FormData) {
       : msg.includes("INVALID_ROOM_CODE") ? "room_not_found"
       : "generic";
 
-    redirect(
-      `/join?error=${encodeURIComponent(codeKey)}&debug=${encodeURIComponent(msg.slice(0, 120))}`,
-    );
+    // Pesan error mentah TIDAK ditempel ke URL redirect (parameter debug
+    // lama): pesan itu dapat memuat nama fungsi/kolom internal dan akan
+    // menetap di riwayat peramban serta log. Pesan lengkap sudah dicatat
+    // di console.error server di atas; URL hanya membawa kode error.
+    redirect(`/join?error=${encodeURIComponent(codeKey)}`);
   }
 
   const row = data?.[0];

@@ -4,17 +4,22 @@ Proyek ini adalah platform LMS permainan edukasi Bahasa Arab "Magguru"
 (Next.js App Router + Supabase), produksi di https://magguru.web.id,
 repo github.com/munzirahmad779-lab/arabic-edu-game-platform.
 
-## Mode kerja di proyek ini: AUDIT BACA SAJA
+## Mode kerja di proyek ini
 
-- Tugas agen di proyek ini adalah MENG AUDIT, bukan mengubah.
-- DILARANG mengedit, membuat, memindahkan, atau menghapus berkas apa pun.
-- DILARANG menjalankan perintah yang mengubah keadaan (migrasi, deploy,
-  instal paket, git commit/push). Perintah baca saja (grep, cat, ls,
-  tsc --noEmit bila diminta eksplisit) boleh.
-- Semua temuan wajib berjangkar: sebut berkas dan nomor baris persisnya.
-- Dilarang mengarang: bila sesuatu tidak bisa dibuktikan dari kode,
-  tulis "belum terverifikasi dari kode" dan jelaskan cara memastikannya.
-- Jangan menilai dari nama berkas saja; buka dan baca isinya.
+- Mega-audit 8 wilayah SELESAI 10 November 2026 (154 temuan: 9 Kritis,
+  38 Mayor, 64 Minor, 43 Catatan). Laporan gabungan dan per wilayah
+  tersimpan di luar repo (ruang kerja Muse pemilik): folder
+  audit-claude-2026-11-10 dan berkas Laporan-Gabungan-Audit-Magguru-8-Wilayah.
+- Fase saat ini: PERBAIKAN atas perintah langsung pemilik. Agen boleh
+  mengedit kode mengikuti urutan prioritas laporan gabungan, dengan
+  syarat: typecheck lulus tanpa error baru, perilaku sah tidak berubah
+  di luar temuan yang ditutup, dan tidak ada migrasi basis data yang
+  diterapkan ke produksi tanpa persetujuan pemilik per berkas.
+- Disiplin bukti tetap berlaku dari fase audit: semua klaim wajib
+  berjangkar berkas dan nomor baris; dilarang mengarang; bila sesuatu
+  tidak bisa dibuktikan, tulis "belum terverifikasi dari kode" dan
+  jelaskan cara memastikannya. Jangan menilai dari nama berkas saja;
+  buka dan baca isinya.
 
 ## Cakupan mega-audit (ketetapan pemilik)
 

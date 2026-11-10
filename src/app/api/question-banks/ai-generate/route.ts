@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
       modelUsed: result.modelUsed,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Internal Error";
     console.error("[/api/question-banks/ai-generate]", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

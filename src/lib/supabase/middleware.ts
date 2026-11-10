@@ -79,5 +79,24 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Penegakan penonaktifan akun: profil dengan is_active = false
+  // diperlakukan seperti belum login pada rute terproteksi. Query ini
+  // hanya berjalan untuk rute yang memang sudah digerbang middleware
+  // dan hanya sesudah sesi terbukti valid, jadi rute publik tidak
+  // menanggung beban tambahan apa pun.
+  if (user && isProtected) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile && profile.is_active === false) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return response;
 }

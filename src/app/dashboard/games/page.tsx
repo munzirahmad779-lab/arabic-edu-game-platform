@@ -59,6 +59,7 @@ export default async function GamesPage({
     { data: audioTracks },
     { data: categories },
     { data: questions },
+    { data: activeRooms },
   ] = await Promise.all([
     supabase
       .from("classes")
@@ -95,6 +96,12 @@ export default async function GamesPage({
       .not("question_bank_id", "is", null)
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true }),
+    supabase
+      .from("rooms")
+      .select("game_id, code, state")
+      .eq("teacher_id", user.id)
+      .in("state", ["waiting", "running"])
+      .order("created_at", { ascending: false }),
   ]);
 
   const tracks = audioTracks ?? [];
@@ -123,6 +130,16 @@ export default async function GamesPage({
       difficulty: q.difficulty,
       category_id: q.category_id,
     });
+  }
+
+  // Kode room aktif per game (room terbaru yang waiting/running).
+  // Dipakai tautan Stik HP supaya memakai kode room sebenarnya dari
+  // tabel rooms, bukan potongan ID game.
+  const roomCodeByGame = new Map<string, string>();
+  for (const r of activeRooms ?? []) {
+    if (r.game_id && r.code && !roomCodeByGame.has(r.game_id)) {
+      roomCodeByGame.set(r.game_id, r.code);
+    }
   }
 
   const getModeLabel = (mode: string) => {
@@ -316,16 +333,27 @@ export default async function GamesPage({
                           <span>Mode Proyektor & Remote HP</span>
                         </Link>
 
-                        <a
-                          href={`/controller?room=${game.id.slice(0, 6).toUpperCase()}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Buka Stik Remote HP Siswa (/controller)"
-                          className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
-                        >
-                          <span>🎮</span>
-                          <span className="hidden sm:inline">Stik HP</span>
-                        </a>
+                        {roomCodeByGame.get(game.id) ? (
+                          <a
+                            href={`/controller?room=${roomCodeByGame.get(game.id)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Buka Stik Remote HP Siswa (/controller)"
+                            className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
+                          >
+                            <span>🎮</span>
+                            <span className="hidden sm:inline">Stik HP</span>
+                          </a>
+                        ) : (
+                          <Link
+                            href={`/dashboard/games/${game.id}/projector`}
+                            title="Belum ada room aktif untuk game ini: buka layar proyektor untuk memulai room dan mendapatkan kode Stik HP"
+                            className="flex items-center justify-center gap-1 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-xs"
+                          >
+                            <span>🎮</span>
+                            <span className="hidden sm:inline">Stik HP</span>
+                          </Link>
+                        )}
                       </div>
                     )}
 

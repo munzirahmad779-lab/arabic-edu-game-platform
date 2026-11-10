@@ -14,6 +14,25 @@ function normalizeText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const YOUTUBE_HOSTS = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "www.youtube-nocookie.com",
+]);
+
+function isValidYoutubeUrl(value: string) {
+  if (!value) return true; // kosong berarti tanpa video
+  if (value.length > 500) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && YOUTUBE_HOSTS.has(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 async function ensureTeacherClass(
   supabase: Awaited<ReturnType<typeof createClient>>,
   classId: string,
@@ -110,6 +129,9 @@ export async function createMaterial(formData: FormData) {
   if (!title || title.length > MAX_TITLE_LENGTH) {
     redirect(`/dashboard/classes/${classId}?material_error=invalid_title`);
   }
+  if (!isValidYoutubeUrl(youtubeUrl)) {
+    redirect(`/dashboard/classes/${classId}?material_error=invalid_youtube_url`);
+  }
 
   const owns = await ensureTeacherClass(supabase, classId, user.id);
   if (!owns) redirect("/dashboard/classes?error=not_found");
@@ -119,7 +141,10 @@ export async function createMaterial(formData: FormData) {
     try {
       parsedContent = JSON.parse(contentJson) as Json;
     } catch {
-      parsedContent = null;
+      // JSON tidak valid adalah kesalahan isi, bukan isi kosong:
+      // hentikan dengan pesan error, jangan simpan content_json null
+      // sambil melaporkan sukses.
+      redirect(`/dashboard/classes/${classId}?material_error=invalid_content`);
     }
   }
 
@@ -207,6 +232,9 @@ export async function updateMaterial(formData: FormData) {
   if (!title || title.length > MAX_TITLE_LENGTH) {
     redirect(`/dashboard/classes/${classId}?material_error=invalid_title`);
   }
+  if (!isValidYoutubeUrl(youtubeUrl)) {
+    redirect(`/dashboard/classes/${classId}?material_error=invalid_youtube_url`);
+  }
 
   const owns = await ensureTeacherClass(supabase, classId, user.id);
   if (!owns) redirect("/dashboard/classes?error=not_found");
@@ -216,7 +244,10 @@ export async function updateMaterial(formData: FormData) {
     try {
       parsedContent = JSON.parse(contentJson) as Json;
     } catch {
-      parsedContent = null;
+      // JSON tidak valid adalah kesalahan isi, bukan isi kosong:
+      // hentikan dengan pesan error, jangan simpan content_json null
+      // sambil melaporkan sukses.
+      redirect(`/dashboard/classes/${classId}?material_error=invalid_content`);
     }
   }
 

@@ -93,6 +93,33 @@ export default async function StudentsPage({
   const activeClassId = searchParams.classId ?? null;
   const refreshKey = `${searchParams.created ?? ""}${searchParams.updated ?? ""}${searchParams.deleted ?? ""}`;
 
+  // Pesan hasil action siswa (Ma6): kode ?error= dan ?created= /
+  // ?updated= / ?deleted= yang dihasilkan actions.ts dipetakan ke
+  // kalimat yang tampil untuk guru, meniru pola classes/page.tsx.
+  const ERROR_MESSAGES: Record<string, string> = {
+    invalid: "Data yang dikirim tidak lengkap atau tidak valid.",
+    invalid_pin: "PIN harus berupa 4 sampai 6 digit angka.",
+    invalid_name: "Nama siswa tidak valid (maksimal 100 karakter).",
+    invalid_class: "Kelas tidak ditemukan atau tidak valid.",
+    duplicate: "Sudah ada siswa dengan nama yang sama di kelas ini.",
+    student_not_found: "Siswa tidak ditemukan.",
+    forbidden: "Anda tidak punya akses untuk tindakan ini.",
+    auth_required: "Sesi berakhir. Silakan login kembali.",
+    pin_sync_failed:
+      "PIN berubah di server, tetapi tampilan PIN gagal disinkronkan. Muat ulang halaman dan coba lagi.",
+    failed: "Tindakan gagal diproses. Silakan coba lagi.",
+  };
+  const errorMessage = searchParams.error
+    ? (ERROR_MESSAGES[searchParams.error] ?? ERROR_MESSAGES.failed)
+    : null;
+  const successMessage = searchParams.created
+    ? "✓ Siswa berhasil ditambahkan."
+    : searchParams.updated
+      ? "✓ Data siswa berhasil diperbarui."
+      : searchParams.deleted
+        ? "✓ Siswa berhasil dihapus."
+        : null;
+
   return (
     <main
       className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-sky-50 p-4 sm:p-6"
@@ -120,6 +147,24 @@ export default async function StudentsPage({
             </Link>
           </div>
         </header>
+
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-800"
+          >
+            {errorMessage}
+          </div>
+        ) : null}
+
+        {successMessage ? (
+          <div
+            role="status"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800"
+          >
+            {successMessage}
+          </div>
+        ) : null}
 
         {classList.length === 0 ? (
           <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-8 text-center">
@@ -295,11 +340,15 @@ export default async function StudentsPage({
                                       <span className="text-slate-500">
                                         {dict.login_student.label_pin}:
                                       </span>{" "}
+                                      {/* PIN ditampilkan tersamar di daftar
+                                          (hanya 2 digit terakhir). PIN penuh
+                                          hanya tampil di halaman cetak kartu
+                                          dan pada hasil impor sekali tampil. */}
                                       <span
                                         dir="ltr"
                                         className="rounded bg-emerald-100 px-2 py-0.5 font-mono font-black tracking-[0.2em] text-emerald-800"
                                       >
-                                        {s.pin_plain}
+                                        {`••••${s.pin_plain.slice(-2)}`}
                                       </span>
                                     </p>
                                   ) : null}

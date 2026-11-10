@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createMaterial, updateMaterial } from "./actions";
 import MaterialForm from "./material-form";
@@ -44,7 +44,7 @@ export default async function ClassDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) redirect("/login");
 
   const locale = await getLocale();
   const dict = await getDictionary(locale);

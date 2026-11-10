@@ -9,13 +9,14 @@ const nextConfig = {
     },
   },
 
-  // ⚡ Percepat build: skip type-check & lint saat build.
-  // VS Code tetap cek tipe saat Anda ngoding.
+  // Type-check & lint WAJIB lulus saat build (baseline terverifikasi bersih
+  // 10 Nov 2026: typecheck 0 error, lint 0 error). Jangan matikan lagi tanpa
+  // mencatat alasan dan tanggal di sini.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   images: {
@@ -23,6 +24,30 @@ const nextConfig = {
   },
 
   productionBrowserSourceMaps: false,
+
+  // Header keamanan global. CSP sengaja konservatif: hanya membatasi
+  // framing, objek/plugin, dan base-uri. script-src/style-src TIDAK dikunci
+  // di sini karena Next 14 memakai inline script/style (nonce belum dipasang);
+  // menguncinya tanpa nonce akan mematahkan aplikasi.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+          },
+        ],
+      },
+    ];
+  },
 
   // Mode Guest sudah dihilangkan: /guest wajib menjadi redirect HTTP
   // sungguhan ke /login di level server (bukan hanya redirect komponen),

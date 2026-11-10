@@ -660,7 +660,7 @@ export default function SpaceWarGame() {
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {aq.opts.map((opt) => (
-                          <button key={opt} type="button" data-option={def.slot} data-correct={opt === aq.q.correct ? "1" : "0"} onClick={() => fireOption(def.slot, opt)}
+                          <button key={opt} type="button" data-option={def.slot} onClick={() => fireOption(def.slot, opt)}
                             className="rounded-xl bg-indigo-100 px-2 py-3 text-base font-black leading-tight text-indigo-950 shadow-sm transition active:scale-95"
                             dir={aq.q.isArabic ? "rtl" : undefined}>{opt}</button>
                         ))}

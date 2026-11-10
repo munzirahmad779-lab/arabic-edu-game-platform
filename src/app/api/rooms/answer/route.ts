@@ -45,15 +45,18 @@ export async function POST(req: NextRequest) {
       console.warn("[/api/rooms/answer] Supabase answer RPC notice:", e);
     }
 
-    // 2. Also register in ActiveRoomStore for consistent in-memory state
-    const storeResult = ActiveRoomStore.submitAnswer({
-      joinToken,
-      questionId,
-      selectedOptionId: selectedOptionId || null,
-      answerText: answerText || null,
-    });
-
+    // 2. RPC berhasil: hasil RPC adalah satu-satunya jawaban resmi.
+    // ActiveRoomStore hanya diperbarui sebagai cache tulis agar keadaan
+    // memori instance ini konsisten; hasil penilaiannya TIDAK pernah
+    // dipakai sebagai jawaban (pola yang sama dengan rooms/session dan
+    // rooms/control: memori per instance bukan sumber kebenaran).
     if (rpcResult) {
+      ActiveRoomStore.submitAnswer({
+        joinToken,
+        questionId,
+        selectedOptionId: selectedOptionId || null,
+        answerText: answerText || null,
+      });
       return NextResponse.json(rpcResult);
     }
 
@@ -64,17 +67,23 @@ export async function POST(req: NextRequest) {
       if (rpcErrorMsg.includes("TIMEOUT")) {
         return NextResponse.json({ error: "QUESTION_TIMEOUT" }, { status: 400 });
       }
+      console.error(
+        "[/api/rooms/answer] submit_game_answer RPC error:",
+        rpcErrorMsg
+      );
     }
 
-    // 3. Fallback to ActiveRoomStore result if Supabase is offline/unreachable
-    return NextResponse.json({
-      accepted: storeResult.accepted,
-      is_correct: storeResult.is_correct,
-      score_awarded: storeResult.score_awarded,
-    });
+    // 3. RPC otoritatif gagal (atau tidak mengembalikan hasil): jawaban
+    // TIDAK boleh dinyatakan diterima/dinilai dari memori instance, karena
+    // hasil itu tidak pernah tersimpan di database dan skor yang dilihat
+    // siswa akan berbeda dari catatan guru. Gagal tegas, selaras dengan
+    // rooms/control yang menjawab 409 bila tulisan DB tidak terbukti.
+    return NextResponse.json(
+      { error: "ANSWER_NOT_RECORDED" },
+      { status: 503 }
+    );
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Internal Error";
     console.error("[/api/rooms/answer] Fatal error:", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

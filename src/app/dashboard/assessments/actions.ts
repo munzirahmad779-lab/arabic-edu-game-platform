@@ -12,6 +12,13 @@ import { parseAssessmentWorkbook } from "@/lib/assessments/parser";
 
 const ALLOWED_TYPES: AssessmentType[] = ["toefl_itp", "toafl", "custom"];
 
+// Batas impor Excel asesmen, meniru pembanding saudara di
+// lib/question-bank/excel.ts (berkas maks 5 MB). Batas soal lebih longgar
+// dari bank soal (140) karena satu workbook asesmen memuat beberapa
+// section sekaligus (TOEFL ITP penuh saja 140 soal).
+const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_IMPORT_QUESTIONS = 500;
+
 function isAssessmentType(v: string): v is AssessmentType {
   return (ALLOWED_TYPES as string[]).includes(v);
 }
@@ -77,7 +84,18 @@ export async function createAssessment(fd: FormData) {
     .insert(sectionRows);
 
   if (sectionErr) {
-    await db.from("assessments").delete().eq("id", assessmentId);
+    // Rollback asesmen yang baru dibuat; kegagalan rollback tidak boleh
+    // ditelan diam-diam karena akan meninggalkan asesmen yatim.
+    const { error: rollbackErr } = await db
+      .from("assessments")
+      .delete()
+      .eq("id", assessmentId);
+    if (rollbackErr) {
+      console.error(
+        `[createAssessment] rollback gagal untuk asesmen ${assessmentId}:`,
+        rollbackErr,
+      );
+    }
     redirect(
       `/dashboard/assessments?error=${encodeURIComponent(sectionErr.message)}`,
     );
@@ -100,15 +118,16 @@ export async function deleteAssessment(fd: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { error } = await db
+  const { data: deletedRows, error } = await db
     .from("assessments")
     .delete()
     .eq("id", id)
-    .eq("teacher_id", user.id);
+    .eq("teacher_id", user.id)
+    .select("id");
 
-  if (error) {
+  if (error || !deletedRows || deletedRows.length === 0) {
     redirect(
-      `/dashboard/assessments?error=${encodeURIComponent(error.message)}`,
+      `/dashboard/assessments?error=${encodeURIComponent(error?.message ?? "not_found")}`,
     );
   }
 
@@ -129,15 +148,16 @@ export async function togglePublish(fd: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { error } = await db
+  const { data: updatedRows, error } = await db
     .from("assessments")
     .update({ is_published: next, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("teacher_id", user.id);
+    .eq("teacher_id", user.id)
+    .select("id");
 
-  if (error) {
+  if (error || !updatedRows || updatedRows.length === 0) {
     redirect(
-      `/dashboard/assessments/${id}?error=${encodeURIComponent(error.message)}`,
+      `/dashboard/assessments/${id}?error=${encodeURIComponent(error?.message ?? "not_found")}`,
     );
   }
 
@@ -157,6 +177,9 @@ export async function importAssessment(fd: FormData) {
   if (!assessmentId) redirect("/dashboard/assessments?error=invalid_id");
   if (!(file instanceof File) || file.size === 0) {
     redirect(`/dashboard/assessments/${assessmentId}?error=no_file`);
+  }
+  if (file.size > MAX_IMPORT_FILE_BYTES) {
+    redirect(`/dashboard/assessments/${assessmentId}?error=file_too_large`);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -189,27 +212,58 @@ export async function importAssessment(fd: FormData) {
     );
   }
 
-  await db
-    .from("assessment_questions")
-    .delete()
-    .eq("assessment_id", assessmentId);
-  await db
-    .from("assessment_passages")
-    .delete()
-    .eq("assessment_id", assessmentId);
-  await db
-    .from("assessment_audio_groups")
-    .delete()
-    .eq("assessment_id", assessmentId);
+  if (parsed.questions.length > MAX_IMPORT_QUESTIONS) {
+    redirect(`/dashboard/assessments/${assessmentId}?error=too_many_questions`);
+  }
 
-  const { data: existingSections } = await db
+  // Urutan aman: ambil dan periksa section yang ada SEBELUM menghapus
+  // apa pun. Bila asesmen tidak punya section, proses berhenti di sini
+  // dan soal lama tidak ikut terhapus.
+  const { data: existingSections, error: sectionsErr } = await db
     .from("assessment_sections")
     .select("id, section_type, section_order")
     .eq("assessment_id", assessmentId)
     .order("section_order");
 
+  if (sectionsErr) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(sectionsErr.message)}`,
+    );
+  }
+
   if (!existingSections || existingSections.length === 0) {
     redirect(`/dashboard/assessments/${assessmentId}?error=no_sections`);
+  }
+
+  // Seluruh isi workbook sudah tervalidasi parser pada titik ini; baru
+  // sekarang soal lama boleh dihapus, dan error tiap penghapusan wajib
+  // diperiksa supaya kegagalan tidak terlihat seperti impor berhasil.
+  const { error: delQuestionsErr } = await db
+    .from("assessment_questions")
+    .delete()
+    .eq("assessment_id", assessmentId);
+  if (delQuestionsErr) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(delQuestionsErr.message)}`,
+    );
+  }
+  const { error: delPassagesErr } = await db
+    .from("assessment_passages")
+    .delete()
+    .eq("assessment_id", assessmentId);
+  if (delPassagesErr) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(delPassagesErr.message)}`,
+    );
+  }
+  const { error: delAudioErr } = await db
+    .from("assessment_audio_groups")
+    .delete()
+    .eq("assessment_id", assessmentId);
+  if (delAudioErr) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(delAudioErr.message)}`,
+    );
   }
 
   const sectionMap = new Map<string, string>();
@@ -223,7 +277,7 @@ export async function importAssessment(fd: FormData) {
   for (const ps of parsed.sections) {
     const sid = sectionMap.get(ps.section_type);
     if (!sid) continue;
-    await db
+    const { error: sectionUpdateErr } = await db
       .from("assessment_sections")
       .update({
         title: ps.title,
@@ -233,13 +287,18 @@ export async function importAssessment(fd: FormData) {
         instructions: ps.instructions,
       })
       .eq("id", sid);
+    if (sectionUpdateErr) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(sectionUpdateErr.message)}`,
+      );
+    }
   }
 
   const passageIdMap = new Map<string, string>();
   for (const p of parsed.passages) {
     const sid = sectionMap.get(p.section_type);
     if (!sid) continue;
-    const { data: ins } = await db
+    const { data: ins, error: passageErr } = await db
       .from("assessment_passages")
       .insert({
         assessment_id: assessmentId,
@@ -250,6 +309,11 @@ export async function importAssessment(fd: FormData) {
       })
       .select("id")
       .single();
+    if (passageErr) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(passageErr.message)}`,
+      );
+    }
     if (ins) passageIdMap.set(p.ref_id, (ins as { id: string }).id);
   }
 
@@ -257,7 +321,7 @@ export async function importAssessment(fd: FormData) {
   for (const a of parsed.audioGroups) {
     const sid = sectionMap.get(a.section_type);
     if (!sid) continue;
-    const { data: ins } = await db
+    const { data: ins, error: audioErr } = await db
       .from("assessment_audio_groups")
       .insert({
         assessment_id: assessmentId,
@@ -267,6 +331,11 @@ export async function importAssessment(fd: FormData) {
       })
       .select("id")
       .single();
+    if (audioErr) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(audioErr.message)}`,
+      );
+    }
     if (ins) audioIdMap.set(a.ref_id, (ins as { id: string }).id);
   }
 
@@ -324,10 +393,15 @@ export async function importAssessment(fd: FormData) {
   for (const s of existingSections as Array<{ id: string }>) {
     const count = countPerSection.get(s.id) ?? 0;
     totalQuestions += count;
-    await db
+    const { error: countErr } = await db
       .from("assessment_sections")
       .update({ question_count: count })
       .eq("id", s.id);
+    if (countErr) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(countErr.message)}`,
+      );
+    }
   }
 
   let totalDuration = 0;
@@ -342,7 +416,7 @@ export async function importAssessment(fd: FormData) {
     totalDuration += s.duration_minutes ?? 0;
   }
 
-  await db
+  const { error: totalsErr } = await db
     .from("assessments")
     .update({
       total_questions: totalQuestions,
@@ -350,6 +424,11 @@ export async function importAssessment(fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", assessmentId);
+  if (totalsErr) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(totalsErr.message)}`,
+    );
+  }
 
   revalidatePath(`/dashboard/assessments/${assessmentId}`);
   redirect(`/dashboard/assessments/${assessmentId}?imported=1`);
@@ -426,11 +505,20 @@ export async function revokeToken(fd: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  await db
+  const { data: revoked, error: revokeErr } = await db
     .from("assessment_tokens")
     .update({ is_active: false })
     .eq("id", tokenId)
-    .eq("created_by", user.id);
+    .eq("created_by", user.id)
+    .select("id");
+
+  // Kegagalan mencabut token tidak boleh terlihat seperti berhasil:
+  // token yang gagal dicabut berarti token lama masih aktif.
+  if (revokeErr || !revoked || revoked.length === 0) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(revokeErr?.message ?? "revoke_failed")}`,
+    );
+  }
 
   revalidatePath(`/dashboard/assessments/${assessmentId}`);
   redirect(`/dashboard/assessments/${assessmentId}`);
@@ -493,6 +581,66 @@ export async function saveAIQuestions(
       return { ok: false, message: "Payload bukan JSON valid." };
     }
 
+    // Validasi isi payload sebelum apa pun disimpan (Ma13), meniru
+    // updateQuestion di question-banks/actions.ts: kunci jawaban harus
+    // A-D, difficulty harus salah satu nilai yang dikenal, dan teks
+    // dibatasi panjangnya. Satu soal tidak sah menolak seluruh batch.
+    const questionsIn = Array.isArray(parsed.questions)
+      ? parsed.questions
+      : [];
+    const passagesIn = Array.isArray(parsed.passages) ? parsed.passages : [];
+
+    if (questionsIn.length > MAX_IMPORT_QUESTIONS) {
+      return {
+        ok: false,
+        message: `Jumlah soal melebihi batas ${MAX_IMPORT_QUESTIONS}.`,
+      };
+    }
+
+    for (let i = 0; i < questionsIn.length; i += 1) {
+      const q = questionsIn[i];
+      const label = `Soal ke-${i + 1}`;
+      if (typeof q.question_text !== "string" || q.question_text.trim() === "") {
+        return { ok: false, message: `${label}: teks soal kosong.` };
+      }
+      if (q.question_text.length > 5000) {
+        return { ok: false, message: `${label}: teks soal melebihi 5000 karakter.` };
+      }
+      const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+      if (
+        options.some(
+          (o) => typeof o !== "string" || o.trim() === "" || o.length > 2000,
+        )
+      ) {
+        return {
+          ok: false,
+          message: `${label}: semua opsi wajib diisi dan maksimal 2000 karakter.`,
+        };
+      }
+      const answer = String(q.correct_answer ?? "").toUpperCase();
+      if (!["A", "B", "C", "D"].includes(answer)) {
+        return { ok: false, message: `${label}: kunci jawaban harus A, B, C, atau D.` };
+      }
+      q.correct_answer = answer;
+      if (
+        q.difficulty !== null &&
+        q.difficulty !== undefined &&
+        !["easy", "medium", "hard"].includes(q.difficulty)
+      ) {
+        return { ok: false, message: `${label}: difficulty tidak valid.` };
+      }
+    }
+
+    for (let i = 0; i < passagesIn.length; i += 1) {
+      const p = passagesIn[i];
+      if (typeof p.content !== "string" || p.content.trim() === "") {
+        return { ok: false, message: `Passage ke-${i + 1}: isi kosong.` };
+      }
+      if (p.content.length > 50000) {
+        return { ok: false, message: `Passage ke-${i + 1}: isi melebihi 50000 karakter.` };
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
 
@@ -533,15 +681,13 @@ export async function saveAIQuestions(
       if (q.question_number > prev) maxNum[q.section_id] = q.question_number;
     }
 
-    console.log("[saveAIQuestions] maxNum per section:", maxNum);
-
     // Simpan passages (semua ke section "reading").
     const passageIdMap = new Map<string, string>();
     let savedPassages = 0;
     for (const p of parsed.passages ?? []) {
       const sid = sectionMap.get("reading");
       if (!sid) continue;
-      const { data: ins } = await db
+      const { data: ins, error: passageErr } = await db
         .from("assessment_passages")
         .insert({
           assessment_id: assessmentId,
@@ -552,6 +698,12 @@ export async function saveAIQuestions(
         })
         .select("id")
         .single();
+      if (passageErr) {
+        return {
+          ok: false,
+          message: `Gagal menyimpan passage: ${passageErr.message}`,
+        };
+      }
       if (ins) {
         passageIdMap.set(p.ref_id, (ins as { id: string }).id);
         savedPassages += 1;
@@ -597,10 +749,6 @@ export async function saveAIQuestions(
       return { ok: false, message: "Tidak ada soal untuk disimpan." };
     }
 
-    console.log(
-      `[saveAIQuestions] akan insert ${questionRows.length} soal untuk assessment ${assessmentId}`,
-    );
-
     const { error: insErr } = await db
       .from("assessment_questions")
       .insert(questionRows);
@@ -625,21 +773,33 @@ export async function saveAIQuestions(
 
     for (const s of (sectionRows ?? []) as Array<{ id: string }>) {
       const count = countPerSection.get(s.id) ?? 0;
-      await db
+      const { error: countErr } = await db
         .from("assessment_sections")
         .update({ question_count: count })
         .eq("id", s.id);
+      if (countErr) {
+        return {
+          ok: false,
+          message: `Soal tersimpan, tetapi hitungan section gagal diperbarui: ${countErr.message}`,
+        };
+      }
     }
 
     const totalCount = (allQ ?? []).length;
 
-    await db
+    const { error: totalsErr } = await db
       .from("assessments")
       .update({
         total_questions: totalCount,
         updated_at: new Date().toISOString(),
       })
       .eq("id", assessmentId);
+    if (totalsErr) {
+      return {
+        ok: false,
+        message: `Soal tersimpan, tetapi total soal gagal diperbarui: ${totalsErr.message}`,
+      };
+    }
 
     revalidatePath(`/dashboard/assessments/${assessmentId}`);
 

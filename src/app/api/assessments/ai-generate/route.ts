@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 // ============================================================
 // ROUTE CONFIG
@@ -720,6 +721,22 @@ function normalizeResult(raw: unknown): AIResult {
 
 export async function POST(req: Request) {
   try {
+    // Gerbang autentikasi: route ini memicu panggilan AI berbayar, jadi
+    // hanya pengguna yang login yang boleh memanggilnya (pola yang sama
+    // dengan /api/question-banks/ai-generate).
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { ok: false, message: "UNAUTHORIZED" },
+        { status: 401 },
+      );
+    }
+
     const body = (await req.json()) as {
       mode?: string;
       section_type?: string;
@@ -819,9 +836,11 @@ export async function POST(req: Request) {
       questions: result.questions,
     });
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Kesalahan tidak diketahui";
-    console.error("[ai-generate] error:", msg);
-    return NextResponse.json({ ok: false, message: msg }, { status: 500 });
+    // Detail error hanya ke log server; klien menerima pesan generik.
+    console.error("[ai-generate] error:", err);
+    return NextResponse.json(
+      { ok: false, message: "Kesalahan internal. Silakan coba lagi." },
+      { status: 500 },
+    );
   }
 }

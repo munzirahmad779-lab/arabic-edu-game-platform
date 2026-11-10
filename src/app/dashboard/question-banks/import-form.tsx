@@ -58,7 +58,11 @@ export function QuestionBankImportForm({
       setCopiedPrompt(true);
       setTimeout(() => setCopiedPrompt(false), 3000);
     } catch {
-      // fallback
+      // Clipboard ditolak: tampilkan pesan lewat aiNotice supaya guru
+      // tidak mengira prompt sudah tersalin.
+      setAiNotice(
+        "Gagal menyalin prompt otomatis. Salin teks prompt secara manual dari bagian Prompt AI di halaman ini.",
+      );
     }
   }
 
@@ -141,7 +145,7 @@ export function QuestionBankImportForm({
             <span>Tambah & Impor Soal Magguru</span>
           </h3>
           <p className="mt-0.5 text-xs text-neutral-500">
-            Bisa menambahkan soal berapapun (5, 10, 20, 50 soal). Cukup salin prompt ke AI atau salin tabel spreadsheet Anda.
+            Tambahkan soal lewat tempelan teks (maksimal 140 soal dalam satu kali simpan, sesuai batas server). Cukup salin prompt ke AI atau salin tabel spreadsheet Anda.
           </p>
         </div>
 
@@ -323,7 +327,7 @@ export function QuestionBankImportForm({
           <span>Identifikasi & Pratinjau Soal</span>
         </button>
 
-        {previewRows && previewRows.length > 0 && parseErrors.length === 0 && (
+        {previewRows && previewRows.length > 0 && parseErrors.length === 0 && previewRows.length <= 140 && (
           <button
             type="button"
             onClick={handleImport}
@@ -335,6 +339,13 @@ export function QuestionBankImportForm({
           </button>
         )}
       </div>
+
+      {previewRows && previewRows.length > 140 && (
+        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs font-bold text-amber-800">
+          Terdeteksi {previewRows.length} soal, melebihi batas 140 soal dalam
+          satu kali simpan. Kurangi isi tempelan atau simpan dalam dua tahap.
+        </div>
+      )}
 
       {/* Error & Feedback */}
       {parseErrors.length > 0 && (
@@ -365,13 +376,13 @@ export function QuestionBankImportForm({
         <div className="mt-4 space-y-2 border-t border-neutral-200 pt-4">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800">
-              ✓ Berhasil Mengidentifikasi {previewRows.length} Soal:
+              ✓ Berhasil Mengidentifikasi {previewRows.length}/140 Soal:
             </h4>
             <span className="text-[11px] font-bold text-neutral-500">
               Font Arab: Traditional Arabic 16pt
             </span>
           </div>
-          <div className="max-h-72 overflow-y-auto rounded-xl border border-neutral-200 bg-white">
+          <div className="max-h-72 overflow-x-auto overflow-y-auto rounded-xl border border-neutral-200 bg-white">
             <table className="w-full text-left text-xs">
               <thead className="bg-neutral-100 font-bold text-neutral-700 sticky top-0">
                 <tr>

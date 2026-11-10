@@ -241,10 +241,21 @@ export const ActiveRoomStore = {
         .map((q, idx) => normalizeSnapshotQuestion(q, idx))
         .filter((q): q is RoomQuestion => q !== null && q.options.length > 0);
 
-      if (normalized.length > existing.questions.length) {
-        existing.questions = normalized;
-      } else if (existing.questions.length === 0 && normalized.length > 0) {
-        existing.questions = normalized;
+      if (normalized.length > 0) {
+        // Daftar terbaru selalu menang: registrasi ulang dengan jumlah soal
+        // sama atau lebih sedikit tidak lagi diabaikan diam-diam. Tetapi
+        // kunci jawaban yang sudah dikenal (dari snapshot guru) tidak boleh
+        // hilang hanya karena sumber baru tidak membawanya (soal dari RPC
+        // sesi siswa memang tanpa kunci): warisi kunci lama per indeks bila
+        // kunci baru kosong, supaya penilaian cadangan di store tetap bisa
+        // menilai soal yang sama.
+        existing.questions = normalized.map((q, idx) => {
+          const prev = existing.questions[idx];
+          if (prev && !q.correct_option_key && prev.correct_option_key) {
+            return { ...q, correct_option_key: prev.correct_option_key };
+          }
+          return q;
+        });
       }
     }
 
@@ -257,15 +268,34 @@ export const ActiveRoomStore = {
   setQuestionAt(roomId: string, index: number, question: RoomQuestion) {
     const room = roomStore.get(roomId);
     if (!room) return;
+
+    const prev = room.questions[index];
+    // Soal dari RPC sesi siswa TIDAK membawa correct_option_key (kunci
+    // disembunyikan dari siswa secara sengaja). Menimpa soal snapshot guru
+    // yang berkunci dengan versi tanpa kunci ini membuat penilaian cadangan
+    // di store mustahil benar (kunci "" tidak pernah cocok dengan opsi
+    // A-D). Bila kunci baru kosong, pertahankan kunci yang sudah dikenal.
+    const merged =
+      prev && !question.correct_option_key && prev.correct_option_key
+        ? { ...question, correct_option_key: prev.correct_option_key }
+        : question;
+
     if (room.questions.length <= index) {
-      // pad array if necessary
+      // Pad array if necessary. Celah diisi penanda dengan id unik dan
+      // kunci kosong, BUKAN salinan soal yang sama: id duplikat membuat
+      // pencarian soal berdasarkan id ambigu, dan penanda tidak boleh bisa
+      // dinilai sebagai soal asli.
       for (let i = room.questions.length; i < index; i++) {
         if (!room.questions[i]) {
-          room.questions[i] = question; // placeholder
+          room.questions[i] = {
+            ...merged,
+            id: `placeholder-${roomId}-${i}`,
+            correct_option_key: "",
+          };
         }
       }
     }
-    room.questions[index] = question;
+    room.questions[index] = merged;
   },
 
   /**
@@ -428,11 +458,20 @@ export const ActiveRoomStore = {
 
     // Find the question in room
     const question = room.questions.find((q) => q.id === params.questionId);
+    const correctKey = (question?.correct_option_key ?? "").trim().toUpperCase();
+
+    // Store hanya boleh menilai soal yang dikenal DAN berkunci. Soal tanpa
+    // kunci (mis. hanya pernah terlihat lewat RPC sesi siswa) atau soal
+    // yang tidak dikenal instance ini tidak boleh dicatat sebagai jawaban
+    // "salah" berskor 0: itu penilaian karangan yang mengotori papan
+    // peringkat cadangan. Penilaian otoritatif selalu milik RPC database.
+    if (!question || !correctKey) {
+      return { accepted: false, is_correct: false, score_awarded: 0 };
+    }
+
     let isCorrect = false;
 
     if (question) {
-      const correctKey = (question.correct_option_key ?? "").trim().toUpperCase();
-
       if (params.selectedOptionId) {
         const chosen = question.options.find(
           (opt) => opt.id === params.selectedOptionId || opt.option_key === params.selectedOptionId

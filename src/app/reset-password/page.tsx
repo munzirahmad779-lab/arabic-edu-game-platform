@@ -20,6 +20,8 @@ type ResetDict = {
   desc: string;
   password_label: string;
   confirm_label: string;
+  old_label: string;
+  err_old_wrong: string;
   err_short: string;
   err_mismatch: string;
   err_conn: string;
@@ -46,6 +48,29 @@ const DICT_LOADERS: Record<
     ),
 };
 
+/**
+ * Kenali sesi pemulihan dari klaim `amr` pada access token: sesi yang
+ * lahir dari tautan reset email membawa metode "recovery". Bentuk entri
+ * amr bisa berupa string atau objek { method } tergantung versi server.
+ */
+function sessionIsRecovery(accessToken: string | undefined): boolean {
+  if (!accessToken) return false;
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return false;
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+    ) as { amr?: Array<{ method?: string } | string> };
+    return (json.amr ?? []).some((entry) =>
+      typeof entry === "string"
+        ? entry === "recovery"
+        : entry?.method === "recovery",
+    );
+  } catch {
+    return false;
+  }
+}
+
 function readLocale(): Locale {
   if (typeof document === "undefined") return DEFAULT_LOCALE;
   const m = document.cookie.match(
@@ -61,11 +86,14 @@ export default function ResetPasswordPage() {
   const [t, setT] = useState<ResetDict | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [oldPassword, setOldPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [checking, setChecking] = useState(true);
   const [hasSession, setHasSession] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
     const l = readLocale();
@@ -78,12 +106,32 @@ export default function ResetPasswordPage() {
         // ignore
       }
     })();
+    const supabase = createClient();
+
+    // Kenali sesi pemulihan dari tiga sinyal: penanda type=recovery
+    // pada URL kedatangan, peristiwa PASSWORD_RECOVERY dari klien auth,
+    // dan klaim amr "recovery" pada token sesi. Sesi login biasa yang
+    // tidak membawa satu pun sinyal ini wajib membuktikan kata sandi
+    // lama sebelum boleh mengganti kata sandi (lihat handleSubmit).
+    if (window.location.hash.includes("type=recovery")) {
+      setIsRecovery(true);
+    }
+    const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
+    });
+
     (async () => {
-      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionIsRecovery(sessionData.session?.access_token)) {
+        setIsRecovery(true);
+      }
       const { data } = await supabase.auth.getUser();
       setHasSession(Boolean(data.user));
+      setUserEmail(data.user?.email ?? null);
       setChecking(false);
     })();
+
+    return () => authSub.subscription.unsubscribe();
   }, []);
 
   const isRtl = locale === "ar";
@@ -106,11 +154,38 @@ export default function ResetPasswordPage() {
     setSubmitting(true);
     try {
       const supabase = createClient();
+
+      // Gerbang kepemilikan sesi: sesi pemulihan (dari tautan email)
+      // boleh langsung mengganti kata sandi; sesi login biasa wajib
+      // membuktikan kata sandi lama terlebih dahulu, agar sesi yang
+      // tertinggal di perangkat bersama tidak bisa dipakai mengambil
+      // alih akun.
+      if (!isRecovery) {
+        if (!userEmail) {
+          setError(t.err_conn);
+          return;
+        }
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: oldPassword,
+        });
+        if (reauthErr) {
+          setError(t.err_old_wrong);
+          return;
+        }
+      }
+
       const { error: updErr } = await supabase.auth.updateUser({ password });
 
       if (updErr) {
         setError(updErr.message);
       } else {
+        // Cabut sesi lain milik akun ini; sesi saat ini dipertahankan.
+        try {
+          await supabase.auth.signOut({ scope: "others" });
+        } catch {
+          // ignore: penggantian kata sandi sudah berhasil
+        }
         setInfo(t.success_info);
         window.setTimeout(() => {
           router.replace("/dashboard");
@@ -177,6 +252,27 @@ export default function ResetPasswordPage() {
           onSubmit={handleSubmit}
           className="space-y-4 rounded-3xl border border-violet-100 bg-white p-6 shadow-xl"
         >
+          {!isRecovery ? (
+            <div className="space-y-1">
+              <label
+                htmlFor="old-password"
+                className="block text-sm font-bold text-neutral-700"
+              >
+                {t.old_label}
+              </label>
+              <input
+                id="old-password"
+                type="password"
+                required
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                autoComplete="current-password"
+                dir="ltr"
+              />
+            </div>
+          ) : null}
+
           <div className="space-y-1">
             <label
               htmlFor="password"

@@ -75,7 +75,8 @@ export async function POST(req: NextRequest) {
       });
 
       if (resetError) {
-        return NextResponse.json({ error: resetError.message }, { status: 500 });
+        console.error("[/api/rooms/control] reset_room_session error:", resetError);
+        return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
 
       return NextResponse.json({
@@ -117,7 +118,8 @@ export async function POST(req: NextRequest) {
         .select("id, question_duration_seconds");
 
       if (durationError) {
-        return NextResponse.json({ error: durationError.message }, { status: 500 });
+        console.error("[/api/rooms/control] duration update error:", durationError);
+        return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
 
       if (!updated || updated.length === 0) {
@@ -148,7 +150,8 @@ export async function POST(req: NextRequest) {
         .select("id, state");
 
       if (endError) {
-        return NextResponse.json({ error: endError.message }, { status: 500 });
+        console.error("[/api/rooms/control] end room error:", endError);
+        return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
 
       if (!updated || updated.length === 0) {
@@ -192,7 +195,8 @@ export async function POST(req: NextRequest) {
         .select("id, state, current_question_index");
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
+        console.error("[/api/rooms/control] room update error:", updateError);
+        return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
 
       if (!updated || updated.length === 0) {
@@ -225,7 +229,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: "UNKNOWN_ACTION" }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[/api/rooms/control] Fatal error:", err);
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

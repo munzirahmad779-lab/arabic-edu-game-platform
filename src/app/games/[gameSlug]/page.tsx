@@ -25,9 +25,12 @@ export async function generateMetadata({
 export default function GamePage({ params }: { params: { gameSlug: string } }) {
   if (!getGameCatalogEntry(params.gameSlug)) notFound();
 
-  // Valid slugs intentionally render the lightweight detached placeholder when
-  // the optional games-pack is unplugged.
-  if (!GAME_PACK_AVAILABLE) return <GamePackRuntime slug={params.gameSlug} />;
+  // Selama games-pack dilepas (GAME_PACK_AVAILABLE = false), slug katalog
+  // yang sah pun harus menjawab 404, bukan halaman placeholder "Game pack
+  // sedang dilepas": halaman mati itu terindeks mesin pencari dan, untuk
+  // slug yang bertabrakan nama dengan game standalone, membuat guru/siswa
+  // mengira game-nya rusak padahal yang hidup ada di /game/<slug>.
+  if (!GAME_PACK_AVAILABLE) notFound();
 
   return <GamePackRuntime slug={params.gameSlug} />;
 }

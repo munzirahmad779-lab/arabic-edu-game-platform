@@ -112,8 +112,8 @@ export async function POST(req: NextRequest) {
     const { updated_at } = await mergeCheckpointIntoSnapshot(supabase, roomId, checkpoint);
     return NextResponse.json({ ok: true, updated_at });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message }, { status: 500 });
+    console.error("[/api/souq-fishing/checkpoint POST] Fatal error:", err);
+    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }
 
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
       updated_at: checkpointEnvelope.updated_at,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message }, { status: 500 });
+    console.error("[/api/souq-fishing/checkpoint GET] Fatal error:", err);
+    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }

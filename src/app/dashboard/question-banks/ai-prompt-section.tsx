@@ -47,6 +47,7 @@ FORMAT OUTPUT WAJIB (MARKDOWN):
 export function AiPromptSection() {
   const [selectedFormat, setSelectedFormat] = useState<"table" | "list">("table");
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const activePrompt = selectedFormat === "table" ? PROMPT_TABLE : PROMPT_LIST;
 
@@ -54,9 +55,13 @@ export function AiPromptSection() {
     try {
       await navigator.clipboard.writeText(activePrompt);
       setCopied(true);
+      setCopyFailed(false);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      // ignore
+      // Clipboard ditolak: beri tahu guru supaya tidak mengira prompt
+      // sudah tersalin; teks prompt tetap tampil untuk disalin manual.
+      setCopyFailed(true);
+      window.setTimeout(() => setCopyFailed(false), 4000);
     }
   }
 
@@ -79,6 +84,13 @@ export function AiPromptSection() {
           {copied ? "✓ Tersalin" : `📋 Copy Prompt (${selectedFormat === "table" ? "Tabel" : "Daftar"})`}
         </button>
       </div>
+
+      {copyFailed ? (
+        <p role="alert" className="mt-2 text-xs font-bold text-red-600">
+          Gagal menyalin otomatis. Blok teks prompt di bawah lalu salin
+          secara manual (Ctrl+C).
+        </p>
+      ) : null}
 
       {/* Pilihan Format Prompt */}
       <div className="mt-4 flex flex-wrap items-center gap-2">

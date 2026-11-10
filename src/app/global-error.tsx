@@ -12,7 +12,16 @@ export default function GlobalError({
       <body>
         <div style={{ display: "flex", minHeight: "100vh", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem", textAlign: "center", fontFamily: "sans-serif" }}>
           <h2>Terjadi kesalahan pada aplikasi</h2>
-          <p style={{ color: "#666", fontSize: "0.875rem", maxWidth: "28rem" }}>{error?.message || "Silakan muat ulang halaman."}</p>
+          <p style={{ color: "#666", fontSize: "0.875rem", maxWidth: "28rem" }}>
+            Silakan muat ulang halaman. Bila masalah berlanjut, sampaikan kode
+            rujukan berikut ke admin.
+            {error?.digest ? (
+              <>
+                {" "}
+                Kode rujukan: <strong>{error.digest}</strong>
+              </>
+            ) : null}
+          </p>
           <button
             onClick={() => reset()}
             style={{ marginTop: "1rem", borderRadius: "0.375rem", backgroundColor: "#171717", padding: "0.5rem 1rem", fontSize: "0.875rem", color: "#fff", border: "none", cursor: "pointer" }}

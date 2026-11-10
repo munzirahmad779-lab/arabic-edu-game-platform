@@ -40,8 +40,12 @@ async function uploadAudio(
   if (!file.type.startsWith("audio/")) return { error: "invalid_type" };
   if (file.size > MAX_AUDIO_BYTES) return { error: "too_large" };
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "mp3";
-  const random = Math.random().toString(36).slice(2, 10);
+  // Ekstensi dari nama berkas tidak dipercaya: cocokkan dengan daftar
+  // yang diizinkan, dan acak nama berkas dengan crypto, bukan Math.random.
+  const ALLOWED_AUDIO_EXTENSIONS = new Set(["mp3", "ogg", "wav", "m4a", "webm"]);
+  const rawExt = file.name.split(".").pop()?.toLowerCase() || "";
+  const ext = ALLOWED_AUDIO_EXTENSIONS.has(rawExt) ? rawExt : "mp3";
+  const random = crypto.randomUUID().slice(0, 8);
   const path = `backdrops/${userId}/${Date.now()}-${random}.${ext}`;
 
   const { error } = await supabase.storage
@@ -213,14 +217,25 @@ export async function toggleAudioTrack(formData: FormData) {
   if (!user) redirect("/login");
 
   const id = readString(formData, "track_id");
-  const currentEnabled = readString(formData, "current_enabled") === "true";
 
   if (!/^[0-9a-f-]{36}$/i.test(id)) errPath("invalid_id");
+
+  // Keadaan saat ini dibaca dari basis data, bukan dipercaya dari
+  // field form klien: tab basi atau dua tab tidak lagi membalik ke
+  // keadaan yang salah diam-diam.
+  const { data: track, error: readError } = await supabase
+    .from("teacher_audio_tracks")
+    .select("enabled")
+    .eq("id", id)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (readError || !track) errPath("not_found");
 
   const { error } = await supabase
     .from("teacher_audio_tracks")
     .update({
-      enabled: !currentEnabled,
+      enabled: !track.enabled,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

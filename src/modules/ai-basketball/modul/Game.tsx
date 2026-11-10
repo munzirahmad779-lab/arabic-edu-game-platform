@@ -1435,7 +1435,7 @@ function TeamPanel({
               <button
                 key={`${question?.id ?? "q"}-${i}`}
                 type="button"
-                data-correct={i === opts.correctIndex ? "1" : "0"}
+                data-correct={answered ? (i === opts.correctIndex ? "1" : "0") : undefined}
                 disabled={answered || paused}
                 onClick={() => onAnswer(i)}
                 dir={arabic ? "rtl" : "auto"}

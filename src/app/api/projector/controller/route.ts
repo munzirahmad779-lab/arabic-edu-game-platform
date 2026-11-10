@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   buildSyncedGameState,
   createDefaultProjectorRoomData,
@@ -102,6 +103,20 @@ export async function POST(req: NextRequest) {
 
     // 1. PROJECTOR SYNC ACTION (Sent by Teacher's Projector Screen)
     if (action === "sync_state") {
+      // Menimpa state room adalah hak layar proyektor guru: wajib sesi
+      // login Supabase. Aksi stik siswa (press dan heartbeat di bawah)
+      // TIDAK digerbang sesi ini karena stik berjalan dengan sesi siswa
+      // sendiri; perilakunya tidak berubah.
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+      }
+
       const prevData =
         (await fetchProjectorRoomData(roomCode)) ??
         createDefaultProjectorRoomData(now);
@@ -184,7 +199,7 @@ export async function POST(req: NextRequest) {
     const timestamp = await touchProjectorController(roomCode, teamId);
     return NextResponse.json({ success: true, action: "heartbeat", timestamp });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[/api/projector/controller] Fatal error:", err);
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

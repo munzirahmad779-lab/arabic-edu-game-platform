@@ -1149,6 +1149,8 @@
     "desc": "Masukkan password baru dua kali.",
     "password_label": "Password Baru",
     "confirm_label": "Konfirmasi Password",
+    "old_label": "Password Lama",
+    "err_old_wrong": "Password lama salah. Perubahan dibatalkan.",
     "err_short": "Password harus minimal 6 karakter.",
     "err_mismatch": "Password tidak cocok.",
     "err_conn": "Gagal terhubung ke server.",

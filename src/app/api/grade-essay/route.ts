@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getStudentSession } from "@/lib/student-auth";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const { data: sub, error: subErr } = await supabase
       .from("essay_submissions")
       .select(
-        "id, answer_text, assignment_id, essay_assignments!inner(question_text, ideal_answer, rubric_content, rubric_grammar, rubric_vocabulary)",
+        "id, student_id, answer_text, assignment_id, essay_assignments!inner(teacher_id, question_text, ideal_answer, rubric_content, rubric_grammar, rubric_vocabulary)",
       )
       .eq("id", submissionId)
       .maybeSingle();
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
     const assignment = (
       sub as unknown as {
         essay_assignments: {
+          teacher_id: string;
           question_text: string;
           ideal_answer: string | null;
           rubric_content: number;
@@ -56,6 +58,28 @@ export async function POST(req: Request) {
         };
       }
     ).essay_assignments;
+
+    // Gerbang kepemilikan: hanya guru pemilik tugas ATAU siswa pemilik
+    // submission yang boleh memicu penilaian AI berbayar ini. Pemanggil
+    // anonim yang hanya tahu submission_id ditolak. Alur sahnya ada dua:
+    // essay-player siswa (sesi siswa token, sesudah submit) dan guru
+    // pemilik kelas (sesi Supabase).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    let authorized = Boolean(user) && assignment.teacher_id === user?.id;
+    if (!authorized) {
+      const studentSession = await getStudentSession();
+      authorized = Boolean(
+        studentSession && studentSession.student_id === sub.student_id,
+      );
+    }
+    if (!authorized) {
+      return NextResponse.json(
+        { ok: false, message: "UNAUTHORIZED" },
+        { status: 401 },
+      );
+    }
 
     const prompt = buildPrompt({
       question: assignment.question_text,
@@ -66,9 +90,12 @@ export async function POST(req: Request) {
       rubricVocabulary: assignment.rubric_vocabulary,
     });
 
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    const geminiRes = await fetch(GEMINI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -82,11 +109,7 @@ export async function POST(req: Request) {
       const errText = await geminiRes.text();
       console.error("[grade-essay] gemini error:", errText);
       return NextResponse.json(
-        {
-          ok: false,
-          message: "Layanan AI bermasalah",
-          detail: errText.slice(0, 500),
-        },
+        { ok: false, message: "Layanan AI bermasalah" },
         { status: 502 },
       );
     }
@@ -149,7 +172,7 @@ export async function POST(req: Request) {
     if (updErr) {
       console.error("[grade-essay] update error:", updErr);
       return NextResponse.json(
-        { ok: false, message: "Gagal update database", detail: updErr.message },
+        { ok: false, message: "Gagal update database" },
         { status: 500 },
       );
     }

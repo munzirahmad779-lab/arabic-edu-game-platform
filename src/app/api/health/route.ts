@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isSuperAdmin } from "@/lib/super-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -185,13 +186,15 @@ export async function GET(request: NextRequest) {
     checks,
   };
 
-  // Deep Diagnostic info only when requested & authorized
+  // Deep Diagnostic info only when requested & authorized.
+  // Detail operasional (uptime, latensi, environment) hanya untuk
+  // super-admin; pengguna login lain dan publik cukup ringkasan dasar.
   if (isDeepRequested) {
     let isAuthorized = false;
     try {
       const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) isAuthorized = true;
+      if (isSuperAdmin(user)) isAuthorized = true;
     } catch {
       isAuthorized = false;
     }

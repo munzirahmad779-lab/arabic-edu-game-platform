@@ -28,6 +28,10 @@ export async function reorderMaterials(
     return { ok: false, message: "Daftar kosong." };
   }
 
+  if (orderedIds.length > 500) {
+    return { ok: false, message: "Jumlah materi melebihi batas 500." };
+  }
+
   // Cek kepemilikan kelas
   const { data: classRow } = await supabase
     .from("classes")
@@ -86,38 +90,56 @@ export async function materialAction(formData: FormData) {
 
   if (action === "toggle_publish") {
     const current = readString(formData, "current_published") === "true";
-    await supabase
+    const { data: updated, error } = await supabase
       .from("class_materials")
       .update({ is_published: !current })
       .eq("id", materialId)
-      .eq("class_id", classId);
+      .eq("class_id", classId)
+      .select("id");
+
+    if (error || !updated || updated.length === 0) {
+      redirect(`/dashboard/classes/${classId}?material_error=toggle_failed`);
+    }
   } else if (action === "delete") {
-    // Hapus media dulu
-    const { data: material } = await supabase
+    // Baca dulu berkas media yang melekat pada materi ini.
+    const { data: material, error: readError } = await supabase
       .from("class_materials")
       .select("image_path, pdf_path")
       .eq("id", materialId)
       .eq("class_id", classId)
       .maybeSingle();
 
-    if (material) {
-      const paths: string[] = [];
-      if (material.image_path) paths.push(material.image_path);
-      if (material.pdf_path) paths.push(material.pdf_path);
-      if (paths.length > 0) {
-        try {
-          await supabase.storage.from("question-media").remove(paths);
-        } catch {
-          // ignore
-        }
-      }
+    if (readError || !material) {
+      redirect(`/dashboard/classes/${classId}?material_error=not_found`);
     }
 
-    await supabase
+    // Hapus baris basis data DULU. Berkas storage hanya dihapus sesudah
+    // barisnya benar-benar hilang, supaya baris yang gagal dihapus tidak
+    // tertinggal menunjuk berkas yang sudah tidak ada.
+    const { data: deleted, error: deleteError } = await supabase
       .from("class_materials")
       .delete()
       .eq("id", materialId)
-      .eq("class_id", classId);
+      .eq("class_id", classId)
+      .select("id");
+
+    if (deleteError || !deleted || deleted.length === 0) {
+      redirect(`/dashboard/classes/${classId}?material_error=delete_failed`);
+    }
+
+    const paths: string[] = [];
+    if (material.image_path) paths.push(material.image_path);
+    if (material.pdf_path) paths.push(material.pdf_path);
+    if (paths.length > 0) {
+      try {
+        await supabase.storage.from("question-media").remove(paths);
+      } catch {
+        // Pembersihan storage bersifat best-effort: baris materi sudah
+        // terhapus, jadi kegagalan di sini tidak mengubah data utama.
+      }
+    }
+  } else {
+    redirect(`/dashboard/classes/${classId}?material_error=invalid_action`);
   }
 
   revalidatePath(`/dashboard/classes/${classId}`);

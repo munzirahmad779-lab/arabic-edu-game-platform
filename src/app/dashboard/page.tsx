@@ -109,6 +109,17 @@ export default async function DashboardPage() {
       .limit(2),
   ]);
 
+  // Hitungan "Perlu Perhatian" wajib dibatasi ke milik guru ini secara
+  // eksplisit, tidak hanya bergantung pada RLS: esai lewat assignment
+  // milik guru, token lewat created_by.
+  const { data: myEssayAssignments } = await db
+    .from("essay_assignments")
+    .select("id")
+    .eq("teacher_id", user.id);
+  const myAssignmentIds = (
+    (myEssayAssignments ?? []) as Array<{ id: string }>
+  ).map((a) => a.id);
+
   const [studentRowsResult, materialsResult, essaysPendingRes, examsActiveRes] =
     await Promise.all([
       studentRowsQuery,
@@ -124,11 +135,18 @@ export default async function DashboardPage() {
       db
         .from("essay_submissions")
         .select("id", { count: "exact", head: true })
+        .in(
+          "assignment_id",
+          myAssignmentIds.length > 0
+            ? myAssignmentIds
+            : ["00000000-0000-0000-0000-000000000000"],
+        )
         .is("teacher_override_score", null)
         .is("ai_score", null),
       db
         .from("assessment_tokens")
         .select("id", { count: "exact", head: true })
+        .eq("created_by", user.id)
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString()),
     ]);

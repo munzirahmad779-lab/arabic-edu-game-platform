@@ -42,6 +42,32 @@ type Dict = Pick<
   "join" | "reports" | "anagram" | "matching"
 >;
 
+// Token join adalah kredensial bearer sesi siswa. Ia hanya boleh singgah
+// di URL pada navigasi pertama (redirect dari server action join), lalu
+// dipindahkan ke sessionStorage tab ini dan dihapus dari URL: token yang
+// menetap di URL masuk riwayat peramban, log, dan ikut terkirim bila
+// tautan dibagikan.
+const JOIN_TOKEN_STORAGE_KEY = "magguru_join_token";
+
+function scrubTokenFromUrl() {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("token")) {
+      url.searchParams.delete("token");
+      window.history.replaceState({}, "", url.toString());
+    }
+  } catch {}
+}
+
+function persistJoinToken(nextToken: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(JOIN_TOKEN_STORAGE_KEY, nextToken);
+  } catch {}
+  scrubTokenFromUrl();
+}
+
 
 
 
@@ -195,16 +221,39 @@ export default function JoinRoomPage({
 }: {
   searchParams: { token?: string };
 }) {
-  const token = searchParams.token ?? "";
+  const urlToken = searchParams.token ?? "";
 
-  // Token aktif disimpan di ref: server dapat menyerahkan join_token baru
-  // (new_join_token) lewat history.replaceState, tetapi prop searchParams
-  // tidak berubah oleh replaceState — tanpa ref ini semua polling berikutnya
-  // selamanya memakai token lama yang sudah tidak dikenal server.
-  const activeTokenRef = useRef(token);
+  // Token aktif adalah state + ref. State menentukan render (penjaga token
+  // dan RoomReview); ref dipakai semua polling/fetch. Sumbernya berurutan:
+  // URL pada navigasi pertama, sessionStorage pada muat ulang tanpa
+  // parameter URL, dan new_join_token dari server saat reconnect — tanpa
+  // ref ini polling berikutnya selamanya memakai token lama yang sudah
+  // tidak dikenal server.
+  const [token, setToken] = useState(urlToken);
+  const activeTokenRef = useRef(urlToken);
   useEffect(() => {
     if (token) activeTokenRef.current = token;
   }, [token]);
+
+  // Sekali saat halaman dimuat: pindahkan token URL ke sessionStorage dan
+  // bersihkan URL-nya; bila URL tidak membawa token, pulihkan dari
+  // sessionStorage tab ini.
+  useEffect(() => {
+    if (urlToken) {
+      persistJoinToken(urlToken);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    try {
+      const stored = window.sessionStorage.getItem(JOIN_TOKEN_STORAGE_KEY);
+      if (stored) {
+        activeTokenRef.current = stored;
+        setToken(stored);
+      }
+    } catch {}
+    // Hanya dijalankan sekali pada mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [dict, setDict] = useState<Dict>(idDict);
@@ -339,14 +388,12 @@ export default function JoinRoomPage({
       }
 
       if (raw.new_join_token) {
+        // Token pulihan disimpan ke sessionStorage, BUKAN ditulis kembali
+        // ke URL (pola lama menaruh kredensial ini di history.replaceState
+        // sehingga menetap di riwayat peramban).
         activeTokenRef.current = raw.new_join_token;
-        if (typeof window !== "undefined") {
-          try {
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set("token", raw.new_join_token);
-            window.history.replaceState({}, "", newUrl.toString());
-          } catch {}
-        }
+        setToken(raw.new_join_token);
+        persistJoinToken(raw.new_join_token);
       }
 
       setSessionEnded(false);

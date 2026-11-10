@@ -23,8 +23,6 @@ type PageKey = "dashboard" | "login" | "student" | "game" | "final";
 
 type Locale = "id" | "en" | "ar";
 
-const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
-
 // Label tema diambil dari dictionary (widget.theme_*).
 // THEMES hanya menyimpan key & warna.
 const THEMES: { key: string; color: string }[] = [
@@ -105,7 +103,13 @@ function pageOf(pathname: string): PageKey | null {
   return null;
 }
 
-export function GlobalBackgroundAudio() {
+// isSuperAdmin dihitung di server (root layout, dari lib/super-admin) dan
+// diteruskan sebagai boolean; komponen klien ini tidak boleh memuat email.
+export function GlobalBackgroundAudio({
+  isSuperAdmin = false,
+}: {
+  isSuperAdmin?: boolean;
+}) {
   const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
@@ -119,12 +123,10 @@ export function GlobalBackgroundAudio() {
   const [currentTheme, setCurrentTheme] = useState<string>("violet");
   const [themeLoading, setThemeLoading] = useState(false);
   const [portalCopied, setPortalCopied] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [locale, setLocale] = useState<Locale>("id");
   const [w, setW] = useState<WidgetDict | null>(null);
 
   const isDashboard = pathname.startsWith("/dashboard");
-  const isSuperAdmin = userEmail === SUPER_ADMIN_EMAIL;
   const isRtl = locale === "ar";
 
   useEffect(() => {
@@ -166,27 +168,6 @@ export function GlobalBackgroundAudio() {
         const { data } = await supabase.rpc("get_active_audio_tracks");
         if (!alive) return;
         if (Array.isArray(data)) setTracks(data as Track[]);
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [mounted]);
-
-  // Fetch user email
-  useEffect(() => {
-    if (!mounted || !hasSupabaseEnv()) return;
-    let alive = true;
-    const supabase = createClient();
-    (async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!alive) return;
-        setUserEmail(user?.email ?? null);
       } catch {
         // ignore
       }

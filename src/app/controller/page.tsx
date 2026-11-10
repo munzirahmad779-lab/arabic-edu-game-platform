@@ -705,23 +705,11 @@ export default function ControllerPage() {
                 <p className="text-[11px] font-normal text-emerald-200/80 mt-0.5">
                   Remote Anda telah dikunci. Jawaban tidak bisa diubah hingga soal berikutnya.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHasLocallyAnswered(false);
-                    setLastPressedKey(null);
-                    setStatusMessage(null);
-                    setGameState((prev) => ({
-                      ...prev,
-                      hasMyTeamAnswered: false,
-                      myTeamAnswer: null,
-                      isLocked: prev.phase !== "question",
-                    }));
-                  }}
-                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/30 hover:bg-emerald-500/50 border border-emerald-400/50 px-3 py-1 text-[11px] font-bold text-white transition active:scale-95"
-                >
-                  🔄 Buka Kunci (Jika Sudah Pindah Soal)
-                </button>
+                {/* Tombol "Buka Kunci" manual DIHAPUS: ia hanya membuka kunci
+                    lokal untuk soal yang sama, sehingga press berikutnya pasti
+                    ditolak server (ALREADY_ANSWERED) dan membingungkan siswa.
+                    Pindah soal/lobby/selesai sudah membuka kunci otomatis
+                    lewat sinkronisasi state di handleIncomingGameState. */}
               </div>
             ) : (
               <div className="rounded-2xl bg-amber-500/20 border border-amber-400/50 p-2.5 text-xs font-bold text-amber-200 animate-pulse">

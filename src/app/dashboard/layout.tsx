@@ -9,8 +9,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { DashboardShell } from "@/components/dashboard-shell";
-
-const SUPER_ADMIN_EMAIL = "munzirahmad779@gmail.com";
+import { isSuperAdmin } from "@/lib/super-admin";
 
 export default async function DashboardLayout({
   children,
@@ -27,7 +26,7 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const [{ data: profile }, dict] = await Promise.all([
+  const [{ data: profile, error: profileError }, dict] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, email, theme, is_active")
@@ -35,6 +34,12 @@ export default async function DashboardLayout({
       .single(),
     getDictionary(locale),
   ]);
+  if (profileError) {
+    // Kegagalan membaca profil ditangani eksplisit: gerbang akun
+    // nonaktif di bawah hanya berjalan bila profil terbaca, jadi
+    // kegagalan ini wajib terlihat di log server, bukan senyap.
+    console.error("[dashboard-layout] gagal membaca profil:", profileError);
+  }
   const isRtl = locale === "ar";
   const t = dict.dashboard;
   const sb = dict.sidebar;
@@ -65,7 +70,7 @@ export default async function DashboardLayout({
   }
 
   const theme = profile?.theme ?? "violet";
-  const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+  const isSuperAdminUser = isSuperAdmin(user);
   const displayName = profile?.full_name || profile?.email || user.email || "";
 
   return (
@@ -82,7 +87,7 @@ export default async function DashboardLayout({
             locale={locale}
             dict={sb}
             brandName={dict.common.brand_main}
-            isSuperAdmin={isSuperAdmin}
+            isSuperAdmin={isSuperAdminUser}
           />
         }
         headerLogo={

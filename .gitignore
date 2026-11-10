@@ -42,3 +42,9 @@ next-env.d.ts
 
 *.bak
 audit-*.txt
+
+# artefak kerja lokal agen/skrip sekali pakai (jangan masuk repo)
+*.log
+stage*
+fix-*.js
+cordis-patch*

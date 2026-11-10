@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
     );
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      // result.error dapat memuat pesan DB mentah dari lib; catat di
+      // server, klien cukup menerima kode generik.
+      console.error("[/api/projector/save-report] Save failed:", result.error);
+      return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
       reusedRoom: result.reusedRoom,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[/api/projector/save-report] Fatal error:", err);
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

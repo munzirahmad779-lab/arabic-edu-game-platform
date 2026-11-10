@@ -195,6 +195,9 @@ const T = {
     optPh: "Pilihan",
     save: "Simpan & Kembali",
     reset: "Kembalikan default",
+    mute: "Bisukan suara",
+    unmute: "Nyalakan suara",
+    deleteQ: "Hapus soal",
   },
   en: {
     title: "SMART TUG OF WAR",
@@ -225,6 +228,9 @@ const T = {
     optPh: "Option",
     save: "Save & Back",
     reset: "Restore defaults",
+    mute: "Mute sound",
+    unmute: "Unmute sound",
+    deleteQ: "Delete question",
   },
 } as const;
 
@@ -669,7 +675,13 @@ export default function AduTarikGame() {
       setCsvMsg("Soal butuh pertanyaan + minimal 2 pilihan");
       return;
     }
-    const correct = newCorrect.trim() && opts.includes(newCorrect.trim()) ? newCorrect.trim() : opts[0];
+    const correct = newCorrect.trim();
+    if (!correct || !opts.includes(correct)) {
+      // Jangan karang kunci dari pilihan pertama: soal tanpa jawaban benar
+      // yang sah ditolak dengan pesan, bukan diterbitkan berkunci karangan.
+      setCsvMsg("Jawaban benar harus diisi persis sama dengan salah satu pilihan");
+      return;
+    }
     const item = makeQuestion(editSubject, newPrompt, opts, correct);
     const next: Bank = { ...bank, [editSubject]: [...listOf(editSubject), item] };
     setBank(next);
@@ -724,24 +736,39 @@ export default function AduTarikGame() {
       }
       const next: Bank = { arab: [...bank.arab], matematika: [...bank.matematika], biologi: [...bank.biologi], fisika: [...bank.fisika], lms: [...bank.lms] };
       let added = 0;
+      let skippedBadKey = 0;
       for (let i = 1; i < rows.length; i++) {
         const cells = rows[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
         const prompt = cells[1] ?? "";
         const opts = (cells[2] ?? "").split("|").map((s) => s.trim()).filter(Boolean);
         const correct = cells[3] ?? "";
         if (!prompt || opts.length < 2 || !correct) continue;
+        // Baris yang jawaban benarnya tidak persis salah satu pilihan
+        // dilewati, BUKAN dikunci paksa ke pilihan pertama.
+        if (!opts.includes(correct)) {
+          skippedBadKey += 1;
+          continue;
+        }
         const cat = (cells[0] ?? "").toLowerCase();
         const sid: SubjectId = cat.includes("arab") ? "arab" : cat.includes("matem") ? "matematika" : cat.includes("bio") ? "biologi" : "fisika";
-        next[sid].push(makeQuestion(sid, prompt, opts, opts.includes(correct) ? correct : opts[0]));
+        next[sid].push(makeQuestion(sid, prompt, opts, correct));
         added += 1;
       }
       if (!added) {
-        setCsvMsg("Tidak ada baris valid");
+        setCsvMsg(
+          skippedBadKey > 0
+            ? `Tidak ada baris valid: ${skippedBadKey} baris dilewati karena jawaban benar tidak cocok dengan pilihan`
+            : "Tidak ada baris valid",
+        );
         return;
       }
       setBank(next);
       saveBank(next);
-      setCsvMsg(`Berhasil menambahkan ${added} soal`);
+      setCsvMsg(
+        skippedBadKey > 0
+          ? `Berhasil menambahkan ${added} soal, ${skippedBadKey} baris dilewati (jawaban benar tidak cocok dengan pilihan)`
+          : `Berhasil menambahkan ${added} soal`,
+      );
     } catch (e) {
       setCsvMsg(`Gagal: ${(e as Error).message}`);
     }
@@ -796,7 +823,7 @@ export default function AduTarikGame() {
             <button onClick={() => setLang(lang === "id" ? "en" : "id")} className="h-12 w-12 rounded-full border-2 border-white bg-white/90 text-xs font-black text-slate-800 shadow-lg">
               {lang.toUpperCase()}
             </button>
-            <button onClick={() => setMuted((m) => !m)} className="h-12 w-12 rounded-full border-2 border-white bg-white/90 text-xl shadow-lg">
+            <button onClick={() => setMuted((m) => !m)} className="h-12 w-12 rounded-full border-2 border-white bg-white/90 text-xl shadow-lg" aria-label={muted ? t.unmute : t.mute} aria-pressed={muted}>
               {muted ? "🔇" : "🔊"}
             </button>
             <button onClick={() => setScreen("bank")} className="h-12 w-12 rounded-full border-2 border-white bg-white/90 text-xl shadow-lg" aria-label={t.bank}>
@@ -1082,7 +1109,6 @@ export default function AduTarikGame() {
                         {opts.map((opt, oi) => (
                           <button
                             key={`${oi}-${opt}`}
-                            data-correct={q?.correct === opt ? "1" : "0"}
                             onClick={() => answer(slot, opt)}
                             dir={q?.isArabic ? "rtl" : "ltr"}
                             className={`flex min-h-[3rem] items-center justify-center gap-1.5 rounded-xl border-2 border-b-[5px] border-slate-200 border-b-slate-300 bg-white px-1.5 py-1.5 text-center font-bold leading-tight text-slate-800 transition active:translate-y-[2px] active:border-b-[3px] lg:min-h-[clamp(3rem,7vh,4.75rem)] ${theme.hover} ${oSize}`}
@@ -1323,7 +1349,7 @@ export default function AduTarikGame() {
                         <span className="mr-1 text-slate-400">{i + 1}.</span>
                         {item.prompt}
                       </p>
-                      <button onClick={() => removeQuestion(editSubject, item.id)} className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-black text-rose-600">
+                      <button onClick={() => removeQuestion(editSubject, item.id)} className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-black text-rose-600" aria-label={t.deleteQ}>
                         ✕
                       </button>
                     </div>

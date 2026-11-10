@@ -1149,6 +1149,8 @@
     "desc": "Enter your new password twice.",
     "password_label": "New Password",
     "confirm_label": "Confirm Password",
+    "old_label": "Current Password",
+    "err_old_wrong": "Current password is incorrect. No changes were made.",
     "err_short": "Password must be at least 6 characters.",
     "err_mismatch": "Passwords do not match.",
     "err_conn": "Failed to connect to server.",

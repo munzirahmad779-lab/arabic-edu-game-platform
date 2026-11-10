@@ -215,7 +215,11 @@ function sanitize(list: unknown, subjectId: SubjectId): NQ[] {
       kind,
       answer: typeof item.answer === "number" && Number.isFinite(item.answer) ? Math.round(item.answer) : 0,
       options: kind === "teks" ? options : [],
-      correct: kind === "teks" ? (typeof item.correct === "string" ? item.correct : options[0] ?? "") : "",
+      // Kunci yang hilang/bukan string TIDAK diisi options[0]: mengarang
+      // kunci membuat soal lolos saringan di bawah dengan kunci karangan.
+      // Kunci kosong membuat soal teks gugur di filter akhir, sama seperti
+      // perlakuan kunci angka negatif di bawah.
+      correct: kind === "teks" ? (typeof item.correct === "string" ? item.correct : "") : "",
       isArabic: typeof item.isArabic === "boolean" ? item.isArabic : hasArabic(item.prompt),
     };
   // Soal angka berkunci negatif dibuang, bukan dijepit diam-diam menjadi 0:

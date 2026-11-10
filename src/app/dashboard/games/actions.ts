@@ -143,11 +143,15 @@ async function assertQuestionsExist(
   supabase: SupabaseServerClient,
   uniqueQuestionIds: string[],
   errorBase: string,
+  teacherId: string,
 ) {
+  // Filter pemilik eksplisit sebagai pertahanan berlapis di atas RLS:
+  // soal guru lain harus terbaca sebagai tidak ada.
   const { data: questions, error: questionsError } = await supabase
     .from("questions")
     .select("id, question_bank_id")
-    .in("id", uniqueQuestionIds);
+    .in("id", uniqueQuestionIds)
+    .eq("teacher_id", teacherId);
 
   if (
     questionsError ||
@@ -277,7 +281,7 @@ export async function createGame(formData: FormData) {
   } = parseGameFormFields(formData, "/dashboard/games");
 
   await assertClassOwned(supabase, user.id, classId, "/dashboard/games");
-  await assertQuestionsExist(supabase, uniqueQuestionIds, "/dashboard/games");
+  await assertQuestionsExist(supabase, uniqueQuestionIds, "/dashboard/games", user.id);
 
   // Backsound opsional
   const backsoundTrackId = await resolveBacksoundTrackId(
@@ -397,7 +401,7 @@ export async function updateGame(formData: FormData) {
   } = parseGameFormFields(formData, errorBase);
 
   await assertClassOwned(supabase, user.id, classId, errorBase);
-  await assertQuestionsExist(supabase, uniqueQuestionIds, errorBase);
+  await assertQuestionsExist(supabase, uniqueQuestionIds, errorBase, user.id);
 
   const backsoundTrackId = await resolveBacksoundTrackId(
     supabase,
@@ -507,22 +511,48 @@ export async function deleteGame(formData: FormData) {
     redirect("/dashboard/games?error=game_not_found");
   }
 
-  const { data: rooms } = await supabase
+  const { data: rooms, error: roomsError } = await supabase
     .from("rooms")
     .select("id")
     .eq("game_id", gameId)
     .eq("teacher_id", user.id);
 
-  const roomIds = (rooms ?? []).map((r) => r.id);
-
-  if (roomIds.length > 0) {
-    await supabase.from("submissions").delete().in("room_id", roomIds);
-    await supabase.from("room_participants").delete().in("room_id", roomIds);
-    await supabase.from("room_sessions").delete().in("room_id", roomIds);
-    await supabase.from("rooms").delete().in("id", roomIds);
+  if (roomsError) {
+    console.error("[deleteGame] rooms lookup failed:", roomsError);
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(roomsError.message)}`,
+    );
   }
 
-  await supabase.from("game_questions").delete().eq("game_id", gameId);
+  const roomIds = (rooms ?? []).map((r) => r.id);
+
+  // Rantai hapus wajib diperiksa satu per satu: kegagalan di tengah
+  // tidak boleh tertutup oleh redirect sukses di akhir.
+  if (roomIds.length > 0) {
+    const chain: Array<{ error: { message: string } | null }> = [];
+    chain.push(await supabase.from("submissions").delete().in("room_id", roomIds));
+    chain.push(await supabase.from("room_participants").delete().in("room_id", roomIds));
+    chain.push(await supabase.from("room_sessions").delete().in("room_id", roomIds));
+    chain.push(await supabase.from("rooms").delete().in("id", roomIds));
+    const chainError = chain.find((r) => r.error)?.error;
+    if (chainError) {
+      console.error("[deleteGame] room chain delete failed:", chainError);
+      redirect(
+        `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(chainError.message)}`,
+      );
+    }
+  }
+
+  const { error: questionsError } = await supabase
+    .from("game_questions")
+    .delete()
+    .eq("game_id", gameId);
+  if (questionsError) {
+    console.error("[deleteGame] game_questions delete failed:", questionsError);
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(questionsError.message)}`,
+    );
+  }
 
   const { error: deleteError } = await supabase
     .from("games")
@@ -953,9 +983,18 @@ export async function deleteRoom(formData: FormData) {
     redirect("/dashboard/games?error=room_not_found");
   }
 
-  await supabase.from("submissions").delete().eq("room_id", roomId);
-  await supabase.from("room_participants").delete().eq("room_id", roomId);
-  await supabase.from("room_sessions").delete().eq("room_id", roomId);
+  // Rantai hapus wajib diperiksa satu per satu, sama seperti deleteGame.
+  const chain: Array<{ error: { message: string } | null }> = [];
+  chain.push(await supabase.from("submissions").delete().eq("room_id", roomId));
+  chain.push(await supabase.from("room_participants").delete().eq("room_id", roomId));
+  chain.push(await supabase.from("room_sessions").delete().eq("room_id", roomId));
+  const chainError = chain.find((r) => r.error)?.error;
+  if (chainError) {
+    console.error("[deleteRoom] chain delete failed:", chainError);
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(chainError.message)}`,
+    );
+  }
 
   const { error: deleteError } = await supabase
     .from("rooms")

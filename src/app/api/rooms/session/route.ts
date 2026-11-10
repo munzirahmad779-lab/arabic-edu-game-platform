@@ -4,13 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ActiveRoomStore, normalizeSnapshotQuestion } from "@/lib/game-engine/room-store";
 
-// Soal yang dikirim ke siswa TIDAK boleh memuat kunci jawaban. Salinan
-// internal di ActiveRoomStore tetap menyimpannya untuk penilaian cadangan
-// sisi server; yang keluar lewat API publik selalu disanitasi di sini.
+// Soal yang dikirim ke siswa TIDAK boleh memuat kunci jawaban maupun
+// penjelasan jawaban selama permainan berjalan: explanation lazimnya
+// menjelaskan jawaban yang benar, jadi membawanya sama dengan membocorkan
+// kunci lewat jalur lain (jalur utama RPC get_game_session memang sudah
+// membangun objek soal tanpa keduanya). Salinan internal di
+// ActiveRoomStore tetap menyimpannya untuk penilaian cadangan sisi server;
+// yang keluar lewat API publik selalu disanitasi di sini.
 function toPublicQuestion(q: unknown): unknown {
   if (!q || typeof q !== "object") return q ?? null;
   const copy: Record<string, unknown> = { ...(q as Record<string, unknown>) };
   delete copy.correct_option_key;
+  delete copy.explanation;
   return copy;
 }
 
@@ -207,6 +212,9 @@ export async function GET(req: NextRequest) {
           room_id,
           guest_name,
           student_id,
+          students (
+            name
+          ),
           rooms (
             id,
             code,
@@ -273,7 +281,13 @@ export async function GET(req: NextRequest) {
           questions: normQs,
         });
 
-        const pName = partRow.guest_name || "Santri Magguru";
+        // Nama peserta kelas ada di tabel students, bukan guest_name
+        // (yang hanya terisi untuk tamu); tanpa gabungan ini siswa kelas
+        // selalu tampil generik pada jalur cadangan ini.
+        const studentName = (
+          partRow as unknown as { students?: { name?: string } | null }
+        ).students?.name;
+        const pName = studentName || partRow.guest_name || "Santri Magguru";
         ActiveRoomStore.registerParticipant({
           roomId: rData.id,
           joinToken: token,
@@ -459,8 +473,7 @@ export async function GET(req: NextRequest) {
       { status: 404 }
     );
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Internal Error";
     console.error("[/api/rooms/session] Unexpected error:", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

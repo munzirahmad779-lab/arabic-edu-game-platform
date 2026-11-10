@@ -35,7 +35,8 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
         value={current}
         onChange={handleChange}
         disabled={pending}
-        className="cursor-pointer appearance-none bg-transparent pr-1 text-xs font-bold text-neutral-700 outline-none disabled:opacity-50"
+        aria-label="Pilih bahasa"
+        className="cursor-pointer appearance-none rounded bg-transparent pr-1 text-xs font-bold text-neutral-700 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-1 disabled:opacity-50"
       >
         {LOCALES.map((l) => (
           <option key={l} value={l}>

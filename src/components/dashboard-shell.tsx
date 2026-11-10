@@ -64,7 +64,7 @@ export function DashboardShell({
           <button
             type="button"
             onClick={handleToggle}
-            className="absolute top-5 -right-3 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-sage-200 bg-white text-xs font-black text-teal-700 shadow-md transition hover:scale-110 hover:bg-sage-50"
+            className="absolute top-5 -end-3 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-sage-200 bg-white text-xs font-black text-teal-700 shadow-md transition hover:scale-110 hover:bg-sage-50"
             title="Ciutkan Panel Menu"
             aria-label="Ciutkan Panel Menu"
           >

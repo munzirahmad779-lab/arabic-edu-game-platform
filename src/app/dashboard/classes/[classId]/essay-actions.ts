@@ -42,6 +42,12 @@ export async function createEssay(formData: FormData) {
   if (!questionText || questionText.length > 5000) {
     redirect(`/dashboard/classes/${classId}?essay_error=invalid_question`);
   }
+  if (theme.length > 300) {
+    redirect(`/dashboard/classes/${classId}?essay_error=invalid_theme`);
+  }
+  if (idealAnswer.length > 5000) {
+    redirect(`/dashboard/classes/${classId}?essay_error=invalid_ideal_answer`);
+  }
   if (durationMinutes === null) {
     redirect(`/dashboard/classes/${classId}?essay_error=invalid_duration`);
   }

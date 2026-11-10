@@ -15,6 +15,8 @@ function errorCode(message: string) {
   if (message.includes("CLASS_NOT_FOUND")) return "invalid_class";
   if (message.includes("DUPLICATE_STUDENT")) return "duplicate";
   if (message.includes("STUDENT_NOT_FOUND")) return "student_not_found";
+  if (message.includes("FORBIDDEN")) return "forbidden";
+  if (message.includes("AUTH_REQUIRED")) return "auth_required";
   return "failed";
 }
 
@@ -31,7 +33,7 @@ export async function createStudent(formData: FormData) {
   const name = getField(formData, "name");
   const pin = getField(formData, "pin");
 
-  if (!classId || !name || !/^\d{4,6}$/.test(pin)) {
+  if (!classId || !name || name.length > 100 || !/^\d{4,6}$/.test(pin)) {
     redirect(
       `/dashboard/students?classId=${encodeURIComponent(classId)}&error=invalid`
     );
@@ -49,6 +51,30 @@ export async function createStudent(formData: FormData) {
         String(error.message ?? "")
       )}`
     );
+  }
+
+  // RPC create_student hanya menulis pin_hash, tidak seperti jalur impor
+  // dan update_student yang juga menulis pin_plain. Samakan dari sisi
+  // aplikasi: cari siswa yang baru dibuat (nama unik di dalam kelas)
+  // lalu tuliskan pin_plain supaya PIN tampil dan kartu cetak tidak
+  // kosong. Kegagalan sinkronisasi ini tidak membatalkan pembuatan
+  // siswa, jadi hanya dicatat di log server.
+  const { data: createdRow } = await supabase
+    .from("students")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("name", name)
+    .maybeSingle();
+
+  if (createdRow) {
+    const { error: pinSyncError } = await supabase
+      .from("students")
+      .update({ pin_plain: pin })
+      .eq("id", createdRow.id)
+      .eq("class_id", classId);
+    if (pinSyncError) {
+      console.error("[createStudent] pin_plain sync failed:", pinSyncError);
+    }
   }
 
   revalidatePath("/dashboard/students");
@@ -87,11 +113,23 @@ export async function resetStudentPin(formData: FormData) {
     );
   }
 
-  await supabase
+  // Sinkronisasi pin_plain wajib terbukti berhasil: periksa error dan
+  // jumlah baris yang benar-benar berubah. Bila 0 baris (misalnya
+  // class_id dari formulir tidak cocok), pin_hash sudah berubah lewat
+  // RPC sedangkan tampilan akan tetap menunjukkan PIN lama, jadi guru
+  // harus menerima pesan gagal, bukan sukses palsu.
+  const { data: synced, error: pinSyncError } = await supabase
     .from("students")
     .update({ pin_plain: pin })
     .eq("id", studentId)
-    .eq("class_id", classId);
+    .eq("class_id", classId)
+    .select("id");
+
+  if (pinSyncError || !synced || synced.length === 0) {
+    redirect(
+      `/dashboard/students?classId=${encodeURIComponent(classId)}&error=pin_sync_failed`
+    );
+  }
 
   revalidatePath("/dashboard/students");
   redirect(`/dashboard/students?classId=${encodeURIComponent(classId)}&updated=1`);
@@ -223,7 +261,15 @@ export async function importStudents(
       };
     }
     if (msg.includes("INVALID_NAME")) {
-      return { ok: false, message: "Ada nama yang tidak valid di daftar." };
+      // Pesan RPC menyebut nomor baris nama yang rusak; teruskan nomor
+      // itu ke guru supaya ia tahu baris mana yang harus diperbaiki.
+      const rowMatch = msg.match(/(?:baris|row|line)\s*(?:ke-)?\s*(\d+)/i);
+      return {
+        ok: false,
+        message: rowMatch
+          ? `Ada nama yang tidak valid di daftar (baris ${rowMatch[1]}).`
+          : "Ada nama yang tidak valid di daftar.",
+      };
     }
     if (msg.includes("CLASS_NOT_FOUND")) {
       return { ok: false, message: "Kelas tidak ditemukan." };

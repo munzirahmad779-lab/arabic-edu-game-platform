@@ -17,11 +17,20 @@ export function getCheckpointSupabaseClient(): SupabaseClient {
   if (_testClient) {
     return _testClient;
   }
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://test-ci.supabase.co";
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    "ci-testing-key-magguru";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Tidak ada fallback URL/kunci uji: konfigurasi yang hilang harus gagal
+  // dengan jelas di log server, bukan diam-diam menembak database uji.
+  if (!url || !serviceKey) {
+    throw new Error(
+      "[CheckpointStore] Konfigurasi Supabase tidak lengkap: " +
+        "NEXT_PUBLIC_SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY " +
+        "(atau NEXT_PUBLIC_SUPABASE_ANON_KEY) wajib diisi.",
+    );
+  }
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },

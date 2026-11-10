@@ -9,9 +9,17 @@ export function GamePackControl() {
   const [pendingAction, setPendingAction] = useState<"attach" | "detach" | null>(null);
 
   async function refresh() {
-    const response = await fetch("/api/admin/game-pack", { cache: "no-store" });
-    const data = await response.json();
-    setAttached(data.attached === true);
+    try {
+      const response = await fetch("/api/admin/game-pack", { cache: "no-store" });
+      if (!response.ok) throw new Error("Gagal memuat status game pack");
+      const data = await response.json();
+      setAttached(data.attached === true);
+    } catch (error) {
+      // Jangan biarkan status macet di "memuat…": anggap belum terpasang
+      // dan tampilkan pesan gagal seperti pola change() di berkas ini.
+      setAttached(false);
+      setMessage(error instanceof Error ? error.message : "Gagal memuat status game pack");
+    }
   }
 
   useEffect(() => { void refresh(); }, []);

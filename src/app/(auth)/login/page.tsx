@@ -18,16 +18,31 @@ type Mode = "sign_in" | "forgot";
 
 const WA_NUMBER = "6281354229189";
 
+/**
+ * Validasi tujuan redirect sesudah login: hanya path pada origin
+ * sendiri yang diterima. Backslash ditolak eksplisit karena sebagian
+ * peramban menafsirkan "/\" sebagai "//" (lompat ke host lain).
+ * Penguraian memakai origin contoh agar aturan asal bekerja dan hanya
+ * path-nya yang dikembalikan.
+ */
+const VALIDATION_ORIGIN = "https://app.magguru.local";
+
+function safeRedirectPath(raw: string | null): string {
+  if (!raw || raw.includes("\\")) return "/dashboard";
+  try {
+    const url = new URL(raw, VALIDATION_ORIGIN);
+    if (url.origin !== VALIDATION_ORIGIN) return "/dashboard";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/dashboard";
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRedirect = searchParams.get("redirectTo");
-  const redirectTo =
-    requestedRedirect &&
-    requestedRedirect.startsWith("/") &&
-    !requestedRedirect.startsWith("//")
-      ? requestedRedirect
-      : "/dashboard";
+  const redirectTo = safeRedirectPath(requestedRedirect);
 
   const [mode, setMode] = useState<Mode>("sign_in");
   const [email, setEmail] = useState("");

@@ -24,18 +24,28 @@ export function StudentImportForm({ classId }: { classId: string }) {
     setMessage(null);
     setResult(null);
 
-    const res = await importStudents(classId, names);
-    setImporting(false);
+    try {
+      const res = await importStudents(classId, names);
 
-    if (res.ok) {
-      setResult(res.students);
+      if (res.ok) {
+        setResult(res.students);
+        setMessage({
+          type: "ok",
+          text: `✓ Berhasil menambahkan ${res.students.length} siswa.`,
+        });
+        setText("");
+      } else {
+        setMessage({ type: "err", text: res.message });
+      }
+    } catch {
+      // Koneksi putus atau server tidak menjawab: tampilkan pesan dan
+      // jangan biarkan tombol macet di keadaan "Sedang mengimpor...".
       setMessage({
-        type: "ok",
-        text: `✓ Berhasil menambahkan ${res.students.length} siswa.`,
+        type: "err",
+        text: "Koneksi gagal saat mengimpor. Periksa jaringan Anda lalu coba lagi.",
       });
-      setText("");
-    } else {
-      setMessage({ type: "err", text: res.message });
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -43,13 +53,13 @@ export function StudentImportForm({ classId }: { classId: string }) {
     <div className="mt-5 space-y-4">
       <div>
         <label
-          htmlFor="student-names"
+          htmlFor={`student-names-${classId}`}
           className="block text-sm font-bold text-neutral-800"
         >
           Tempel daftar nama siswa (satu nama per baris)
         </label>
         <textarea
-          id="student-names"
+          id={`student-names-${classId}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={8}
@@ -82,7 +92,7 @@ export function StudentImportForm({ classId }: { classId: string }) {
           <p className="mb-3 text-sm font-bold text-emerald-800">
             📋 Daftar nama + PIN siswa yang baru ditambahkan:
           </p>
-          <div className="overflow-hidden rounded-xl border border-emerald-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-emerald-200 bg-white">
             <table className="w-full text-sm">
               <thead className="bg-emerald-100">
                 <tr>
@@ -110,8 +120,9 @@ export function StudentImportForm({ classId }: { classId: string }) {
             </table>
           </div>
           <p className="mt-3 text-xs text-emerald-700">
-            PIN juga tersimpan di daftar siswa di sebelah kiri, jadi Anda bisa
-            melihatnya lagi kapan saja.
+            Catat atau simpan daftar ini sekarang: di daftar siswa, PIN hanya
+            tampil tersamar (2 digit terakhir). PIN lengkap tersedia pada
+            kartu siswa yang dicetak dari tombol Cetak Kartu Siswa.
           </p>
         </div>
       ) : null}

@@ -79,6 +79,7 @@ export default async function ReportsPage({
         date={date}
         roomRows={roomRows}
         practiceRows={practiceRows}
+        loadError={Boolean(error)}
         dict={dict as never}
       />
     </main>

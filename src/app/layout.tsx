@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { Amiri } from "next/font/google";
 import "./globals.css";
+import { getLocale } from "@/lib/i18n/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { isSuperAdmin } from "@/lib/super-admin";
+
+// Font Arab dimuat sungguhan (bukan hanya nama font sistem): tanpa ini,
+// HP yang tidak punya font Naskh menampilkan harakat dengan fallback buruk.
+const amiri = Amiri({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-amiri-web",
+  display: "swap",
+});
 
 const GlobalBackgroundAudio = dynamic(
   () =>
@@ -52,7 +66,7 @@ const THEME_CSS = `
     --ink: #2B2B2B;
     --font-inter: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-playfair: Georgia, "Times New Roman", serif;
-    --font-amiri: "Traditional Arabic", "Amiri", "Scheherazade New", Tahoma, serif;
+    --font-amiri: var(--font-amiri-web), "Traditional Arabic", "Amiri", "Scheherazade New", Tahoma, serif;
     --font-arabic: var(--font-amiri);
   }
   body {
@@ -68,23 +82,34 @@ const THEME_CSS = `
   }
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const isRtl = locale === "ar";
+
+  // Status super-admin dihitung di server dari satu sumber kebenaran
+  // (lib/super-admin, env ternormalisasi) lalu diteruskan sebagai boolean;
+  // email tidak pernah dikirim ke bundle klien.
+  let superAdmin = false;
+  if (hasSupabaseEnv()) {
+    try {
+      superAdmin = isSuperAdmin(await getCurrentUser());
+    } catch {
+      superAdmin = false;
+    }
+  }
+
   return (
-    <html
-      lang="id"
-      dir="ltr"
-      className=""
-    >
+    <html lang={locale} dir={isRtl ? "rtl" : "ltr"} className={amiri.variable}>
       <head>
         <style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
       </head>
       <body suppressHydrationWarning>
         {children}
-        <GlobalBackgroundAudio />
+        <GlobalBackgroundAudio isSuperAdmin={superAdmin} />
       </body>
     </html>
   );
