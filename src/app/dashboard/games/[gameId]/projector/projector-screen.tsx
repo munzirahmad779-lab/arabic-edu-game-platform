@@ -663,6 +663,9 @@ export function ProjectorScreen({
     reportSavedRef.current = false;
     arcadeFinishedRef.current = false;
     setReportStatus("idle");
+    // Konfirmasi akhiri yang mungkin masih terbuka dari permainan
+    // sebelumnya tidak boleh terbawa ke permainan ulangan.
+    setConfirmEndEarly(false);
     setTeams((prev) =>
       prev.map((t) => ({ ...t, score: 0, correctCount: 0, streak: 0, currentMemberIndex: 0 })),
     );
@@ -970,6 +973,9 @@ export function ProjectorScreen({
   const [reportStatus, setReportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  // Konfirmasi dua langkah di tempat untuk tombol akhiri lebih awal
+  // (pola konfirmasi halaman ini, bukan window.confirm).
+  const [confirmEndEarly, setConfirmEndEarly] = useState(false);
   const reportSavedRef = useRef(false);
   const arcadeFinishedRef = useRef(false);
   const lastReportTeamsRef = useRef<Array<{
@@ -1027,6 +1033,28 @@ export function ProjectorScreen({
       })),
     );
   }, [postReport, sortedLeaderboard]);
+
+  // Akhiri permainan lebih awal DENGAN hasil (temuan audit live
+  // tahap C/D: di dalam kuis tidak ada tombol akhiri, jadi guru yang
+  // keluar di tengah membuat sesi tidak tercatat di Laporan dan room
+  // tetap terlihat hidup di HP siswa). Jalurnya sengaja persis
+  // penyelesaian penuh, yaitu cukup berpindah ke fase "finished"
+  // seperti cabang soal terakhir pada handleGoToNextQuestion.
+  // Perubahan fase itu sendiri yang (1) memicu efek penyimpanan
+  // laporan otomatis di bawah dengan klasemen saat ini, lewat
+  // buildProjectorReportPayload dan endpoint /api/projector/save-report
+  // yang sama, dan (2) menyiarkan fase "finished" ke kontroler lewat
+  // efek sinkronisasi yang sama (broadcast projector_sync +
+  // sync_state), sehingga HP siswa menampilkan "PERMAINAN SELESAI!"
+  // dan room tertutup seperti akhir alami, bukan membeku. Tombol ini
+  // hanya untuk alur tim Kahoot Arena; panggung arkade tetap berakhir
+  // lewat handleArcadeFinish pemainnya sendiri.
+  const handleEndGameEarly = () => {
+    if (!gameStarted || phase === "finished") return;
+    setConfirmEndEarly(false);
+    setPhase("finished");
+    playSfx("boost");
+  };
 
   // Pertandingan baru dimulai: persenjatai lagi penyimpanan laporan.
   useEffect(() => {
@@ -1108,6 +1136,40 @@ export function ProjectorScreen({
         )}
       </div>
     );
+
+  // Kontrol "Akhiri & Simpan Hasil" dengan konfirmasi dua langkah di
+  // tempat: dipakai bersama oleh layar soal/pembahasan (di header)
+  // dan layar papan klasemen (di footer), selama permainan berjalan.
+  const endEarlyControls = confirmEndEarly ? (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className="text-[11px] font-bold text-rose-200">
+        Akhiri sekarang? Klasemen saat ini disimpan sebagai hasil akhir.
+      </span>
+      <button
+        type="button"
+        onClick={handleEndGameEarly}
+        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border border-rose-400/60 text-xs font-black transition"
+      >
+        Ya, Akhiri
+      </button>
+      <button
+        type="button"
+        onClick={() => setConfirmEndEarly(false)}
+        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 text-xs font-bold transition"
+      >
+        Batal
+      </button>
+    </span>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setConfirmEndEarly(true)}
+      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border border-rose-400/60 text-xs font-black transition shadow-lg"
+      title="Akhiri permainan sekarang: klasemen saat ini disimpan ke Laporan dan room ditutup untuk semua stik"
+    >
+      🏁 Akhiri & Simpan Hasil
+    </button>
+  );
 
   const answeredCount = Object.keys(answers).length;
 
@@ -1923,7 +1985,7 @@ export function ProjectorScreen({
           ))}
         </div>
 
-        <footer className="flex shrink-0 items-center justify-center gap-4 pt-4 border-t border-white/10">
+        <footer className="flex shrink-0 flex-wrap items-center justify-center gap-4 pt-4 border-t border-white/10">
           <button
             type="button"
             onClick={handleGoToNextQuestion}
@@ -1932,6 +1994,7 @@ export function ProjectorScreen({
             <span>Soal Berikutnya</span>
             <span>→ (Spasi)</span>
           </button>
+          {endEarlyControls}
         </footer>
       </main>
     );
@@ -2006,6 +2069,8 @@ export function ProjectorScreen({
           >
             {isFullscreen ? "🗗" : "⛶"}
           </button>
+
+          {endEarlyControls}
 
           <Link
             href="/dashboard/games"
