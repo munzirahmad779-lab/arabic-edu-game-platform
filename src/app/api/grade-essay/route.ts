@@ -121,32 +121,40 @@ export async function POST(req: Request) {
     });
 
     // Coba model berurutan: kegagalan ketersediaan model (404)
-    // turun ke model berikutnya; kegagalan lain juga dicoba turun
-    // karena rantai ini murah dan urutannya memang jaring pengaman.
+    // turun ke model berikutnya. Galat sesaat 503/429 (lonjakan
+    // permintaan di sisi Google, teramati 10 Nov 2026 pada ketiga
+    // model sekaligus) diulang pada model yang sama sampai dua
+    // kali dengan jeda singkat sebelum turun ke model berikutnya.
     let geminiRes: Response | null = null;
     let usedModel = GEMINI_MODELS[0];
     for (const model of GEMINI_MODELS) {
-      const res = await fetch(geminiUrl(model), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.3,
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const res = await fetch(geminiUrl(model), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
           },
-        }),
-      });
-      if (res.ok) {
-        geminiRes = res;
-        usedModel = model;
-        break;
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.3,
+            },
+          }),
+        });
+        if (res.ok) {
+          geminiRes = res;
+          usedModel = model;
+          break;
+        }
+        const errText = await res.text();
+        console.error(`[grade-essay] gemini error (${model}):`, errText);
+        const transient = res.status === 503 || res.status === 429;
+        if (!transient || attempt === 3) break;
+        await new Promise((r) => setTimeout(r, attempt * 2000));
       }
-      const errText = await res.text();
-      console.error(`[grade-essay] gemini error (${model}):`, errText);
+      if (geminiRes) break;
     }
 
     if (!geminiRes) {
