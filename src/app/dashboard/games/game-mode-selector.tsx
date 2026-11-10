@@ -18,6 +18,7 @@ type GameModeDict = {
   cooperative: string;
   endless: string;
   practice: string;
+  anagram?: string;
   duration_label: string;
   duration_hint: string;
   no_timer_note: string;
@@ -127,10 +128,14 @@ export function GameModeSelector({
 
   const supportedModes = GameRegistry.get("quiz").capabilities.supportedModes;
 
+  // Mode anagram adalah ruang berdurasi seperti kompetitif (soal
+  // dinilai server dari teks jawaban), jadi kolom durasi wajib tampil
+  // untuknya juga.
   const isTimed =
     mode === "competitive" ||
     mode === "cooperative" ||
-    mode === "learning";
+    mode === "learning" ||
+    mode === "anagram";
   const isSelfPractice = mode === "endless" || mode === "practice";
 
   const activeEngineInfo =
@@ -264,6 +269,13 @@ export function GameModeSelector({
           {supportedModes.includes("practice") && (
             <option value="practice">{gm.practice}</option>
           )}
+          {/* Mode adalah sumbu protokol jawaban yang berdiri sendiri
+              dari supportedModes mesin kuis: mode anagram sah disimpan
+              di games.mode dan dinilai server lewat teks jawaban, jadi
+              opsinya dirender selama kamus menyediakan labelnya. */}
+          {gm.anagram ? (
+            <option value="anagram">{gm.anagram}</option>
+          ) : null}
         </select>
       </div>
 

@@ -1033,6 +1033,7 @@
     "cooperative": "Cooperative — total timer (finish all questions in time)",
     "endless": "Endless — self-practice in Student Portal (no time)",
     "practice": "Practice — practice by topic in Student Portal (no time)",
+    "anagram": "Letter Scramble (Anagram)",
     "duration_label": "Game duration (minutes)",
     "duration_hint": "In cooperative mode: this is the total time to finish all questions. In competitive mode: approximate game duration.",
     "no_timer_note": "📖 This mode has no timer — no need to set duration.",

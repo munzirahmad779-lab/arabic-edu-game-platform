@@ -1033,6 +1033,7 @@
     "cooperative": "Kooperatif — timer total (selesaikan semua soal dalam waktu)",
     "endless": "Tanpa Batas — latihan mandiri di Portal Siswa (tanpa waktu)",
     "practice": "Latihan — latihan per topik di Portal Siswa (tanpa waktu)",
+    "anagram": "Susun Huruf (Anagram)",
     "duration_label": "Durasi permainan (menit)",
     "duration_hint": "Di mode kooperatif: ini durasi total untuk menyelesaikan semua soal. Di mode kompetitif: perkiraan durasi permainan.",
     "no_timer_note": "📖 Mode ini tanpa timer — tidak perlu isi durasi.",

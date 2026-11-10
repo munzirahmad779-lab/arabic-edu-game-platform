@@ -19,6 +19,34 @@ function toPublicQuestion(q: unknown): unknown {
   return copy;
 }
 
+// Tipe permainan yang dilihat siswa TIDAK selalu sama dengan
+// games.game_type mentah. Dua penyesuaian yang selama ini hilang
+// (terbukti live 11 Nov 2026):
+// 1. Mode "anagram" adalah protokol jawaban (teks bebas dinilai server),
+//    jadi ia menang atas tema dan atas game_type tersimpan.
+// 2. Game "Pukul Tikus" buatan dasbor menyimpan temanya sebagai token
+//    [THEME:whack] di dalam nama game (pola yang sama yang dibaca
+//    halaman proyektor), sedangkan game_type-nya tetap "quiz" — tanpa
+//    pemetaan ini room whack_mole tidak pernah sampai ke HP siswa dan
+//    saklar WhackPlayer di /join/room tidak pernah menyala.
+// Selain dua itu, perilaku lama dipertahankan persis: game_type
+// tersimpan, atau "quiz" bila kosong.
+function resolveSessionGameType(
+  snapGame:
+    | { name?: unknown; mode?: unknown; game_type?: unknown }
+    | null
+    | undefined,
+): string {
+  if (snapGame?.mode === "anagram") return "anagram";
+  const name = typeof snapGame?.name === "string" ? snapGame.name : "";
+  const themeMatch = name.match(/\[THEME:(.*?)\]/);
+  if (themeMatch && themeMatch[1].trim().toLowerCase() === "whack") {
+    return "whack_mole";
+  }
+  const stored = snapGame?.game_type;
+  return typeof stored === "string" && stored ? stored : "quiz";
+}
+
 /**
  * Sesi siswa: database adalah SATU-SATUNYA sumber kebenaran.
  *
@@ -185,7 +213,7 @@ export async function GET(req: NextRequest) {
           room_id: row.room_id,
           room_code: row.room_code,
           game_name: snap?.game?.name || row.game_name || "Game",
-          game_type: snap?.game?.game_type || (snap?.game?.mode === "anagram" ? "anagram" : "quiz"),
+          game_type: resolveSessionGameType(snap?.game),
           game_mode: snap?.game?.mode || "competitive",
           game_duration_seconds: snap?.game?.duration_seconds || 300,
           question_duration_seconds: roomRow?.question_duration_seconds ?? null,
@@ -306,7 +334,7 @@ export async function GET(req: NextRequest) {
           room_id: rData.id,
           room_code: rData.code,
           game_name: snap?.game?.name || "Game",
-          game_type: snap?.game?.game_type || (snap?.game?.mode === "anagram" ? "anagram" : "quiz"),
+          game_type: resolveSessionGameType(snap?.game),
           game_mode: snap?.game?.mode || "competitive",
           game_duration_seconds: snap?.game?.duration_seconds || 300,
           question_duration_seconds: rData.question_duration_seconds ?? null,
@@ -431,10 +459,7 @@ export async function GET(req: NextRequest) {
             id: rec.room_id,
             code: roomCodeQuery,
             game_name: String(snapGame?.name ?? "Game"),
-            game_type: String(
-              snapGame?.game_type ??
-                (snapGame?.mode === "anagram" ? "anagram" : "quiz")
-            ),
+            game_type: resolveSessionGameType(snapGame),
             game_mode: String(snapGame?.mode ?? "competitive"),
             duration_seconds: Number(snapGame?.duration_seconds ?? 300),
             capacity: rec.capacity || 30,
@@ -459,10 +484,7 @@ export async function GET(req: NextRequest) {
             room_id: rec.room_id,
             room_code: roomCodeQuery,
             game_name: String(snapGame?.name ?? "Game"),
-            game_type: String(
-              snapGame?.game_type ??
-                (snapGame?.mode === "anagram" ? "anagram" : "quiz")
-            ),
+            game_type: resolveSessionGameType(snapGame),
             game_mode: String(snapGame?.mode ?? "competitive"),
             game_duration_seconds: Number(snapGame?.duration_seconds ?? 300),
             question_duration_seconds: null,
