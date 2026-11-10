@@ -1131,7 +1131,9 @@
     "save_btn": "💾 Simpan",
     "cancel_btn": "Batal",
     "saving": "...",
-    "edit_grade_btn": "✏️ Edit Nilai / Tambah Catatan"
+    "edit_grade_btn": "✏️ Edit Nilai / Tambah Catatan",
+    "ai_grade_btn": "🤖 Nilai dengan AI",
+    "ai_grading": "Sedang menilai dengan AI..."
   },
   "essay_review": {
     "back_link": "Kembali ke Kelas",
