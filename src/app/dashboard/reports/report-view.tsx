@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { todayWib, yesterdayWib, toWibTime } from "@/lib/format-wib";
+import { todayWita, yesterdayWita, toWitaTime } from "@/lib/format-wita";
 import type idDict from "@/lib/i18n/id.json";
 
 type Dict = typeof idDict;
@@ -90,7 +90,7 @@ export function ReportView({
       lines.push("|---|---|---|---|---|---|---|---|");
       for (const r of room) {
         lines.push(
-          `| ${r.game_name} | ${MODE_LABEL[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${toWibTime(r.recorded_at)} |`,
+          `| ${r.game_name} | ${MODE_LABEL[r.game_mode] ?? r.game_mode} | ${r.student_name} | ${r.final_score ?? "—"} | ${r.rank_position ?? "—"} | ${r.correct_count} | ${r.total_questions} | ${toWitaTime(r.recorded_at)} |`,
         );
       }
       lines.push("");
@@ -109,7 +109,7 @@ export function ReportView({
             ? Math.round((r.correct_count / r.total_questions) * 100)
             : 0;
         lines.push(
-          `| ${r.student_name} | ${r.game_name} | ${MODE_LABEL[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${toWibTime(r.recorded_at)} |`,
+          `| ${r.student_name} | ${r.game_name} | ${MODE_LABEL[r.game_mode] ?? r.game_mode} | ${r.correct_count} | ${r.total_questions} | ${pct}% | ${toWitaTime(r.recorded_at)} |`,
         );
       }
       lines.push("");
@@ -178,8 +178,8 @@ export function ReportView({
     window.location.href = `/dashboard/reports?date=${newDate}`;
   }
 
-  const today = todayWib();
-  const yesterday = yesterdayWib();
+  const today = todayWita();
+  const yesterday = yesterdayWita();
 
   return (
     <div className="space-y-5">
@@ -327,7 +327,7 @@ export function ReportView({
                 Benar: r.correct_count,
                 Total: r.total_questions,
                 Akurasi: r.total_questions > 0 ? Math.round((r.correct_count / r.total_questions) * 100) + "%" : "0%",
-                Waktu: toWibTime(r.recorded_at),
+                Waktu: toWitaTime(r.recorded_at),
               })),
               ...practiceRows.map((r) => ({
                 Tipe: "Latihan",
@@ -338,7 +338,7 @@ export function ReportView({
                 Benar: r.correct_count,
                 Total: r.total_questions,
                 Akurasi: r.total_questions > 0 ? Math.round((r.correct_count / r.total_questions) * 100) + "%" : "0%",
-                Waktu: toWibTime(r.recorded_at),
+                Waktu: toWitaTime(r.recorded_at),
               })),
             ];
 
@@ -448,7 +448,7 @@ export function ReportView({
                       #{r.rank_position ?? "—"}
                     </td>
                     <td className="px-3 py-2 text-xs text-neutral-500">
-                      {toWibTime(r.recorded_at)}
+                      {toWitaTime(r.recorded_at)}
                     </td>
                   </tr>
                 ))}

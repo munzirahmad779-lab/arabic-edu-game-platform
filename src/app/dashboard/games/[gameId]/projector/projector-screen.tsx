@@ -125,6 +125,11 @@ type TeamAnswerRecord = {
   scoreAwarded: number;
   speedBonus: number;
   answeredAt: number;
+  // Indeks anggota yang sedang giliran menjawab saat jawaban ini
+  // dicatat (sebelum penunjuk giliran tim maju). Kartu podium pada
+  // fase pembahasan menampilkan anggota ini, bukan penunjuk giliran
+  // yang sudah berpindah ke anggota berikutnya.
+  memberIndex: number;
 };
 
 export function ProjectorScreen({
@@ -315,6 +320,11 @@ export function ProjectorScreen({
   // indeks soal peristiwa terhadap nilai TERKINI ini, bukan nilai
   // tertangkap closure yang bisa berasal dari soal sebelumnya.
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  // Cermin ref daftar tim: pencatatan jawaban membaca penunjuk giliran
+  // anggota dari sini pada saat record dibentuk, sebelum setTeams pada
+  // handler yang sama memajukan penunjuk itu.
+  const teamsRef = useRef(teams);
+  teamsRef.current = teams;
   currentQuestionIndexRef.current = currentQuestionIndex;
   const [controllerOrigin, setControllerOrigin] = useState("https://magguru.web.id");
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
@@ -543,6 +553,12 @@ export function ProjectorScreen({
         scoreAwarded,
         speedBonus,
         answeredAt: Date.now(),
+        // Penunjuk giliran dibaca dari cermin ref SEBELUM setTeams di
+        // bawah memajukannya: inilah anggota yang gilirannya menjawab
+        // soal ini, dan nama inilah yang tampil di podium pembahasan.
+        memberIndex:
+          teamsRef.current.find((t) => t.id === teamId)?.currentMemberIndex ??
+          0,
       };
 
       setAnswers((prev) => ({ ...prev, [teamId]: record }));
@@ -2276,6 +2292,15 @@ export function ProjectorScreen({
             const currentStudent =
               team.members[team.currentMemberIndex % (team.members.length || 1)]?.name ||
               "Pemain Tim";
+            // Sesudah tim menjawab, yang tampil adalah anggota yang
+            // gilirannya saat jawaban dicatat (tersimpan di record),
+            // bukan penunjuk giliran yang sudah maju ke anggota
+            // berikutnya.
+            const displayStudent = ansRecord
+              ? team.members[
+                  ansRecord.memberIndex % (team.members.length || 1)
+                ]?.name || currentStudent
+              : currentStudent;
 
             return (
               <div
@@ -2293,7 +2318,7 @@ export function ProjectorScreen({
                 </div>
 
                 <div className="my-1 flex items-center justify-between text-[11px] text-slate-300 bg-black/30 px-2 py-0.5 rounded-lg">
-                  <span className="truncate">👤 {currentStudent}</span>
+                  <span className="truncate">👤 {displayStudent}</span>
                   {team.streak >= 2 && (
                     <span className="text-[10px] text-amber-300 font-bold">🔥 {team.streak}x</span>
                   )}

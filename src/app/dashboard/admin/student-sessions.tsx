@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { toWibDateTime } from "@/lib/format-wib";
+import { toWitaDateTime } from "@/lib/format-wita";
 import type idDict from "@/lib/i18n/id.json";
 
 type Dict = typeof idDict;
@@ -166,10 +166,10 @@ export function StudentSessions({
                     {s.class_name}
                   </td>
                   <td className="px-3 py-2 text-xs text-neutral-500">
-                    {toWibDateTime(s.last_seen_at)}
+                    {toWitaDateTime(s.last_seen_at)}
                   </td>
                   <td className="px-3 py-2 text-xs text-neutral-400">
-                    {toWibDateTime(s.expires_at)}
+                    {toWitaDateTime(s.expires_at)}
                   </td>
                   <td className="px-3 py-2">
                     <button

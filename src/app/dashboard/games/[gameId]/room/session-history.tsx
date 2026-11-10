@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SessionQuestionAnalysis } from "./session-question-analysis";
-import { toWibDateTime } from "@/lib/format-wib";
+import { toWitaDateTime } from "@/lib/format-wita";
 
 type SessionRow = {
   session_id: string;
@@ -130,7 +130,7 @@ export default function SessionHistory({
                     {s.session_number}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    {mounted ? toWibDateTime(s.started_at) : "..."} WIB —{" "}
+                    {mounted ? toWitaDateTime(s.started_at) : "..."} WITA —{" "}
                     {s.participant_count} {gr.student_word}
                   </div>
                 </div>

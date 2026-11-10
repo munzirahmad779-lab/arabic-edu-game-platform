@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReportView } from "./report-view";
-import { todayWib } from "@/lib/format-wib";
+import { todayWita } from "@/lib/format-wita";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -27,7 +27,7 @@ export default async function ReportsPage({
   const dict = await getDictionary(locale);
   const isRtl = locale === "ar";
 
-  const date = isValidDate(searchParams.date) ? searchParams.date : todayWib();
+  const date = isValidDate(searchParams.date) ? searchParams.date : todayWita();
 
   const { data, error } = await supabase.rpc("teacher_daily_report", {
     p_date: date,

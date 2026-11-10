@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeleteHistoryButton } from "./delete-history-button";
-import { toWibDate } from "@/lib/format-wib";
+import { toWitaDate } from "@/lib/format-wita";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -205,7 +205,7 @@ export async function ClassHistoryTab({ classId }: { classId: string }) {
                         </div>
 
                         <p className="mt-2 text-center text-[10px] text-neutral-400">
-                          {t.last_activity} {toWibDate(r.last_activity)} WIB
+                          {t.last_activity} {toWitaDate(r.last_activity)} WITA
                         </p>
                       </div>
                     );
