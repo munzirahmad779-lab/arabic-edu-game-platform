@@ -20,10 +20,10 @@ type QuestionItem = {
   options: Option[];
 };
 
-const DIFFICULTY_AR: Record<string, string> = {
-  easy: "سهل",
-  medium: "متوسط",
-  hard: "صعب",
+const DIFFICULTY_LABEL: Record<string, string> = {
+  easy: "Mudah",
+  medium: "Sedang",
+  hard: "Sulit",
 };
 
 export function GamePreviewModal({
@@ -63,7 +63,7 @@ export function GamePreviewModal({
 
         if (!alive) return;
         if (gqErr) {
-          setError("تعذر تحميل أسئلة اللعبة.");
+          setError("Gagal memuat soal permainan.");
           setLoading(false);
           return;
         }
@@ -84,7 +84,7 @@ export function GamePreviewModal({
 
         if (!alive) return;
         if (qErr || !qData) {
-          setError("تعذر تحميل نصوص الأسئلة.");
+          setError("Gagal memuat teks soal.");
           setLoading(false);
           return;
         }
@@ -98,7 +98,7 @@ export function GamePreviewModal({
 
         if (!alive) return;
         if (optErr) {
-          setError("تعذر تحميل الخيارات.");
+          setError("Gagal memuat pilihan jawaban.");
           setLoading(false);
           return;
         }
@@ -138,7 +138,7 @@ export function GamePreviewModal({
 
         setQuestions(merged);
       } catch {
-        if (alive) setError("حدث خطأ في الاتصال.");
+        if (alive) setError("Terjadi kesalahan koneksi.");
       } finally {
         if (alive) setLoading(false);
       }
@@ -181,17 +181,17 @@ export function GamePreviewModal({
         <header className="flex items-center justify-between border-b border-neutral-100 bg-neutral-50/80 px-6 py-4">
           <div>
             <h2 id="preview-title" className="text-lg font-black text-neutral-900">
-              👁️ معاينة اللعبة: {gameName}
+              👁️ Pratinjau Permainan: {gameName}
             </h2>
             <p className="mt-0.5 text-xs text-neutral-500">
-              الوضع: {gameMode} • إجمالي الأسئلة: {questions.length}
+              Mode: {gameMode} • Total Soal: {questions.length}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 transition hover:bg-neutral-300"
-            aria-label="إغلاق"
+            aria-label="Tutup"
           >
             ✕
           </button>
@@ -201,7 +201,7 @@ export function GamePreviewModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {loading ? (
             <div className="py-12 text-center text-sm font-bold text-neutral-500">
-              جاري تحميل أسئلة اللعبة...
+              Memuat soal permainan...
             </div>
           ) : error ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-center text-sm font-bold text-rose-700">
@@ -209,7 +209,7 @@ export function GamePreviewModal({
             </div>
           ) : questions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
-              لا توجد أسئلة مرتبطة بهذه اللعبة.
+              Belum ada soal yang terhubung ke permainan ini.
             </div>
           ) : (
             questions.map((q, idx) => (
@@ -223,7 +223,7 @@ export function GamePreviewModal({
                       {idx + 1}
                     </span>
                     <h3 className="text-base font-bold text-neutral-900 leading-snug">
-                      {q.question_text || "(سؤال بلا نص)"}
+                      {q.question_text || "(Soal tanpa teks)"}
                     </h3>
                   </div>
                   {q.difficulty ? (
@@ -236,7 +236,7 @@ export function GamePreviewModal({
                             : "bg-rose-100 text-rose-800"
                       }`}
                     >
-                      {DIFFICULTY_AR[q.difficulty] ?? q.difficulty}
+                      {DIFFICULTY_LABEL[q.difficulty] ?? q.difficulty}
                     </span>
                   ) : null}
                 </div>
@@ -263,7 +263,7 @@ export function GamePreviewModal({
                       </span>
                       <span className="flex-1 truncate">{opt.option_text}</span>
                       {opt.is_correct ? (
-                        <span className="text-xs font-bold text-emerald-700">✓ صحيحة</span>
+                        <span className="text-xs font-bold text-emerald-700">✓ Benar</span>
                       ) : null}
                     </div>
                   ))}
@@ -272,7 +272,7 @@ export function GamePreviewModal({
                 {/* Explanation */}
                 {q.explanation ? (
                   <div className="mt-2.5 rounded-xl bg-violet-50/60 p-2.5 text-xs text-violet-900">
-                    <span className="font-bold">الشرح: </span>
+                    <span className="font-bold">Penjelasan: </span>
                     {q.explanation}
                   </div>
                 ) : null}
@@ -288,7 +288,7 @@ export function GamePreviewModal({
             onClick={onClose}
             className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
           >
-            إغلاق
+            Tutup
           </button>
         </footer>
       </div>

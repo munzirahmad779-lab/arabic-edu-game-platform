@@ -41,11 +41,11 @@ export function DeleteGameButton({
       {showConfirm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
-            dir="rtl"
+            dir="ltr"
             className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
           >
             <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
-              {`هل أنت متأكد من حذف لعبة "${gameName}"؟`}
+              {`Apakah Anda yakin ingin menghapus permainan "${gameName}"?`}
             </p>
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
@@ -54,7 +54,7 @@ export function DeleteGameButton({
                 disabled={deleting}
                 className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
               >
-                إلغاء
+                Batal
               </button>
               <button
                 type="button"
@@ -65,7 +65,7 @@ export function DeleteGameButton({
                 disabled={deleting}
                 className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
               >
-                حذف
+                Hapus
               </button>
             </div>
           </div>

@@ -30,12 +30,12 @@ export function GameCardActions({
               type="submit"
               className="w-full rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-700 shadow-sm"
             >
-              ▶ تشغيل اللعبة
+              ▶ Mainkan Permainan
             </button>
           </form>
         ) : (
           <div className="flex-1 rounded-xl border border-dashed border-blue-200 bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-700">
-            تدريب ذاتي
+            Latihan Mandiri
           </div>
         )}
 
@@ -54,10 +54,10 @@ export function GameCardActions({
         <button
           type="button"
           onClick={() => setShowPreview(true)}
-          title="معاينة الأسئلة"
+          title="Pratinjau Soal"
           className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50 shadow-sm"
         >
-          👁️ معاينة
+          👁️ Pratinjau
         </button>
 
         {/* Clone Button */}
@@ -69,10 +69,10 @@ export function GameCardActions({
           <button
             type="submit"
             disabled={cloning}
-            title="نسخ اللعبة"
+            title="Duplikat Permainan"
             className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 shadow-sm"
           >
-            {cloning ? "..." : "📋 نسخ"}
+            {cloning ? "..." : "📋 Duplikat"}
           </button>
         </form>
 
@@ -83,7 +83,7 @@ export function GameCardActions({
         <DeleteGameButton
           gameId={gameId}
           gameName={gameName}
-          title="حذف اللعبة"
+          title="Hapus Permainan"
           triggerClassName="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 shadow-sm"
         />
       </div>
