@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getStudentSession } from "@/lib/student-auth";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -30,8 +31,32 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
 
+    // Baca dan tulis basis data lewat klien service-role (jalur server
+    // tepercaya). Klien sesi di atas TIDAK bisa dipakai untuk tabel
+    // essay_submissions pada alur siswa: siswa bukan pengguna auth
+    // Supabase, jadi peran klien sesi untuk mereka adalah anon, dan
+    // tabel ini hanya memberi grant ke authenticated dengan policy
+    // khusus guru (0054). Akibatnya baca/tulis lewat klien sesi selalu
+    // ditolak 42501 untuk siswa dan penilaian tidak pernah terjadi.
+    // Wewenang pemanggil tetap diperiksa di bawah SEBELUM Gemini
+    // dipanggil dan sebelum apa pun ditulis; klien service hanya
+    // bekerja sesudah gerbang itu.
+    let service;
+    try {
+      service = createServiceClient();
+    } catch (cfgErr) {
+      console.error("[grade-essay] konfigurasi service:", cfgErr);
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Konfigurasi server belum lengkap (SUPABASE_SERVICE_ROLE_KEY)",
+        },
+        { status: 500 },
+      );
+    }
+
     // Ambil submission + assignment
-    const { data: sub, error: subErr } = await supabase
+    const { data: sub, error: subErr } = await service
       .from("essay_submissions")
       .select(
         "id, student_id, answer_text, assignment_id, essay_assignments!inner(teacher_id, question_text, ideal_answer, rubric_content, rubric_grammar, rubric_vocabulary)",
@@ -120,7 +145,13 @@ export async function POST(req: Request) {
       }>;
     };
 
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    // Gabung SEMUA potongan teks kandidat pertama: model dapat membagi
+    // JSON ke beberapa parts, dan mengambil parts[0] saja membuat
+    // JSON.parse gagal pada JSON yang terpotong.
+    const rawText = (geminiData.candidates?.[0]?.content?.parts ?? [])
+      .map((p) => p?.text ?? "")
+      .join("")
+      .trim();
     if (!rawText) {
       return NextResponse.json(
         { ok: false, message: "Respons AI kosong" },
@@ -129,48 +160,87 @@ export async function POST(req: Request) {
     }
 
     let parsed: {
-      score: number;
-      feedback: string;
-      subscores: { content: number; grammar: number; vocabulary: number };
+      score?: unknown;
+      feedback?: unknown;
+      subscores?: {
+        content?: unknown;
+        grammar?: unknown;
+        vocabulary?: unknown;
+      };
     };
 
+    // Buang pagar kode ```json bila model tetap memberikannya, lalu
+    // coba parse utuh; cadangan terakhir: ambil objek JSON terluar
+    // dari dalam teks.
+    const unfenced = rawText
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
     try {
-      parsed = JSON.parse(rawText);
+      parsed = JSON.parse(unfenced);
     } catch {
-      // Fallback: cari JSON di dalam teks
-      const m = rawText.match(/\{[\s\S]*\}/);
+      const m = unfenced.match(/\{[\s\S]*\}/);
       if (!m) {
         return NextResponse.json(
           { ok: false, message: "Tidak bisa mem-parsing respons AI" },
           { status: 502 },
         );
       }
-      parsed = JSON.parse(m[0]);
+      try {
+        parsed = JSON.parse(m[0]);
+      } catch {
+        return NextResponse.json(
+          { ok: false, message: "Tidak bisa mem-parsing respons AI" },
+          { status: 502 },
+        );
+      }
     }
 
-    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? 0)));
-    const feedback = String(parsed.feedback ?? "").slice(0, 3000);
-    const subscores = {
-      content: Math.max(0, Math.round(parsed.subscores?.content ?? 0)),
-      grammar: Math.max(0, Math.round(parsed.subscores?.grammar ?? 0)),
-      vocabulary: Math.max(0, Math.round(parsed.subscores?.vocabulary ?? 0)),
+    // Model kadang mengembalikan angka sebagai string; terima keduanya.
+    const num = (v: unknown): number => {
+      const n = typeof v === "string" ? Number(v) : (v as number);
+      return typeof n === "number" && Number.isFinite(n) ? n : 0;
     };
 
-    // Simpan ke DB via update langsung (server client = auth guru/siswa)
-    const { error: updErr } = await supabase
-      .from("essay_submissions")
-      .update({
-        ai_score: score,
-        ai_feedback: feedback,
-        ai_scores_json: subscores,
-        ai_model: GEMINI_MODEL,
-        graded_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", submissionId);
+    const score = Math.max(0, Math.min(100, Math.round(num(parsed.score))));
+    const feedback = String(parsed.feedback ?? "").slice(0, 3000);
+    const subscores = {
+      content: Math.max(0, Math.round(num(parsed.subscores?.content))),
+      grammar: Math.max(0, Math.round(num(parsed.subscores?.grammar))),
+      vocabulary: Math.max(0, Math.round(num(parsed.subscores?.vocabulary))),
+    };
+
+    // Simpan skor lewat RPC student_set_ai_grade pada konteks
+    // service_role: itulah jalur tulis yang disediakan migrasi 0084
+    // untuk server tepercaya (pola kunci 0066). RPC itu memvalidasi
+    // ulang rentang skor terhadap rubrik assignment dan menolak bila
+    // guru sudah memberi nilai akhir. p_token dipertahankan demi
+    // tanda tangan; sejak 0084 token bukan lagi dasar wewenang dan
+    // tidak diperiksa, jadi diisi string kosong. Skor berasal dari
+    // panggilan Gemini di server ini, tidak pernah dari pemanggil.
+    const { error: updErr } = await service.rpc("student_set_ai_grade", {
+      p_token: "",
+      p_submission_id: submissionId,
+      p_ai_score: score,
+      p_ai_feedback: feedback,
+      p_ai_scores_json: subscores,
+      p_ai_model: GEMINI_MODEL,
+    });
 
     if (updErr) {
-      console.error("[grade-essay] update error:", updErr);
+      console.error("[grade-essay] simpan skor error:", updErr);
+      if (updErr.message?.includes("ALREADY_TEACHER_GRADED")) {
+        return NextResponse.json(
+          { ok: false, message: "Esai ini sudah dinilai akhir oleh guru" },
+          { status: 409 },
+        );
+      }
+      if (updErr.message?.includes("SUBMISSION_NOT_FOUND")) {
+        return NextResponse.json(
+          { ok: false, message: "Submission tidak ditemukan" },
+          { status: 404 },
+        );
+      }
       return NextResponse.json(
         { ok: false, message: "Gagal update database" },
         { status: 500 },

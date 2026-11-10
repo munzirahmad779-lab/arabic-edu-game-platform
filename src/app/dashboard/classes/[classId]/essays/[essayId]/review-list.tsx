@@ -49,6 +49,8 @@ type ReviewDict = {
   cancel_btn: string;
   saving: string;
   edit_grade_btn: string;
+  ai_grade_btn: string;
+  ai_grading: string;
 };
 
 const DICT_LOADERS: Record<
@@ -127,6 +129,45 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [current, setCurrent] = useState(sub);
+  const [aiGrading, setAiGrading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  // Picu ulang penilaian AI lewat route yang sama dengan alur siswa
+  // (/api/grade-essay): route memeriksa sesi guru ini adalah pemilik
+  // tugas sebelum memanggil AI, jadi tombol ini aman untuk memproses
+  // antrean submission lama yang belum ternilai.
+  async function gradeWithAi() {
+    setAiGrading(true);
+    setAiError(null);
+    try {
+      const res = await fetch("/api/grade-essay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submission_id: current.submission_id }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        score?: number;
+        feedback?: string;
+        subscores?: { content: number; grammar: number; vocabulary: number };
+        message?: string;
+      };
+      if (!json.ok) {
+        setAiError(`${rl.err_prefix}${json.message ?? rl.err_conn}`);
+        return;
+      }
+      setCurrent((prev) => ({
+        ...prev,
+        ai_score: json.score ?? prev.ai_score,
+        ai_feedback: json.feedback ?? prev.ai_feedback,
+        ai_scores_json: json.subscores ?? prev.ai_scores_json,
+      }));
+    } catch {
+      setAiError(rl.err_conn);
+    } finally {
+      setAiGrading(false);
+    }
+  }
 
   // Pemberitahuan hasil dirender di dalam halaman, BUKAN alert():
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
@@ -323,16 +364,36 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setSaveError(null);
-                setEditing(true);
-              }}
-              className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100"
-            >
-              {rl.edit_grade_btn}
-            </button>
+            <div className="space-y-2">
+              {current.ai_score === null &&
+              current.teacher_override_score === null ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void gradeWithAi()}
+                    disabled={aiGrading}
+                    className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-black text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {aiGrading ? rl.ai_grading : rl.ai_grade_btn}
+                  </button>
+                  {aiError ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
+                      {aiError}
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setSaveError(null);
+                  setEditing(true);
+                }}
+                className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100"
+              >
+                {rl.edit_grade_btn}
+              </button>
+            </div>
           )}
         </div>
       ) : null}

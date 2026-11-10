@@ -1131,7 +1131,9 @@
     "save_btn": "💾 Save",
     "cancel_btn": "Cancel",
     "saving": "...",
-    "edit_grade_btn": "✏️ Edit Score / Add Notes"
+    "edit_grade_btn": "✏️ Edit Score / Add Notes",
+    "ai_grade_btn": "🤖 Grade with AI",
+    "ai_grading": "Grading with AI..."
   },
   "essay_review": {
     "back_link": "Back to Class",
