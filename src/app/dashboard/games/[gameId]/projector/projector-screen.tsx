@@ -666,7 +666,67 @@ export function ProjectorScreen({
     setGameStarted(true);
   };
 
-  // Supabase Realtime Broadcast Listener (Instant <40ms WebSocket sync)
+  // W5-K2 (audit wilayah 5, Kritis 2): penskoran HANYA dari event
+  // store server. Fungsi ini adalah satu-satunya jalur yang mengubah
+  // event press menjadi jawaban tercatat: event dibaca dari GET
+  // /api/projector/controller, yang sumbernya RPC
+  // press_projector_button (atomik per tim, berpenjaga fase,
+  // STALE_QUESTION, dan ALREADY_ANSWERED sesudah migrasi 0087).
+  // Broadcast Supabase dan BroadcastChannel tidak lagi diskor
+  // langsung; keduanya hanya memicu fungsi ini supaya latensi tetap
+  // rendah. Payload broadcast tak terautentikasi tidak pernah menjadi
+  // skor, sehingga laporan resmi yang disimpan tidak bisa lagi
+  // dipalsukan dari konsol peramban mana pun yang tahu kode room.
+  const pollControllerEvents = useCallback(async () => {
+    if (phase === "finished") return;
+    // Cap generasi diterbitkan bersama fetch ini. Fetch poller bebas
+    // tumpang tindih dan kelanjutan asinkronnya bisa baru berjalan
+    // sesudah soal berganti; tanpa cap ini, event soal lama dari
+    // respons semacam itu diputar ulang ke dalam soal berjalan
+    // (anomali soal 19 putaran 3).
+    const issuedGeneration = pollGenerationRef.current;
+    try {
+      const res = await fetch(
+        `/api/projector/controller?roomCode=${roomCode}&since=${lastEventTimestampRef.current}`,
+      );
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (Array.isArray(data.activeControllers)) {
+        setActiveControllers(data.activeControllers);
+      }
+
+      if (Array.isArray(data.events) && data.events.length > 0) {
+        const responseCrossedQuestionChange =
+          issuedGeneration !== pollGenerationRef.current;
+        // Watermark saat pemrosesan dimulai: event yang tidak lebih
+        // baru dari nilai ini sudah pernah diproses oleh respons
+        // tumpang tindih lain dan tidak boleh diputar ulang.
+        const processedWatermark = lastEventTimestampRef.current;
+        for (const ev of data.events) {
+          // Watermark tetap maju melewati semua event yang terlihat,
+          // termasuk event pada respons yang dibuang, supaya fetch
+          // berikutnya tidak menerbitkan ulang event soal lama (GET
+          // menyaring event secara ketat lebih baru dari since).
+          if (ev.timestamp > lastEventTimestampRef.current) {
+            lastEventTimestampRef.current = ev.timestamp;
+          }
+          if (responseCrossedQuestionChange) continue;
+          if (ev.timestamp <= processedWatermark) continue;
+          if (ev.action === "press" && ev.teamId && ev.optionKey && phase === "question") {
+            handleRecordAnswer(ev.teamId, ev.optionKey);
+          }
+        }
+      }
+    } catch {
+      // network polling silent catch
+    }
+  }, [roomCode, phase, handleRecordAnswer]);
+
+  // Supabase Realtime Broadcast Listener. Sejak perbaikan W5-K2
+  // listener ini tidak menskor apa pun: controller_press hanya pemicu
+  // poll segera ke event store; controller_heartbeat hanya menandai
+  // kehadiran stik (bukan skor).
   useEffect(() => {
     if (!roomCode) return;
     const supabase = supabaseRef.current;
@@ -678,12 +738,8 @@ export function ProjectorScreen({
     });
 
     channel
-      .on("broadcast", { event: "controller_press" }, ({ payload }) => {
-        if (!payload) return;
-        const { teamId, optionKey, questionIndex } = payload;
-        if (teamId && optionKey && phase === "question") {
-          handleRecordAnswer(teamId, optionKey, questionIndex);
-        }
+      .on("broadcast", { event: "controller_press" }, () => {
+        void pollControllerEvents();
       })
       .on("broadcast", { event: "controller_heartbeat" }, ({ payload }) => {
         if (payload?.teamId) {
@@ -702,9 +758,11 @@ export function ProjectorScreen({
       }
       void channel.unsubscribe();
     };
-  }, [roomCode, phase, handleRecordAnswer]);
+  }, [roomCode, pollControllerEvents]);
 
-  // Same-origin BroadcastChannel (Instant 0ms sync for multi-tab testing)
+  // Same-origin BroadcastChannel (Instant 0ms sync for multi-tab testing).
+  // Sejak perbaikan W5-K2, controller_press di kanal ini juga hanya
+  // pemicu poll ke event store, sama seperti broadcast Supabase.
   useEffect(() => {
     if (!roomCode || typeof window === "undefined" || !("BroadcastChannel" in window)) return;
 
@@ -713,10 +771,7 @@ export function ProjectorScreen({
       bc = new BroadcastChannel(`magguru_bc_${roomCode.toUpperCase()}`);
       bc.onmessage = (ev) => {
         if (ev.data?.event === "controller_press" && ev.data?.payload) {
-          const { teamId, optionKey, questionIndex } = ev.data.payload;
-          if (teamId && optionKey && phase === "question") {
-            handleRecordAnswer(teamId, optionKey, questionIndex);
-          }
+          void pollControllerEvents();
         } else if (ev.data?.event === "controller_heartbeat" && ev.data?.payload?.teamId) {
           const tId = ev.data.payload.teamId;
           setActiveControllers((prev) => Array.from(new Set([...prev, tId])));
@@ -733,7 +788,7 @@ export function ProjectorScreen({
         // ignore
       }
     };
-  }, [roomCode, phase, handleRecordAnswer]);
+  }, [roomCode, pollControllerEvents]);
 
   // Continuously synchronize projector state with controller API & Realtime channels
   const sendProjectorSync = useCallback(() => {
@@ -816,57 +871,19 @@ export function ProjectorScreen({
     return () => window.clearInterval(keepaliveInterval);
   }, [gameStarted, phase]);
 
-  // Wireless Phone Controller Poller
+  // Wireless Phone Controller Poller: menjalankan pollControllerEvents
+  // berkala. Logika fetch + saring generasi/watermark kini tinggal di
+  // pollControllerEvents (di atas), yang juga dipicu seketika oleh
+  // broadcast; interval ini hanya penjamin keterbacaan berkala.
   useEffect(() => {
     if (phase === "finished") return;
 
-    const interval = setInterval(async () => {
-      // Cap generasi diterbitkan bersama fetch ini. Fetch poller bebas
-      // tumpang tindih dan kelanjutan asinkronnya bisa baru berjalan
-      // sesudah soal berganti; tanpa cap ini, event soal lama dari
-      // respons semacam itu diputar ulang ke dalam soal berjalan
-      // (anomali soal 19 putaran 3).
-      const issuedGeneration = pollGenerationRef.current;
-      try {
-        const res = await fetch(
-          `/api/projector/controller?roomCode=${roomCode}&since=${lastEventTimestampRef.current}`,
-        );
-        if (!res.ok) return;
-
-        const data = await res.json();
-        if (Array.isArray(data.activeControllers)) {
-          setActiveControllers(data.activeControllers);
-        }
-
-        if (Array.isArray(data.events) && data.events.length > 0) {
-          const responseCrossedQuestionChange =
-            issuedGeneration !== pollGenerationRef.current;
-          // Watermark saat pemrosesan dimulai: event yang tidak lebih
-          // baru dari nilai ini sudah pernah diproses oleh respons
-          // tumpang tindih lain dan tidak boleh diputar ulang.
-          const processedWatermark = lastEventTimestampRef.current;
-          for (const ev of data.events) {
-            // Watermark tetap maju melewati semua event yang terlihat,
-            // termasuk event pada respons yang dibuang, supaya fetch
-            // berikutnya tidak menerbitkan ulang event soal lama (GET
-            // menyaring event secara ketat lebih baru dari since).
-            if (ev.timestamp > lastEventTimestampRef.current) {
-              lastEventTimestampRef.current = ev.timestamp;
-            }
-            if (responseCrossedQuestionChange) continue;
-            if (ev.timestamp <= processedWatermark) continue;
-            if (ev.action === "press" && ev.teamId && ev.optionKey && phase === "question") {
-              handleRecordAnswer(ev.teamId, ev.optionKey);
-            }
-          }
-        }
-      } catch {
-        // network polling silent catch
-      }
+    const interval = setInterval(() => {
+      void pollControllerEvents();
     }, 350);
 
     return () => clearInterval(interval);
-  }, [gameStarted, phase, roomCode, handleRecordAnswer]);
+  }, [phase, pollControllerEvents]);
 
   // Keyboard Shortcuts
   useEffect(() => {

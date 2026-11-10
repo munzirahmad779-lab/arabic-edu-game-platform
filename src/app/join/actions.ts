@@ -61,7 +61,11 @@ export async function joinRoom(formData: FormData) {
       try {
         const { data: recData, error: recError } = await supabase.rpc(
           "reconnect_room_participant",
-          { p_code: code, p_name: name },
+          // Migrasi 0087: reconnect room kelas kini bergerbang. PIN dari
+          // formulir join yang sama diteruskan sebagai bukti
+          // kepemilikan; tanpa PIN yang cocok fungsi mengembalikan
+          // himpunan kosong dan pemulihan ini gagal tertutup.
+          { p_code: code, p_name: name, p_pin: pin || null },
         );
         const rec = !recError && recData && recData.length > 0 ? recData[0] : null;
 
