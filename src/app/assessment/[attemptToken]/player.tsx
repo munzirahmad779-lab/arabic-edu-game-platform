@@ -129,6 +129,14 @@ export function AssessmentPlayer({
   const [showPassage, setShowPassage] = useState(true);
   const endsAtRef = useRef<number>(Date.now());
   const autoFiredRef = useRef<boolean>(false);
+  // Penjaga lewati section kosong: satu pemanggilan otomatis per id
+  // section, supaya efek yang berjalan ulang untuk section yang sama
+  // tidak menembakkan penyelesaian section dua kali.
+  const skippedEmptyRef = useRef<Set<string>>(new Set());
+  // Keadaan lokal section yang sedang aktif, dibaca oleh efek lewati
+  // tanpa menjadikannya dependensi efek itu. Nilainya disalin dari
+  // attemptSectionsState oleh efek penyalin di bawah.
+  const attemptSectionsRef = useRef<AttemptSection[]>(attemptSections);
 
   const currentSection = sections[currentSectionIdx];
   const sectionQuestions = useMemo(
@@ -186,6 +194,50 @@ export function AssessmentPlayer({
     return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSectionIdx, currentSection?.id]);
+
+  // Penyalin ref keadaan section: menjaga attemptSectionsRef selalu
+  // sama dengan attemptSectionsState tanpa menjadikan state itu
+  // dependensi efek lewati. Berjalan sesudah tiap render, sebelum
+  // efek lewati di bawahnya pada render yang sama.
+  useEffect(() => {
+    attemptSectionsRef.current = attemptSectionsState;
+  }, [attemptSectionsState]);
+
+  // Lewati section aktif yang tidak mempunyai soal sama sekali:
+  // tanpa ini currentQuestion tidak pernah ada dan halaman tertahan
+  // di teks memuat selamanya (kasus nyata asesmen TOEFL produksi:
+  // section urutan 1 dan 3 kosong, soal hanya di section 2).
+  // Urutan di dalam efek ini mengikuti alur manual: section pending
+  // dimulai lebih dulu oleh efek section di atas (startSection tidak
+  // ditunggu, tetapi panggilan finish di server menolak section yang
+  // belum dimulai, dan jalur itu dulu juga dihadapi tombol manual:
+  // galat akhirnya sinkron ulang lewat resync bila keadaan belum
+  // sepakat), lalu jalur penyelesaian yang sama dengan tombol selesai
+  // (finishSection) memajukan ke section berikutnya atau menutup
+  // attempt pada section terakhir. Ref per id section mencegah
+  // panggilan ganda; resync dari finishSection mengganti
+  // attemptSectionsState sehingga efek berjalan lagi dan rantai
+  // berlanjut bila section berikutnya juga kosong.
+  useEffect(() => {
+    if (!currentSection) return;
+    if (sectionQuestions.length > 0) return;
+    const secState = attemptSectionsRef.current.find(
+      (s) => s.section_id === currentSection.id,
+    );
+    // Section yang sudah selesai di sisi klien tetapi indeks belum
+    // berpindah (finish pertama menjawab tanpa arah yang jelas dan
+    // resync belum kembali): jangan tembak ulang, tunggu resync.
+    if (secState?.status === "completed") return;
+    if (skippedEmptyRef.current.has(currentSection.id)) return;
+    skippedEmptyRef.current.add(currentSection.id);
+    void finishSection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentSectionIdx,
+    currentSection?.id,
+    sectionQuestions.length,
+    attemptSectionsState,
+  ]);
 
   async function saveAnswer(questionId: string, answer: string) {
     setAnswerMap((prev) => ({ ...prev, [questionId]: answer }));
@@ -386,7 +438,26 @@ export function AssessmentPlayer({
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
-  if (!currentSection || !currentQuestion) {
+  // Ujian tanpa satu pun section: keadaan akhir yang jujur, bukan
+  // memuat tanpa akhir. Pesan ini tidak bergantung pada data yang
+  // akan datang, karena sections berasal dari payload awal.
+  if (sections.length === 0) {
+    return (
+      <div className="min-h-screen bg-warmwhite p-6">
+        <p className="text-center text-softslate">
+          Ujian ini belum memiliki bagian soal.
+        </p>
+      </div>
+    );
+  }
+
+  // Sesudah pemeriksaan di atas, currentSection selalu ada (indeks
+  // terjepit ke rentang sections). Yang mungkin kosong hanyalah
+  // currentQuestion, dan itu hanya sesaat: section tanpa soal sedang
+  // dilewati efek lewati, atau nomor soal sedang disinkronkan ulang
+  // sesudah resume/resync. Teks memuat di sini karena itu hanya
+  // keadaan peralihan, bukan keadaan akhir.
+  if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-warmwhite p-6">
         <p className="text-center text-softslate">Memuat ujian...</p>
