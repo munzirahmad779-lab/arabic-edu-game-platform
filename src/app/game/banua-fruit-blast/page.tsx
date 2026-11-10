@@ -20,7 +20,8 @@ export default function BanuaFruitBlastLanding() {
       </h1>
       <p className="mt-3 text-slate-700">
         Buah-buah jatuh dari atas arena, masing-masing membawa satu teks jawaban. Baca soal di panelmu, lalu
-        ketuk buah yang memuat jawaban benar. Salah petik, poin berkurang. Satu layar untuk 1 sampai 4 pemain.
+        potong buah yang memuat jawaban benar dengan geseran cepat melintasi buah, atau ketuk langsung buahnya.
+        Salah potong, poin berkurang. Satu layar untuk 1 sampai 4 pemain.
       </p>
 
       <Link
@@ -58,8 +59,8 @@ export default function BanuaFruitBlastLanding() {
         <li>Pilih mode Solo (1 pemain), Duel (2 pemain), atau Squad (4 pemain).</li>
         <li>Pilih mata pelajaran dan jumlah soal, lalu atur suara bila perlu.</li>
         <li>Tunggu hitung mundur 3-2-1; waktu pertandingan berjalan dari 03:00.</li>
-        <li>Baca soal di panel warna milikmu, lalu ketuk buah yang membawa jawaban benar.</li>
-        <li>Buah benar menambah {10} poin dan mengganti soal; buah salah mengurangi {5} poin.</li>
+        <li>Baca soal di panel warna milikmu, lalu potong buah yang membawa jawaban benar dengan geseran cepat melintasi buah, atau ketuk langsung buahnya.</li>
+        <li>Buah benar menambah 1 poin (2 poin bila di dalamnya sembunyi emas) dan mengganti soal; buah salah mengurangi 1 poin (2 poin bila di dalamnya sembunyi bom).</li>
         <li>Permainan berakhir saat waktu habis, atau tekan KELUAR (atau ESC) — skor tidak disimpan.</li>
       </ol>
 
@@ -73,8 +74,8 @@ export default function BanuaFruitBlastLanding() {
       <H>FITUR</H>
       <ul className="mt-2 list-disc pl-6 text-slate-700">
         <li>Bank soal yang bisa ditambah, dihapus, diekspor, dan diimpor (tersimpan di perangkat).</li>
-        <li>Tata letak panel bawah atau samping, dapat dipilih saat bermain di layar lebar.</li>
-        <li>Tombol jawaban dapat dioperasikan dengan keyboard, dan ESC untuk keluar.</li>
+        <li>Label empat jawaban diacak ulang tempatnya secara berkala di tengah jatuhnya buah, jadi posisi tidak bisa dihafalkan.</li>
+        <li>Di dalam buah bisa sembunyi emas (poin ganda) atau bom (pengurangan ganda); tekan ESC atau tombol KELUAR untuk berhenti.</li>
       </ul>
 
       <H>MAIN SEKARANG</H>
