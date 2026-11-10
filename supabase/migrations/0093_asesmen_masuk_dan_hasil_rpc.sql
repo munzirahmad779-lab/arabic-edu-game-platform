@@ -1,6 +1,10 @@
 -- ============================================================================
 -- 0093_asesmen_masuk_dan_hasil_rpc.sql
--- Status: DRAF — BELUM diterapkan ke produksi. Menunggu persetujuan
+-- Status: DITERAPKAN ke produksi 10 Nov 2026 (16:25-16:50 WITA) lewat
+-- SQL Editor oleh Muse atas perintah pemilik, sesudah 0091 sukses,
+-- bersama deploy aplikasi gabungan 5e47a44; verifikasi katalog: kedua
+-- fungsi ada dengan tanda tangan tepat; uji ujung-ke-ujung LULUS.
+-- Status awal saat penyusunan: DRAF menunggu persetujuan
 -- pemilik per berkas. Terapkan bersamaan dengan deploy aplikasi baru
 -- (src/app/assessment/page.tsx + src/app/assessment/[attemptToken]/
 -- result/page.tsx di cabang fix/assessment); halaman lama tidak

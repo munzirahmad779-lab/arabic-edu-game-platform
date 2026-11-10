@@ -1,9 +1,11 @@
 -- ============================================================================
 -- 0091_asesmen_rpc_server.sql
--- Status: DRAF — BELUM diterapkan ke produksi. Menunggu persetujuan
--- pemilik per berkas. Terapkan bersamaan dengan deploy player baru
--- (src/app/assessment/[attemptToken]/player.tsx + page.tsx di cabang
--- fix/assessment); player lama tidak memanggil fungsi-fungsi ini.
+-- Status: DITERAPKAN ke produksi 10 Nov 2026 (16:25-16:50 WITA) lewat
+-- SQL Editor oleh Muse atas perintah pemilik, bersama deploy aplikasi
+-- gabungan 5e47a44; verifikasi katalog: keempat fungsi ada dengan
+-- tanda tangan tepat; uji ujung-ke-ujung lewat RPC dengan kunci anon
+-- LULUS penuh (termasuk payload tanpa correct_answer dan penolakan
+-- gerbang section). Pengetatan policy pasangannya di 0092.
 --
 -- Temuan yang ditutup: W3-K3 mega-audit (wilayah 3, Kritis 3) —
 -- penilaian asesmen dikerjakan di peramban siswa. Player lama:
