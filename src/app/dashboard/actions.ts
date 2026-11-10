@@ -19,7 +19,7 @@ export async function updateTeacherTheme(formData: FormData) {
   const theme = typeof raw === "string" ? raw.trim() : "";
 
   if (!VALID_THEMES.includes(theme as (typeof VALID_THEMES)[number])) {
-    return { ok: false, message: "ثيم غير صالح" };
+    return { ok: false, message: "Tema tidak valid" };
   }
 
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export async function updateTeacherTheme(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { ok: false, message: "غير مسجل" };
+    return { ok: false, message: "Belum masuk" };
   }
 
   const { error } = await supabase

@@ -611,7 +611,7 @@ export async function cloneGame(formData: FormData) {
     redirect("/dashboard/games?error=invalid_questions");
   }
 
-  const clonedName = `${sourceGame.name} (نسخة)`.slice(0, MAX_GAME_NAME_LENGTH);
+  const clonedName = `${sourceGame.name} (Salinan)`.slice(0, MAX_GAME_NAME_LENGTH);
 
   const { data: clonedGame, error: insertError } = await supabase
     .from("games")
