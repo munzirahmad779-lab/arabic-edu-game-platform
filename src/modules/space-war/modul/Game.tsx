@@ -536,7 +536,7 @@ export default function SpaceWarGame() {
           <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center px-4 pb-10 pt-2">
             <div className="text-center">
               <div className="text-6xl" aria-hidden>🚀</div>
-              <h1 className="mt-1 text-4xl font-black tracking-tight sm:text-5xl">PERANG ANTARIKSA</h1>
+              <h1 className="mt-1 text-4xl font-black tracking-tight sm:text-5xl">MATTEMBAK ANGKASA</h1>
               <p className="mt-2 text-base font-semibold text-indigo-900/70">Asteroid membawa soal. Jawab dengan keypad atau tombol pilihan, lalu tembak!</p>
             </div>
 

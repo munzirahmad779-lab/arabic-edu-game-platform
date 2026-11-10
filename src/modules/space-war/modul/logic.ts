@@ -451,7 +451,7 @@ export function templateMarkdown(subjectLabel: string): string {
 
 export function promptTemplateSoal(): string {
   return [
-    "Kamu adalah guru. Buatkan bank soal untuk game Perang Antariksa (Magguru Game).",
+    "Kamu adalah guru. Buatkan bank soal untuk game Mattembak Angkasa (Magguru Game).",
     "Ada DUA jenis soal, boleh dicampur:",
     "1) Soal ANGKA: pertanyaan yang jawabannya satu bilangan bulat. Akhiri dengan baris: Jawaban: <angka>",
     "2) Soal TEKS (soal biasa): pertanyaan dengan 4 pilihan berlabel A. B. C. D. (satu pilihan per baris). Akhiri dengan baris: Jawaban: <huruf pilihan yang benar>",

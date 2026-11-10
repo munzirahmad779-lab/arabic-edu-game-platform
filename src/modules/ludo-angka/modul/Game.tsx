@@ -1191,7 +1191,7 @@ export default function LudoAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto bg-gradient-to-b from-[#CDEEDD] to-[#F4F1DE]" onPointerDown={() => sfx.resume()}>
           <div className="mx-auto w-full max-w-[1600px] px-3 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-lg font-black tracking-tight text-[#17352B] sm:text-xl">LUDO ANGKA</h1>
+              <h1 className="text-lg font-black tracking-tight text-[#17352B] sm:text-xl">MACCULE LUDO</h1>
               <div className="flex items-center gap-2">
                 <span
                   className={`rounded-[10px] px-3 py-1.5 text-lg font-extrabold text-[#F4F1DE] ${ui.timeLeft < 60 ? "animate-pulse bg-[#B3261E]" : "bg-[#17352B]"}`}
@@ -1410,7 +1410,7 @@ export default function LudoAngkaGame() {
                 <MascotFace key={p.slot} id={p.sprite} size={64} />
               ))}
             </div>
-            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#1F4A4E]">LUDO ANGKA</h1>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#1F4A4E]">MACCULE LUDO</h1>
             <p className="mt-1 max-w-xl text-center text-sm font-semibold text-[#4A6B70]">
               Ludo kelas dengan gerbang soal: jawab benar untuk melempar dadu, keluar kandang dengan angka 6, tangkap pion lawan,
               dan balapan mencapai FINISH di pusat papan.
@@ -1526,7 +1526,7 @@ export default function LudoAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto bg-[#F4F1DE]">
           <div className="mx-auto w-full max-w-3xl px-4 py-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-[#1F4A4E]">Bank Soal Ludo Angka</h2>
+              <h2 className="text-2xl font-black text-[#1F4A4E]">Bank Soal Maccule Ludo</h2>
               <button type="button" className="h-11 rounded-xl bg-white px-4 font-bold" onClick={() => setScreen("home")}>
                 Kembali
               </button>

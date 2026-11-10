@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Perang Antariksa — Tembak Asteroid Soal",
+  title: "Mattembak Angkasa — Tembak Asteroid Soal",
   description:
     "Game bertahan dari asteroid soal hot-seat satu perangkat: SOLO, DUEL, TRIO, dan QUAD dengan keypad angka dan pilihan jawaban per lajur.",
 };
@@ -15,7 +15,7 @@ export default function SpaceWarLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
       <h1 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
-        Perang Antariksa — Tembak Asteroid Soal
+        Mattembak Angkasa — Tembak Asteroid Soal
       </h1>
       <p className="mt-3 text-slate-600">
         Asteroid membawa soal meluncur menuju garis pertahananmu. Untuk soal

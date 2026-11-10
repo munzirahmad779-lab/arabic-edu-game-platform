@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Banua Fruit Blast — Petik Buah Jawaban Benar",
+  title: "Makketapel — Petik Buah Jawaban Benar",
   description:
     "Game edukasi petik buah: jawab soal Bahasa Arab, Bahasa Inggris, dan Matematika dengan menangkap buah jawaban yang benar. Mode Solo, Duel, dan Squad untuk 1–4 pemain di satu layar.",
 };
@@ -16,7 +16,7 @@ export default function BanuaFruitBlastLanding() {
     <main className="mx-auto max-w-3xl px-5 py-10">
       <p className="text-xs font-black uppercase tracking-[0.3em] text-emerald-700">Game Edukasi</p>
       <h1 className="mt-2 text-3xl font-black leading-tight text-emerald-950 sm:text-4xl">
-        Banua Fruit Blast — Petik Buah Jawaban Benar
+        Makketapel — Petik Buah Jawaban Benar
       </h1>
       <p className="mt-3 text-slate-700">
         Buah-buah jatuh dari atas arena, masing-masing membawa satu teks jawaban. Baca soal di panelmu, lalu

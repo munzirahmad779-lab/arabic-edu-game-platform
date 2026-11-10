@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Ludo Angka — Ludo Soal",
+  title: "Maccule Ludo — Ludo Soal",
   description:
     "Game Ludo soal hot-seat satu perangkat: jawab benar untuk melempar dadu, keluar kandang dengan angka 6, tangkap pion lawan, dan balapan ke FINISH. SOLO lawan bot, DUEL, TRIO, dan QUAD dengan maskot Maleo, Tarsius, Anoa, dan Kuskus.",
 };
@@ -15,7 +15,7 @@ export default function LudoAngkaLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
       <h1 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
-        Ludo Angka — Ludo Soal
+        Maccule Ludo — Ludo Soal
       </h1>
       <p className="mt-3 text-slate-600">
         Ludo di papan 15x15 yang setiap lemparan dadunya dibeli dengan jawaban benar. Keluar
@@ -43,7 +43,7 @@ export default function LudoAngkaLanding() {
       <H>TARGET AUDIENS</H>
       <p className="mt-2 text-slate-700">
         Siswa yang berlatih Bahasa Indonesia, Bahasa Arab, Bahasa Inggris, Matematika, Biologi, dan
-        Fisika lewat bank soal bawaan (bank yang sama dengan Jejak Angka), serta guru yang ingin
+        Fisika lewat bank soal bawaan (bank yang sama dengan Mallaleng Angka), serta guru yang ingin
         memakai bank soalnya sendiri (Mapel Guru) atau bank dari menu Bank Soal LMS. Setiap
         pertandingan dibatasi 15 menit.
       </p>

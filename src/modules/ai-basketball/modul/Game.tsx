@@ -748,8 +748,7 @@ export default function AiBasketballGame() {
           <section className={`${CARD} flex flex-col items-center justify-center p-6 text-center lg:p-10`}>
             <div className="animate-float-bob text-6xl lg:text-8xl">🏀</div>
             <h1 className="mt-2 text-4xl font-black leading-none tracking-tight sm:text-5xl lg:text-7xl">
-              <span className="block text-sky-600 [text-shadow:0_4px_0_rgba(255,255,255,0.9)]">AI</span>
-              <span className="block text-orange-500 [text-shadow:0_4px_0_rgba(255,255,255,0.9)]">BASKETBALL</span>
+              <span className="block text-orange-500 [text-shadow:0_4px_0_rgba(255,255,255,0.9)]">MABBASKET</span>
             </h1>
             <p className="mt-3 max-w-md text-sm font-bold text-emerald-950/65 sm:text-base">
               Duel 2 tim, satu layar. Jawab soal dari panelmu, lalu lempar bolanya sendiri ke ring timmu!

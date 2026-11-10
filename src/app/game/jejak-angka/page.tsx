@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Jejak Angka — Ular Tangga Sembunyi",
+  title: "Mallaleng Angka — Ular Tangga Sembunyi",
   description:
     "Game ular tangga sembunyi hot-seat satu perangkat: jawab soal untuk melempar dadu dan berjalan di papan 100 kotak. SOLO lawan bot, DUEL, TRIO, dan QUAD dengan maskot Maleo, Tarsius, Anoa, dan Kuskus.",
 };
@@ -15,7 +15,7 @@ export default function JejakAngkaLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
       <h1 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
-        Jejak Angka — Ular Tangga Sembunyi
+        Mallaleng Angka — Ular Tangga Sembunyi
       </h1>
       <p className="mt-3 text-slate-600">
         Ular tangga yang tangganya (10) dan ularnya (10) bersembunyi tanpa tanda dan diacak ulang

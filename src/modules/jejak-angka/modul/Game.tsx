@@ -1094,7 +1094,7 @@ export default function JejakAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto bg-gradient-to-b from-[#CDEEDD] to-[#F4F1DE]" onPointerDown={() => sfx.resume()}>
           <div className="mx-auto w-full max-w-[1600px] px-3 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-lg font-black tracking-tight text-[#17352B] sm:text-xl">JEJAK ANGKA: ULAR TANGGA</h1>
+              <h1 className="text-lg font-black tracking-tight text-[#17352B] sm:text-xl">MALLALENG ANGKA: ULAR TANGGA</h1>
               <div className="flex items-center gap-2">
                 <span
                   className={`rounded-[10px] px-3 py-1.5 text-lg font-extrabold text-[#F4F1DE] ${ui.timeLeft < 60 ? "animate-pulse bg-[#B3261E]" : "bg-[#17352B]"}`}
@@ -1302,7 +1302,7 @@ export default function JejakAngkaGame() {
                 <MascotFace key={p.slot} id={p.sprite} size={64} />
               ))}
             </div>
-            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#1F4A4E]">Jejak Angka</h1>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#1F4A4E]">Mallaleng Angka</h1>
             <p className="mt-1 max-w-xl text-center text-sm font-semibold text-[#4A6B70]">
               Ular tangga sembunyi: jawab soal dengan benar untuk melempar dadu dan berjalan ke kotak 100. Di papan bersembunyi 10 tangga dan 10
               ular yang diacak setiap pertandingan, baru ketahuan saat terinjak.
@@ -1417,7 +1417,7 @@ export default function JejakAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto bg-[#F4F1DE]">
           <div className="mx-auto w-full max-w-3xl px-4 py-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-[#1F4A4E]">Bank Soal Jejak Angka</h2>
+              <h2 className="text-2xl font-black text-[#1F4A4E]">Bank Soal Mallaleng Angka</h2>
               <button type="button" className="h-11 rounded-xl bg-white px-4 font-bold" onClick={() => setScreen("home")}>
                 Kembali
               </button>

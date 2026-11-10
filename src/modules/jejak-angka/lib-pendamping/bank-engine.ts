@@ -274,7 +274,7 @@ export function parseCsvBank(
 
 export function templateMarkdown(): string {
   return `<!-- ============================================================
-TEMPLATE BANK SOAL — Banua Fruit Blast (Magguru Game)
+TEMPLATE BANK SOAL — Makketapel (Magguru Game)
 Cara pakai:
 1. Baris "Mapel:" khusus untuk Mapel Guru (nama mapel bebas).
 2. Satu soal dimulai dengan baris ## Soal.

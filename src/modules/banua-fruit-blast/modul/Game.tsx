@@ -1020,12 +1020,12 @@ export default function BanuaFruitBlastGame() {
       {/* ------------------------------------------------------------- HOME */}
       {screen === "home" && (
         <>
-          <Header title="Banua Fruit Blast" />
+          <Header title="Makketapel" />
           <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-4 py-6 text-center">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.3em] text-lime-600">Game Edukasi</p>
               <h2 className="mt-2 text-3xl font-black leading-tight text-emerald-950 sm:text-4xl">
-                Banua Fruit Blast
+                Makketapel
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm font-medium text-emerald-900/70">
                 Potong buah jawaban yang benar dengan geseran jarimu. Buah terus

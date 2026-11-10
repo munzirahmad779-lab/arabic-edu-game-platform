@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Basket Pengetahuan — Lempar Bola Jawaban",
+  title: "Mabbasket — Lempar Bola Jawaban",
   description:
-    "Game basket pengetahuan hot-seat satu perangkat: dua tim menjawab soal lalu melempar bola ke ring. Bahasa Arab, Matematika, Biologi, Fisika, dan Mapel Guru.",
+    "Game Mabbasket hot-seat satu perangkat: dua tim menjawab soal lalu melempar bola ke ring. Bahasa Arab, Matematika, Biologi, Fisika, dan Mapel Guru.",
 };
 
 const H = ({ children }: { children: React.ReactNode }) => (
@@ -15,7 +15,7 @@ export default function BasketLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
       <h1 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
-        Basket Pengetahuan — Lempar Bola Jawaban
+        Mabbasket — Lempar Bola Jawaban
       </h1>
       <p className="mt-3 text-slate-600">
         Dua tim, dua panel soal, satu lapangan. Jawab soal di panelmu untuk

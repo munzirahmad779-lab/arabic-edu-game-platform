@@ -408,7 +408,7 @@ export default async function GamesPage({
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
             <h3 className="font-display text-lg font-black text-teal-700">
-              🏀 Basket Pengetahuan
+              🏀 Mabbasket
             </h3>
             <p className="mt-1 text-sm text-softslate/70">
               Dua tim menjawab soal lalu melempar bola ke ring untuk mencetak
@@ -423,7 +423,7 @@ export default async function GamesPage({
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
             <h3 className="font-display text-lg font-black text-teal-700">
-              🍉 Banua Fruit Blast
+              🍉 Makketapel
             </h3>
             <p className="mt-1 text-sm text-softslate/70">
               Potong buah yang berisi jawaban benar di lajurmu: DUEL, TRIO,
@@ -439,7 +439,7 @@ export default async function GamesPage({
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
             <h3 className="font-display text-lg font-black text-teal-700">
-              🚀 Perang Antariksa
+              🚀 Mattembak Angkasa
             </h3>
             <p className="mt-1 text-sm text-softslate/70">
               Tembak asteroid soal dengan jawaban ketik atau pilihan: SOLO,
@@ -488,7 +488,7 @@ export default async function GamesPage({
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
             <h3 className="font-display text-lg font-black text-teal-700">
-              👣 Jejak Angka
+              👣 Mallaleng Angka
             </h3>
             <p className="mt-1 text-sm text-softslate/70">
               Ular tangga sembunyi: jawab soal untuk melempar dadu dan
@@ -505,7 +505,7 @@ export default async function GamesPage({
             className="aesthetic-card flex flex-col transition hover:shadow-md"
           >
             <h3 className="font-display text-lg font-black text-teal-700">
-              🎲 Ludo Angka
+              🎲 Maccule Ludo
             </h3>
             <p className="mt-1 text-sm text-softslate/70">
               Ludo soal: jawab benar untuk melempar dadu, keluar kandang
