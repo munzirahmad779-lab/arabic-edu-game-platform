@@ -269,25 +269,25 @@ export default async function AssessmentDetailPage({
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>550-599</span>
+              <span>550-597</span>
               <span className="font-black text-teal-700">
                 {L.scale_verygood}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>500-549</span>
+              <span>500-547</span>
               <span className="font-black text-terracotta-500">
                 {L.scale_good}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>450-499</span>
+              <span>450-497</span>
               <span className="font-black text-terracotta-600">
                 {L.scale_fair}
               </span>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-1.5 even:bg-sage-50">
-              <span>310-449</span>
+              <span>310-447</span>
               <span className="font-black text-softslate">
                 {L.scale_needs_improve}
               </span>

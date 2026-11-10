@@ -213,6 +213,40 @@ export function ProjectorScreen({
 
   // Classroom Modals & Student Management
   const [selectedClassId, setSelectedClassId] = useState(defaultClassId || teacherClasses[0]?.id || "");
+  // Pilihan kelas terakhir per game: dialog Kelola Tim dulu selalu
+  // kembali ke kelas bawaan game tiap layar proyektor dibuka ulang
+  // (temuan audit live 10 Nov 2026). Pilihan terakhir per id game
+  // disimpan di localStorage dan dipakai lagi saat layar dibuka,
+  // selama kelasnya masih ada di daftar kelas guru.
+  const classStorageKey = gameId
+    ? `magguru:projector-class:${gameId}`
+    : null;
+  const [classRestored, setClassRestored] = useState(false);
+
+  useEffect(() => {
+    if (classStorageKey) {
+      try {
+        const saved = window.localStorage.getItem(classStorageKey);
+        if (saved && teacherClasses.some((c) => c.id === saved)) {
+          setSelectedClassId(saved);
+        }
+      } catch {
+        // localStorage tidak tersedia: abaikan, pakai kelas bawaan.
+      }
+    }
+    setClassRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classStorageKey]);
+
+  useEffect(() => {
+    if (!classRestored || !classStorageKey || !selectedClassId) return;
+    try {
+      window.localStorage.setItem(classStorageKey, selectedClassId);
+    } catch {
+      // localStorage tidak tersedia: abaikan.
+    }
+  }, [classRestored, classStorageKey, selectedClassId]);
+
   const [manualStudents, setManualStudents] = useState<StudentMember[]>([]);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
