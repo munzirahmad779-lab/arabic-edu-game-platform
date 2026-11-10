@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { playSfx } from "@/lib/game-engine/audio-bridge";
-import type { RawQuestion, RawOption } from "@/lib/game-engine/types";
+import type {
+  RawQuestion,
+  RawOption,
+  AnswerSubmission,
+  AnswerResult,
+} from "@/lib/game-engine/types";
 
 const HOLES = [0, 1, 2, 3, 4, 5];
 
@@ -10,11 +15,24 @@ export function WhackPlayer({
   questions,
   onFinish,
   isRtl = false,
+  onSubmitAnswer,
+  singleQuestionMode = false,
 }: {
   questions: RawQuestion[];
   onFinish?: (finalScore: number, correctCount: number) => void;
   isRtl?: boolean;
+  // Kontrak mode room, meniru kosakata GamePlayerProps: bila prop ini
+  // diberikan, komponen berjalan sebagai pemain satu soal di room siswa
+  // dan vonis jawaban datang dari server lewat AnswerResult.
+  onSubmitAnswer?: (submission: AnswerSubmission) => Promise<AnswerResult>;
+  singleQuestionMode?: boolean;
 }) {
+  // Mode room aktif bila induk menyediakan onSubmitAnswer. Pada mode ini
+  // skor lokal, nyawa, dan timer lokal (termasuk bonus waktu) dimatikan;
+  // pergantian soal diatur induk lewat remount per soal
+  // (singleQuestionMode), dan permainan tidak pernah diakhiri dari sini.
+  const isRoomMode = onSubmitAnswer !== undefined;
+  void singleQuestionMode;
   const [questionList, setQuestionList] = useState(() => [...questions]);
 
   useEffect(() => {
@@ -37,14 +55,17 @@ export function WhackPlayer({
   }, []);
   useEffect(() => clearPendingTimers, [clearPendingTimers]);
   // Satu pintu akhir permainan: onFinish tepat satu kali per sesi.
+  // Mode room digerbang di pintu yang sama: akhir permainan adalah
+  // urusan induk, jadi onFinish tidak pernah dipanggil dari mode room.
   const finishGame = useCallback(
     (finalScore: number) => {
       if (finishedRef.current) return;
+      if (isRoomMode) return;
       finishedRef.current = true;
       setIsGameOver(true);
       onFinish?.(finalScore, correctRef.current);
     },
-    [onFinish],
+    [onFinish, isRoomMode],
   );
   const [streak, setStreak] = useState(0);
   const [health, setHealth] = useState(3);
@@ -57,6 +78,15 @@ export function WhackPlayer({
   const pendingBonusRef = useRef(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const isProcessingBonkRef = useRef(false);
+  // Mode room: waktu soal tampil untuk responseTimeMs yang nyata
+  // (komponen di-remount induk per soal, jadi nilai awal ref adalah
+  // awal soal ini), dan umpan balik vonis server pada tikus yang
+  // dipukul (hijau benar, merah salah) sampai soal berganti.
+  const questionShownAtRef = useRef<number>(Date.now());
+  const [roomFeedback, setRoomFeedback] = useState<{
+    optionId: string;
+    isCorrect: boolean;
+  } | null>(null);
   const [activeHoles, setActiveHoles] = useState<
     Array<{
       holeId: number;
@@ -113,6 +143,10 @@ export function WhackPlayer({
 
   // Countdown timer per question
   useEffect(() => {
+    // Mode room: tidak ada timer lokal; batas waktu soal dipegang
+    // induk (cangkang timer room dan penjaga tenggat halaman join),
+    // jadi soal tidak pernah maju atau berakhir dari hitung mundur ini.
+    if (isRoomMode) return;
     if (isGameOver) return;
     const timer = setInterval(() => {
       setTimerLeft((t) => {
@@ -144,7 +178,41 @@ export function WhackPlayer({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isGameOver, score, onFinish, currentQIndex, questionList.length, finishGame]);
+  }, [isRoomMode, isGameOver, score, onFinish, currentQIndex, questionList.length, finishGame]);
+
+  // Mode room: kirim pukulan sebagai jawaban ke server. Vonis HANYA
+  // dari AnswerResult.isCorrect, karena soal room memang tidak membawa
+  // correct_option_key (route sesi menghapusnya dengan sengaja), jadi
+  // perbandingan kunci lokal di handleWhack tidak boleh dieksekusi di
+  // mode ini. Sesudah accepted, masukan tetap terkunci
+  // (isProcessingBonkRef tetap terpasang) sampai induk me-remount
+  // komponen untuk soal berikutnya; pada accepted: false atau promise
+  // yang melempar, kunci dibebaskan supaya siswa bisa mencoba lagi.
+  const submitRoomAnswer = async (opt: RawOption) => {
+    if (!onSubmitAnswer) {
+      isProcessingBonkRef.current = false;
+      return;
+    }
+    const responseTimeMs = Math.max(0, Date.now() - questionShownAtRef.current);
+    let result: AnswerResult;
+    try {
+      result = await onSubmitAnswer({
+        questionId: activeQuestion.id,
+        selectedOptionId: opt.id,
+        answerText: null,
+        responseTimeMs,
+      });
+    } catch {
+      isProcessingBonkRef.current = false;
+      return;
+    }
+    if (!result.accepted) {
+      isProcessingBonkRef.current = false;
+      return;
+    }
+    playSfx(result.isCorrect ? "correct" : "wrong");
+    setRoomFeedback({ optionId: opt.id, isCorrect: result.isCorrect });
+  };
 
   // Handle Bonk
   const handleWhack = (opt: RawOption, e: React.MouseEvent) => {
@@ -158,6 +226,13 @@ export function WhackPlayer({
       active: true,
     });
     later(() => setHammerPos(null), 300);
+
+    // Mode room berhenti di sini: tidak ada skor lokal, pengurangan
+    // nyawa, bonus waktu, atau lanjut soal dari komponen ini.
+    if (isRoomMode) {
+      void submitRoomAnswer(opt);
+      return;
+    }
 
     const isCorrect = opt.option_key.toUpperCase().trim() === correctKey;
 
@@ -238,23 +313,28 @@ export function WhackPlayer({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Health Hearts */}
-          <div className="flex items-center gap-1 text-sm bg-black/40 px-3 py-1 rounded-xl border border-white/10">
-            {[1, 2, 3].map((h) => (
-              <span key={h} className={h <= health ? "text-rose-500 text-lg" : "text-slate-600 text-lg"}>
-                ♥
-              </span>
-            ))}
-          </div>
+        {/* Mode room: cip nyawa, timer, dan skor lokal disembunyikan
+            karena ketiganya dimatikan; skor dan sisa waktu soal tampil
+            di cangkang room milik induk. */}
+        {!isRoomMode && (
+          <div className="flex items-center gap-3">
+            {/* Health Hearts */}
+            <div className="flex items-center gap-1 text-sm bg-black/40 px-3 py-1 rounded-xl border border-white/10">
+              {[1, 2, 3].map((h) => (
+                <span key={h} className={h <= health ? "text-rose-500 text-lg" : "text-slate-600 text-lg"}>
+                  ♥
+                </span>
+              ))}
+            </div>
 
-          <div className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono font-black text-sm border border-amber-400/40">
-            ⏱️ {timerLeft}s
+            <div className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono font-black text-sm border border-amber-400/40">
+              ⏱️ {timerLeft}s
+            </div>
+            <div className="px-3 py-1 rounded-xl bg-black/40 font-mono font-black text-emerald-400 text-sm border border-white/10">
+              {score} Pts
+            </div>
           </div>
-          <div className="px-3 py-1 rounded-xl bg-black/40 font-mono font-black text-emerald-400 text-sm border border-white/10">
-            {score} Pts
-          </div>
-        </div>
+        )}
       </div>
 
       {/* 6 Arcade Holes Grid. Pada lebar 390 kolom hanya sekitar
@@ -295,7 +375,15 @@ export function WhackPlayer({
                   </div>
 
                   {/* Choice Board held by Mole - Adaptive Width and No Truncation */}
-                  <div className="px-2 sm:px-3.5 py-2 rounded-2xl bg-white border-2 border-amber-900 shadow-xl text-center min-w-0 w-full sm:w-auto sm:min-w-[130px] sm:max-w-[240px] -mt-1 z-20 choice-board flex items-center justify-center gap-1.5">
+                  <div
+                    className={`px-2 sm:px-3.5 py-2 rounded-2xl bg-white border-2 border-amber-900 shadow-xl text-center min-w-0 w-full sm:w-auto sm:min-w-[130px] sm:max-w-[240px] -mt-1 z-20 choice-board flex items-center justify-center gap-1.5 ${
+                      roomFeedback && roomFeedback.optionId === mole.option.id
+                        ? roomFeedback.isCorrect
+                          ? "border-emerald-500 bg-emerald-100"
+                          : "border-rose-500 bg-rose-100"
+                        : ""
+                    }`}
+                  >
                     <span className="font-mono font-black text-xs text-amber-700 shrink-0">
                       {mole.option.option_key}:
                     </span>
@@ -335,7 +423,9 @@ export function WhackPlayer({
 
       {/* Bottom Hint */}
       <div className="text-center text-xs text-amber-200/80 bg-black/40 py-2 rounded-xl">
-        Pukul tikus yang membawa jawaban yang benar secepat mungkin! Anda memiliki 3 nyawa.
+        {isRoomMode
+          ? "Pukul tikus yang membawa jawaban yang benar!"
+          : "Pukul tikus yang membawa jawaban yang benar secepat mungkin! Anda memiliki 3 nyawa."}
       </div>
 
       {/* Game Over Screen */}
