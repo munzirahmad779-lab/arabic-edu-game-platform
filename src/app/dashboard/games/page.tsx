@@ -212,7 +212,7 @@ export default async function GamesPage({
                 className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-950/70 border border-white/20 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-950/90 transition"
               >
                 <span>📽️</span>
-                <span>Buka Layar Proyektor ({gameList[0].name})</span>
+                <span>Buka Layar Proyektor ({gameList[0].name.replace(/\[(THEME|EMBED):[^\]]*\]/g, "").trim()})</span>
               </a>
             ) : null}
           </div>
@@ -255,7 +255,7 @@ export default async function GamesPage({
               const isEmbedGame = /\[EMBED:(.*?)\]/.test(game.name);
               const themeMatch = game.name.match(/\[THEME:(.*?)\]/);
               const theme = themeMatch ? themeMatch[1] : null;
-              const displayName = game.name.replace(/\[(THEME|EMBED):.*?\]/, "").trim();
+              const displayName = game.name.replace(/\[(THEME|EMBED):.*?\]/g, "").trim();
 
               const THEME_LABELS: Record<string, string> = {
                 airplane: "✈️ Pesawat Awan",
@@ -263,6 +263,7 @@ export default async function GamesPage({
                 wheel: "🎡 Roda Putar",
                 memory: "🃏 Memori 3D",
                 balloon: "🎈 Pecahkan Balon",
+                space: "🚀 Luar Angkasa",
               };
 
               return (

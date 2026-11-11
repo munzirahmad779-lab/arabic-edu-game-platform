@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { displayGameName } from "@/lib/game-name";
 import { createClient } from "@/lib/supabase/client";
 import {
   pauseBackgroundAudio,
@@ -282,7 +283,7 @@ export function PracticePlayer({
             <h1 className="mt-4 text-3xl font-black text-neutral-900">
               {message}
             </h1>
-            <p className="mt-2 text-sm text-neutral-500">{game.game_name}</p>
+            <p className="mt-2 text-sm text-neutral-500">{displayGameName(game.game_name)}</p>
 
             <div className="mt-8 flex items-center justify-center gap-6">
               <div className="text-center">
@@ -496,7 +497,7 @@ export function PracticePlayer({
                 {className} — {studentName}
               </p>
               <h1 className="mt-1 text-xl font-black text-neutral-900">
-                {game.game_name}
+                {displayGameName(game.game_name)}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { StartAttemptButton } from "./start-attempt-button";
 
 async function startAttempt(fd: FormData) {
   "use server";
@@ -137,9 +138,7 @@ export default async function AssessmentEntryPage({
             />
           </div>
 
-          <button type="submit" className="btn-primary w-full">
-            {t.btn_start}
-          </button>
+          <StartAttemptButton label={t.btn_start} />
 
           <p className="text-center text-xs text-softslate/60">
             {t.hint_connection}

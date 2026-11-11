@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { displayGameName } from "@/lib/game-name";
 import { todayWita, yesterdayWita, toWitaTime } from "@/lib/format-wita";
 import type idDict from "@/lib/i18n/id.json";
 
@@ -39,8 +40,8 @@ Kembalikan hasil dalam bahasa Indonesia yang jelas, dengan paragraf, judul, dan 
 
 export function ReportView({
   date,
-  roomRows,
-  practiceRows,
+  roomRows: rawRoomRows,
+  practiceRows: rawPracticeRows,
   loadError = false,
   dict,
 }: {
@@ -50,6 +51,16 @@ export function ReportView({
   loadError?: boolean;
   dict: Dict;
 }) {
+  // Token internal [THEME:...]/[EMBED:...] pada nama game tidak boleh
+  // ikut tampil di tabel, Markdown, CSV, maupun prompt AI laporan.
+  const roomRows = rawRoomRows.map((r) => ({
+    ...r,
+    game_name: displayGameName(r.game_name),
+  }));
+  const practiceRows = rawPracticeRows.map((r) => ({
+    ...r,
+    game_name: displayGameName(r.game_name),
+  }));
   const t = dict.reports;
 
   const [copiedMd, setCopiedMd] = useState(false);

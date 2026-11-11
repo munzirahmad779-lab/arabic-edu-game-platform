@@ -39,7 +39,7 @@ export const BANK_SOAL: Record<SubjectId, Q[]> = {
     q("ar5", "arab", "Fi'il madhi dari كَتَبَ jika diubah ke fi'il mudhari' menjadi...", ["يَكْتُبُ", "يَكْتَبُ", "كَاتِبٌ", "مَكْتُوْبٌ"], "يَكْتُبُ"),
     q("ar6", "arab", "Huruf jar yang bermakna 'di dalam' adalah...", ["فِيْ", "مِنْ", "إِلَى", "عَلَى"], "فِيْ"),
     q("ar7", "arab", "Kata الرَّجُلُ adalah isim...", ["Mudzakkar", "Muannats", "Jamak", "Mashdar"], "Mudzakkar"),
-    q("ar8", "arab", "Kalimat 'ذَهَبَ أَحْمَدُ إِلَى الْمَدْرَسَةِ' memiliki mubtada' berupa...", ["أَحْمَدُ", "ذَهَبَ", "الْمَدْرَسَةِ", "إِلَى"], "أَحْمَدُ"),
+    q("ar8", "arab", "Kalimat 'ذَهَبَ أَحْمَدُ إِلَى الْمَدْرَسَةِ' memiliki fa'il berupa...", ["أَحْمَدُ", "ذَهَبَ", "الْمَدْرَسَةِ", "إِلَى"], "أَحْمَدُ"),
     q("ar9", "arab", "Isim yang menunjukkan tempat dinamakan...", ["Isim makan", "Isim zaman", "Isim alat", "Isim fa'il"], "Isim makan"),
   ],
   matematika: [

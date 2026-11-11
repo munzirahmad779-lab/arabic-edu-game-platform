@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import JoinLinkActions from "./join-link-actions";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/auth";
+import { displayGameName } from "@/lib/game-name";
 import RoomLobby from "./room-lobby";
 import StartGameButton from "./start-game-button";
 import ArchiveButton from "./archive-button";
@@ -116,7 +117,7 @@ export default async function RoomPage({
     questions?: unknown[];
   };
 
-  const gameName = snapshot.game?.name ?? gr.game_fallback;
+  const gameName = displayGameName(snapshot.game?.name ?? gr.game_fallback);
   const gameMode = snapshot.game?.mode ?? "competitive";
   const modeLookupKey = (MODE_KEY[gameMode] ?? "mode_competitive") as keyof typeof gr;
   const modeLabel = gr[modeLookupKey] ?? gameMode;

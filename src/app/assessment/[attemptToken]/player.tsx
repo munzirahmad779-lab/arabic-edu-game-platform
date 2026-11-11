@@ -151,9 +151,13 @@ export function AssessmentPlayer({
     [questions, currentSection?.id],
   );
 
-  const currentQuestion = sectionQuestions.find(
-    (q) => q.question_number === currentQuestionNum,
-  );
+  // Nomor soal yang melompat (mis. 1, 2, 4) tidak boleh mengunci halaman
+  // di "Memuat ujian...": bila nomor persis tidak ada, pakai soal bernomor
+  // lebih besar terdekat, atau soal terakhir section ini.
+  const currentQuestion =
+    sectionQuestions.find((q) => q.question_number === currentQuestionNum) ??
+    sectionQuestions.find((q) => q.question_number > currentQuestionNum) ??
+    sectionQuestions[sectionQuestions.length - 1];
 
   const currentPassage = currentQuestion?.passage_id
     ? passages.find((p) => p.id === currentQuestion.passage_id)

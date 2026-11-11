@@ -22,7 +22,7 @@ const PRACTICE_TOPICS: Topic[] = [
     titleAr: "مُفْرَدَاتُ البَيْتِ وَالمَدْرَسَةِ",
     desc: "Kenali nama-nama benda di sekitarmu dalam bahasa Arab dengan pelafalan asli.",
     level: "Mudah",
-    questionCount: 15,
+    questionCount: 7,
     badgeColor: "bg-sage-100 text-sage-800 border-sage-300",
   },
   {
@@ -32,7 +32,7 @@ const PRACTICE_TOPICS: Topic[] = [
     titleAr: "السَّاعَةُ وَالأَوْقَاتُ",
     desc: "Belajar membaca jam, menit, pagi, siang, dan malam dalam bahasa Arab.",
     level: "Sedang",
-    questionCount: 12,
+    questionCount: 5,
     badgeColor: "bg-teal-100 text-teal-800 border-teal-300",
   },
   {
@@ -42,7 +42,7 @@ const PRACTICE_TOPICS: Topic[] = [
     titleAr: "الأَعْدَادُ وَالأَرْقَامُ",
     desc: "Kuasai hitungan dan penyebutan bilangan mudzakkar dan muannats.",
     level: "Mudah",
-    questionCount: 20,
+    questionCount: 5,
     badgeColor: "bg-terracotta-100 text-terracotta-800 border-terracotta-300",
   },
   {
@@ -52,7 +52,7 @@ const PRACTICE_TOPICS: Topic[] = [
     titleAr: "التَّعَارُفُ وَالحِوَارُ اليَوْمِيُّ",
     desc: "Latihan menyusun kalimat tanya dan jawab saat berkenalan dengan teman baru.",
     level: "Sedang",
-    questionCount: 10,
+    questionCount: 4,
     badgeColor: "bg-teal-100 text-teal-800 border-teal-300",
   },
   {
@@ -62,7 +62,7 @@ const PRACTICE_TOPICS: Topic[] = [
     titleAr: "الضَّمَائِرُ المُنْفَصِلَةُ",
     desc: "Pahami perbedaan Hua, Huma, Hum, Anta, Anti, hingga Nahnu dengan tepat.",
     level: "Menantang",
-    questionCount: 14,
+    questionCount: 4,
     badgeColor: "bg-amber-100 text-amber-800 border-amber-300",
   },
 ];

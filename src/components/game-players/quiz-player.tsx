@@ -26,14 +26,25 @@ export function QuizPlayer({
     questionShownAtRef.current = Date.now();
   }, [question.id]);
 
+  // Opsi dari basis data bisa null/rusak bentuknya; tanpa penjaga ini
+  // render runtuh oleh TypeError sebelum peringatan soal tidak lengkap
+  // sempat tampil (temuan armada audit 11 Nov 2026).
+  const safeOptions = (
+    Array.isArray(question.options) ? question.options : []
+  ).filter(
+    (option) =>
+      option &&
+      typeof option.option_key === "string" &&
+      typeof option.option_text === "string",
+  );
   const optionKeys = new Set(
-    question.options.map((option) => option.option_key.trim().toUpperCase()),
+    safeOptions.map((option) => option.option_key.trim().toUpperCase()),
   );
   const hasCompleteOptions =
-    question.options.length === 4 &&
+    safeOptions.length === 4 &&
     optionKeys.size === 4 &&
     ["A", "B", "C", "D"].every((key) => {
-      const option = question.options.find(
+      const option = safeOptions.find(
         (item) => item.option_key.trim().toUpperCase() === key,
       );
       const text = option
@@ -184,7 +195,7 @@ export function QuizPlayer({
         </div>
       ) : (
         <div className="grid gap-3 pt-2">
-          {question.options.map((option) => {
+          {safeOptions.map((option) => {
             const isSelected = selectedId === option.id;
             return (
               <button

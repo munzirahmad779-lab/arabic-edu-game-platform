@@ -56,7 +56,7 @@ const ARAB_BANK: readonly Q[] = [
   { id: "ar5", subject: "arab", prompt: "Fi'il madhi dari كَتَبَ jika diubah ke fi'il mudhari' menjadi...", options: ["يَكْتُبُ", "يَكْتَبُ", "كَاتِبٌ", "مَكْتُوْبٌ"], correctIndex: 0, explanation: "Jawaban yang benar: يَكْتُبُ." },
   { id: "ar6", subject: "arab", prompt: "Huruf jar yang bermakna 'di dalam' adalah...", options: ["فِيْ", "مِنْ", "إِلَى", "عَلَى"], correctIndex: 0, explanation: "Jawaban yang benar: فِيْ." },
   { id: "ar7", subject: "arab", prompt: "Kata الرَّجُلُ adalah isim...", options: ["Mudzakkar", "Muannats", "Jamak", "Mashdar"], correctIndex: 0, explanation: "Jawaban yang benar: Mudzakkar." },
-  { id: "ar8", subject: "arab", prompt: "Kalimat 'ذَهَبَ أَحْمَدُ إِلَى الْمَدْرَسَةِ' memiliki mubtada' berupa...", options: ["أَحْمَدُ", "ذَهَبَ", "الْمَدْرَسَةِ", "إِلَى"], correctIndex: 0, explanation: "Jawaban yang benar: أَحْمَدُ." },
+  { id: "ar8", subject: "arab", prompt: "Kalimat 'ذَهَبَ أَحْمَدُ إِلَى الْمَدْرَسَةِ' memiliki fa'il berupa...", options: ["أَحْمَدُ", "ذَهَبَ", "الْمَدْرَسَةِ", "إِلَى"], correctIndex: 0, explanation: "Jawaban yang benar: أَحْمَدُ." },
   { id: "ar9", subject: "arab", prompt: "Isim yang menunjukkan tempat dinamakan...", options: ["Isim makan", "Isim zaman", "Isim alat", "Isim fa'il"], correctIndex: 0, explanation: "Jawaban yang benar: Isim makan." },
 ];
 

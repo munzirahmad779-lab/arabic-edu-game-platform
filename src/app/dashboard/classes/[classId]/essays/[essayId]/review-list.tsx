@@ -190,8 +190,14 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam) sehingga kegagalan tidak terlihat.
   async function saveOverride() {
-    const numScore = Number(score);
-    if (!Number.isFinite(numScore) || numScore < 0 || numScore > 100) {
+    // Kolom nilai kosong berarti guru hanya mengubah catatan: jangan
+    // menulis override 0 yang menimpa nilai AI siswa (Number("") === 0).
+    const trimmedScore = score.trim();
+    const numScore = trimmedScore === "" ? null : Number(trimmedScore);
+    if (
+      numScore !== null &&
+      (!Number.isFinite(numScore) || numScore < 0 || numScore > 100)
+    ) {
       setSaveError(rl.err_range);
       return;
     }
@@ -203,7 +209,10 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
       const { error } = await supabase
         .from("essay_submissions")
         .update({
-          teacher_override_score: Math.round(numScore),
+          teacher_override_score:
+            numScore === null
+              ? current.teacher_override_score
+              : Math.round(numScore),
           teacher_override_feedback: feedback.trim() || null,
           teacher_graded_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -215,7 +224,10 @@ function SubmissionCard({ sub, rl }: { sub: Submission; rl: ReviewDict }) {
       } else {
         setCurrent((prev) => ({
           ...prev,
-          teacher_override_score: Math.round(numScore),
+          teacher_override_score:
+            numScore === null
+              ? prev.teacher_override_score
+              : Math.round(numScore),
           teacher_override_feedback: feedback.trim() || null,
         }));
         setEditing(false);

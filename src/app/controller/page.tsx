@@ -551,10 +551,16 @@ export default function ControllerPage() {
         } else if (result.error === "ALREADY_ANSWERED") {
           setStatusMessage(`🔒 Jawaban tim sudah terkunci sebelumnya (${result.existingAnswer || optionKey}).`);
         } else {
-          setStatusMessage(`✓ Pilihan ${optionKey} terkirim.`);
+          // Kode galat selain dua yang dikenal: jangan mengklaim terkirim.
+          // Jawaban bisa saja tidak tercatat di server.
+          setStatusMessage(
+            `⚠️ Pilihan ${optionKey} belum terkonfirmasi server${result.error ? ` (${result.error})` : ""}; jawaban mungkin tidak tercatat. Coba lagi atau beri tahu guru.`,
+          );
         }
       } catch {
-        setStatusMessage(`✓ Pilihan ${optionKey} disiarkan via WebSocket.`);
+        setStatusMessage(
+          `⚠️ Pilihan ${optionKey} gagal terkirim (jaringan). Jawaban tidak tercatat; coba lagi.`,
+        );
       } finally {
         setSubmitting(false);
       }

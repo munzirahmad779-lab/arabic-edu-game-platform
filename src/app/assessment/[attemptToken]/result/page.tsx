@@ -34,6 +34,18 @@ export default async function ResultPage({
   const r = attempt.score_reading ?? 0;
   const total = attempt.score_total ?? 0;
 
+  // Label mengikuti tipe asesmen sungguhan; dulu semua hasil dilabeli
+  // TOEFL walau tipenya toafl/custom (temuan armada audit 11 Nov 2026).
+  const assessmentType =
+    (assessment as { assessment_type?: string } | null)?.assessment_type ??
+    "toefl";
+  const typeLabel =
+    assessmentType === "toafl"
+      ? "TOAFL"
+      : assessmentType === "custom"
+        ? "Ujian"
+        : "TOEFL Prediction";
+
   const scoreLabel = (v: number) =>
     v >= 600
       ? "Excellent"
@@ -74,13 +86,15 @@ export default async function ResultPage({
           <>
             <section className="rounded-[2rem] bg-gradient-to-br from-teal-500 to-teal-700 p-8 text-center text-white shadow-2xl">
               <p className="text-xs font-bold text-white/70">
-                Skor Total TOEFL Prediction
+                Skor Total {typeLabel}
               </p>
               <div className="mt-3 text-7xl font-black tabular-nums">
                 {total}
               </div>
               <p className="mt-2 text-sm text-white/80">
-                dari 677 · {scoreLabel(total)}
+                {assessmentType === "toefl"
+                  ? `dari 677 · ${scoreLabel(total)}`
+                  : typeLabel}
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">

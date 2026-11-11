@@ -1115,7 +1115,7 @@ export default function SigettengGettengGame() {
           </div>
           </div>
           <div className="shrink-0 bg-white/40 pb-1 text-center text-[10px] font-bold text-slate-600">
-            {t.tap} · ESC = {t.quit.toLowerCase()} · <span className="text-slate-600">layout {layout} · {vw}px</span>
+            {t.tap} · ESC = {t.quit.toLowerCase()}
           </div>
 
           {confirmQuit && (

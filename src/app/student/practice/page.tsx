@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
+import { displayGameName } from "@/lib/game-name";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -117,7 +118,7 @@ export default async function StudentPracticePage() {
                       </span>
                       <div className="min-w-0">
                         <p className="truncate font-bold text-neutral-900 group-hover:text-violet-700">
-                          {game.name}
+                          {displayGameName(game.name)}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <span

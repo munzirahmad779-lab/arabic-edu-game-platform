@@ -290,6 +290,25 @@ export function WhackPlayer({
     setIsGameOver(false);
   };
 
+  // Daftar soal kosong: tampilkan keadaan kosong yang jujur, jangan
+  // memainkan soal tiruan "q-mock" (di mode room mock itu bahkan terkirim
+  // ke server sebagai jawaban). Pola yang sama dengan MemoryPlayer.
+  if (questionList.length === 0) {
+    return (
+      <div
+        className="relative w-full h-[600px] bg-gradient-to-b from-amber-900 via-amber-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center border-4 border-amber-600 select-none p-6 text-center text-white space-y-4"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <span className="text-6xl">🔨</span>
+        <h2 className="text-2xl font-black">Belum Ada Soal untuk Pukul Tikus</h2>
+        <p className="max-w-md text-sm text-amber-200/90">
+          Permainan ini belum memiliki soal, jadi belum bisa dimainkan.
+          Tambahkan soal ke permainan ini dulu, lalu buka lagi halamannya.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative w-full h-[600px] bg-gradient-to-b from-amber-900 via-amber-950 to-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-amber-600 select-none p-4"

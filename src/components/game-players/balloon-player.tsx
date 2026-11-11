@@ -378,6 +378,23 @@ export function BalloonPlayer({
     };
   }, [spawnBalloons]);
 
+  // Daftar soal kosong: keadaan kosong jujur, bukan soal tiruan "q-mock".
+  if (questionList.length === 0) {
+    return (
+      <div
+        className="relative w-full h-[580px] bg-sky-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center border-4 border-sky-400 select-none p-6 text-center text-white space-y-4"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <span className="text-6xl">🎈</span>
+        <h2 className="text-2xl font-black">Belum Ada Soal untuk Pecah Balon</h2>
+        <p className="max-w-md text-sm text-sky-200/90">
+          Permainan ini belum memiliki soal, jadi belum bisa dimainkan.
+          Tambahkan soal ke permainan ini dulu, lalu buka lagi halamannya.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative w-full h-[580px] bg-sky-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border-4 border-sky-400 select-none"

@@ -174,6 +174,14 @@ export function EssayPlayer({
       setPhase("result");
     } catch {
       setError(t.essay_player_err_connect);
+      // Jangan terjebak selamanya di fase "grading": esai sudah terkumpul,
+      // tampilkan hasil sebagai belum dinilai dengan jalan keluar.
+      setResult({
+        score: 0,
+        feedback: t.essay_player_not_graded,
+        subscores: { content: 0, grammar: 0, vocabulary: 0 },
+      });
+      setPhase("result");
     } finally {
       setSubmitting(false);
     }

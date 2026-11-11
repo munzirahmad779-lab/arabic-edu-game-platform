@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { displayGameName } from "@/lib/game-name";
 import { createMaterial, updateMaterial } from "./actions";
 import MaterialForm from "./material-form";
 import { EssayForm } from "./essay-form";
@@ -487,7 +488,7 @@ export default async function ClassDetailPage({
                 className="flex flex-col gap-2 rounded-2xl border border-sage-200/60 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <div className="font-bold text-teal-700">{game.name}</div>
+                  <div className="font-bold text-teal-700">{displayGameName(game.name)}</div>
                   <div className="mt-1 text-xs text-softslate/70">
                     {game.mode === "competitive"
                       ? cd.game_mode_competitive

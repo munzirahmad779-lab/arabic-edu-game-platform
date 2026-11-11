@@ -1722,12 +1722,12 @@ export function ProjectorScreen({
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full ${t.badgeBg}`} />
-                        <span className="font-black text-sm text-white">{t.name}</span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`w-3 h-3 shrink-0 rounded-full ${t.badgeBg}`} />
+                        <span className="truncate font-black text-sm text-white">{t.name}</span>
                       </div>
                       <span
-                        className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
+                        className={`shrink-0 whitespace-nowrap text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
                           isShort
                             ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                             : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
