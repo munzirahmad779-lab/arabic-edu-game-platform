@@ -400,8 +400,8 @@ export function GlobalBackgroundAudio({
                 }`}
               >
                 <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition ${
-                    userMuted ? "translate-x-1" : "-translate-x-5"
+                  className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-md transition-all ${
+                    userMuted ? "start-[3px]" : "end-[3px]"
                   }`}
                 />
               </span>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PauseGlobalAudio } from "@/components/pause-global-audio";
 import KetapelBurungGame from "@/modules/ketapel-burung/modul/Game";
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <KetapelBurungGame />;
+  return (
+    <>
+      <PauseGlobalAudio />
+      <KetapelBurungGame />
+    </>
+  );
 }

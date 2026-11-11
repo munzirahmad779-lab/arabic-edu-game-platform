@@ -14,6 +14,13 @@ const H = ({ children }: { children: React.ReactNode }) => (
 export default function SpaceWarLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
+      <Link
+        href="/dashboard"
+        className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
+      >
+        ← Kembali ke Dashboard
+      </Link>
+
       <h1 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
         Mattembak Angkasa — Tembak Asteroid Soal
       </h1>

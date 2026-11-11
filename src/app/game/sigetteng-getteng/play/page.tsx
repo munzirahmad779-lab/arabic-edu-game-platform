@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PauseGlobalAudio } from "@/components/pause-global-audio";
 import SigettengGettengGame from "@/modules/sigetteng-getteng/modul/Game";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <SigettengGettengGame />;
+  return (
+    <>
+      <PauseGlobalAudio />
+      <SigettengGettengGame />
+    </>
+  );
 }

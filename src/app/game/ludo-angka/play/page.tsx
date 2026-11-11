@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PauseGlobalAudio } from "@/components/pause-global-audio";
 import LudoAngkaGame from "@/modules/ludo-angka/modul/Game";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <LudoAngkaGame />;
+  return (
+    <>
+      <PauseGlobalAudio />
+      <LudoAngkaGame />
+    </>
+  );
 }

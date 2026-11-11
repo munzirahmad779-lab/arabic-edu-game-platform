@@ -14,6 +14,13 @@ const H = ({ children }: { children: React.ReactNode }) => (
 export default function KetapelBuahLanding() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
+      <Link
+        href="/dashboard"
+        className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
+      >
+        ← Kembali ke Dashboard
+      </Link>
+
       <p className="text-xs font-black uppercase tracking-[0.3em] text-indigo-700">Game Edukasi</p>
       <h1 className="mt-2 text-3xl font-black leading-tight text-indigo-950 sm:text-4xl">
         Ketapel Buah — Tembak Buah Jawaban Benar

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PauseGlobalAudio } from "@/components/pause-global-audio";
 import SpaceWarGame from "@/modules/space-war/modul/Game";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <SpaceWarGame />;
+  return (
+    <>
+      <PauseGlobalAudio />
+      <SpaceWarGame />
+    </>
+  );
 }
