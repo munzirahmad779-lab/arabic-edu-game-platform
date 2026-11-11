@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import Link from "next/link";
 import { LmsBankPicker, type LmsBankChoice } from "@/modules/game-bank/connector";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
@@ -328,6 +329,7 @@ export default function LudoAngkaGame() {
   useEffect(() => {
     if (screen === "home" || screen === "bank" || screen === "score") music.stop();
   }, [screen]);
+  useEffect(() => () => music.stop(), []);
 
   useEffect(() => {
     if (screen !== "countdown") return;
@@ -1405,6 +1407,10 @@ export default function LudoAngkaGame() {
       {screen === "home" && (
         <div className="absolute inset-0 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col items-center px-4 py-6">
+            <div className="flex w-full items-center justify-start">
+              <Link href="/dashboard" className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
+            </div>
+
             <div className="flex items-end gap-1">
               {playersFor("QUAD").map((p) => (
                 <MascotFace key={p.slot} id={p.sprite} size={64} />

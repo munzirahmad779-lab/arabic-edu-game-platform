@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { LmsBankPicker, type LmsBankChoice } from "@/modules/game-bank/connector";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
@@ -351,6 +352,7 @@ export default function JejakAngkaGame() {
   useEffect(() => {
     if (screen === "home" || screen === "bank" || screen === "score") music.stop();
   }, [screen]);
+  useEffect(() => () => music.stop(), []);
 
   useEffect(() => {
     if (screen !== "countdown") return;
@@ -1125,11 +1127,11 @@ export default function JejakAngkaGame() {
             </div>
 
             <div className="mt-3 flex flex-col items-center gap-4 lg:flex-row lg:items-start lg:justify-center">
-              <div ref={boardWrapRef} className="relative aspect-square w-full shrink-0 lg:w-[min(92dvh,960px)]">
+              <div ref={boardWrapRef} className="relative aspect-square w-full shrink-0 lg:w-[min(92dvh,60%,960px)]">
                 <canvas ref={canvasRef} data-testid="jejak-angka-canvas" className="absolute inset-0 h-full w-full" />
               </div>
 
-              <div className="flex w-full max-w-[600px] flex-col gap-3">
+              <div className="flex w-full min-w-0 max-w-[600px] flex-1 flex-col gap-3">
                 <div className="flex items-stretch gap-3">
                   <div
                     className="flex flex-1 items-center gap-3 rounded-[14px] px-3.5 py-3 text-white"
@@ -1175,7 +1177,7 @@ export default function JejakAngkaGame() {
                     <p
                       dir={ui.q.isArabic ? "rtl" : "ltr"}
                       lang={ui.q.isArabic ? "ar" : undefined}
-                      className={`mt-1.5 font-bold leading-snug text-[#17352B] ${ui.q.isArabic ? "font-arabic text-[23px]" : "text-[19px] sm:text-[21px]"}`}
+                      className={`mt-1.5 break-words font-bold leading-snug text-[#17352B] ${ui.q.isArabic ? "font-arabic text-[23px]" : "text-[19px] sm:text-[21px]"}`}
                     >
                       {ui.q.prompt}
                     </p>
@@ -1257,7 +1259,7 @@ export default function JejakAngkaGame() {
           </div>
 
           {screen === "playing" && paused && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/45">
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/45">
               <p className="text-3xl font-black text-white">Jeda</p>
               <button type="button" className="h-11 rounded-xl bg-white px-6 font-bold" onClick={() => setPaused(false)}>
                 Lanjut Main
@@ -1282,7 +1284,7 @@ export default function JejakAngkaGame() {
             </div>
           )}
           {screen === "countdown" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#CDEEDD]/85">
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-[#CDEEDD]/85">
               <p className="text-xl font-bold text-[#1F4A4E]">{subjectLabel(settings.subject, guru, lms)}</p>
               <p className="text-8xl font-black text-[#1F7A72]">{count > 0 ? count : "Mulai!"}</p>
               <p className="max-w-md px-4 text-center text-sm font-semibold text-[#4A6B70]">
@@ -1297,6 +1299,10 @@ export default function JejakAngkaGame() {
       {screen === "home" && (
         <div className="absolute inset-0 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col items-center px-4 py-6">
+            <div className="flex w-full items-center justify-start">
+              <Link href="/dashboard" className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
+            </div>
+
             <div className="flex items-end gap-1">
               {playersFor("QUAD").map((p) => (
                 <MascotFace key={p.slot} id={p.sprite} size={64} />

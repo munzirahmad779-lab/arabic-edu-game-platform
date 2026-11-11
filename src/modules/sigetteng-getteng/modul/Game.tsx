@@ -779,6 +779,9 @@ export default function SigettengGettengGame() {
       {/* ============================== HOME ============================== */}
       {screen === "home" && (
         <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-sky-500 to-emerald-400 px-6 text-center">
+          <div className="absolute left-4 top-4 z-10">
+            <Link href="/dashboard" className="rounded-full bg-white/85 px-4 py-2.5 text-sm font-black text-slate-800 shadow transition hover:bg-white active:scale-95">← Dashboard</Link>
+          </div>
           <div className="pointer-events-none absolute inset-0 opacity-25">
             {["🏆", "📚", "⚡", "🧬", "📐", "📖"].map((e, i) => (
               <span key={i} className="absolute text-5xl" style={{ left: `${8 + i * 15}%`, top: `${12 + (i % 3) * 26}%` }}>
