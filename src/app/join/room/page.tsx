@@ -149,6 +149,15 @@ type LeaderboardRow = {
 // siswa (teal-700 #1F4A4E → teal-600 #255759 → teal-500 #2F6D72).
 const ROOM_BG = "bg-gradient-to-br from-teal-700 via-teal-600 to-teal-500";
 
+// Nama game dapat memuat token tema internal "[THEME:...]" yang
+// ditambahkan dasbor guru ke nama tersimpan. Token itu penanda mesin
+// (dipakai penentu tipe sesi di server), bukan untuk dibaca siswa,
+// jadi dibersihkan khusus pada titik tampilan di halaman siswa ini.
+// Data sesi dan nama tersimpan tidak diubah.
+function displayGameName(name: string): string {
+  return name.replace(/\s*\[THEME:[^\]]*\]/gi, "").trim();
+}
+
 const WAITING_SESSION_POLL_MS = 4000;
 const RUNNING_SESSION_POLL_MS = 2300;
 const LEADERBOARD_POLL_MS = 6500;
@@ -843,7 +852,7 @@ export default function JoinRoomPage({
           <div className="rounded-[2rem] bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
             <div className="text-6xl">🏁</div>
             <h1 className="mt-4 text-3xl font-black text-white">{t.room_ended_title}</h1>
-            <p className="mt-2 text-white/80">{session.game_name}</p>
+            <p className="mt-2 text-white/80">{displayGameName(session.game_name)}</p>
 
             {me ? (
               <div className="mt-8 rounded-3xl bg-white p-6 text-slate-900 shadow-xl">
@@ -1029,7 +1038,7 @@ export default function JoinRoomPage({
                 {MODE_LABEL[session.game_mode] ?? session.game_mode}
               </span>
             </div>
-            <h1 className="mt-2 text-3xl font-black text-white">{session.game_name}</h1>
+            <h1 className="mt-2 text-3xl font-black text-white">{displayGameName(session.game_name)}</h1>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
                 <div className="text-xs font-bold text-slate-500">
@@ -1110,7 +1119,7 @@ export default function JoinRoomPage({
         onTimeout={handleQuestionTimeout}
       />
       <RoomTimerShell
-        gameName={session.game_name}
+        gameName={displayGameName(session.game_name)}
         gameType={gameType}
         gameMode={MODE_LABEL[session.game_mode] ?? session.game_mode}
         questionIndex={session.question_index}

@@ -1257,6 +1257,7 @@
     "correct_count": "Benar",
     "time_label": "Waktu",
     "shuffled_hint": "Huruf sudah diacak",
+    "answer_placeholder": "Ketik jawabanmu",
     "skip": "Lewati"
   },
   "matching": {

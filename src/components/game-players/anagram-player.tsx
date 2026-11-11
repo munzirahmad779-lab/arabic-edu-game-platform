@@ -82,6 +82,11 @@ export function AnagramPlayer({
     correct: pickString(anagramDict, "correct", "✓ Benar!"),
     noLetters: pickString(anagramDict, "no_letters", "Pilih huruf dulu"),
     shuffledHint: pickString(anagramDict, "shuffled_hint", "Huruf sudah diacak"),
+    answerPlaceholder: pickString(
+      anagramDict,
+      "answer_placeholder",
+      "Ketik jawabanmu",
+    ),
   };
 
   // Bank ubin: grafem bukan-spasi dari teks soal, urutan server.
@@ -346,7 +351,7 @@ export function AnagramPlayer({
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          placeholder={strings.instruction}
+          placeholder={strings.answerPlaceholder}
           className="w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 py-4 text-center text-2xl font-black tracking-wide text-slate-900 shadow-sm outline-none transition focus:border-teal-500 focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
           style={{ fontFamily: ARABIC_FONT }}
         />

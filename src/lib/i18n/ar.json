@@ -1257,6 +1257,7 @@
     "correct_count": "صحيح",
     "time_label": "الوقت",
     "shuffled_hint": "الحروف مبعثرة",
+    "answer_placeholder": "اكتب إجابتك",
     "skip": "تخطّى"
   },
   "matching": {

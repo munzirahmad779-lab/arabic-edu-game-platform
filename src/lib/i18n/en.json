@@ -1257,6 +1257,7 @@
     "correct_count": "Correct",
     "time_label": "Time",
     "shuffled_hint": "Letters are shuffled",
+    "answer_placeholder": "Type your answer",
     "skip": "Skip"
   },
   "matching": {
