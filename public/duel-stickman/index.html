@@ -158,6 +158,7 @@ canvas#game{touch-action:none}
       <button class="roleBtn" id="roleHost"><b>Layar Tuan Rumah</b><span>Tampilkan arena di layar besar ini dan buat kode gabung 4 karakter. Hingga dua HP bergabung sebagai kontroler P1 &amp; P2.</span></button>
       <button class="roleBtn" id="roleCtl"><b>Kontroler HP</b><span>HP ini jadi kontroler saja. Masukkan kode gabung dari layar tuan rumah, lalu kendalikan pendekarmu dari sini.</span></button>
     </div>
+    <div style="margin-top:16px"><button class="btn dark" id="btnBank">Kelola Soal (<span id="kelolaCount">15</span> soal)</button></div>
     <p style="font-size:12px;color:#8A7355;margin-top:14px;line-height:1.6">Pilih karakter dan fase soal tetap dikerjakan di layar tuan rumah. Kontroler aktif penuh pada fase duel dan hanya mengirim keadaan tombol (tekan / tahan / lepas) — tidak ada data pribadi apa pun yang dikirim.</p>
   </section>
 
@@ -170,6 +171,7 @@ canvas#game{touch-action:none}
       <button class="modeBtn on" id="modeAI">Lawan Komputer<span>Satu pemain melawan AI — kontrol A/D atau panah, W/Spasi, J/K/L.</span></button>
       <button class="modeBtn" id="mode2P">Dua Pemain<span>Dua orang satu layar. P1: A/D, W, F, G, H — P2: panah, koma, titik, garis miring. Sentuh pun dibagi dua wilayah.</span></button>
     </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 4px"><span style="font-weight:800;font-size:13.5px">Soal dari kategori:</span><select id="quizCat" style="padding:10px 12px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;max-width:100%"></select></div>
     <p class="pickTurn" id="pickTurn" style="display:none"></p>
     <div class="grid5" id="charGrid"></div>
     <div class="how">
@@ -264,6 +266,46 @@ canvas#game{touch-action:none}
       <p id="resNote" style="font-size:12px;color:#8A7355;margin-top:12px">Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.</p>
     </div>
   </section>
+  <section id="screen-bank" class="screen">
+    <div class="card">
+      <h2 style="font-size:24px">Kelola Soal</h2>
+      <p class="sub">Bank soal lokal game ini, dengan pola yang sama seperti game mandiri Magguru lainnya: tambah, sunting, hapus, impor, dan ekspor soal, tersimpan di penyimpanan browser perangkat ini dan tidak berpindah antarperangkat. Soal dari menu Bank Soal LMS dipasang lewat panel di halaman main game, lalu muncul sebagai kategori sendiri di pilihan kategori soal.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0">
+        <label style="font-weight:800;font-size:13px">Tampilkan kategori: <select id="bankFilter" style="padding:9px 11px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6"></select></label>
+        <span class="tinyNote" id="bankInfo"></span>
+      </div>
+      <div id="bankList"></div>
+      <h3 id="bankFormTitle" style="margin-top:22px">Tambah Soal Baru</h3>
+      <div style="display:grid;gap:10px;margin-top:10px">
+        <input id="bankCat" list="bankCatList" placeholder="Kategori, mis. Dars 8: Makanan dan Minuman" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <datalist id="bankCatList"></datalist>
+        <textarea id="bankQ" rows="2" placeholder="Teks soal" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box"></textarea>
+        <input id="bankHint" placeholder="Petunjuk (boleh kosong)" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <input id="bankOpt0" placeholder="Pilihan A" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <input id="bankOpt1" placeholder="Pilihan B" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <input id="bankOpt2" placeholder="Pilihan C" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <input id="bankOpt3" placeholder="Pilihan D" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box">
+        <label style="font-weight:800;font-size:13px">Jawaban benar: <select id="bankA" style="padding:9px 11px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></label>
+        <textarea id="bankEx" rows="2" placeholder="Penjelasan jawaban (boleh kosong)" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box"></textarea>
+      </div>
+      <p class="tinyNote" id="bankFormMsg"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn primary" id="bankSave">Simpan Soal</button>
+        <button class="btn" id="bankCancelEdit" style="display:none">Batal Sunting</button>
+      </div>
+      <h3 style="margin-top:24px">Impor dan Ekspor Massal</h3>
+      <p class="tinyNote">Satu soal per baris, bidang dipisah tanda | dengan urutan: Kategori | Soal | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Jawaban (angka 1 sampai 4) | Petunjuk | Penjelasan. Petunjuk dan penjelasan boleh dikosongkan.</p>
+      <textarea id="bankImport" rows="5" placeholder="Tempel soal di sini, satu soal per baris" style="padding:11px 13px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;width:100%;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn" id="bankDoImport">Impor</button>
+        <button class="btn" id="bankDoExport">Ekspor Semua ke Kotak Ini</button>
+        <button class="btn" id="bankReset">Atur Ulang ke Soal Bawaan</button>
+        <button class="btn dark" id="bankBack">Kembali</button>
+      </div>
+      <p class="tinyNote" id="bankIoMsg"></p>
+    </div>
+  </section>
+
   <section id="screen-controller" class="screen">
     <div class="ctlWrap">
       <div class="kicker">Kontroler HP</div>
@@ -303,7 +345,7 @@ var CHARS=[
  {id:'yaki',name:'Yaki',weapon:'Pedang Gergaji Abu',color:'#5A3A26',img:'assets/char-yaki.png',desc:'Mohawk runcing menyala. Tebasan ringan tapi kombo tercepat beruntun.',skillName:'Amuk Mohawk',skillDesc:'3 tebasan sangat cepat berurutan tanpa jeda panjang.',speed:200,dmg:7,range:76,cd:0.28,knock:150,spdBar:88,powBar:38,rngBar:50},
  {id:'kuskus',name:'Kuskus',weapon:'Pedang Kait Panjang',color:'#15B364',img:'assets/char-kuskus.png',desc:'Telinga kecil bundar, ekor spiral kuat. Jangkauan terjauh di arena.',skillName:'Kait Ekor',skillDesc:'Kait melesat menarik lawan mendekat dan mengikat 1,5 detik.',speed:173,dmg:10,range:112,cd:0.62,knock:210,spdBar:55,powBar:58,rngBar:98}
 ];
-var BANK=[
+var DEFAULT_BANK=[
  {cat:'Kosakata Arab',q:'Apa arti kata Arab “كِتَابٌ” (kitābun)?',hint:'Kata ini sering jadi kata pertama di pelajaran bahasa Arab.',opts:['Buku','Pena','Meja','Pintu'],a:0,ex:'كِتَابٌ artinya buku. Pena = قَلَمٌ, meja = مَكْتَبٌ, pintu = بَابٌ.'},
  {cat:'Kosakata Arab',q:'“مَاءٌ” (mā’un) dalam bahasa Indonesia berarti…',hint:'Sesuatu yang kita minum setiap hari.',opts:['Api','Air','Tanah','Angin'],a:1,ex:'مَاءٌ = air. Api = نَارٌ, tanah = تُرَابٌ, angin = رِيحٌ.'},
  {cat:'Kosakata Arab',q:'Kata “مَسْجِدٌ” (masjidun) artinya…',hint:'Tempat ibadah umat Islam.',opts:['Sekolah','Pasar','Masjid','Rumah'],a:2,ex:'مَسْجِدٌ = masjid. Sekolah = مَدْرَسَةٌ, pasar = سُوقٌ.'},
@@ -396,14 +438,14 @@ $('btnToQuiz').onclick=function(){startQuizFlow()};
 function startQuizFlow(){S.usedQ=[];S.p1Res=null;S.p2Res=null;
  if(S.mode==='2p'){S.char=S.p1Char;S.foe=S.p2Char;beginQuizTurn('p1')}
  else{var others=CHARS.filter(function(c){return c.id!==S.char.id});S.foe=others[Math.floor(Math.random()*others.length)];beginQuizTurn('p1')}}
-function beginQuizTurn(who){S.quizWho=who;var pool=BANK.filter(function(q){return S.usedQ.indexOf(q)<0});S.quiz=shuffle(pool).slice(0,5);S.quiz.forEach(function(q){S.usedQ.push(q)});S.qIdx=0;S.correct=0;S.wrong=0;S.ups=[];S.downs=[];
+function beginQuizTurn(who){S.quizWho=who;var catSel=($('quizCat')&&$('quizCat').value)||'*';var base=allQuestions().filter(function(q){return catSel==='*'||q.cat===catSel});if(!base.length)base=allQuestions();var freshQ=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)<0}));var oldQ=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)>=0}));var seqQ=freshQ.concat(oldQ);S.quiz=[];for(var qi=0;qi<5&&seqQ.length;qi++){S.quiz.push(seqQ[qi%seqQ.length])}S.quiz.forEach(function(q){if(S.usedQ.indexOf(q)<0)S.usedQ.push(q)});S.qIdx=0;S.correct=0;S.wrong=0;S.ups=[];S.downs=[];
  var ch=S.mode==='2p'?(who==='p2'?S.p2Char:S.p1Char):S.char;var banner=$('quizTurn');
  if(S.mode==='2p'){banner.style.display='block';banner.innerHTML=(who==='p1'?'Giliran Pemain 1':'Giliran Pemain 2')+' — '+ch.name+'<span>Ramuan dihitung dari jawaban pemain ini sendiri. Jurusnya terbuka bila benar minimal 3 dari 5 soal ini.</span>'}
  else banner.style.display='none';
  $('quizCharName').textContent=ch.name+' ('+ch.weapon+')'+(S.mode==='2p'?(who==='p1'?' — Pemain 1':' — Pemain 2'):'');
  show('screen-quiz');renderQ()}
 function saveQuizTurn(){var res={correct:S.correct,wrong:S.wrong,ups:S.ups.slice(),downs:S.downs.slice()};if(S.quizWho==='p2')S.p2Res=res;else S.p1Res=res}
-function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent='Petunjuk: '+q.hint;$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];shuffle([0,1,2,3]).forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn)})}
+function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];shuffle([0,1,2,3]).forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn)})}
 function answer(btn,ok,q){if(S.answered)return;S.answered=true;document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+q.ex}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+q.ex}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block'}
 $('btnNextQ').onclick=function(){if(S.qIdx<4){S.qIdx++;renderQ()}else{saveQuizTurn();if(S.mode==='2p'&&S.quizWho==='p1')beginQuizTurn('p2');else renderSummary()}};
 function renderSummary(){
@@ -678,6 +720,33 @@ document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.get
 $('roleLocal').onclick=function(){ROLE='local';show('screen-select')};
 $('roleHost').onclick=function(){startHost();show('screen-select')};
 $('roleCtl').onclick=function(){ROLE='controller';show('screen-controller')};
+/* ================= BANK SOAL LOKAL + BANK LMS (pola game mandiri Magguru) ================= */
+var BANK_KEY='duelStickmanBankV1',LMS_KEY='duelStickmanLmsBankV1';
+function bankValid(arr){if(!Array.isArray(arr))return[];return arr.filter(function(q){return q&&typeof q.q==='string'&&q.q.trim()&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts.every(function(o){return String(o).trim()})&&typeof q.a==='number'&&q.a>=0&&q.a<4}).map(function(q){return{cat:String(q.cat||'Umum'),q:q.q,hint:String(q.hint||''),opts:q.opts.map(String),a:q.a,ex:String(q.ex||'')}})}
+function loadLocalBank(){try{var raw=localStorage.getItem(BANK_KEY);if(raw){var arr=bankValid(JSON.parse(raw));if(arr.length)return arr}}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_BANK))}
+var BANK=loadLocalBank();
+function saveLocalBank(){try{localStorage.setItem(BANK_KEY,JSON.stringify(BANK))}catch(e){}}
+var LMS_BANK=null;
+try{var lr=localStorage.getItem(LMS_KEY);if(lr){var pj=JSON.parse(lr);if(pj&&pj.name){var lq=bankValid(pj.questions);if(lq.length)LMS_BANK={name:String(pj.name),questions:lq}}}}catch(e){}
+function saveLmsBank(){try{if(LMS_BANK)localStorage.setItem(LMS_KEY,JSON.stringify(LMS_BANK));else localStorage.removeItem(LMS_KEY)}catch(e){}}
+function allQuestions(){return LMS_BANK?BANK.concat(LMS_BANK.questions):BANK.slice()}
+function bankCategories(){var seen=[],out=[];allQuestions().forEach(function(q){if(seen.indexOf(q.cat)<0){seen.push(q.cat);out.push(q.cat)}});return out}
+function showToast(msg){var t=$('gameToast');if(!t){t=document.createElement('div');t.id='gameToast';t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#211C15;color:#FFF3D6;padding:12px 18px;border-radius:14px;font-weight:700;font-size:14px;z-index:99;max-width:92vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3)';document.body.appendChild(t)}t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(function(){t.style.display='none'},4500)}
+window.addEventListener('message',function(e){if(e.origin!==window.location.origin)return;var d=e.data||{};if(d.type==='magguru:lms-bank'){var qs=bankValid((d.questions||[]).map(function(q){return{cat:String(d.bankName||'Bank Soal LMS'),q:String(q.prompt||''),hint:'',opts:(q.options||[]).map(String),a:Number(q.correctIndex)||0,ex:''}}));if(qs.length){LMS_BANK={name:String(d.bankName||'Bank Soal LMS'),questions:qs};saveLmsBank();refreshBankUI();var sel=$('quizCat');if(sel)sel.value=LMS_BANK.name;showToast('Bank LMS terpasang: '+qs.length+' soal dari bank '+LMS_BANK.name+'. Kategori soal diarahkan ke bank ini.')}}else if(d.type==='magguru:lms-bank-clear'){LMS_BANK=null;saveLmsBank();refreshBankUI();showToast('Bank LMS dilepas. Game kembali memakai bank soal lokal.')}});
+function refreshQuizCats(){var sel=$('quizCat');if(!sel)return;var cur=sel.value||'*';var cats=bankCategories();var all=allQuestions();sel.innerHTML='';var o=document.createElement('option');o.value='*';o.textContent='Campuran (semua kategori, '+all.length+' soal)';sel.appendChild(o);cats.forEach(function(c){var n=0;all.forEach(function(q){if(q.cat===c)n++});var op=document.createElement('option');op.value=c;op.textContent=c+' ('+n+' soal)';sel.appendChild(op)});sel.value=(cur==='*'||cats.indexOf(cur)>=0)?cur:'*';var kc=$('kelolaCount');if(kc)kc.textContent=all.length}
+var bankEditIdx=-1;
+function refreshBankUI(){var list=$('bankList');if(!list)return;refreshQuizCats();var f=$('bankFilter');var cats=[];BANK.forEach(function(q){if(cats.indexOf(q.cat)<0)cats.push(q.cat)});var cur=f.value||'*';f.innerHTML='';var o=document.createElement('option');o.value='*';o.textContent='Semua kategori';f.appendChild(o);cats.forEach(function(c){var op=document.createElement('option');op.value=c;op.textContent=c;f.appendChild(op)});f.value=(cur==='*'||cats.indexOf(cur)>=0)?cur:'*';var dl=$('bankCatList');dl.innerHTML='';cats.forEach(function(c){var op=document.createElement('option');op.value=c;dl.appendChild(op)});$('bankInfo').textContent=BANK.length+' soal di bank lokal perangkat ini.'+(LMS_BANK?(' Ditambah '+LMS_BANK.questions.length+' soal dari Bank Soal LMS '+LMS_BANK.name+' (dipasang dari halaman main, tidak diubah di sini).'):'');list.innerHTML='';var shown=0;BANK.forEach(function(q,i){if(f.value!=='*'&&q.cat!==f.value)return;shown++;var row=document.createElement('div');row.style.cssText='border:2px solid #E4D6B8;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#FFFDF6';var head=document.createElement('div');var b=document.createElement('b');b.textContent=q.q;var pill=document.createElement('span');pill.className='pill up';pill.textContent=q.cat;head.appendChild(b);head.appendChild(document.createTextNode(' '));head.appendChild(pill);var ans=document.createElement('div');ans.style.cssText='font-size:12.5px;color:#8A7355;margin-top:3px';ans.textContent='Jawaban benar: '+q.opts[q.a];var acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px;margin-top:8px';var be=document.createElement('button');be.className='btn';be.textContent='Sunting';be.onclick=function(){bankEdit(i)};var bd=document.createElement('button');bd.className='btn';bd.textContent='Hapus';bd.onclick=function(){if(confirm('Hapus soal ini dari bank lokal?')){BANK.splice(i,1);saveLocalBank();if(bankEditIdx===i)bankCancel();refreshBankUI()}};acts.appendChild(be);acts.appendChild(bd);row.appendChild(head);row.appendChild(ans);row.appendChild(acts);list.appendChild(row)});if(!shown){var em=document.createElement('p');em.className='tinyNote';em.textContent='Belum ada soal pada pilihan kategori ini.';list.appendChild(em)}}
+function bankCancel(){$('bankCat').value='';$('bankQ').value='';$('bankHint').value='';for(var i=0;i<4;i++)$('bankOpt'+i).value='';$('bankA').value='0';$('bankEx').value='';bankEditIdx=-1;$('bankFormTitle').textContent='Tambah Soal Baru';$('bankCancelEdit').style.display='none';$('bankFormMsg').textContent=''}
+function bankEdit(i){var q=BANK[i];if(!q)return;bankEditIdx=i;$('bankCat').value=q.cat;$('bankQ').value=q.q;$('bankHint').value=q.hint||'';for(var k=0;k<4;k++)$('bankOpt'+k).value=q.opts[k];$('bankA').value=String(q.a);$('bankEx').value=q.ex||'';$('bankFormTitle').textContent='Sunting Soal';$('bankCancelEdit').style.display='';$('bankFormMsg').textContent='Sedang menyunting soal. Tekan Simpan Soal untuk menyimpan perubahan.';$('bankFormTitle').scrollIntoView({behavior:'smooth',block:'center'})}
+$('btnBank').onclick=function(){refreshBankUI();show('screen-bank')};
+$('bankBack').onclick=function(){show('screen-role')};
+$('bankFilter').onchange=function(){refreshBankUI()};
+$('bankCancelEdit').onclick=function(){bankCancel()};
+$('bankSave').onclick=function(){var cat=$('bankCat').value.trim()||'Umum';var q=$('bankQ').value.trim();var opts=[0,1,2,3].map(function(i){return $('bankOpt'+i).value.trim()});var a=parseInt($('bankA').value,10);if(!q){$('bankFormMsg').textContent='Teks soal belum diisi.';return}if(opts.some(function(x){return!x})){$('bankFormMsg').textContent='Keempat pilihan jawaban wajib diisi.';return}var obj={cat:cat,q:q,hint:$('bankHint').value.trim(),opts:opts,a:(a>=0&&a<4)?a:0,ex:$('bankEx').value.trim()};var wasEdit=bankEditIdx>=0;if(wasEdit){BANK[bankEditIdx]=obj}else{BANK.push(obj)}saveLocalBank();bankCancel();refreshBankUI();$('bankFormMsg').textContent=wasEdit?'Perubahan soal tersimpan.':('Soal ditambahkan ke bank lokal. Total: '+BANK.length+' soal.')};
+$('bankDoImport').onclick=function(){var lines=$('bankImport').value.split('\n');var ok=0,bad=0;lines.forEach(function(ln){ln=ln.trim();if(!ln)return;var p=ln.split('|').map(function(x){return x.trim()});if(p.length<7||!p[1]||!p[2]||!p[3]||!p[4]||!p[5]){bad++;return}var a=parseInt(p[6],10)-1;if(!(a>=0&&a<4)){bad++;return}BANK.push({cat:p[0]||'Umum',q:p[1],hint:p[7]||'',opts:[p[2],p[3],p[4],p[5]],a:a,ex:p[8]||''});ok++});if(ok)saveLocalBank();refreshBankUI();$('bankIoMsg').textContent='Impor selesai: '+ok+' soal masuk'+(bad?(', '+bad+' baris dilewati karena formatnya tidak lengkap.'):'')+'.'};
+$('bankDoExport').onclick=function(){$('bankImport').value=BANK.map(function(q){return[q.cat,q.q].concat(q.opts).concat([String(q.a+1),q.hint||'',q.ex||'']).join(' | ')}).join('\n');$('bankImport').select();$('bankIoMsg').textContent='Semua soal lokal sudah ditulis ke kotak di atas. Salin dan simpan di tempat aman sebagai cadangan.'};
+$('bankReset').onclick=function(){if(confirm('Atur ulang bank lokal ke 15 soal bawaan game? Soal tambahan dan suntingan di perangkat ini akan hilang.')){BANK=JSON.parse(JSON.stringify(DEFAULT_BANK));saveLocalBank();bankCancel();refreshBankUI();$('bankIoMsg').textContent='Bank lokal sudah kembali ke soal bawaan.'}};
+refreshBankUI();
 </script>
 </body>
 </html>

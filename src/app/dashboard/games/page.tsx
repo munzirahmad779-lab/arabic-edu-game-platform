@@ -518,6 +518,24 @@ export default async function GamesPage({
               Hot-seat · 1 perangkat
             </span>
           </Link>
+          <Link
+            href="/game/duel-stickman"
+            className="aesthetic-card flex flex-col transition hover:shadow-md"
+          >
+            <h3 className="font-display text-lg font-black text-teal-700">
+              ⚔️ Duel Stickman Berpedang
+            </h3>
+            <p className="mt-1 text-sm text-softslate/70">
+              Duel pedang stickman maskot Sulawesi: jawab 5 soal untuk
+              meramu kekuatan, lalu bertarung 90 detik. Berdua di satu
+              layar, atau layar guru menjadi tuan rumah dan HP menjadi
+              kontroler. Soal dari bank bawaan, bank lokal guru, atau
+              Bank Soal LMS.
+            </p>
+            <span className="mt-3 inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+              Hot-seat · layar guru + HP
+            </span>
+          </Link>
         </div>
       </section>
 
