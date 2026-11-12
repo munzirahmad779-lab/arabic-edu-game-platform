@@ -20,7 +20,7 @@ export function BankCard({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 p-5 text-right transition hover:bg-neutral-50"
+        className="flex w-full items-center justify-between gap-3 p-5 text-start transition hover:bg-neutral-50"
         aria-expanded={open}
         aria-controls={`bank-body-${bankId}`}
       >

@@ -112,7 +112,7 @@ export default async function StudentDashboardPage() {
             📝
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-lg font-black">
+            <h2 className="font-display text-lg font-black text-white">
               {th.exam_card_title}
             </h2>
             <p className="mt-0.5 text-xs text-white/85">{th.exam_card_desc}</p>

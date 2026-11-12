@@ -189,7 +189,7 @@ export default async function GamesPage({
               <span>📽️</span>
               <span>KONSOL KELAS & REMOTE HP SISWA</span>
             </div>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
               Mode Proyektor & Remote HP Nirkabel Siswa
             </h2>
             <p className="mt-2 text-sm text-emerald-100 leading-relaxed">
@@ -270,10 +270,10 @@ export default async function GamesPage({
                 <article key={game.id} className="aesthetic-card flex flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-display truncate text-lg font-black text-teal-700">
+                      <h3 className="font-display break-words text-lg font-black text-teal-700">
                         {displayName}
                       </h3>
-                      <p className="mt-1 truncate text-sm text-softslate/70">
+                      <p className="mt-1 break-words text-sm text-softslate/70">
                         {className}
                       </p>
                     </div>

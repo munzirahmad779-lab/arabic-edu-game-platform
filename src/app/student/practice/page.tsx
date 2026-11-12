@@ -64,7 +64,7 @@ export default async function StudentPracticePage() {
           <p className="text-xs font-bold text-white/75">
             {t.practice_header_label}
           </p>
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">
             {t.practice_header_title}
           </h1>
           <p className="mt-3 text-sm text-white/85">

@@ -164,7 +164,7 @@ export default async function ClassDetailPage({
             <p className="text-sm font-semibold text-white/75">
               {t.header_label}
             </p>
-            <h1 className="font-display mt-1 text-3xl font-black sm:text-4xl">
+            <h1 className="font-display mt-1 text-3xl font-black text-white sm:text-4xl">
               {classRow.name}
             </h1>
             <p className="mt-2 text-sm text-white/85">

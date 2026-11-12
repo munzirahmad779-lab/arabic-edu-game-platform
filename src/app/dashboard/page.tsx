@@ -392,7 +392,7 @@ export default async function DashboardPage() {
               <span>📽️</span>
               <span>KONSOL KELAS & SMARTBOARD</span>
             </div>
-            <h2 className="mt-2 text-xl sm:text-2xl font-black">
+            <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">
               Mode Proyektor & Remote HP Nirkabel Siswa
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-emerald-100 max-w-xl">

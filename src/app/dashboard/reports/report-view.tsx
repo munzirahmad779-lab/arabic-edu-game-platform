@@ -295,11 +295,26 @@ export function ReportView({
                     Terdapat <strong>{struggling.length} sesi siswa</strong> yang memerlukan penguatan materi. Guru disarankan menugaskan latihan mandiri santai atau mengulang pembahasan sebelum penilaian berikutnya.
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {Array.from(new Set(struggling.map((s) => s.student_name))).map((name) => (
-                      <span key={name} className="rounded-md border border-amber-300 bg-white px-2 py-0.5 font-bold text-amber-800">
-                        {name}
-                      </span>
-                    ))}
+                    {(() => {
+                      const names = Array.from(
+                        new Set(struggling.map((s) => s.student_name.trim())),
+                      ).sort((a, b) => a.localeCompare(b, "id"));
+                      const shown = names.slice(0, 24);
+                      return (
+                        <>
+                          {shown.map((name) => (
+                            <span key={name} className="rounded-md border border-amber-300 bg-white px-2 py-0.5 font-bold text-amber-800">
+                              {name}
+                            </span>
+                          ))}
+                          {names.length > shown.length ? (
+                            <span className="rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 font-bold text-amber-900">
+                              +{names.length - shown.length} nama lainnya
+                            </span>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

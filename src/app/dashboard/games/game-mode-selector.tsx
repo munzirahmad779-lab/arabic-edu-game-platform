@@ -178,7 +178,7 @@ export function GameModeSelector({
                     {eng.badge}
                   </span>
                   <p
-                    className={`text-[11px] line-clamp-2 leading-relaxed ${
+                    className={`text-[11px] leading-relaxed ${
                       isPicked ? "text-white/90" : "text-slate-500"
                     }`}
                   >
