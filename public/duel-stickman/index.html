@@ -453,9 +453,9 @@ function endDuel(winner,how){if(!G||G.over)return;G.over=true;G.how=how;G.winner
 $('resTitle').textContent=two?wName+' Menang!':(winner===G.player?'Kamu Menang!':winner.char.name+' Menang');
 $('resDesc').textContent=two?wName+' ('+winner.char.name+') mengalahkan '+lName+' ('+loser.char.name+') lewat '+how+'. Ramuan masing-masing: P1 '+S.p1Res.correct+' benar, P2 '+S.p2Res.correct+' benar.':(winner===G.player?S.char.name+' mengalahkan '+S.foe.name+' ('+how+'). Ramuan dari '+S.correct+' jawaban benar ikut menentukan.':S.foe.name+' (AI) memenangkan duel ini ('+how+'). Coba ramuan baru: jawab lebih banyak soal dengan benar.');
 $('resQuiz').textContent=two?'P1 '+S.p1Res.correct+'/5 • P2 '+S.p2Res.correct+'/5':S.correct+' / 5 benar';
-$('resHpLabel').textContent=two?'Sisa HP Pemenang':'Sisa HP Kamu';
+$('resHpLabel').textContent=two?'Sisa HP Pemenang':(winner===G.player?'Sisa HP Kamu':'Sisa HP Lawan');
 $('resHp').textContent=Math.max(0,Math.ceil(winner.hp))+' / '+winner.maxHp;
-$('resNote').textContent=two?'Main Lagi memakai mode dan pendekar yang sama, dengan soal baru untuk kedua pemain.':'Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.';$('resHow').textContent=how+(how==='KO'?' — HP lawan habis':' — '+Math.ceil(G.player.hp)+' vs '+Math.ceil(G.foe.hp));show('screen-result')},1150)}
+$('resNote').textContent=two?'Main Lagi memakai mode dan pendekar yang sama, dengan soal baru untuk kedua pemain.':'Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.';$('resHow').textContent=how+(how==='KO'?' — HP '+(two?lName:(winner===G.player?'lawan':'kamu'))+' habis':' — '+Math.ceil(G.player.hp)+' vs '+Math.ceil(G.foe.hp));show('screen-result')},1150)}
 $('btnRematch').onclick=function(){startQuizFlow()};$('btnChangeChar').onclick=function(){setMode(S.mode);show('screen-select')};
 
 /* ---------- [disciplines/game-feel] JUICE BERLAPIS BERTINGKAT ---------- */
