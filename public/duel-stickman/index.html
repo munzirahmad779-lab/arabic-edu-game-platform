@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="light"/>
+<link rel="icon" href="data:,"/>
+<title>Duel Stickman Berpedang — Arena Pendekar Nusantara</title>
+<meta name="description" content="Duel stickman berpedang maskot Sulawesi: jawab soal, ramu kekuatan, adu pedang 90 detik lawan AI."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#23201B;--cream:#FFF6DE;--paper:#FBF4E1;--teal:#0B6E6A;--tealD:#0B4F4A;--terra:#C0532F;--terraD:#96401F;--gold:#D9A441;--goldD:#A97A24;--goldBg:#F7E3B0;--olive:#66713F;--oliveBg:#E4EAC8;--bambu:#8A6D3B;--bambuD:#6E5527;--dark:#211C15;--shadow:5px 5px 0 rgba(35,32,27,.9)}
+*{box-sizing:border-box}html,body{margin:0;padding:0;color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--cream);min-height:100vh}
+button{font-family:inherit;cursor:pointer}button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.topbar{max-width:1140px;margin:0 auto;padding:22px 16px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.brand h1{font-family:"Lilita One",sans-serif;font-size:clamp(32px,5vw,46px);line-height:.98;margin:2px 0 0;font-weight:400;text-shadow:2px 2px 0 rgba(217,164,65,.45)}
+.brand h1 span{color:var(--terra)}.brand p{margin:8px 0 0;font-size:13.5px;color:#6B5B40;line-height:1.55;max-width:540px}
+.kicker{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--terra)}
+.flow{display:flex;gap:6px;flex-wrap:wrap}.flow span{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:2px solid var(--ink);padding:7px 11px;border-radius:999px;background:var(--paper);box-shadow:2px 2px 0 rgba(35,32,27,.85)}.flow span.on{background:var(--tealD);color:#FFF6DE}
+.wrap{max-width:1140px;margin:0 auto;padding:16px 16px 34px}.screen{display:none}.screen.active{display:block;animation:screenIn .38s cubic-bezier(.22,.9,.3,1) both}
+@keyframes screenIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.screen.active{animation:none}}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:14px}@media(max-width:980px){.grid5{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){.grid5{grid-template-columns:repeat(2,1fr)}}
+.charCard{background:#FDF7E3;border:2.5px solid var(--ink);border-radius:18px;padding:10px 10px 14px;text-align:left;box-shadow:4px 5px 0 rgba(35,32,27,.9);transition:transform .16s,box-shadow .16s;position:relative;overflow:hidden}
+.charCard:hover{transform:translate(-1px,-3px);box-shadow:6px 8px 0 rgba(35,32,27,.9)}
+.charCard.selected{outline:4px solid var(--gold);background:#FFF3C4;transform:translateY(-3px)}
+.charCard.selected::before{content:"TERPILIH";position:absolute;top:12px;right:-30px;transform:rotate(38deg);background:var(--gold);font-size:10px;font-weight:900;letter-spacing:.1em;padding:4px 34px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);z-index:2}
+.charCard .charImgWrap{border:2px solid var(--bambuD);border-radius:12px;background:#F2C96E;overflow:hidden}
+.charCard img.charImg{width:100%;height:158px;display:block;object-fit:contain;padding:6px}
+.charCard h3{margin:11px 2px 1px;font-family:"Lilita One",sans-serif;font-size:24px;font-weight:400}
+.charCard .weapon{font-size:12px;font-weight:800;color:var(--terra);margin:0 2px}.charCard p{font-size:12px;line-height:1.55;color:#5F4F36;margin:6px 2px 0}
+.statRow{display:flex;gap:6px;margin-top:11px}.stat{flex:1}.stat small{font-size:9px;letter-spacing:.07em;text-transform:uppercase;font-weight:800;color:#8A7355;display:block}
+.bar{height:8px;background:#E7D6AC;border-radius:99px;overflow:hidden;margin-top:3px;border:1.5px solid var(--bambuD)}.bar i{display:block;height:100%;background:var(--teal)}
+.skillBox{margin:11px 2px 0;background:#FFF3D2;border:2px dashed var(--goldD);border-radius:12px;padding:9px 10px}.skillBox b{font-size:11px;text-transform:uppercase;color:var(--goldD)}.skillBox p{margin:3px 0 0}
+.selectFooter{margin-top:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:#211C15;color:#FFF3D6;border:2.5px solid var(--ink);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}.selectFooter p{margin:0;font-size:13.5px;line-height:1.55;color:#EFE3C4;max-width:580px}
+.btn{border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:12px 20px;border-radius:999px;font-weight:800;font-size:14px;box-shadow:3px 3px 0 rgba(35,32,27,.9);display:inline-flex;align-items:center;gap:8px;min-height:44px}.btn:hover{transform:translate(-1px,-1px)}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(35,32,27,.9)}.btn.primary{background:var(--tealD);color:#FFF6DE}.btn.gold{background:var(--gold)}.btn.dark{background:var(--ink);color:#FFF6DE}.btn:disabled{opacity:.45;cursor:not-allowed}
+.how{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px}@media(max-width:700px){.how{grid-template-columns:1fr}}
+.howCard{background:var(--paper);border:2px solid var(--bambu);border-radius:14px;padding:15px 16px;box-shadow:3px 3px 0 rgba(138,109,59,.45)}.howCard h4{margin:0 0 7px;font-size:13.5px}.howCard p,.howCard li{font-size:12.5px;line-height:1.65;color:#5F4F36}.howCard ul{margin:6px 0 0;padding-left:16px}
+.quizWrap{max-width:740px;margin:0 auto;border:2px solid rgba(138,109,59,.5);border-radius:22px;padding:20px 18px 22px;box-shadow:4px 5px 0 rgba(35,32,27,.25);background:rgba(253,247,227,.5)}
+.progressWrap{display:flex;align-items:center;gap:10px;margin:14px 0}.pTrack{flex:1;height:12px;background:#E7D6AC;border:2px solid var(--ink);border-radius:99px;overflow:hidden}.pTrack i{display:block;height:100%;background:var(--terra);transition:.3s}
+.quizCard{background:#FDF8E7;border:3px solid var(--bambuD);border-radius:18px;box-shadow:var(--shadow);padding:22px}
+.quizCard .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8A7355}
+.quizCard h2{font-family:"Lilita One",sans-serif;font-weight:400;font-size:27px;line-height:1.2;margin:12px 0 6px}.quizCard .hint{font-size:13px;color:#6B5B40;line-height:1.55}
+.opts{display:grid;gap:10px;margin-top:18px}.opt{width:100%;text-align:left;padding:15px 16px;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;font-weight:700;font-size:15px;display:flex;gap:12px;align-items:center;box-shadow:3px 3px 0 rgba(35,32,27,.85);min-height:44px}
+.opt span.badge{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-size:13px;font-weight:900;flex-shrink:0;background:var(--gold)}
+.opt.correct{background:var(--oliveBg);border-color:var(--olive)}.opt.correct span.badge{background:var(--olive);color:#fff;border-color:var(--olive)}
+.opt.wrong{background:#F6D9C8;border-color:var(--terra)}.opt.wrong span.badge{background:var(--terra);color:#fff;border-color:var(--terraD)}
+.feedback{margin-top:14px;padding:13px 15px;border-radius:12px;font-size:13.5px;line-height:1.6;display:none}.feedback.show{display:block}.feedback.good{background:var(--oliveBg);border:2px solid var(--olive)}.feedback.bad{background:#F6D9C8;border:2px solid var(--terra)}
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;margin-top:14px}@media(max-width:600px){.versus{grid-template-columns:1fr}.vsBadge{justify-self:center}}
+.vsCard{background:#FDF8E7;border:3px solid var(--bambuD);border-radius:18px;padding:16px;box-shadow:4px 4px 0 rgba(35,32,27,.9)}.vsCard.you{border-color:var(--tealD);box-shadow:4px 4px 0 var(--tealD)}
+.vsBadge{align-self:center;width:56px;height:56px;border-radius:50%;background:var(--terra);color:#FFF6DE;border:3px solid var(--ink);display:grid;place-items:center;font-family:"Lilita One",sans-serif;font-size:19px}
+.potionList{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pill{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:2px solid var(--ink);display:inline-flex;align-items:center;gap:6px;background:#F3F4F6}.pill.up{background:var(--goldBg);border-color:var(--goldD);color:#5C430A}.pill.down{background:#33302A;border-color:var(--ink);color:#F1E7CE}.pill.neutral{background:#EFE7D2;color:#5F4F36;border-color:var(--bambu)}
+.scoreBig{font-family:"Lilita One",sans-serif;font-size:46px;line-height:1;color:var(--terra)}
+.arenaShell{background:#171208;border-radius:20px;padding:12px;border:3px solid var(--ink);box-shadow:6px 7px 0 rgba(35,32,27,.35)}
+.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;color:#FFF6DE;margin-bottom:10px}@media(max-width:560px){.hud{gap:7px}}
+.hpTop{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden}.hpTop .tag{font-size:9px;letter-spacing:.08em;padding:2px 7px;border-radius:99px;background:var(--teal);border:1.5px solid rgba(0,0,0,.5)}.hpTop .tag.enemy{background:var(--terra)}
+.hpBar{height:20px;background:#5F4525;border:2px solid #120E08;border-radius:8px;overflow:hidden;margin-top:5px;position:relative}.hpBar i{display:block;height:100%;transition:width .18s}.hpBar.player i{background:var(--teal)}.hpBar.enemy i{background:var(--terra)}.hpBar em{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;font-style:normal;color:#FFF6DE;text-shadow:0 1px 3px rgba(0,0,0,.75)}
+.timerNum{font-family:"Lilita One",sans-serif;font-size:30px;line-height:1;background:#FFFDF4;color:var(--ink);border-radius:50%;width:76px;height:76px;display:grid;place-items:center;border:3px solid var(--goldD);margin:0 auto}
+.timerBox{text-align:center}.timerBox small{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#D8C69A;font-weight:800}
+.meterRow{display:flex;gap:6px;margin-top:6px;align-items:center}.meter{flex:1;height:8px;background:#171310;border-radius:99px;overflow:hidden;border:1px solid rgba(255,246,222,.2)}.meter i{display:block;height:100%;background:var(--gold);transition:.2s}
+canvas#game{width:100%;height:auto;display:block;border-radius:12px;border:2.5px solid #120E08;background:#F2C96E}
+.arenaInfo{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.arenaInfo .pill{font-size:11px}
+.touchControls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}@media(min-width:900px){.touchControls{grid-template-columns:230px 1fr 280px}}
+.tcGroup{display:flex;gap:9px}.tcGroup.right{justify-content:flex-end}
+.tcBtn{min-width:56px;min-height:56px;border-radius:999px;border:2.5px solid rgba(18,14,8,.9);background:rgba(251,244,225,.92);color:var(--ink);font-weight:900;font-size:12px;box-shadow:0 4px 0 rgba(0,0,0,.55);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:8px 6px;gap:2px}.tcBtn small{font-size:9.5px;font-weight:800;color:#6B5B40}.tcBtn.active,.tcBtn:active{background:var(--goldBg);transform:translateY(2px)}.tcBtn.gold{background:rgba(217,164,65,.95)}.tcBtn.gold:disabled{background:rgba(120,113,108,.75)}.tcBtn.attack{background:rgba(192,83,47,.94);color:#FFF6DE}.tcBtn.attack small{color:#F6D9C8}
+.kbdHint{font-size:11px;color:#B7A67F;text-align:center;margin-top:9px;line-height:1.7}.kbdHint b{background:#3A3226;color:#FFF6DE;padding:1px 7px;border-radius:6px}
+.resultCard{max-width:660px;margin:22px auto;background:#FDF8E7;border:3px solid var(--bambuD);border-radius:22px;box-shadow:var(--shadow);padding:26px 24px;text-align:center}
+.resultCard h2{font-family:"Lilita One",sans-serif;font-weight:400;font-size:40px;margin:10px 0 4px}
+.resImgWrap{margin:10px auto 0;max-width:360px;border:2.5px solid var(--bambuD);border-radius:14px;background:#F2C96E;padding:10px}
+#resImg{width:100%;max-height:300px;object-fit:contain;display:block}
+.aiStateTag{font-size:10px;font-weight:800;color:#FDE68A;text-align:center;min-height:14px}
+.modeRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}@media(max-width:560px){.modeRow{grid-template-columns:1fr}}
+.modeBtn{border:2.5px solid var(--ink);background:var(--paper);border-radius:14px;padding:13px 16px;text-align:left;font-weight:900;font-size:16px;box-shadow:3px 3px 0 rgba(35,32,27,.9);min-height:44px}
+.modeBtn span{display:block;font-size:12px;font-weight:600;color:#6B5B40;margin-top:3px;line-height:1.45}
+.modeBtn.on{background:var(--tealD);color:#FFF6DE}.modeBtn.on span{color:#CDE8D2}
+.pickTurn{margin:12px 0 0;font-weight:800;font-size:13.5px;background:var(--goldBg);border:2px solid var(--goldD);border-radius:10px;padding:9px 12px}
+.charCard .pBadge{position:absolute;top:10px;left:10px;z-index:2;background:var(--tealD);color:#FFF6DE;border:2px solid var(--ink);border-radius:999px;font-size:11px;font-weight:900;padding:3px 10px}
+.charCard.pickedP1{outline:4px solid var(--teal);background:#EAF6EC}
+.charCard.pickedP2{outline:4px solid var(--terra);background:#FDEEE6}.charCard.pickedP2 .pBadge{background:var(--terra)}
+.charCard.lockedPick{opacity:.55}
+.turnBanner{background:var(--tealD);color:#FFF6DE;border:2.5px solid var(--ink);border-radius:12px;padding:11px 14px;font-weight:900;font-size:16px;margin-bottom:12px;box-shadow:3px 3px 0 rgba(35,32,27,.8)}
+.turnBanner span{display:block;font-size:12px;font-weight:600;color:#D8EBC8;margin-top:2px;line-height:1.5}
+.touch2p{display:none;gap:10px;margin-top:12px;grid-template-columns:1fr 1fr}.touch2p.on{display:grid}
+.tcSide{border:2px solid rgba(255,246,222,.25);border-radius:14px;padding:8px}
+.tcSideLabel{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;text-align:center;color:#7DD3CE}
+.tcSideLabel.p2{color:#F6A183}
+.tcGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.tcGrid .tcBtn{min-width:0;min-height:52px;padding:6px 4px}
+.tcBtn{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+canvas#game{touch-action:none}
+@media(max-width:560px){.touch2p{gap:7px}.tcSide{padding:6px}.tcGrid{gap:6px}.tcGrid .tcBtn{min-height:50px}}
+.roleGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}@media(max-width:820px){.roleGrid{grid-template-columns:1fr}}
+.roleBtn{border:2.5px solid var(--ink);background:var(--paper);border-radius:16px;padding:18px;text-align:left;box-shadow:4px 4px 0 rgba(35,32,27,.9);min-height:44px}
+.roleBtn:hover{transform:translate(-1px,-2px)}.roleBtn b{font-family:"Lilita One",sans-serif;font-weight:400;font-size:21px;display:block}
+.roleBtn span{display:block;font-size:12.5px;font-weight:600;color:#6B5B40;margin-top:5px;line-height:1.55}
+.roleBtn.hero{background:var(--tealD);color:#FFF6DE}.roleBtn.hero span{color:#CDE8D2}
+.hostBar{max-width:1140px;margin:14px auto 0;padding:0 16px;display:none}.hostBar.on{display:block}
+.hostBarInner{background:#211C15;color:#FFF3D6;border:2.5px solid var(--ink);border-radius:16px;padding:14px 18px;box-shadow:var(--shadow);display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.hostCode{font-family:"Lilita One",sans-serif;font-size:44px;letter-spacing:.22em;line-height:1;color:var(--gold)}
+.hostSlot{font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:999px;border:2px solid #6B5B40;color:#D8C69A}.hostSlot.on{background:var(--teal);border-color:var(--teal);color:#FFF6DE}
+.ctlWrap{max-width:560px;margin:0 auto}
+.codeInput{width:100%;font-family:"Lilita One",sans-serif;font-size:34px;letter-spacing:.3em;text-transform:uppercase;text-align:center;padding:14px;border:3px solid var(--ink);border-radius:14px;background:#FFFDF4;color:var(--ink)}
+.padGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.padBtn{min-height:92px;border-radius:18px;border:3px solid var(--ink);background:rgba(251,244,225,.97);color:var(--ink);font-weight:900;font-size:17px;box-shadow:0 5px 0 rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.padBtn small{font-size:11px;font-weight:800;color:#6B5B40}.padBtn.active,.padBtn:active{background:var(--goldBg);transform:translateY(3px)}
+.padBtn.attack{background:var(--terra);color:#FFF6DE}.padBtn.attack small{color:#F6D9C8}
+.padBtn.gold{background:var(--gold)}
+.ctlStatus{font-weight:800;font-size:14px;padding:10px 14px;border-radius:12px;border:2px solid var(--bambu);background:var(--paper);text-align:center}
+.ctlStatus.on{background:var(--oliveBg);border-color:var(--olive)}
+</style>
+</head>
+<body>
+<!--
+  ============================================================
+  GAMBAR MEMBUATKAN KODE — bukan kode membuat gambar.
+  Seluruh visual figur & arena berasal dari dua gambar
+  generate yang disetujui user:
+  - assets/arena.webp ....... latar arena apa adanya
+  - assets/char-*.png ....... lima potongan figur dari satu
+    lembar pendekar (latar krem lembar dibuat transparan,
+    figur TIDAK digambar ulang)
+  Kode hanya MENGERAKKAN gambar itu (transformasi sprite:
+  maju-mundur, bob, lompat, menerjang, kilatan kena, rebah
+  KO) dan menambahkan efek datar sederhana di atasnya
+  (busur tebas, percikan, angka damage, bayangan kaki).
+
+  Sistem permainan dipertahankan dari versi sebelumnya:
+  - genres/platformer: coyote 0,10 | jump buffer 0,12 |
+    jump cut x0,45 | gravitasi jatuh x1,75 | apex hang
+    x0,5 | akselerasi tanah 0,08 dtk, debu + squash-stretch
+  - disciplines/game-feel: juiceHit() bertingkat
+    kecil/sedang/besar, 5–8 respons per benturan
+  - disciplines/game-ai: FSM Siaga, Mendekat, Menyerang,
+    Mundur, Tangkis, Terkena, Jurus + jeda reaksi manusiawi
+  - disciplines/input-systems: ACTIONMAP aksi bernama per
+    pemain (peta binding + instans Input terpisah untuk
+    Pemain 1 dan Pemain 2, pola binding per perangkat dari
+    skill aslinya) + buffer masukan, keyboard & tombol sentuh
+  ============================================================
+-->
+<header class="topbar">
+  <div class="brand"><div class="kicker">Arena Uji • Lawan Komputer / 2 Pemain Lokal</div>
+    <h1>Duel Stickman <span>Berpedang</span></h1>
+    <p>Jawab soal untuk meramu kekuatan, pilih pendekarmu, lalu adu pedang di arena. Benar jadi power up, salah jadi power down — jurus hanya terbuka bila ilmumu cukup.</p></div>
+  <div class="flow"><span id="step1" class="on">1 Pilih Pendekar</span><span id="step2">2 Jawab Soal</span><span id="step3">3 Ramuan</span><span id="step4">4 Duel</span></div>
+</header>
+<div class="hostBar" id="hostBar"><div class="hostBarInner">
+  <div><div style="font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#D8C69A">Kode Gabung Kontroler</div><div class="hostCode" id="hostCode">····</div><div id="hostRelay" style="font-size:12px;color:#D8C69A;margin-top:4px">Relai: menyambungkan…</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="hostSlot" id="hostSlot1">Kontroler 1 (P1): belum</span><span class="hostSlot" id="hostSlot2">Kontroler 2 (P2): belum</span><button class="btn" id="btnEndHost" style="min-height:40px;padding:8px 14px">Akhiri Sesi</button></div>
+</div></div>
+<main class="wrap">
+  <section id="screen-role" class="screen active">
+    <div class="kicker">Pilih Peran Layar Ini</div>
+    <h2 style="margin:4px 0 0;font-family:'Lilita One',sans-serif;font-size:28px">Main di sini, atau jadikan HP-mu kontroler?</h2>
+    <p style="margin:6px 0 0;color:#6B5A44;font-size:13.5px;line-height:1.6;max-width:640px">Satu berkas game, tiga peran. Tanpa jaringan pun game jalan penuh di layar ini. Dengan peran Tuan Rumah, HP bisa bergabung sebagai kontroler terpisah memakai kode gabung.</p>
+    <div class="roleGrid">
+      <button class="roleBtn hero" id="roleLocal"><b>Main di Layar Ini</b><span> persis seperti biasa: sendiri lawan komputer atau berdua satu layar, keyboard &amp; tombol sentuh. Tanpa jaringan.</span></button>
+      <button class="roleBtn" id="roleHost"><b>Layar Tuan Rumah</b><span>Tampilkan arena di layar besar ini dan buat kode gabung 4 karakter. Hingga dua HP bergabung sebagai kontroler P1 &amp; P2.</span></button>
+      <button class="roleBtn" id="roleCtl"><b>Kontroler HP</b><span>HP ini jadi kontroler saja. Masukkan kode gabung dari layar tuan rumah, lalu kendalikan pendekarmu dari sini.</span></button>
+    </div>
+    <p style="font-size:12px;color:#8A7355;margin-top:14px;line-height:1.6">Pilih karakter dan fase soal tetap dikerjakan di layar tuan rumah. Kontroler aktif penuh pada fase duel dan hanya mengirim keadaan tombol (tekan / tahan / lepas) — tidak ada data pribadi apa pun yang dikirim.</p>
+  </section>
+
+  <section id="screen-select" class="screen">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:end">
+      <div><div class="kicker">Langkah 1 dari 4</div><h2 style="margin:4px 0 0;font-family:'Lilita One',sans-serif;font-size:26px">Pilih pendekarmu</h2><p id="selectIntro" style="margin:4px 0 0;color:#6B5A44;font-size:13px">Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI. Tidak ada yang mutlak terkuat — beda rasa, beda cara menang.</p></div>
+      <div style="font-size:12px;font-weight:700;background:#fff;border:1.5px solid #1A120B;padding:8px 10px;border-radius:999px">Arena sore • 90 detik • 100 HP dasar</div>
+    </div>
+    <div class="modeRow" role="group" aria-label="Pilih mode permainan">
+      <button class="modeBtn on" id="modeAI">Lawan Komputer<span>Satu pemain melawan AI — kontrol A/D atau panah, W/Spasi, J/K/L.</span></button>
+      <button class="modeBtn" id="mode2P">Dua Pemain<span>Dua orang satu layar. P1: A/D, W, F, G, H — P2: panah, koma, titik, garis miring. Sentuh pun dibagi dua wilayah.</span></button>
+    </div>
+    <p class="pickTurn" id="pickTurn" style="display:none"></p>
+    <div class="grid5" id="charGrid"></div>
+    <div class="how">
+      <div class="howCard"><h4>Cara duel</h4><p>Gerak, lompat, tebas, dan tangkis. Tangkis memotong damage biasa jadi 25% dan menahan dorongan — tapi tidak menahan jurus. Habiskan HP lawan sebelum waktu habis.</p></div>
+      <div class="howCard"><h4>Kontrol</h4><ul><li><b>Lawan Komputer:</b> A/D atau ← → gerak, W/Spasi lompat, J tebas, K tangkis (tahan), L jurus</li><li><b>Dua Pemain — P1:</b> A/D gerak, W lompat, F tebas, G tangkis (tahan), H jurus</li><li><b>Dua Pemain — P2:</b> ←/→ gerak, ↑ lompat, <b>,</b> tebas, <b>.</b> tangkis (tahan), <b>/</b> jurus</li><li>Maleo: tekan lompat lagi saat jatuh untuk meluncur. Di HP: tombol sentuh di bawah arena (mode 2 pemain dibagi wilayah P1 dan P2)</li></ul></div>
+      <div class="howCard"><h4>Ramuan soal</h4><p>5 soal acak per pemain. Tiap benar = 1 power up, tiap salah = 1 power down. Jurus terbuka bila <b>minimal 3 benar</b>. Mode Dua Pemain: tiap pemain menjawab 5 soalnya sendiri bergantian. Mode komputer: lawan AI membawa ramuan setara 2 benar, jurusnya terbuka setelah meter penuh.</p></div>
+    </div>
+    <div class="selectFooter"><p id="selectedInfo">Belum memilih — ketuk salah satu kartu pendekar di atas.</p><button class="btn primary" id="btnToQuiz" disabled>Lanjut ke Soal →</button></div>
+  </section>
+
+  <section id="screen-quiz" class="screen">
+    <div class="quizWrap">
+      <div class="kicker">Langkah 2 dari 4 — Ujian Pralaga</div>
+      <h2 style="font-family:'Lilita One',sans-serif;font-size:26px;margin:6px 0 0">Jawab 5 soal, ramu kekuatanmu</h2>
+      <p style="color:#6B5A44;font-size:13.5px;line-height:1.6">Campuran kosakata Arab dasar, hitung cepat, dan pengetahuan umum.</p>
+      <div class="turnBanner" id="quizTurn" style="display:none"></div>
+      <div class="progressWrap"><span id="quizCount" style="font-weight:800;font-size:13px">Soal 1 / 5</span><div class="pTrack"><i id="quizProg" style="width:20%"></i></div><span id="quizScore" style="font-weight:800;font-size:13px">✓ 0 ✕ 0</span></div>
+      <div class="quizCard"><div class="meta"><span id="qCat">—</span><span>Benar = Power Up • Salah = Power Down</span></div>
+        <h2 id="qText">—</h2><p class="hint" id="qHint"></p><div class="opts" id="qOpts"></div>
+        <div class="feedback" id="qFeedback"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="btnNextQ" style="display:none">Soal Berikutnya →</button></div>
+      </div>
+      <p style="font-size:12px;color:#8A7355;text-align:center;margin-top:10px">Pendekarmu: <b id="quizCharName">—</b></p>
+    </div>
+  </section>
+
+  <section id="screen-summary" class="screen">
+    <div class="kicker">Langkah 3 dari 4 — Ramuan Selesai</div>
+    <h2 style="font-family:'Lilita One',sans-serif;font-size:28px;margin:6px 0 0">Siap masuk arena?</h2>
+    <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap"><div class="scoreBig" id="sumScore">3 / 5</div><div><div id="sumVerdict" style="font-weight:800"></div><div id="sumSkillNote" style="font-size:13px;color:#6B5A44;line-height:1.5"></div></div></div>
+    <div class="versus">
+      <div class="vsCard you"><div style="display:flex;justify-content:space-between"><b id="sumYouName">Kamu</b><span id="sumYouTag" style="font-size:11px;font-weight:800;background:#C2410C;color:#fff;padding:3px 8px;border-radius:99px">KAMU</span></div><div id="sumYouWeapon" style="font-size:12px;color:#6B5A44;margin-top:2px"></div><div class="potionList" id="sumYouPotions"></div><div id="sumYouStats" style="font-size:12.5px;line-height:1.7;margin-top:10px"></div></div>
+      <div class="vsBadge">VS</div>
+      <div class="vsCard"><div style="display:flex;justify-content:space-between"><b id="sumFoeName">Lawan</b><span id="sumFoeTag" style="font-size:11px;font-weight:800;background:#1A120B;color:#fff;padding:3px 8px;border-radius:99px">LAWAN • AI</span></div><div id="sumFoeWeapon" style="font-size:12px;color:#6B5A44;margin-top:2px"></div><div class="potionList" id="sumFoePotions"></div><div id="sumFoeStats" style="font-size:12.5px;line-height:1.7;margin-top:10px"></div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><span class="pill up">Power Up — dari jawaban benar</span><span class="pill down">Power Down — dari jawaban salah</span><span class="pill neutral">Perisai Kayu menahan penuh 1 tebasan pertama</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><button class="btn gold" id="btnStartDuel" style="font-size:16px;padding:14px 22px">Mulai Duel</button><button class="btn" id="btnBackSelect">Ganti Pendekar</button></div>
+  </section>
+
+  <section id="screen-duel" class="screen">
+    <div class="arenaShell">
+      <div class="hud">
+        <div><div class="hpTop"><span><span class="tag" id="hudYouTag">KAMU</span> <span id="hudYouName">—</span></span><span id="hudYouShield"></span></div>
+          <div class="hpBar player"><i id="hpYou" style="width:100%"></i><em id="hpYouText">100</em></div>
+          <div class="meterRow"><span style="font-size:10px;font-weight:800">JURUS</span><div class="meter"><i id="skillYouBar" style="width:100%"></i></div><span id="skillYouText" style="font-size:11px;font-weight:800;white-space:nowrap">SIAP</span></div></div>
+        <div class="timerBox"><div class="timerNum" id="timerNum">90</div><small>detik • HP tertinggi menang</small><div id="duelMsg" style="font-size:12px;font-weight:800;color:#FDE68A;min-height:18px;margin-top:4px">Bersiap…</div><div class="aiStateTag" id="aiStateTag">AI: Siaga</div></div>
+        <div style="text-align:right"><div class="hpTop" style="flex-direction:row-reverse"><span><span class="tag enemy" id="hudFoeTag">LAWAN</span> <span id="hudFoeName">—</span></span><span id="hudFoeShield"></span></div>
+          <div class="hpBar enemy"><i id="hpFoe" style="width:100%"></i><em id="hpFoeText">100</em></div>
+          <div class="meterRow"><span id="skillFoeText" style="font-size:11px;font-weight:800;white-space:nowrap">Meter 0%</span><div class="meter"><i id="skillFoeBar" style="width:0%"></i></div><span id="skillFoeLabel" style="font-size:10px;font-weight:800">JURUS AI</span></div></div>
+      </div>
+      <canvas id="game" width="960" height="640"></canvas>
+      <div class="arenaInfo" id="arenaPotions"></div>
+      <div class="touchControls" id="touch1p">
+        <div class="tcGroup"><button class="tcBtn" id="tcLeft" aria-label="Gerak kiri"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg><small>Kiri</small></button><button class="tcBtn" id="tcRight" aria-label="Gerak kanan"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg><small>Kanan</small></button></div>
+        <div class="tcGroup"><button class="tcBtn" id="tcJump" aria-label="Lompat"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15 L12 8 L19 15"/></svg><small>Lompat</small></button><button class="tcBtn" id="tcBlock" aria-label="Tangkis tahan"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3 L20 5.5 V11 C20 16 16.8 19.4 12 21 C7.2 19.4 4 16 4 11 V5.5 Z"/></svg><small>Tangkis • tahan</small></button></div>
+        <div class="tcGroup right"><button class="tcBtn attack" id="tcAttack" aria-label="Tebas"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L14.5 9.5"/><path d="M13 4 L20 3 L19 10 L11.5 17.5 L9 15 Z"/><path d="M3 21 L7 17"/></svg><small>TEBAS • J</small></button><button class="tcBtn gold" id="tcSkill" aria-label="Jurus"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4.5 13.5 H11 L9.8 22 L19 10 H12.5 Z"/></svg><small>JURUS • L</small></button></div>
+      </div>
+      <div class="touch2p" id="touch2p">
+        <div class="tcSide"><div class="tcSideLabel">Pemain 1</div><div class="tcGrid">
+          <button class="tcBtn" id="tc1Left" aria-label="Pemain 1 gerak kiri"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg><small>Kiri</small></button>
+          <button class="tcBtn" id="tc1Right" aria-label="Pemain 1 gerak kanan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg><small>Kanan</small></button>
+          <button class="tcBtn" id="tc1Jump" aria-label="Pemain 1 lompat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15 L12 8 L19 15"/></svg><small>Lompat</small></button>
+          <button class="tcBtn" id="tc1Block" aria-label="Pemain 1 tangkis tahan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3 L20 5.5 V11 C20 16 16.8 19.4 12 21 C7.2 19.4 4 16 4 11 V5.5 Z"/></svg><small>Tangkis</small></button>
+          <button class="tcBtn attack" id="tc1Attack" aria-label="Pemain 1 tebas"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L14.5 9.5"/><path d="M13 4 L20 3 L19 10 L11.5 17.5 L9 15 Z"/><path d="M3 21 L7 17"/></svg><small>TEBAS • F</small></button>
+          <button class="tcBtn gold" id="tc1Skill" aria-label="Pemain 1 jurus"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4.5 13.5 H11 L9.8 22 L19 10 H12.5 Z"/></svg><small>JURUS • H</small></button>
+        </div></div>
+        <div class="tcSide"><div class="tcSideLabel p2">Pemain 2</div><div class="tcGrid">
+          <button class="tcBtn" id="tc2Left" aria-label="Pemain 2 gerak kiri"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg><small>Kiri</small></button>
+          <button class="tcBtn" id="tc2Right" aria-label="Pemain 2 gerak kanan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg><small>Kanan</small></button>
+          <button class="tcBtn" id="tc2Jump" aria-label="Pemain 2 lompat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15 L12 8 L19 15"/></svg><small>Lompat</small></button>
+          <button class="tcBtn" id="tc2Block" aria-label="Pemain 2 tangkis tahan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3 L20 5.5 V11 C20 16 16.8 19.4 12 21 C7.2 19.4 4 16 4 11 V5.5 Z"/></svg><small>Tangkis</small></button>
+          <button class="tcBtn attack" id="tc2Attack" aria-label="Pemain 2 tebas"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L14.5 9.5"/><path d="M13 4 L20 3 L19 10 L11.5 17.5 L9 15 Z"/><path d="M3 21 L7 17"/></svg><small>TEBAS • ,</small></button>
+          <button class="tcBtn gold" id="tc2Skill" aria-label="Pemain 2 jurus"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4.5 13.5 H11 L9.8 22 L19 10 H12.5 Z"/></svg><small>JURUS • /</small></button>
+        </div></div>
+      </div>
+      <div class="kbdHint" id="kbdHint1p">Desktop: <b>A/D</b> gerak <b>W / Spasi</b> lompat <b>J</b> tebas <b>K</b> tangkis (tahan) <b>L</b> jurus • Maleo: tekan lompat lagi saat jatuh untuk meluncur</div>
+      <div class="kbdHint" id="kbdHint2p" style="display:none">Dua Pemain — <b>P1</b> A/D gerak • W lompat • F tebas • G tangkis (tahan) • H jurus &nbsp;|&nbsp; <b>P2</b> ←/→ gerak • ↑ lompat • <b>,</b> tebas • <b>.</b> tangkis (tahan) • <b>/</b> jurus</div>
+    </div>
+  </section>
+
+  <section id="screen-result" class="screen">
+    <div class="resultCard"><div class="kicker" id="resKicker">Duel Selesai</div>
+      <div class="resImgWrap"><img id="resImg" src="assets/char-tarsius.png" alt="Pendekar pemenang duel"/></div>
+      <h2 id="resTitle">Kamu Menang!</h2><p id="resDesc" style="color:#6B5A44;line-height:1.6;font-size:14px"></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0;text-align:left">
+        <div style="background:#FFFBEB;border:1.5px solid #E6D5A8;border-radius:12px;padding:10px"><small style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#8A7355">Skor Soal</small><div id="resQuiz" style="font-weight:800;font-size:18px">—</div></div>
+        <div style="background:#FFFBEB;border:1.5px solid #E6D5A8;border-radius:12px;padding:10px"><small id="resHpLabel" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#8A7355">Sisa HP Kamu</small><div id="resHp" style="font-weight:800;font-size:18px">—</div></div>
+        <div style="background:#FFFBEB;border:1.5px solid #E6D5A8;border-radius:12px;padding:10px"><small style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#8A7355">Cara Berakhir</small><div id="resHow" style="font-weight:800;font-size:18px">—</div></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" id="btnRematch">Main Lagi — Soal Baru</button><button class="btn dark" id="btnChangeChar">Ganti Pendekar</button></div>
+      <p id="resNote" style="font-size:12px;color:#8A7355;margin-top:12px">Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.</p>
+    </div>
+  </section>
+  <section id="screen-controller" class="screen">
+    <div class="ctlWrap">
+      <div class="kicker">Kontroler HP</div>
+      <h2 style="font-family:'Lilita One',sans-serif;font-size:26px;margin:6px 0 0">Gabung ke layar tuan rumah</h2>
+      <div id="ctlJoinView">
+        <p style="color:#6B5A44;font-size:13.5px;line-height:1.6">Ketik 4 karakter kode gabung yang tampil besar di layar tuan rumah. Kontroler pertama yang bergabung menjadi Pemain 1, yang kedua menjadi Pemain 2.</p>
+        <input class="codeInput" id="ctlCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode gabung 4 karakter"/>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn primary" id="btnCtlJoin" style="flex:1">Gabung</button><button class="btn" id="btnCtlBack">Kembali</button></div>
+        <div class="ctlStatus" id="ctlJoinStatus" style="margin-top:14px">Belum terhubung.</div>
+      </div>
+      <div id="ctlPadView" style="display:none">
+        <div class="ctlStatus on" id="ctlPadStatus">Terhubung</div>
+        <div style="text-align:center;margin-top:12px"><span id="ctlPadLabel" style="font-family:'Lilita One',sans-serif;font-size:30px">Pemain 1</span><div style="font-size:12.5px;color:#6B5A44">Tombolmu menggerakkan pendekar ini di layar tuan rumah. Duel dimulai dari layar tuan rumah.</div></div>
+        <div class="padGrid">
+          <button class="padBtn" data-act="gerak_kiri"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg>KIRI<small>tahan untuk jalan</small></button>
+          <button class="padBtn" data-act="gerak_kanan"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg>KANAN<small>tahan untuk jalan</small></button>
+          <button class="padBtn" data-act="lompat"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15 L12 8 L19 15"/></svg>LOMPAT<small>ketuk</small></button>
+          <button class="padBtn" data-act="tangkis"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3 L20 5.5 V11 C20 16 16.8 19.4 12 21 C7.2 19.4 4 16 4 11 V5.5 Z"/></svg>TANGKIS<small>tahan</small></button>
+          <button class="padBtn attack" data-act="tebas"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L14.5 9.5"/><path d="M13 4 L20 3 L19 10 L11.5 17.5 L9 15 Z"/><path d="M3 21 L7 17"/></svg>TEBAS<small>ketuk</small></button>
+          <button class="padBtn gold" data-act="jurus"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4.5 13.5 H11 L9.8 22 L19 10 H12.5 Z"/></svg>JURUS<small>ketuk, sekali pakai</small></button>
+        </div>
+        <button class="btn dark" id="btnCtlLeave" style="width:100%;margin-top:16px;justify-content:center">Putuskan Sambungan</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<script>
+/* ================= DATA (isi tetap dari ramuan user) =================
+   color = warna figur pada gambar sumber, dipakai untuk efek
+   datar (busur tebas, percikan) dan aksen kartu. img = potongan
+   figur dari lembar pendekar yang disetujui user.            */
+var CHARS=[
+ {id:'tarsius',name:'Tarsius',weapon:'Badik Pendek Melengkung',color:'#0B8F8C',img:'assets/char-tarsius.png',desc:'Telinga lebar bundar, ekor sangat panjang. Paling lincah di arena.',skillName:'Tatapan Raksasa',skillDesc:'Lawan membeku 2 detik, tidak bisa bergerak atau menebas.',speed:212,dmg:8,range:68,cd:0.34,knock:150,spdBar:95,powBar:45,rngBar:35},
+ {id:'anoa',name:'Anoa',weapon:'Pedang Balok Kayu Raksasa',color:'#C0532F',img:'assets/char-anoa.png',desc:'Dua tanduk tegak melengkung. Lambat, tapi sekali kena sangat sakit.',skillName:'Tanduk Badai',skillDesc:'Dash menyeruduk — lawan terlempar jauh + damage besar.',speed:158,dmg:16,range:86,cd:0.82,knock:480,spdBar:40,powBar:98,rngBar:60},
+ {id:'maleo',name:'Maleo',weapon:'Pedang Kayu Lurus',color:'#66713F',img:'assets/char-maleo.png',desc:'Jambul bulu tegak, sayap kecil di bahu. Seimbang dan bisa meluncur di udara.',skillName:'Terbang Jambul',skillDesc:'Lompat tinggi kebal di udara, lalu menukik menebas lawan.',speed:182,dmg:11,range:80,cd:0.56,knock:240,spdBar:65,powBar:65,rngBar:55},
+ {id:'yaki',name:'Yaki',weapon:'Pedang Gergaji Abu',color:'#5A3A26',img:'assets/char-yaki.png',desc:'Mohawk runcing menyala. Tebasan ringan tapi kombo tercepat beruntun.',skillName:'Amuk Mohawk',skillDesc:'3 tebasan sangat cepat berurutan tanpa jeda panjang.',speed:200,dmg:7,range:76,cd:0.28,knock:150,spdBar:88,powBar:38,rngBar:50},
+ {id:'kuskus',name:'Kuskus',weapon:'Pedang Kait Panjang',color:'#15B364',img:'assets/char-kuskus.png',desc:'Telinga kecil bundar, ekor spiral kuat. Jangkauan terjauh di arena.',skillName:'Kait Ekor',skillDesc:'Kait melesat menarik lawan mendekat dan mengikat 1,5 detik.',speed:173,dmg:10,range:112,cd:0.62,knock:210,spdBar:55,powBar:58,rngBar:98}
+];
+var BANK=[
+ {cat:'Kosakata Arab',q:'Apa arti kata Arab “كِتَابٌ” (kitābun)?',hint:'Kata ini sering jadi kata pertama di pelajaran bahasa Arab.',opts:['Buku','Pena','Meja','Pintu'],a:0,ex:'كِتَابٌ artinya buku. Pena = قَلَمٌ, meja = مَكْتَبٌ, pintu = بَابٌ.'},
+ {cat:'Kosakata Arab',q:'“مَاءٌ” (mā’un) dalam bahasa Indonesia berarti…',hint:'Sesuatu yang kita minum setiap hari.',opts:['Api','Air','Tanah','Angin'],a:1,ex:'مَاءٌ = air. Api = نَارٌ, tanah = تُرَابٌ, angin = رِيحٌ.'},
+ {cat:'Kosakata Arab',q:'Kata “مَسْجِدٌ” (masjidun) artinya…',hint:'Tempat ibadah umat Islam.',opts:['Sekolah','Pasar','Masjid','Rumah'],a:2,ex:'مَسْجِدٌ = masjid. Sekolah = مَدْرَسَةٌ, pasar = سُوقٌ.'},
+ {cat:'Kosakata Arab',q:'“شَمْسٌ” (syamsun) adalah…',hint:'Terbit di timur, terbenam di barat.',opts:['Bulan','Bintang','Matahari','Awan'],a:2,ex:'شَمْسٌ = matahari. Bulan = قَمَرٌ, bintang = نَجْمٌ.'},
+ {cat:'Kosakata Arab',q:'Arti “طَالِبٌ” (ṭālibun) adalah…',hint:'Orang yang menuntut ilmu.',opts:['Guru','Murid / penuntut ilmu','Pedagang','Petani'],a:1,ex:'طَالِبٌ = murid/penuntut ilmu. Guru = مُعَلِّمٌ / أُسْتَاذٌ.'},
+ {cat:'Hitung Cepat',q:'7 × 8 + 6 = …',hint:'Kerjakan perkalian dulu, baru tambah.',opts:['62','56','98','48'],a:0,ex:'7×8=56, lalu 56+6=62.'},
+ {cat:'Hitung Cepat',q:'96 ÷ 4 − 9 = …',hint:'Bagi dulu, baru kurang.',opts:['12','15','24','18'],a:1,ex:'96÷4=24, lalu 24−9=15.'},
+ {cat:'Hitung Cepat',q:'15 + 27 + 8 = …',hint:'Jumlahkan 27+8 dulu biar mudah: 35.',opts:['48','50','52','45'],a:1,ex:'15+27=42, 42+8=50.'},
+ {cat:'Hitung Cepat',q:'Setengah dari 144 adalah…',hint:'144 ÷ 2.',opts:['62','82','72','64'],a:2,ex:'144 ÷ 2 = 72.'},
+ {cat:'Hitung Cepat',q:'9 × 9 − 11 = …',hint:'9×9 = 81.',opts:['70','72','69','81'],a:0,ex:'81 − 11 = 70.'},
+ {cat:'Pengetahuan Umum',q:'Ibu kota provinsi Sulawesi Selatan adalah…',hint:'Kota ini dulu bernama Ujung Pandang.',opts:['Manado','Makassar','Palu','Kendari'],a:1,ex:'Makassar adalah ibu kota Sulawesi Selatan.'},
+ {cat:'Pengetahuan Umum',q:'Hewan anoa adalah satwa khas dari…',hint:'Pulau berbentuk seperti huruf K.',opts:['Sumatra','Kalimantan','Sulawesi','Papua'],a:2,ex:'Anoa adalah satwa endemik Sulawesi.'},
+ {cat:'Pengetahuan Umum',q:'Jumlah provinsi di Indonesia saat ini adalah…',hint:'Setelah pemekaran di Papua, jumlahnya di atas 35.',opts:['34','38','32','40'],a:1,ex:'Indonesia memiliki 38 provinsi.'},
+ {cat:'Pengetahuan Umum',q:'Alat musik tradisional bambu dari Jawa Barat yang dimainkan dengan digoyang adalah…',hint:'Satu nada per bambu, dimainkan berkelompok.',opts:['Gamelan','Angklung','Kolintang','Sasando'],a:1,ex:'Angklung dari Jawa Barat, dimainkan dengan cara digoyangkan.'},
+ {cat:'Pengetahuan Umum',q:'Planet terdekat dari Matahari adalah…',hint:'Namanya sama dengan unsur logam cair di termometer lama.',opts:['Venus','Mars','Merkurius','Bumi'],a:2,ex:'Merkurius adalah planet terdekat dari Matahari.'}
+];
+var UP_POOL=[{name:'Tebasan Tajam',desc:'Damage +25%',type:'dmg',val:0.25},{name:'Langkah Kilat',desc:'Kecepatan +20%',type:'spd',val:0.20},{name:'Badan Baja',desc:'HP awal +20',type:'hp',val:20},{name:'Perisai Kayu',desc:'Menahan penuh 1 tebasan',type:'shield',val:1}];
+var DOWN_POOL=[{name:'Pedang Tumpul',desc:'Damage −20%',type:'dmg',val:-0.20},{name:'Langkah Berat',desc:'Kecepatan −15%',type:'spd',val:-0.15},{name:'Napas Pendek',desc:'HP awal −15',type:'hp',val:-15}];
+
+/* ================= [genres/platformer] KNOB PERSIS DARI SKILL =================
+   coyote 0,08–0,12 -> 0,10 | jump buffer 0,10–0,15 -> 0,12
+   jump cut x0,4–0,5 -> 0,45 | gravitasi jatuh 1,5–2x -> 1,75
+   apex hang gravitasi x0,5 dekat puncak | akselerasi tanah
+   kecepatan penuh dalam 0,05–0,1 dtk -> 0,08 dtk            */
+var KNOB={coyote:0.10,jumpBuffer:0.12,jumpCut:0.45,fallGravMul:1.75,apexGravMul:0.5,apexBand:130,groundAccelTime:0.08,gravity:2100,jumpVel:-790,airAccelTime:0.16};
+function easeOutCubic(t){return 1-Math.pow(1-t,3)} function easeInOut(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+
+/* ================= [disciplines/input-systems] AKSI BERNAMA ================= */
+/* Pola repo gamedev-skills (disciplines/input-systems): gameplay
+   membaca AKSI bernama, bukan tombol mentah; binding adalah data
+   per pemain/per perangkat. Tiap pemain punya ACTIONMAP dan
+   instans Input sendiri, jadi dua set tombol tidak pernah
+   berbagi status. Mode solo memakai peta gabungan lama. */
+function makeActionMap(defs){var m={};Object.keys(defs).forEach(function(a){m[a]={keys:defs[a][0],mode:defs[a][1],buffer:defs[a][2]||0}});return m}
+var ACTIONMAP_SOLO=makeActionMap({gerak_kiri:[['KeyA','ArrowLeft'],'held'],gerak_kanan:[['KeyD','ArrowRight'],'held'],lompat:[['KeyW','Space','ArrowUp'],'pressed',KNOB.jumpBuffer],tebas:[['KeyJ'],'pressed',0.12],tangkis:[['KeyK'],'held'],jurus:[['KeyL'],'pressed',0.12]});
+var ACTIONMAP_P1=makeActionMap({gerak_kiri:[['KeyA'],'held'],gerak_kanan:[['KeyD'],'held'],lompat:[['KeyW'],'pressed',KNOB.jumpBuffer],tebas:[['KeyF'],'pressed',0.12],tangkis:[['KeyG'],'held'],jurus:[['KeyH'],'pressed',0.12]});
+var ACTIONMAP_P2=makeActionMap({gerak_kiri:[['ArrowLeft'],'held'],gerak_kanan:[['ArrowRight'],'held'],lompat:[['ArrowUp'],'pressed',KNOB.jumpBuffer],tebas:[['Comma'],'pressed',0.12],tangkis:[['Period'],'held'],jurus:[['Slash'],'pressed',0.12]});
+function createInput(map){return{map:map,held:{},pressedAt:{},touchHeld:{},netHeld:{},routes:{},
+ reset:function(){this.held={};this.pressedAt={};this.touchHeld={};this.netHeld={}},
+ press:function(a){this.held[a]=true;this.pressedAt[a]=performance.now()/1000},
+ release:function(a){this.held[a]=false},
+ isHeld:function(a){return !!(this.held[a]||this.touchHeld[a]||this.netHeld[a])},
+ consumeBuffered:function(a,now){var t=this.pressedAt[a];if(t==null)return false;var buf=(this.map[a]&&this.map[a].buffer)||0;this.pressedAt[a]=null;return (now-t)<=buf+0.001},
+ clearPressed:function(a){this.pressedAt[a]=null}}}
+var InputSolo=createInput(ACTIONMAP_SOLO),InputP1=createInput(ACTIONMAP_P1),InputP2=createInput(ACTIONMAP_P2);
+[InputSolo,InputP1,InputP2].forEach(function(inp){Object.keys(inp.map).forEach(function(a){inp.map[a].keys.forEach(function(k){inp.routes[k]=a})})});
+function activeInputs(){return (typeof S!=='undefined'&&S.mode==='2p')?[InputP1,InputP2]:[InputSolo]}
+
+/* ================= ASET GAMBAR (sumber visual game) =================
+   Latar arena + sprite figur dimuat dari berkas gambar.
+   Untuk kilatan kena, dibuat juga siluet putih tiap figur
+   (gambar yang sama, pikselnya diwarnai putih — bukan
+   menggambar figur baru).                                  */
+var ARENA_IMG=new Image(); ARENA_IMG.src='assets/arena.webp';
+CHARS.forEach(function(ch){var im=new Image(); im.src=ch.img; ch.sprite=im; ch.whiteSprite=null;
+ im.onload=function(){var oc=document.createElement('canvas'); oc.width=im.naturalWidth; oc.height=im.naturalHeight; var octx=oc.getContext('2d'); octx.drawImage(im,0,0); octx.globalCompositeOperation='source-in'; octx.fillStyle='#FFFFFF'; octx.fillRect(0,0,oc.width,oc.height); ch.whiteSprite=oc};
+});
+
+/* ================= STATE & HELPERS ================= */
+var S={mode:'ai',char:null,foe:null,p1Char:null,p2Char:null,pickTurn:'p1',quizWho:'p1',p1Res:null,p2Res:null,usedQ:[],quiz:[],qIdx:0,correct:0,wrong:0,ups:[],downs:[],answered:false,playerStats:null,foeStats:null,foeUps:[]};
+function $(id){return document.getElementById(id)}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function show(id){document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'})}
+function calcStats(char,ups,downs){var dmgF=1,spdF=1,hpAdd=0,shield=0;ups.concat(downs).forEach(function(p){if(p.type==='dmg')dmgF+=p.val;if(p.type==='spd')spdF+=p.val;if(p.type==='hp')hpAdd+=p.val;if(p.type==='shield')shield+=p.val});if(dmgF<0.3)dmgF=0.3;if(spdF<0.4)spdF=0.4;return{maxHp:Math.max(50,100+hpAdd),dmg:Math.round(char.dmg*dmgF*10)/10,speed:char.speed*spdF,dmgF:dmgF,spdF:spdF,shield:shield}}
+function potionPills(list,cls){if(!list.length)return '<span class="pill neutral">Tidak ada</span>';var counts={};list.forEach(function(p){counts[p.name]=(counts[p.name]||0)+1});return Object.keys(counts).map(function(k){var p=list.find(function(x){return x.name===k});return '<span class="pill '+cls+'">'+k+(counts[k]>1?' ×'+counts[k]:'')+' • '+p.desc+'</span>'}).join('')}
+
+/* ================= SELECT — kartu memakai potongan gambar ================= */
+var grid=$('charGrid');var cardEls={};
+CHARS.forEach(function(ch){var b=document.createElement('button');b.className='charCard';b.innerHTML='<div class="charImgWrap"><img class="charImg" src="'+ch.img+'" alt="Pendekar '+ch.name+'"/></div><h3>'+ch.name+'</h3><div class="weapon">'+ch.weapon+'</div><p>'+ch.desc+'</p><div class="statRow"><div class="stat"><small>Cepat</small><div class="bar"><i style="width:'+ch.spdBar+'%"></i></div></div><div class="stat"><small>Kuat</small><div class="bar"><i style="width:'+ch.powBar+'%"></i></div></div><div class="stat"><small>Jangkau</small><div class="bar"><i style="width:'+ch.rngBar+'%"></i></div></div></div><div class="skillBox"><b>✦ '+ch.skillName+'</b><p>'+ch.skillDesc+'</p></div><span class="pBadge" style="display:none"></span>';b.onclick=function(){pickChar(ch)};grid.appendChild(b);cardEls[ch.id]=b});
+function refreshCards(){CHARS.forEach(function(ch){var b=cardEls[ch.id];if(!b)return;var badge=b.querySelector('.pBadge');b.classList.remove('selected','pickedP1','pickedP2','lockedPick');badge.style.display='none';
+ if(S.mode==='2p'){if(S.p1Char&&ch.id===S.p1Char.id){b.classList.add('pickedP1');badge.textContent='P1';badge.style.display='block';if(S.pickTurn==='p2')b.classList.add('lockedPick')}if(S.p2Char&&ch.id===S.p2Char.id){b.classList.add('pickedP2');badge.textContent='P2';badge.style.display='block'}}
+ else if(S.char&&ch.id===S.char.id)b.classList.add('selected')})}
+function refreshSelectUI(){var info=$('selectedInfo'),btn=$('btnToQuiz'),turn=$('pickTurn');
+ if(S.mode==='2p'){turn.style.display='block';
+  if(!S.p1Char){turn.textContent='Giliran Pemain 1 memilih pendekar';info.textContent='Mode Dua Pemain: Pemain 1 memilih dulu, lalu Pemain 2. Karakter yang sudah dipilih P1 tidak bisa dipilih P2.';btn.disabled=true;btn.textContent='Pemain 1 — Pilih Dulu'}
+  else if(!S.p2Char){turn.textContent='Giliran Pemain 2 memilih pendekar';info.innerHTML='Pemain 1: <b style="color:#7DD3CE">'+S.p1Char.name+'</b> ('+S.p1Char.weapon+'). Sekarang Pemain 2 memilih pendekar lain.';btn.disabled=true;btn.textContent='Pemain 2 — Pilih Dulu'}
+  else{turn.textContent='Kedua pendekar siap — lanjut ke soal';info.innerHTML='Pemain 1: <b style="color:#7DD3CE">'+S.p1Char.name+'</b> • Pemain 2: <b style="color:#F6A183">'+S.p2Char.name+'</b>. Berikutnya tiap pemain menjawab 5 soal bergantian; ramuan dihitung dari jawaban masing-masing.';btn.disabled=false;btn.textContent='Lanjut — Soal Pemain 1 →'}}
+ else{turn.style.display='none';btn.textContent='Lanjut ke Soal →';if(S.char){info.innerHTML='Kamu memilih <b style="color:#FDE68A">'+S.char.name+'</b> — '+S.char.weapon+'. Jurus: '+S.char.skillName+'.';btn.disabled=false}else{info.textContent='Belum memilih — ketuk salah satu kartu pendekar di atas.';btn.disabled=true}}}
+function pickChar(ch){
+ if(S.mode==='2p'){
+  if(S.pickTurn==='p1'){S.p1Char=ch;S.p2Char=null;S.pickTurn='p2'}
+  else{if(S.p1Char&&ch.id===S.p1Char.id)return;S.p2Char=ch}
+ }else S.char=ch;
+ refreshCards();refreshSelectUI()}
+function setMode(m){S.mode=m;S.p1Char=null;S.p2Char=null;S.pickTurn='p1';$('modeAI').classList.toggle('on',m==='ai');$('mode2P').classList.toggle('on',m==='2p');$('selectIntro').textContent=m==='2p'?'Dua orang, satu layar. Pemain 1 memilih pendekar dulu, lalu Pemain 2 (tidak boleh sama). Tiap pemain meramu kekuatannya sendiri dari 5 soal.':'Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI. Tidak ada yang mutlak terkuat — beda rasa, beda cara menang.';refreshCards();refreshSelectUI()}
+$('modeAI').onclick=function(){setMode('ai')};$('mode2P').onclick=function(){setMode('2p')};
+$('btnToQuiz').onclick=function(){startQuizFlow()};
+
+/* ================= QUIZ ================= */
+function startQuizFlow(){S.usedQ=[];S.p1Res=null;S.p2Res=null;
+ if(S.mode==='2p'){S.char=S.p1Char;S.foe=S.p2Char;beginQuizTurn('p1')}
+ else{var others=CHARS.filter(function(c){return c.id!==S.char.id});S.foe=others[Math.floor(Math.random()*others.length)];beginQuizTurn('p1')}}
+function beginQuizTurn(who){S.quizWho=who;var pool=BANK.filter(function(q){return S.usedQ.indexOf(q)<0});S.quiz=shuffle(pool).slice(0,5);S.quiz.forEach(function(q){S.usedQ.push(q)});S.qIdx=0;S.correct=0;S.wrong=0;S.ups=[];S.downs=[];
+ var ch=S.mode==='2p'?(who==='p2'?S.p2Char:S.p1Char):S.char;var banner=$('quizTurn');
+ if(S.mode==='2p'){banner.style.display='block';banner.innerHTML=(who==='p1'?'Giliran Pemain 1':'Giliran Pemain 2')+' — '+ch.name+'<span>Ramuan dihitung dari jawaban pemain ini sendiri. Jurusnya terbuka bila benar minimal 3 dari 5 soal ini.</span>'}
+ else banner.style.display='none';
+ $('quizCharName').textContent=ch.name+' ('+ch.weapon+')'+(S.mode==='2p'?(who==='p1'?' — Pemain 1':' — Pemain 2'):'');
+ show('screen-quiz');renderQ()}
+function saveQuizTurn(){var res={correct:S.correct,wrong:S.wrong,ups:S.ups.slice(),downs:S.downs.slice()};if(S.quizWho==='p2')S.p2Res=res;else S.p1Res=res}
+function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent='Petunjuk: '+q.hint;$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];shuffle([0,1,2,3]).forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn)})}
+function answer(btn,ok,q){if(S.answered)return;S.answered=true;document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+q.ex}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+q.ex}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block'}
+$('btnNextQ').onclick=function(){if(S.qIdx<4){S.qIdx++;renderQ()}else{saveQuizTurn();if(S.mode==='2p'&&S.quizWho==='p1')beginQuizTurn('p2');else renderSummary()}};
+function renderSummary(){
+ if(S.mode==='2p'){var r1=S.p1Res,r2=S.p2Res;var ps=calcStats(S.p1Char,r1.ups,r1.downs),fs=calcStats(S.p2Char,r2.ups,r2.downs);S.playerStats=ps;S.foeStats=fs;S.foeUps=r2.ups;
+  $('sumScore').textContent=r1.correct+' – '+r2.correct;var u1=r1.correct>=3,u2=r2.correct>=3;
+  $('sumVerdict').textContent='Jurus P1 '+(u1?'TERBUKA — '+S.p1Char.skillName:'TERKUNCI')+' • Jurus P2 '+(u2?'TERBUKA — '+S.p2Char.skillName:'TERKUNCI');
+  $('sumSkillNote').textContent='Pemain 1 benar '+r1.correct+'/5, Pemain 2 benar '+r2.correct+'/5. Jurus tiap pemain terbuka dari soalnya sendiri (minimal 3 benar), sekali pakai: P1 tekan H, P2 tekan /.';
+  $('sumYouTag').textContent='PEMAIN 1';$('sumFoeTag').textContent='PEMAIN 2';
+  $('sumYouName').textContent=S.p1Char.name;$('sumYouWeapon').textContent=S.p1Char.weapon+' • Jurus: '+S.p1Char.skillName;
+  $('sumYouPotions').innerHTML=potionPills(r1.ups,'up')+potionPills(r1.downs,'down');
+  $('sumYouStats').innerHTML='HP awal <b>'+ps.maxHp+'</b> • Damage <b>'+ps.dmg+'</b> • Kecepatan <b>'+Math.round(ps.spdF*100)+'%</b> • Perisai <b>'+ps.shield+'×</b><br>Jangkauan '+S.p1Char.range+' • Jeda tebas '+Math.round(S.p1Char.cd*1000)+'ms • Tombol: A/D, W, F, G, H';
+  $('sumFoeName').textContent=S.p2Char.name;$('sumFoeWeapon').textContent=S.p2Char.weapon+' • Jurus: '+S.p2Char.skillName;
+  $('sumFoePotions').innerHTML=potionPills(r2.ups,'up')+potionPills(r2.downs,'down');
+  $('sumFoeStats').innerHTML='HP awal <b>'+fs.maxHp+'</b> • Damage <b>'+fs.dmg+'</b> • Kecepatan <b>'+Math.round(fs.spdF*100)+'%</b> • Perisai <b>'+fs.shield+'×</b><br>Jangkauan '+S.p2Char.range+' • Jeda tebas '+Math.round(S.p2Char.cd*1000)+'ms • Tombol: panah, koma, titik, /';
+  show('screen-summary');return}
+ var ps=calcStats(S.char,S.ups,S.downs);var foeUps=[UP_POOL[0],UP_POOL[1]];var fs=calcStats(S.foe,foeUps,[]);S.playerStats=ps;S.foeStats=fs;S.foeUps=foeUps;$('sumScore').textContent=S.correct+' / 5';var un=S.correct>=3;$('sumVerdict').textContent=un?'Jurus TERBUKA — '+S.char.skillName:'Jurus TERKUNCI — butuh minimal 3 benar';$('sumSkillNote').textContent=un?'Tombol jurus emas aktif sekali pakai di arena. Tekan L atau tombol JURUS saat momen tepat.':'Kamu tetap bisa menang dengan tebasan dan tangkisan. Jurus AI tetap bisa terbuka lewat meternya.';$('sumYouTag').textContent='KAMU';$('sumFoeTag').textContent='LAWAN • AI';$('sumYouName').textContent=S.char.name;$('sumYouWeapon').textContent=S.char.weapon+' • Jurus: '+S.char.skillName;$('sumYouPotions').innerHTML=potionPills(S.ups,'up')+potionPills(S.downs,'down');$('sumYouStats').innerHTML='HP awal <b>'+ps.maxHp+'</b> • Damage <b>'+ps.dmg+'</b> • Kecepatan <b>'+Math.round(ps.spdF*100)+'%</b> • Perisai <b>'+ps.shield+'×</b><br>Jangkauan '+S.char.range+' • Jeda tebas '+Math.round(S.char.cd*1000)+'ms';$('sumFoeName').textContent=S.foe.name;$('sumFoeWeapon').textContent=S.foe.weapon+' • Jurus: '+S.foe.skillName+' (AI)';$('sumFoePotions').innerHTML=potionPills(foeUps,'up')+'<span class="pill neutral">Ramuan tetap AI = 2 benar</span>';$('sumFoeStats').innerHTML='HP awal <b>'+fs.maxHp+'</b> • Damage <b>'+fs.dmg+'</b> • Kecepatan <b>'+Math.round(fs.spdF*100)+'%</b><br>Jurus AI terbuka setelah meter penuh.';show('screen-summary')}
+$('btnBackSelect').onclick=function(){show('screen-select')};
+$('btnStartDuel').onclick=function(){startDuel()};
+
+/* ================= DUEL ================= */
+var cv=$('game'),ctx=cv.getContext('2d');var G=null,raf=null,lastTs=0;
+/* Garis tanah = garis atas bidang tanah cokelat pada gambar arena (±75% tinggi gambar) */
+function groundY(){return Math.round(cv.height*0.75)}
+function makeFighter(char,stats,x,facing,isPlayer){return{char:char,stats:stats,x:x,y:0,vx:0,vy:0,facing:facing,hp:stats.maxHp,maxHp:stats.maxHp,onGround:true,wasGround:true,coyote:0,atkCd:0,atkAnim:0,atkDur:0.18,block:false,hitFlash:0,frozen:0,bound:0,invuln:0,shield:stats.shield,skillUsed:false,meter:isPlayer?100:0,walk:0,breath:Math.random()*6,squashX:1,squashY:1,landDust:0,glide:false,ko:false,rapidLeft:0,rapidTimer:0,skillActive:0,dive:false,hitStun:0,skillUnlocked:false,meterMode:false}}
+function startDuel(){show('screen-duel');var two=S.mode==='2p';var cYou=two?S.p1Char:S.char,cFoe=two?S.p2Char:S.foe;
+ InputSolo.reset();InputP1.reset();InputP2.reset();
+ $('hudYouName').textContent=cYou.name;$('hudFoeName').textContent=cFoe.name;
+ $('hudYouTag').textContent=two?'P1':'KAMU';$('hudFoeTag').textContent=two?'P2':'LAWAN';
+ $('skillFoeLabel').textContent=two?'JURUS P2':'JURUS AI';
+ $('aiStateTag').style.display=two?'none':'block';
+ $('touch1p').style.display=two?'none':'grid';$('touch2p').classList.toggle('on',two);
+ $('kbdHint1p').style.display=two?'none':'block';$('kbdHint2p').style.display=two?'block':'none';
+ $('arenaPotions').innerHTML=two?'<span class="pill up">P1: '+S.p1Res.correct+' benar</span>'+potionPills(S.p1Res.ups,'up')+potionPills(S.p1Res.downs,'down')+'<span class="pill up">P2: '+S.p2Res.correct+' benar</span>'+potionPills(S.p2Res.ups,'up')+potionPills(S.p2Res.downs,'down'):'<span class="pill up">Kamu: '+S.correct+' benar</span>'+potionPills(S.ups,'up')+potionPills(S.downs,'down')+'<span class="pill neutral">Lawan AI: ramuan 2 benar</span>';
+ var un1=two?S.p1Res.correct>=3:S.correct>=3;var un2=two?S.p2Res.correct>=3:false;
+ G={mode:S.mode,t:90,over:false,how:'',winner:null,hitStop:0,shake:0,shakeX:0,shakeY:0,particles:[],floaters:[],rings:[],player:makeFighter(cYou,S.playerStats,180,1,true),foe:makeFighter(cFoe,S.foeStats,780,-1,false),playerSkillUnlocked:un1,countdown:2.1,ai:{state:'Siaga',time:0,decide:0,reaction:0.22,plan:'mendekat'}};
+ G.player.skillUnlocked=un1;G.player.meterMode=false;
+ if(two){G.foe.skillUnlocked=un2;G.foe.meterMode=false}else G.foe.meterMode=true;
+ if(!un1)G.player.meter=0;
+ updateHUD();$('duelMsg').textContent='Bersiap…';syncSkillButtons();
+ if(raf)cancelAnimationFrame(raf);lastTs=0;raf=requestAnimationFrame(loop)}
+function endDuel(winner,how){if(!G||G.over)return;G.over=true;G.how=how;G.winner=winner;var loser=winner===G.player?G.foe:G.player;loser.ko=true;juiceHit(winner===G.player?G.player.x:G.foe.x,groundY()-100,'besar',winner.char.color,'#D9A441');setTimeout(function(){if(raf)cancelAnimationFrame(raf);$('resKicker').textContent=how==='KO'?'KO! Duel Berakhir':'Waktu Habis — HP Tertinggi Menang';var ri=$('resImg');ri.src=winner.char.img;ri.alt='Pendekar pemenang: '+winner.char.name;var two=G.mode==='2p';var loser=winner===G.player?G.foe:G.player;var wName=winner===G.player?'Pemain 1':'Pemain 2';var lName=winner===G.player?'Pemain 2':'Pemain 1';
+$('resTitle').textContent=two?wName+' Menang!':(winner===G.player?'Kamu Menang!':winner.char.name+' Menang');
+$('resDesc').textContent=two?wName+' ('+winner.char.name+') mengalahkan '+lName+' ('+loser.char.name+') lewat '+how+'. Ramuan masing-masing: P1 '+S.p1Res.correct+' benar, P2 '+S.p2Res.correct+' benar.':(winner===G.player?S.char.name+' mengalahkan '+S.foe.name+' ('+how+'). Ramuan dari '+S.correct+' jawaban benar ikut menentukan.':S.foe.name+' (AI) memenangkan duel ini ('+how+'). Coba ramuan baru: jawab lebih banyak soal dengan benar.');
+$('resQuiz').textContent=two?'P1 '+S.p1Res.correct+'/5 • P2 '+S.p2Res.correct+'/5':S.correct+' / 5 benar';
+$('resHpLabel').textContent=two?'Sisa HP Pemenang':'Sisa HP Kamu';
+$('resHp').textContent=Math.max(0,Math.ceil(winner.hp))+' / '+winner.maxHp;
+$('resNote').textContent=two?'Main Lagi memakai mode dan pendekar yang sama, dengan soal baru untuk kedua pemain.':'Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.';$('resHow').textContent=how+(how==='KO'?' — HP lawan habis':' — '+Math.ceil(G.player.hp)+' vs '+Math.ceil(G.foe.hp));show('screen-result')},1150)}
+$('btnRematch').onclick=function(){startQuizFlow()};$('btnChangeChar').onclick=function(){setMode(S.mode);show('screen-select')};
+
+/* ---------- [disciplines/game-feel] JUICE BERLAPIS BERTINGKAT ---------- */
+var JUICE_TIER={kecil:{stop:0.018,shake:2,parts:5,rings:0},sedang:{stop:0.055,shake:5,parts:14,rings:1},besar:{stop:0.13,shake:11,parts:30,rings:2}};
+function juiceHit(x,y,tier,colA,colB){if(!G)return;var j=JUICE_TIER[tier]||JUICE_TIER.sedang;G.hitStop=Math.max(G.hitStop,j.stop);G.shake=Math.max(G.shake,j.shake);for(var i=0;i<j.parts;i++){var ang=Math.random()*Math.PI*2,sp=60+Math.random()*260;G.particles.push({x:x,y:y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-70,life:0.32+Math.random()*0.3,max:0.6,c:Math.random()<0.45?colA:(Math.random()<0.5?(colB||'#D9A441'):'#F7E3B0'),r:2+Math.random()*3.2,flame:true,ang:ang})}for(var r=0;r<j.rings;r++)G.rings.push({x:x,y:y,r:8,life:0.28,max:0.28,tier:tier})}
+function addFloater(x,y,text,c){G.floaters.push({x:x,y:y,text:text,c:c,life:0.9,max:0.9})}
+function dust(x,y,n,spread){if(!G)return;for(var i=0;i<n;i++)G.particles.push({x:x+(Math.random()-0.5)*(spread||26),y:y-2,vx:(Math.random()-0.5)*70,vy:-20-Math.random()*45,life:0.3+Math.random()*0.25,max:0.55,c:'#8A5A28',r:2.5+Math.random()*3,flame:false,ang:0})}
+
+/* ---------- serangan ---------- */
+function tryAttack(f){if(!G||G.over||G.countdown>0||!f)return false;if(f.atkCd>0||f.frozen>0||f.bound>0||f.ko||f.block||f.hitStun>0)return false;f.atkCd=f.char.cd;f.atkAnim=f.atkDur;var target=f===G.player?G.foe:G.player;var dist=Math.abs(target.x-f.x);var ok=(target.x-f.x)*f.facing>=-10;
+ if(target.atkAnim>0.05&&dist<f.char.range+34&&ok){var mx=(f.x+target.x)/2,my=groundY()+f.y-100;juiceHit(mx,my,'sedang',f.char.color,target.char.color);addFloater(mx,groundY()-190,'PEDANG BERADU!','#5C430A');return true}
+ if(dist<=f.char.range+22&&ok&&Math.abs(target.y-f.y)<74)dealHit(f,target,false);else juiceHit(f.x+f.facing*(f.char.range*0.7),groundY()+f.y-100,'kecil',f.char.color);
+ return true}
+function dealHit(att,def,isSkill,skillDmg){if(def.invuln>0&&!isSkill)return;var dmg=isSkill?skillDmg:att.stats.dmg;var blocked=false,shielded=false;if(def.shield>0){def.shield--;shielded=true;dmg=0}else if(def.block&&!isSkill){dmg=Math.round(dmg*0.25*10)/10;blocked=true}
+ def.hp-=dmg;def.hitFlash=0.18;def.hitStun=isSkill?0.32:0.16;if(G.mode!=='2p'&&def===G.foe&&!isSkill)setAIState('Terkena',0.16);
+ if(!blocked&&!shielded){def.vx=att.facing*att.char.knock*(isSkill?1.6:1);if(def.onGround)def.vy=Math.min(def.vy,isSkill?-190:-70)}
+ if(att.meterMode)att.meter=Math.min(100,att.meter+18);if(def.meterMode)def.meter=Math.min(100,(def.meter||0)+12);
+ var tier=isSkill?'besar':'sedang';var hx=def.x,hy=groundY()+def.y-100;juiceHit(hx,hy,tier,att.char.color,def.char.color);
+ addFloater(def.x,groundY()+def.y-215,shielded?'PERISAI MENAHAN!':blocked?'-'+dmg+' (ditangkis)':'-'+dmg,shielded?'#0F766E':blocked?'#475569':'#B91C1C');
+ if(def.hp<=0){def.hp=0;endDuel(att,'KO')}updateHUD()}
+function trySkill(f){if(!G||G.over||G.countdown>0||!f||f.skillUsed||f.ko||f.frozen>0||f.bound>0)return;if(!f.meterMode&&!f.skillUnlocked){$('duelMsg').textContent=(G.mode==='2p'?(f===G.player?'Jurus Pemain 1':'Jurus Pemain 2'):'Jurus')+' terkunci — butuh minimal 3 jawaban benar dari soal pemain itu.';return}if(f.meterMode&&f.meter<100)return;f.skillUsed=true;if(f.meterMode)f.meter=0;var foe=f===G.player?G.foe:G.player;f.facing=foe.x>=f.x?1:-1;$('duelMsg').textContent=f.char.name+': '+f.char.skillName+'!';juiceHit(f.x+f.facing*40,groundY()+f.y-100,'besar',f.char.color,'#D9A441');
+ if(f.char.id==='tarsius'){foe.frozen=2;foe.block=false;dealHit(f,foe,true,6);addFloater(foe.x,groundY()+foe.y-225,'MEMBEKU 2 DETIK!','#0369A1')}
+ else if(f.char.id==='anoa'){f.skillActive=0.42;f.vx=f.facing*780;setTimeout(function(){if(!G||G.over)return;if(Math.abs(foe.x-f.x)<95)dealHit(f,foe,true,20)},170)}
+ else if(f.char.id==='maleo'){f.vy=-940;f.onGround=false;f.invuln=0.9;f.dive=true;setTimeout(function(){if(!G||G.over)return;f.vy=520;f.vx=f.facing*420;setTimeout(function(){if(!G||G.over)return;f.invuln=0;f.dive=false;if(Math.abs(foe.x-f.x)<92&&Math.abs(foe.y-f.y)<84)dealHit(f,foe,true,18)},320)},400)}
+ else if(f.char.id==='yaki'){f.rapidLeft=3;f.rapidTimer=0}
+ else if(f.char.id==='kuskus'){if(Math.abs(foe.x-f.x)<250){foe.x=f.x+f.facing*62;foe.bound=1.5;foe.vx=0;dealHit(f,foe,true,8);addFloater(foe.x,groundY()+foe.y-225,'TERIKAT 1,5 DETIK!','#44403C')}else addFloater(f.x+f.facing*90,groundY()+f.y-205,'Kait meleset!','#78716C')}
+ syncSkillButtons();updateHUD()}
+
+/* ---------- [disciplines/game-ai] FSM LAWAN ---------- */
+function setAIState(s,dur){if(!G)return;G.ai.state=s;G.ai.time=dur||0;var el=$('aiStateTag');if(el)el.textContent='AI: '+s}
+function aiDecide(dt){var ai=G.ai,f=G.foe,p=G.player;ai.decide-=dt;if(ai.decide>0)return;ai.decide=0.12+Math.random()*0.08;var dist=Math.abs(p.x-f.x);
+ if(f.frozen>0||f.bound>0||f.ko)return;
+ if(f.meter>=100&&!f.skillUsed&&dist<250){ai.plan='jurus';return}
+ if(p.atkAnim>0.04&&dist<120){ai.plan=Math.random()<0.55?'tangkis':'mundur';ai.reaction=0.18+Math.random()*0.12;return}
+ if(dist>f.char.range+16)ai.plan='mendekat';
+ else if(dist<f.char.range*0.45&&Math.random()<0.3)ai.plan='mundur';
+ else ai.plan='menyerang'}
+function aiAct(dt){var ai=G.ai,f=G.foe,p=G.player;if(f.ko||f.frozen>0||f.bound>0){f.block=false;return}var dist=p.x-f.x;f.facing=dist>=0?1:-1;f.block=false;ai.time-=dt;
+ if(ai.state==='Terkena'){if(ai.time<=0)setAIState('Siaga');return}
+ if(ai.state==='Jurus'){if(ai.time<=0)setAIState('Siaga');return}
+ if(ai.reaction>0){ai.reaction-=dt;if(ai.plan==='tangkis'){setAIState('Tangkis');f.block=true}return}
+ switch(ai.plan){
+  case 'jurus': setAIState('Jurus',0.5); trySkill(f); break;
+  case 'tangkis': setAIState('Tangkis'); f.block=true; break;
+  case 'mundur': setAIState('Mundur'); f.vx=-f.facing*f.stats.speed*0.8; break;
+  case 'mendekat': setAIState('Mendekat'); f.vx=f.facing*f.stats.speed*0.92; if(p.y<-56&&f.onGround&&Math.random()<0.02)doJump(f); break;
+  case 'menyerang': if(Math.abs(dist)<=f.char.range+14){setAIState('Menyerang',0.3);tryAttack(f)} else {setAIState('Mendekat');f.vx=f.facing*f.stats.speed*0.92} break;
+  default: setAIState('Siaga');
+ }}
+function doJump(f){if(f.onGround||f.coyote>0){f.vy=KNOB.jumpVel;f.onGround=false;f.coyote=0;f.squashX=0.88;f.squashY=1.12;dust(f.x,groundY()+f.y,5)}}
+
+/* ---------- fisika petarung: knob platformer penuh ---------- */
+function physics(f,dt,moveInput){var wasAir=!f.onGround;
+ if(f.atkCd>0)f.atkCd-=dt;if(f.atkAnim>0)f.atkAnim-=dt;if(f.hitFlash>0)f.hitFlash-=dt;if(f.frozen>0)f.frozen-=dt;if(f.bound>0)f.bound-=dt;if(f.invuln>0)f.invuln-=dt;if(f.hitStun>0)f.hitStun-=dt;if(f.skillActive>0){f.skillActive-=dt;if(f.skillActive<=0&&f.char.id==='anoa')f.vx=0}
+ if(f.rapidLeft>0){f.rapidTimer-=dt;if(f.rapidTimer<=0){f.rapidTimer=0.14;f.rapidLeft--;f.atkAnim=0.14;var foe=f===G.player?G.foe:G.player;if(Math.abs(foe.x-f.x)<=f.char.range+30)dealHit(f,foe,true,7);else juiceHit(f.x+f.facing*40,groundY()+f.y-100,'kecil',f.char.color)}}
+ f.squashX+=(1-f.squashX)*Math.min(1,dt*14);f.squashY+=(1-f.squashY)*Math.min(1,dt*14);
+ var frozen=f.frozen>0||f.bound>0||f.ko||f.hitStun>0.05;
+ if(moveInput!==undefined&&!frozen&&!f.block&&f.skillActive<=0){var target=moveInput*f.stats.speed;var tAcc=f.onGround?KNOB.groundAccelTime:KNOB.airAccelTime;var k=Math.min(1,dt/tAcc);f.vx+=(target-f.vx)*easeOutCubic(k);if(moveInput!==0){f.facing=moveInput;f.walk+=dt*Math.abs(f.vx)*0.055}}
+ else if(f.onGround&&f.skillActive<=0){f.vx*=Math.pow(0.0001,dt)}
+ if(!f.onGround){var g=KNOB.gravity;if(f.vy>0)g*=KNOB.fallGravMul;if(Math.abs(f.vy)<KNOB.apexBand)g*=KNOB.apexGravMul;if(f.glide&&f.vy>54){f.y+=54*dt}else{f.vy+=g*dt;f.y+=f.vy*dt}
+  if(f.y>=0){f.y=0;f.vy=0;f.onGround=true;f.glide=false;f.squashX=1.16;f.squashY=0.86;dust(f.x,groundY(),9,44)}
+ } else {f.y=0}
+ if(f.onGround)f.coyote=KNOB.coyote;else if(f.coyote>0)f.coyote-=dt;
+ f.x+=f.vx*dt;f.x=Math.max(48,Math.min(cv.width-48,f.x))}
+
+/* ---------- input keyboard & sentuh -> AKSI ---------- */
+window.addEventListener('keydown',function(e){if(!$('screen-duel').classList.contains('active'))return;activeInputs().forEach(function(inp){var a=inp.routes[e.code];if(!a)return;if(!e.repeat)inp.press(a);if(a==='gerak_kiri'||a==='gerak_kanan'||a==='lompat'||a==='jurus')e.preventDefault()})});
+window.addEventListener('keyup',function(e){activeInputs().forEach(function(inp){var a=inp.routes[e.code];if(!a)return;inp.release(a);if(a==='lompat'&&G&&!G.over){var f=inp===InputP2?G.foe:G.player;if(f&&!f.onGround&&f.vy<0)f.vy*=KNOB.jumpCut;if(f)f.glide=false}})});
+function handleDiscrete(now,inp,p){if(!G||G.over||G.countdown>0||!inp||!p)return;
+ if(inp.consumeBuffered('lompat',now)){if(p.frozen<=0&&p.bound<=0&&!p.ko){if(p.onGround||p.coyote>0)doJump(p);else if(p.char.id==='maleo'&&p.vy>60)p.glide=true}}
+ if(inp.consumeBuffered('tebas',now))tryAttack(p);
+ if(inp.consumeBuffered('jurus',now))trySkill(p)}
+/* Sentuh: pointer events PER TOMBOL (bukan satu handler global),
+   jadi multi-touch dua pemain jalan bersamaan tanpa saling
+   membatalkan — tiap tombol memegang status pointer-nya sendiri
+   dan menulis ke instans Input pemainnya sendiri. */
+function bindTouch(id,inp,action,tapAction){var el=$(id);if(!el)return;var dn=function(e){e.preventDefault();el.classList.add('active');if(action)inp.touchHeld[action]=true;if(tapAction)inp.press(tapAction)};var up=function(e){if(e.cancelable)e.preventDefault();el.classList.remove('active');if(action)inp.touchHeld[action]=false;if(tapAction==='lompat'&&G&&!G.over){var p=inp===InputP2?G.foe:G.player;if(p&&!p.onGround&&p.vy<0)p.vy*=KNOB.jumpCut;if(p)p.glide=false}};el.addEventListener('pointerdown',dn);el.addEventListener('pointerup',up);el.addEventListener('pointerleave',up);el.addEventListener('pointercancel',up)}
+bindTouch('tcLeft',InputSolo,'gerak_kiri');bindTouch('tcRight',InputSolo,'gerak_kanan');bindTouch('tcBlock',InputSolo,'tangkis');bindTouch('tcJump',InputSolo,null,'lompat');bindTouch('tcAttack',InputSolo,null,'tebas');bindTouch('tcSkill',InputSolo,null,'jurus');
+bindTouch('tc1Left',InputP1,'gerak_kiri');bindTouch('tc1Right',InputP1,'gerak_kanan');bindTouch('tc1Block',InputP1,'tangkis');bindTouch('tc1Jump',InputP1,null,'lompat');bindTouch('tc1Attack',InputP1,null,'tebas');bindTouch('tc1Skill',InputP1,null,'jurus');
+bindTouch('tc2Left',InputP2,'gerak_kiri');bindTouch('tc2Right',InputP2,'gerak_kanan');bindTouch('tc2Block',InputP2,'tangkis');bindTouch('tc2Jump',InputP2,null,'lompat');bindTouch('tc2Attack',InputP2,null,'tebas');bindTouch('tc2Skill',InputP2,null,'jurus');
+
+/* ---------- HUD & loop ---------- */
+function syncSkillButtons(){if(!G)return;var t0=$('tcSkill');if(t0)t0.disabled=!G.playerSkillUnlocked||G.player.skillUsed;var t1=$('tc1Skill');if(t1)t1.disabled=!G.player.skillUnlocked||G.player.skillUsed;var t2=$('tc2Skill');if(t2)t2.disabled=!G.foe.skillUnlocked||G.foe.skillUsed}
+function updateHUD(){if(!G)return;$('hpYou').style.width=Math.max(0,G.player.hp/G.player.maxHp*100)+'%';$('hpYouText').textContent=Math.max(0,Math.ceil(G.player.hp))+' HP';$('hpFoe').style.width=Math.max(0,G.foe.hp/G.foe.maxHp*100)+'%';$('hpFoeText').textContent=Math.max(0,Math.ceil(G.foe.hp))+' HP';$('timerNum').textContent=Math.max(0,Math.ceil(G.t));$('hudYouShield').textContent=G.player.shield>0?'Perisai ×'+G.player.shield:'';$('hudFoeShield').textContent=G.foe.shield>0?'Perisai ×'+G.foe.shield:'';var un=G.playerSkillUnlocked;$('skillYouText').textContent=!un?'TERKUNCI':G.player.skillUsed?'TERPAKAI':'SIAP — tekan '+(G.mode==='2p'?'H':'L');$('skillYouBar').style.width=(!un||G.player.skillUsed)?'0%':'100%';if(G.mode==='2p'){$('skillFoeText').textContent=!G.foe.skillUnlocked?'TERKUNCI':G.foe.skillUsed?'TERPAKAI':'SIAP — tekan /';$('skillFoeBar').style.width=(!G.foe.skillUnlocked||G.foe.skillUsed)?'0%':'100%'}else{$('skillFoeText').textContent=G.foe.skillUsed?'Jurus terpakai':'Meter '+Math.floor(G.foe.meter)+'%';$('skillFoeBar').style.width=G.foe.meter+'%'}syncSkillButtons()}
+function loop(ts){if(!G)return;var dt=lastTs?Math.min(0.04,(ts-lastTs)/1000):0.016;lastTs=ts;var now=ts/1000;
+ if(G.hitStop>0){G.hitStop-=dt;draw();raf=requestAnimationFrame(loop);return}
+ if(G.countdown>0){G.countdown-=dt;$('duelMsg').textContent=G.countdown>1.4?'Bersiap… 3':G.countdown>0.7?'Bersiap… 2':'Bersiap… 1';if(G.countdown<=0)$('duelMsg').textContent='MULAI! Adu pedang!'}
+ else if(!G.over){G.t-=dt;if(G.t<=0){G.t=0;endDuel(G.player.hp>=G.foe.hp?G.player:G.foe,'Waktu Habis')}
+  var p=G.player,f2=G.foe;
+  if(G.mode==='2p'){
+   handleDiscrete(now,InputP1,p);handleDiscrete(now,InputP2,f2);
+   p.block=InputP1.isHeld('tangkis')&&p.onGround&&p.frozen<=0&&p.bound<=0;
+   f2.block=InputP2.isHeld('tangkis')&&f2.onGround&&f2.frozen<=0&&f2.bound<=0;
+   var mv1=0;if(InputP1.isHeld('gerak_kiri'))mv1-=1;if(InputP1.isHeld('gerak_kanan'))mv1+=1;
+   var mv2=0;if(InputP2.isHeld('gerak_kiri'))mv2-=1;if(InputP2.isHeld('gerak_kanan'))mv2+=1;
+   [p,f2].forEach(function(f){var o=f===p?f2:p;if(f.onGround&&f.atkAnim<=0&&!f.block&&f.frozen<=0&&f.bound<=0)f.facing=o.x>=f.x?1:-1});
+   physics(p,dt,p.block?0:mv1);physics(f2,dt,f2.block?0:mv2);
+  }else{
+   handleDiscrete(now,InputSolo,p);
+   p.block=InputSolo.isHeld('tangkis')&&p.onGround&&p.frozen<=0&&p.bound<=0;
+   var mv=0;if(InputSolo.isHeld('gerak_kiri'))mv-=1;if(InputSolo.isHeld('gerak_kanan'))mv+=1;
+   aiDecide(dt);aiAct(dt);
+   physics(p,dt,p.block?0:mv);physics(f2,dt);
+  }
+  if(Math.abs(p.x-G.foe.x)<44){var push=(44-Math.abs(p.x-G.foe.x))/2;var dir=p.x<G.foe.x?-1:1;p.x+=dir*push;G.foe.x-=dir*push}
+  G.particles=G.particles.filter(function(pt){pt.life-=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=300*dt;return pt.life>0});
+  G.rings=G.rings.filter(function(r){r.life-=dt;r.r+=dt*(r.tier==='besar'?340:220);return r.life>0});
+  G.floaters=G.floaters.filter(function(fl){fl.life-=dt;fl.y-=26*dt;return fl.life>0});
+  if(G.shake>0){G.shake*=Math.pow(0.001,dt);if(G.shake<0.3)G.shake=0}
+  updateHUD()}
+ draw();raf=requestAnimationFrame(loop)}
+
+/* ================= GAMBAR — kode hanya menggerakkan gambar =================
+   Latar: gambar arena apa adanya menutupi kanvas.
+   Figur: sprite potongan gambar; gerakannya transformasi
+   (geser, balik horizontal, miring, putar), BUKAN gambar ulang.
+   Di atas gambar hanya efek datar sederhana: bayangan elips
+   kaki, busur tebas, percikan bintang, cincin, angka damage. */
+var SPRITE_H=208;
+function draw(){var W=cv.width,H=cv.height,gy=groundY();var now=performance.now();ctx.save();
+ if(G.shake>0)ctx.translate((Math.random()-0.5)*G.shake*2,(Math.random()-0.5)*G.shake*1.4);
+ if(ARENA_IMG.complete&&ARENA_IMG.naturalWidth>0)ctx.drawImage(ARENA_IMG,0,0,W,H);else{ctx.fillStyle='#F2C96E';ctx.fillRect(0,0,W,H)}
+ drawFighter(G.foe,now);drawFighter(G.player,now);
+ G.rings.forEach(function(r){ctx.globalAlpha=Math.max(0,r.life/r.max)*0.7;ctx.strokeStyle='#FFF3C4';ctx.lineWidth=r.tier==='besar'?5:3;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,7);ctx.stroke()});ctx.globalAlpha=1;
+ G.particles.forEach(function(pt){var a=Math.max(0,pt.life/pt.max);ctx.globalAlpha=a;if(pt.flame){ctx.save();ctx.translate(pt.x,pt.y);ctx.rotate(pt.ang||0);ctx.fillStyle=pt.c;var R=pt.r*1.7,r2=pt.r*0.45;ctx.beginPath();ctx.moveTo(-R,0);ctx.lineTo(-r2,-r2);ctx.lineTo(0,-R*0.55);ctx.lineTo(r2,-r2);ctx.lineTo(R,0);ctx.lineTo(r2,r2);ctx.lineTo(0,R*0.55);ctx.lineTo(-r2,r2);ctx.closePath();ctx.fill();ctx.restore()}else{ctx.fillStyle=pt.c;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill()}});ctx.globalAlpha=1;
+ G.floaters.forEach(function(fl){ctx.globalAlpha=Math.min(1,fl.life/0.4);ctx.font='800 15px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='rgba(35,32,27,.85)';ctx.strokeText(fl.text,fl.x,fl.y);ctx.fillStyle=fl.c==='#B91C1C'?'#FFD9CE':fl.c;ctx.fillText(fl.text,fl.x,fl.y)});ctx.globalAlpha=1;ctx.textAlign='left';
+ if(G.countdown>0){ctx.fillStyle='rgba(20,14,6,.45)';ctx.fillRect(-14,-14,W+28,H+28);ctx.font='400 84px "Lilita One",sans-serif';ctx.textAlign='center';var cd=G.countdown>1.4?'3':G.countdown>0.7?'2':'1';ctx.lineWidth=10;ctx.strokeStyle='rgba(20,14,6,.9)';ctx.strokeText(cd,W/2,H/2+10);ctx.fillStyle='#F7E3B0';ctx.fillText(cd,W/2,H/2+10);ctx.textAlign='left'}
+ ctx.restore()}
+function drawFighter(f,now){var gy=groundY();var baseY=gy+f.y;var isP=f===G.player;var img=f.char.sprite;if(!img||!img.complete||!img.naturalWidth)return;
+ var h=SPRITE_H,w=h*img.naturalWidth/img.naturalHeight;
+ /* bayangan elips tipis di kaki (efek datar) */
+ var shScale=Math.max(0.45,1+f.y/420);ctx.fillStyle='rgba(84,48,16,.35)';ctx.beginPath();ctx.ellipse(f.x,gy+10,w*0.30*shScale,7*shScale,0,0,7);ctx.fill();
+ /* busur tebasan datar di depan figur saat animasi tebas berjalan */
+ if(f.atkAnim>0&&!f.ko){var p=1-f.atkAnim/f.atkDur;var cx=f.x+f.facing*14,cy=baseY-SPRITE_H*0.52;var R=f.char.range*1.05+26;ctx.save();ctx.globalAlpha=0.85*Math.sin(Math.min(1,p)*Math.PI);ctx.fillStyle=f.char.color;ctx.beginPath();ctx.moveTo(cx,cy);var a0,a1;if(f.facing>0){a0=-2.2+easeOutCubic(p)*1.5;a1=a0+1.15}else{a0=Math.PI+2.2-easeOutCubic(p)*1.5-1.15;a1=a0+1.15}ctx.arc(cx,cy,R,a0,a1);ctx.closePath();ctx.fill();ctx.globalAlpha*=0.9;ctx.strokeStyle='#FFF3C4';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R*0.93,a0+0.15,a1-0.1);ctx.stroke();ctx.restore()}
+ /* transformasi sprite: bob, menerjang, miring, rebah */
+ var moving=Math.abs(f.vx)>25&&f.onGround;
+ var bob=f.ko?0:(moving?Math.abs(Math.sin(now/90+f.walk))*4:(f.onGround?Math.sin(now/480+f.breath)*2.2:0));
+ var lunge=0,tilt=0;
+ if(f.atkAnim>0){var ap=1-f.atkAnim/f.atkDur;var s=Math.sin(Math.min(1,ap)*Math.PI);lunge=s*16;tilt=s*0.15}
+ if(f.dive)tilt=0.35; if(f.glide)tilt=-0.08;
+ if(f.hitStun>0.05&&!f.ko)tilt=-0.07;
+ ctx.save();ctx.translate(f.x+f.facing*lunge,baseY-bob);ctx.scale(f.facing*f.squashX,f.squashY);
+ if(f.ko)ctx.rotate(-1.5);else ctx.rotate(tilt);
+ var useImg=(f.hitFlash>0.05&&f.char.whiteSprite)?f.char.whiteSprite:img;
+ ctx.drawImage(useImg,-w/2,-h,w,h);
+ ctx.restore();
+ /* lapisan efek datar di atas sprite: beku / lingkaran kebal / label */
+ if(f.frozen>0){ctx.fillStyle='rgba(125,211,252,.30)';ctx.fillRect(f.x-w/2,baseY-h,w,h);ctx.strokeStyle='#0284C7';ctx.lineWidth=2;ctx.strokeRect(f.x-w/2,baseY-h,w,h)}
+ if(f.invuln>0){ctx.strokeStyle='#D9A441';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(f.x,baseY-SPRITE_H/2,SPRITE_H*0.56,0,7);ctx.stroke();ctx.setLineDash([])}
+ if(f.block){ctx.fillStyle='rgba(255,246,222,.9)';ctx.strokeStyle='#14100A';ctx.lineWidth=2;var bx=f.x+f.facing*(w/2-6),by=baseY-SPRITE_H*0.52;ctx.beginPath();ctx.roundRect(bx-13,by-15,26,20,7);ctx.fill();ctx.stroke();ctx.fillStyle='#14100A';ctx.font='900 9px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.fillText('TANGKIS',bx,by-1);ctx.textAlign='left'}
+ if(!f.ko){ctx.font='900 10px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';var label=(G&&G.mode==='2p')?(isP?'P1':'P2'):(isP?'KAMU':'LAWAN');var ly=baseY-h-24+Math.sin(now/400)*2;ctx.fillStyle=isP?'#0B4F4A':'#C0532F';ctx.strokeStyle='#14100A';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(f.x-22,ly,44,16,8);ctx.fill();ctx.stroke();ctx.fillStyle='#FFF6DE';ctx.fillText(label,f.x,ly+12);ctx.textAlign='left'}}
+
+/* ================= PERAN LAYAR & KONTROLER HP VIA RELAI =================
+   [disciplines/input-systems] Pola skill aslinya: gameplay hanya
+   membaca AKSI bernama dari instans Input per pemain; binding
+   adalah data per perangkat. Keyboard, sentuh, dan sekarang
+   KONTROLER JARINGAN adalah tiga perangkat sejajar yang menulis
+   ke instans Input yang sama — aksi 'pressed' (edge, dengan
+   buffer yang sama) untuk lompat/tebas/jurus, 'held' (level)
+   untuk gerak/tangkis. Kontroler hanya mengirim PERUBAHAN
+   keadaan tombol {a:aksi, d:1|0}; tuan rumah menerapkan
+   held-state, bukan streaming per frame.
+   Relai: MQTT over WebSocket, broker publik EMQX. Topik berisi
+   kode gabung acak 4 karakter; tak ada data pribadi.          */
+var BROKER_URL=(typeof window!=='undefined'&&window.MQTT_BROKER_URL)||'wss://broker.emqx.io:8084/mqtt';
+var TOPIC_BASE='muse/duel-stickman/';
+var ROLE='local';
+function genJoinCode(){var cs='ABCDEFGHJKMNPQRSTUVWXYZ23456789';var s='';for(var i=0;i<4;i++)s+=cs.charAt(Math.floor(Math.random()*cs.length));return s}
+function netInputForSlot(slot){if(slot===1)return (S.mode==='2p')?InputP1:InputSolo;return InputP2}
+function applyNetState(slot,a,d){var inp=netInputForSlot(slot);if(!inp||!inp.map[a])return;
+ if(d){inp.netHeld[a]=true;if(inp.map[a].mode==='pressed')inp.press(a)}
+ else{inp.netHeld[a]=false;inp.release(a);if(a==='lompat'&&G&&!G.over){var f=inp===InputP2?G.foe:G.player;if(f&&!f.onGround&&f.vy<0)f.vy*=KNOB.jumpCut;if(f)f.glide=false}}}
+function clearNetSlot(slot){var inp=netInputForSlot(slot);if(inp)inp.netHeld={};var inp2=slot===1?InputSolo:null;if(inp2&&inp2!==inp)inp2.netHeld={}}
+
+/* ---------- TUAN RUMAH ---------- */
+var HOST={client:null,code:null,slots:{1:null,2:null}};
+function hostBarUpdate(){$('hostCode').textContent=HOST.code||'····';
+ [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')})}
+function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};$('hostBar').classList.add('on');hostBarUpdate();
+ $('hostRelay').textContent='Relai: menyambungkan…';
+ if(typeof mqtt==='undefined'){$('hostRelay').textContent='Relai: perpustakaan MQTT gagal dimuat (CDN terhalang) — game lokal tetap jalan, kontroler belum bisa bergabung.';return}
+ try{HOST.client=mqtt.connect(BROKER_URL,{clientId:'duel-host-'+HOST.code+'-'+Math.random().toString(36).slice(2,8),connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+HOST.code+'/host',payload:'off',retain:true}})}catch(e){$('hostRelay').textContent='Relai: gagal menyambung — game lokal tetap jalan.';return}
+ var base=TOPIC_BASE+HOST.code;
+ HOST.client.on('connect',function(){HOST.client.subscribe([base+'/join',base+'/state',base+'/bye'],function(){HOST.client.publish(base+'/host','on',{retain:true});$('hostRelay').textContent='Relai: terhubung — bagikan kode di atas ke HP pemain.'})});
+ HOST.client.on('message',function(topic,payload){var msg;try{msg=JSON.parse(payload.toString())}catch(e){return}
+  if(topic===base+'/join'&&msg.cid){var slot=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:!HOST.slots[1]?1:!HOST.slots[2]?2:0;
+   if(slot){HOST.slots[slot]=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({slot:slot}));hostBarUpdate()}}
+  else if(topic===base+'/state'&&msg.a){var s2=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s2)applyNetState(s2,msg.a,msg.d)}
+  else if(topic===base+'/bye'&&msg.cid){[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;clearNetSlot(n)}});hostBarUpdate()}});
+ HOST.client.on('offline',function(){$('hostRelay').textContent='Relai: terputus, mencoba menyambung lagi…'});
+ HOST.client.on('error',function(){$('hostRelay').textContent='Relai: ada gangguan sambungan — game lokal tetap jalan.'})}
+function endHost(){if(HOST.client){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/host','off',{retain:true});HOST.client.end(true)}catch(e){}HOST.client=null}HOST.slots={1:null,2:null};ROLE='local';$('hostBar').classList.remove('on');[InputSolo,InputP1,InputP2].forEach(function(i){i.netHeld={}});show('screen-role')}
+$('btnEndHost').onclick=endHost;
+
+/* ---------- KONTROLER HP ---------- */
+var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false};
+function ctlStatus(t,on){var el=$('ctlJoinStatus');el.textContent=t;el.classList.toggle('on',!!on)}
+function ctlSend(a,d){if(CTL.client&&CTL.slot)CTL.client.publish(TOPIC_BASE+CTL.code+'/state',JSON.stringify({cid:CTL.cid,slot:CTL.slot,a:a,d:d?1:0}))}
+function ctlJoin(){var code=$('ctlCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){ctlStatus('Kode harus 4 karakter — lihat kode besar di layar tuan rumah.');return}
+ if(typeof mqtt==='undefined'){ctlStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — kontroler belum bisa bergabung.');return}
+ CTL.code=code;CTL.slot=0;ctlStatus('Menyambung ke relai…');
+ try{CTL.client=mqtt.connect(BROKER_URL,{clientId:'duel-'+CTL.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+code+'/bye',payload:JSON.stringify({cid:CTL.cid})}})}catch(e){ctlStatus('Gagal menyambung ke relai.');return}
+ var base=TOPIC_BASE+code;
+ CTL.client.on('connect',function(){CTL.client.subscribe([base+'/assign/'+CTL.cid,base+'/host']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
+  var join=function(){if(!CTL.slot)CTL.client.publish(base+'/join',JSON.stringify({cid:CTL.cid}))};join();clearInterval(CTL.joinTimer);CTL.joinTimer=setInterval(join,2500)});
+ CTL.client.on('message',function(topic,payload){
+  if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);
+   $('ctlJoinView').style.display='none';$('ctlPadView').style.display='block';$('ctlPadLabel').textContent='Pemain '+CTL.slot+' (P'+CTL.slot+')';$('ctlPadStatus').textContent='Terhubung — kamu Pemain '+CTL.slot+'. Duel dimulai dari layar tuan rumah.'}
+  else if(topic===base+'/host'){CTL.hostAlive=payload.toString()==='on';if(!CTL.hostAlive&&CTL.slot)$('ctlPadStatus').textContent='Tuan rumah terputus — pendekarmu berhenti menerima tombol.';else if(CTL.slot)$('ctlPadStatus').textContent='Terhubung — kamu Pemain '+CTL.slot+'. Duel dimulai dari layar tuan rumah.'}});
+ CTL.client.on('offline',function(){if(!CTL.slot)ctlStatus('Relai terputus — mencoba menyambung lagi…')});
+ CTL.client.on('error',function(){if(!CTL.slot)ctlStatus('Relai tidak terjangkau dari jaringan ini.')})}
+function ctlLeave(){clearInterval(CTL.joinTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;$('ctlPadView').style.display='none';$('ctlJoinView').style.display='block';ctlStatus('Sudah diputuskan.');show('screen-role')}
+$('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
+document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.getAttribute('data-act');
+ var dn=function(e){e.preventDefault();b.classList.add('active');ctlSend(a,1)};
+ var up=function(e){if(e.cancelable)e.preventDefault();b.classList.remove('active');ctlSend(a,0)};
+ b.addEventListener('pointerdown',dn);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);b.addEventListener('contextmenu',function(e){e.preventDefault()})});
+
+/* ---------- PILIH PERAN ---------- */
+$('roleLocal').onclick=function(){ROLE='local';show('screen-select')};
+$('roleHost').onclick=function(){startHost();show('screen-select')};
+$('roleCtl').onclick=function(){ROLE='controller';show('screen-controller')};
+</script>
+</body>
+</html>
