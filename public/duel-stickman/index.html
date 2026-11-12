@@ -177,7 +177,7 @@ canvas#game{touch-action:none}
       <div class="howCard"><h4>Kontrol</h4><ul><li><b>Lawan Komputer:</b> A/D atau ← → gerak, W/Spasi lompat, J tebas, K tangkis (tahan), L jurus</li><li><b>Dua Pemain — P1:</b> A/D gerak, W lompat, F tebas, G tangkis (tahan), H jurus</li><li><b>Dua Pemain — P2:</b> ←/→ gerak, ↑ lompat, <b>,</b> tebas, <b>.</b> tangkis (tahan), <b>/</b> jurus</li><li>Maleo: tekan lompat lagi saat jatuh untuk meluncur. Di HP: tombol sentuh di bawah arena (mode 2 pemain dibagi wilayah P1 dan P2)</li></ul></div>
       <div class="howCard"><h4>Ramuan soal</h4><p>5 soal acak per pemain. Tiap benar = 1 power up, tiap salah = 1 power down. Jurus terbuka bila <b>minimal 3 benar</b>. Mode Dua Pemain: tiap pemain menjawab 5 soalnya sendiri bergantian. Mode komputer: lawan AI membawa ramuan setara 2 benar, jurusnya terbuka setelah meter penuh.</p></div>
     </div>
-    <div class="selectFooter"><p id="selectedInfo">Belum memilih — ketuk salah satu kartu pendekar di atas.</p><button class="btn primary" id="btnToQuiz" disabled>Lanjut ke Soal →</button></div>
+    <div class="selectFooter"><button class="btn" id="btnBackRole">← Menu Awal</button><p id="selectedInfo">Belum memilih — ketuk salah satu kartu pendekar di atas.</p><button class="btn primary" id="btnToQuiz" disabled>Lanjut ke Soal →</button></div>
   </section>
 
   <section id="screen-quiz" class="screen">
@@ -192,7 +192,7 @@ canvas#game{touch-action:none}
         <div class="feedback" id="qFeedback"></div>
         <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="btnNextQ" style="display:none">Soal Berikutnya →</button></div>
       </div>
-      <p style="font-size:12px;color:#8A7355;text-align:center;margin-top:10px">Pendekarmu: <b id="quizCharName">—</b></p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="btnQuizBack">← Ganti Pendekar</button><p style="font-size:12px;color:#8A7355;margin:0">Pendekarmu: <b id="quizCharName">—</b></p></div>
     </div>
   </section>
 
@@ -246,6 +246,7 @@ canvas#game{touch-action:none}
         </div></div>
       </div>
       <div class="kbdHint" id="kbdHint1p">Desktop: <b>A/D</b> gerak <b>W / Spasi</b> lompat <b>J</b> tebas <b>K</b> tangkis (tahan) <b>L</b> jurus • Maleo: tekan lompat lagi saat jatuh untuk meluncur</div>
+      <div style="text-align:center;margin-top:10px"><button class="btn" id="btnQuitDuel">✕ Akhiri Duel</button></div>
       <div class="kbdHint" id="kbdHint2p" style="display:none">Dua Pemain — <b>P1</b> A/D gerak • W lompat • F tebas • G tangkis (tahan) • H jurus &nbsp;|&nbsp; <b>P2</b> ←/→ gerak • ↑ lompat • <b>,</b> tebas • <b>.</b> tangkis (tahan) • <b>/</b> jurus</div>
     </div>
   </section>
@@ -259,7 +260,7 @@ canvas#game{touch-action:none}
         <div style="background:#FFFBEB;border:1.5px solid #E6D5A8;border-radius:12px;padding:10px"><small id="resHpLabel" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#8A7355">Sisa HP Kamu</small><div id="resHp" style="font-weight:800;font-size:18px">—</div></div>
         <div style="background:#FFFBEB;border:1.5px solid #E6D5A8;border-radius:12px;padding:10px"><small style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#8A7355">Cara Berakhir</small><div id="resHow" style="font-weight:800;font-size:18px">—</div></div>
       </div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" id="btnRematch">Main Lagi — Soal Baru</button><button class="btn dark" id="btnChangeChar">Ganti Pendekar</button></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" id="btnRematch">Main Lagi — Soal Baru</button><button class="btn dark" id="btnChangeChar">Ganti Pendekar</button><button class="btn" id="btnHome">Menu Awal</button></div>
       <p id="resNote" style="font-size:12px;color:#8A7355;margin-top:12px">Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.</p>
     </div>
   </section>
@@ -420,6 +421,11 @@ function renderSummary(){
   show('screen-summary');return}
  var ps=calcStats(S.char,S.ups,S.downs);var foeUps=[UP_POOL[0],UP_POOL[1]];var fs=calcStats(S.foe,foeUps,[]);S.playerStats=ps;S.foeStats=fs;S.foeUps=foeUps;$('sumScore').textContent=S.correct+' / 5';var un=S.correct>=3;$('sumVerdict').textContent=un?'Jurus TERBUKA — '+S.char.skillName:'Jurus TERKUNCI — butuh minimal 3 benar';$('sumSkillNote').textContent=un?'Tombol jurus emas aktif sekali pakai di arena. Tekan L atau tombol JURUS saat momen tepat.':'Kamu tetap bisa menang dengan tebasan dan tangkisan. Jurus AI tetap bisa terbuka lewat meternya.';$('sumYouTag').textContent='KAMU';$('sumFoeTag').textContent='LAWAN • AI';$('sumYouName').textContent=S.char.name;$('sumYouWeapon').textContent=S.char.weapon+' • Jurus: '+S.char.skillName;$('sumYouPotions').innerHTML=potionPills(S.ups,'up')+potionPills(S.downs,'down');$('sumYouStats').innerHTML='HP awal <b>'+ps.maxHp+'</b> • Damage <b>'+ps.dmg+'</b> • Kecepatan <b>'+Math.round(ps.spdF*100)+'%</b> • Perisai <b>'+ps.shield+'×</b><br>Jangkauan '+S.char.range+' • Jeda tebas '+Math.round(S.char.cd*1000)+'ms';$('sumFoeName').textContent=S.foe.name;$('sumFoeWeapon').textContent=S.foe.weapon+' • Jurus: '+S.foe.skillName+' (AI)';$('sumFoePotions').innerHTML=potionPills(foeUps,'up')+'<span class="pill neutral">Ramuan tetap AI = 2 benar</span>';$('sumFoeStats').innerHTML='HP awal <b>'+fs.maxHp+'</b> • Damage <b>'+fs.dmg+'</b> • Kecepatan <b>'+Math.round(fs.spdF*100)+'%</b><br>Jurus AI terbuka setelah meter penuh.';show('screen-summary')}
 $('btnBackSelect').onclick=function(){show('screen-select')};
+function backToRole(){if(ROLE==='host'){endHost()}else{show('screen-role')}}
+$('btnBackRole').onclick=backToRole;
+$('btnQuizBack').onclick=function(){setMode(S.mode);show('screen-select')};
+$('btnQuitDuel').onclick=function(){if(raf)cancelAnimationFrame(raf);raf=null;if(G)G.over=true;show('screen-select')};
+$('btnHome').onclick=backToRole;
 $('btnStartDuel').onclick=function(){startDuel()};
 
 /* ================= DUEL ================= */
