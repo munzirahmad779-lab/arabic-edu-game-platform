@@ -59,6 +59,16 @@ const nextConfig = {
         destination: "/login",
         permanent: false,
       },
+      // Game mandiri Duel Stickman Berpedang di public/duel-stickman:
+      // URL bersih /duel-stickman membuat rujukan relatif "assets/..."
+      // di dalam berkas game terurai ke /assets/... (404, gambar
+      // pendekar dan arena tidak termuat). Alihkan ke berkas nyatanya
+      // supaya URL dokumen selalu berada di dalam folder game itu.
+      {
+        source: "/duel-stickman",
+        destination: "/duel-stickman/index.html",
+        permanent: false,
+      },
     ];
   },
 };
