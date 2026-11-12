@@ -449,7 +449,17 @@ export async function updateGame(formData: FormData) {
     explanation_timing: explanationTiming,
   }));
 
-  await supabase.from("game_questions").delete().eq("game_id", gameId);
+  const { error: deleteRelationError } = await supabase
+    .from("game_questions")
+    .delete()
+    .eq("game_id", gameId);
+
+  if (deleteRelationError) {
+    console.error("[updateGame] game_questions delete failed:", deleteRelationError);
+    redirect(
+      `${errorBase}?error=update_failed&msg=${encodeURIComponent(deleteRelationError.message)}`,
+    );
+  }
 
   const { error: relationError } = await supabase
     .from("game_questions")
@@ -1044,7 +1054,7 @@ export async function startRoom(formData: FormData) {
     .eq("id", roomId)
     .eq("teacher_id", user.id)
     .eq("state", "waiting")
-    .select("id, game_id")
+    .select("id, game_id, code")
     .maybeSingle();
 
   if (error || !room) {
@@ -1053,10 +1063,18 @@ export async function startRoom(formData: FormData) {
     );
   }
 
+  const { data: gameRow } = room.game_id
+    ? await supabase
+        .from("games")
+        .select("name")
+        .eq("id", room.game_id)
+        .maybeSingle()
+    : { data: null };
+
   ActiveRoomStore.registerRoom({
     id: room.id,
-    code: "",
-    game_name: "",
+    code: room.code ?? "",
+    game_name: gameRow?.name ?? "",
     state: "running",
     started_at: now.toISOString(),
     question_started_at: new Date(now.getTime() + 3000).toISOString(),

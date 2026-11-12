@@ -964,12 +964,17 @@ export default function JejakAngkaGame() {
 
   const addQuestion = () => {
     const prompt = form.prompt.trim();
-    const options = form.options.map((o) => o.trim()).filter((o) => o.length > 0);
+    const trimmed = form.options.map((o) => o.trim());
+    const options = trimmed.filter((o) => o.length > 0);
     if (!prompt || options.length < 2) {
       setNotice("Soal wajib terisi dan minimal ada 2 pilihan jawaban.");
       return;
     }
-    const correct = options[Math.min(form.correctIdx, options.length - 1)];
+    const correct = trimmed[form.correctIdx] ?? "";
+    if (!correct) {
+      setNotice("Pilihan yang ditandai sebagai kunci jawaban masih kosong. Isi pilihan itu dulu atau pindahkan tandanya ke pilihan lain.");
+      return;
+    }
     const q: Q = {
       id: `q-${Date.now()}-${Math.floor(rnd() * 1e6)}`,
       subjectId: bankTab === "guru" || bankTab === "lms" ? "arab" : bankTab,

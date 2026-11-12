@@ -284,7 +284,10 @@ export async function saveProjectorReport(
   // 4. Sort teams by score descending and assign 1-based ranks
   const sortedTeams = [...teams].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  // 5. Insert participants: both team entries and individual student entries
+  // 5. Insert participants: both team entries and individual student entries.
+  // avg_response_ms diisi 0: alur hotseat tidak mengukur waktu respons
+  // per peserta, dan 0 adalah nilai bawaan skema untuk "tidak terukur";
+  // angka tetap apa pun di sini adalah karangan.
   const participantRows: Array<{
     session_id: string;
     participant_name: string;
@@ -310,7 +313,7 @@ export async function saveProjectorReport(
       rank: calculatedRank,
       correct_count: t.correctCount ?? 0,
       total_questions: targetRounds,
-      avg_response_ms: 2500,
+      avg_response_ms: 0,
     });
 
     // Individual student rows so they appear directly by student name in daily report
@@ -322,7 +325,7 @@ export async function saveProjectorReport(
         rank: calculatedRank,
         correct_count: t.correctCount ?? 0,
         total_questions: targetRounds,
-        avg_response_ms: 2500,
+        avg_response_ms: 0,
       });
     });
   });

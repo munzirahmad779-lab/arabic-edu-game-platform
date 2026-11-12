@@ -208,10 +208,16 @@ export default function SpaceWarGame() {
   const pressDigit = useCallback((slot: number, d: string) => {
     const lane = lanesRef.current[slot];
     if (!lane || screen !== "playing") return;
-    if (lane.input.replace("-", "").length >= RULES.maxInputDigits) return;
+    const rock = activeRock(slot);
+    const needed =
+      rock && rock.q.kind === "angka"
+        ? String(Math.abs(rock.q.answer)).length
+        : 0;
+    const cap = Math.max(RULES.maxInputDigits, needed);
+    if (lane.input.replace("-", "").length >= cap) return;
     lane.input += d;
     syncInputs();
-  }, [screen, syncInputs]);
+  }, [screen, syncInputs, activeRock]);
 
   const pressBack = useCallback((slot: number) => {
     const lane = lanesRef.current[slot];

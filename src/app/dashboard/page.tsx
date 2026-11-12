@@ -66,7 +66,7 @@ export default async function DashboardPage() {
   // ============================================================
   // KELAS + JUMLAH SISWA
   // ============================================================
-  const { data: classes } = await supabase
+  const { data: classes, error: classesError } = await supabase
     .from("classes")
     .select("id, name, subject, created_at")
     .eq("teacher_id", user.id)
@@ -318,8 +318,24 @@ export default async function DashboardPage() {
     user.email?.split("@")[0] ??
     "";
 
+  const hasError = (r: unknown) =>
+    Boolean((r as { error?: unknown } | null)?.error);
+  const dataLoadFailed =
+    Boolean(classesError) ||
+    hasError(studentRowsResult) ||
+    hasError(materialsResult) ||
+    hasError(essaysPendingRes) ||
+    hasError(examsActiveRes);
+
   return (
     <main className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
+      {dataLoadFailed && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+          Sebagian data gagal dimuat dari basis data. Angka dan daftar di
+          halaman ini mungkin tidak lengkap; muat ulang halaman untuk
+          mencoba lagi.
+        </div>
+      )}
       {/* LOGO */}
       <section className="flex flex-col items-center justify-center gap-2 pt-2">
         <Image

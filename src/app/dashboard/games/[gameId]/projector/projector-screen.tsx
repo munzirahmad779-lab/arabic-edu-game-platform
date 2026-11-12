@@ -163,9 +163,9 @@ export function ProjectorScreen({
     "kahoot" | "airplane" | "whack" | "space" | "memory" | "balloon" | "wheel"
   >(() => {
     if (initialGameTheme === "airplane") return "airplane";
-    if (initialGameTheme === "whack") return "whack";
+    if (initialGameTheme === "whack" || initialGameTheme === "whack_mole") return "whack";
     if (initialGameTheme === "space") return "space";
-    if (initialGameTheme === "memory") return "memory";
+    if (initialGameTheme === "memory" || initialGameTheme === "memory_card") return "memory";
     if (initialGameTheme === "balloon") return "balloon";
     // Tema roda dulu dibelokkan ke mesin antariksa, padahal registri dan
     // lencana permainan menjanjikan Roda Putar dan WheelPlayer tersedia.
