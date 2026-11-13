@@ -152,21 +152,21 @@ canvas#game{touch-action:none}
   <div class="flow"><span id="step1" class="on">1 Pilih Pendekar</span><span id="step2">2 Jawab Soal</span><span id="step3">3 Ramuan</span><span id="step4">4 Duel</span></div>
 </header>
 <div class="hostBar" id="hostBar"><div class="hostBarInner">
-  <div><div style="font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#D8C69A">Kode Gabung Kontroler</div><div class="hostCode" id="hostCode">····</div><div id="hostRelay" style="font-size:12px;color:#D8C69A;margin-top:4px">Relai: menyambungkan…</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="hostSlot" id="hostSlot1">Kontroler 1 (P1): belum</span><span class="hostSlot" id="hostSlot2">Kontroler 2 (P2): belum</span><button class="btn" id="btnEndHost" style="min-height:40px;padding:8px 14px">Akhiri Sesi</button></div>
+  <div><div style="font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#D8C69A">Kode Gabung Ruangan</div><div class="hostCode" id="hostCode">····</div><div id="hostRelay" style="font-size:12px;color:#D8C69A;margin-top:4px">Relai: menyambungkan…</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="hostSlot" id="hostSlot1">Kontroler 1 (P1): belum</span><span class="hostSlot" id="hostSlot2">Kontroler 2 (P2): belum</span><span class="hostSlot" id="hostDisp">Proyektor: belum</span><button class="btn" id="btnEndHost" style="min-height:40px;padding:8px 14px">Akhiri Sesi</button></div>
 </div></div>
 <main class="wrap">
   <section id="screen-role" class="screen active">
     <div class="kicker">Pilih Peran Layar Ini</div>
     <h2 style="margin:4px 0 0;font-family:'Lilita One',sans-serif;font-size:28px">Main di sini, atau jadikan HP-mu kontroler?</h2>
-    <p style="margin:6px 0 0;color:#6B5A44;font-size:13.5px;line-height:1.6;max-width:640px">Satu berkas game, tiga peran. Tanpa jaringan pun game jalan penuh di layar ini. Dengan peran Tuan Rumah, HP bisa bergabung sebagai kontroler terpisah memakai kode gabung.</p>
+    <p style="margin:6px 0 0;color:#6B5A44;font-size:13.5px;line-height:1.6;max-width:640px">Satu berkas game, tiga peran terpisah: Proyektor menampilkan permainan terbelah dua di layar besar, Layar Guru membuat ruangan dan memantau tanpa soal, Kontroler adalah HP tiap siswa.</p>
     <div class="roleGrid">
-      <button class="roleBtn hero" id="roleLocal"><b>Main di Layar Ini</b><span> persis seperti biasa: sendiri lawan komputer atau berdua satu layar, keyboard &amp; tombol sentuh. Tanpa jaringan.</span></button>
-      <button class="roleBtn" id="roleHost"><b>Layar Tuan Rumah</b><span>Tampilkan arena di layar besar ini dan buat kode gabung 4 karakter. Hingga dua HP bergabung sebagai kontroler P1 &amp; P2.</span></button>
-      <button class="roleBtn" id="roleCtl"><b>Kontroler HP</b><span>HP ini jadi kontroler saja. Masukkan kode gabung dari layar tuan rumah, lalu kendalikan pendekarmu dari sini.</span></button>
+      <button class="roleBtn hero" id="roleLocal"><b>Proyektor</b><span>Layar besar kelas: PC guru, proyektor, atau TV. Pilih pendekar dan soal tampil terbelah dua untuk kedua pemain, duel besar di layar ini. Gabung ke ruangan Layar Guru memakai kode.</span></button>
+      <button class="roleBtn" id="roleHost"><b>Layar Guru</b><span>Buat ruangan di layar ini dan pantau pengerjaan siswa. Soal TIDAK tampil di sini — yang terlihat hanya progres tiap siswa (sampai soal nomor berapa), lalu dua karakternya sesudah kuis.</span></button>
+      <button class="roleBtn" id="roleCtl"><b>Kontroler HP</b><span>HP siswa. Masukkan kode ruangan dari Layar Guru, pilih pendekarmu, jawab soal di HP ini, lalu kendalikan duel dari pad tombol.</span></button>
     </div>
     <div style="margin-top:16px"><button class="btn dark" id="btnBank">Kelola Soal (<span id="kelolaCount">15</span> soal)</button></div>
-    <p style="font-size:12px;color:#8A7355;margin-top:14px;line-height:1.6">Pilih karakter dan fase soal tetap dikerjakan di layar tuan rumah. Kontroler aktif penuh pada fase duel dan hanya mengirim keadaan tombol (tekan / tahan / lepas) — tidak ada data pribadi apa pun yang dikirim.</p>
+    <p style="font-size:12px;color:#8A7355;margin-top:14px;line-height:1.6">Soal hanya muncul di HP siswa dan di Proyektor (terbelah dua). Layar Guru tidak pernah menampilkan soal. Kontroler hanya mengirim pilihan, jawaban, dan keadaan tombol — tidak ada data pribadi apa pun yang dikirim.</p>
   </section>
 
   <section id="screen-select" class="screen">
@@ -180,6 +180,7 @@ canvas#game{touch-action:none}
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 4px"><span style="font-weight:800;font-size:13.5px">Soal dari kategori:</span><select id="quizCat" style="padding:10px 12px;border:2.5px solid #211C15;border-radius:12px;font:inherit;background:#FFFDF6;max-width:100%"></select></div>
     <p class="pickTurn" id="pickTurn" style="display:none"></p>
+    <div id="guruPickView" style="display:none;margin:10px 0;padding:12px 14px;border:2.5px solid #211C15;border-radius:14px;background:#FFFDF4"></div>
     <div class="grid5" id="charGrid"></div>
     <div class="how">
       <div class="howCard"><h4>Cara duel</h4><p>Gerak, lompat, tebas, dan tangkis. Tangkis memotong damage biasa jadi 25% dan menahan dorongan — tapi tidak menahan jurus. Habiskan HP lawan sebelum waktu habis.</p></div>
@@ -320,6 +321,36 @@ canvas#game{touch-action:none}
     </div>
   </section>
 
+  <section id="screen-proj" class="screen">
+    <div id="projJoinView">
+      <div class="kicker">Peran Proyektor</div>
+      <h2 style="margin:4px 0 0;font-family:'Lilita One',sans-serif;font-size:28px">Layar besar kelas</h2>
+      <p style="margin:6px 0 0;color:#6B5A44;font-size:13.5px;line-height:1.6;max-width:640px">Tampilkan layar ini di PC guru, proyektor, atau TV. Masukkan kode ruangan dari Layar Guru. Pilih pendekar dan soal tampil terbelah dua di layar ini; siswa menjawab dari HP masing-masing, atau langsung di layar ini bila HP seorang siswa bermasalah.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px"><input id="projCode" type="text" inputmode="text" autocomplete="off" placeholder="KODE RUANGAN" style="padding:12px 14px;border:2.5px solid #211C15;border-radius:12px;font:inherit;font-weight:800;letter-spacing:.2em;text-transform:uppercase;width:220px;background:#FFFDF6"/><button class="btn primary" id="btnProjJoin">Gabung ke Ruangan</button><button class="btn" id="btnProjBack">&larr; Menu Awal</button></div>
+      <p id="projJoinStatus" style="font-size:13px;color:#6B5A44;margin-top:10px">Belum tersambung.</p>
+    </div>
+    <div id="projView" style="display:none">
+      <div id="projLobby"><div class="kicker">Proyektor Terhubung</div><h2 style="margin:4px 0 0;font-family:'Lilita One',sans-serif;font-size:26px">Menunggu Layar Guru</h2><p id="projLobbyStat" style="color:#6B5A44;font-size:14px;line-height:1.7;margin-top:8px">Menunggu data ruangan…</p></div>
+      <div id="projPick" style="display:none"><div class="kicker">Langkah 1 dari 4 — Pilih Pendekar (terbelah dua)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px"><div id="projPickHalf1" style="border:2.5px solid #211C15;border-radius:16px;padding:14px;background:#FFFDF4"></div><div id="projPickHalf2" style="border:2.5px solid #211C15;border-radius:16px;padding:14px;background:#FFFDF4"></div></div><p id="projPickNote" style="color:#6B5A44;font-size:13px;margin-top:10px"></p></div>
+      <div id="projQuiz" style="display:none"><div class="kicker">Langkah 2 dari 4 — Jawab Soal (terbelah dua)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px"><div id="projQHalf1" style="border:2.5px solid #211C15;border-radius:16px;padding:14px;background:#FFFDF4"></div><div id="projQHalf2" style="border:2.5px solid #211C15;border-radius:16px;padding:14px;background:#FFFDF4"></div></div></div>
+      <div id="projSummary" style="display:none"></div>
+      <div style="margin-top:14px"><button class="btn" id="btnProjLeave">Keluar dari Ruangan</button></div>
+    </div>
+  </section>
+
+  <section id="screen-guru-duel" class="screen">
+    <div class="kicker">Layar Guru — Pantauan Duel</div>
+    <h2 style="font-family:'Lilita One',sans-serif;font-size:28px;margin:6px 0 0">Duel berjalan di proyektor</h2>
+    <p style="color:#6B5A44;font-size:13.5px;line-height:1.6">Layar ini hanya memantau kedua pendekar dan sisa HP mereka. Arena tampil di proyektor.</p>
+    <div class="versus">
+      <div class="vsCard you"><b id="gdYouName">—</b><img id="gdYouImg" alt="" style="width:110px;height:110px;object-fit:contain;display:block;margin:8px auto"/><div class="hpBar player"><i id="gdHpYou" style="width:100%"></i><em id="gdHpYouText">100 HP</em></div></div>
+      <div class="vsBadge">VS</div>
+      <div class="vsCard"><b id="gdFoeName">—</b><img id="gdFoeImg" alt="" style="width:110px;height:110px;object-fit:contain;display:block;margin:8px auto"/><div class="hpBar enemy"><i id="gdHpFoe" style="width:100%"></i><em id="gdHpFoeText">100 HP</em></div></div>
+    </div>
+    <div id="gdWinner" style="display:none;margin-top:14px;padding:12px 16px;border:2.5px solid #211C15;border-radius:14px;background:#FDE68A;font-weight:800;font-size:16px;text-align:center"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><button class="btn gold" id="gdRematch">Main Lagi (soal baru)</button><button class="btn" id="gdChars">Ganti Pendekar</button><button class="btn" id="gdHome">Menu Awal</button></div>
+  </section>
+
   <section id="screen-controller" class="screen">
     <div class="ctlWrap">
       <div class="kicker">Kontroler HP</div>
@@ -437,7 +468,7 @@ var S={mode:'ai',char:null,foe:null,p1Char:null,p2Char:null,pickTurn:'p1',quizWh
 function $(id){return document.getElementById(id)}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 var CUR_SCREEN='screen-role';
-function show(id){CUR_SCREEN=id;document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'});if(ROLE==='host'&&typeof hostSetStep==='function'){var mp={'screen-select':'pick','screen-quiz':'quiz','screen-summary':'quiz','screen-duel':'duel','screen-result':'over'};if(mp[id])hostSetStep(mp[id])}}
+function show(id){CUR_SCREEN=id;document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'});if(ROLE==='host'&&typeof hostSetStep==='function'){var mp={'screen-select':'pick','screen-quiz':'quiz','screen-summary':'summary','screen-duel':'duel','screen-result':'over'};if(mp[id])hostSetStep(mp[id])}}
 function calcStats(char,ups,downs){var dmgF=1,spdF=1,hpAdd=0,shield=0;ups.concat(downs).forEach(function(p){if(p.type==='dmg')dmgF+=p.val;if(p.type==='spd')spdF+=p.val;if(p.type==='hp')hpAdd+=p.val;if(p.type==='shield')shield+=p.val});if(dmgF<0.3)dmgF=0.3;if(spdF<0.4)spdF=0.4;return{maxHp:Math.max(50,100+hpAdd),dmg:Math.round(char.dmg*dmgF*10)/10,speed:char.speed*spdF,dmgF:dmgF,spdF:spdF,shield:shield}}
 function potionPills(list,cls){if(!list.length)return '<span class="pill neutral">Tidak ada</span>';var counts={};list.forEach(function(p){counts[p.name]=(counts[p.name]||0)+1});return Object.keys(counts).map(function(k){var p=list.find(function(x){return x.name===k});return '<span class="pill '+cls+'">'+k+(counts[k]>1?' ×'+counts[k]:'')+' • '+p.desc+'</span>'}).join('')}
 
@@ -464,7 +495,7 @@ $('modeAI').onclick=function(){setMode('ai')};$('mode2P').onclick=function(){set
 $('btnToQuiz').onclick=function(){startQuizFlow()};
 
 /* ================= QUIZ ================= */
-function startQuizFlow(){S.usedQ=[];S.p1Res=null;S.p2Res=null;
+function startQuizFlow(){if(ROLE==='host'){startQuizConcurrent();return}S.usedQ=[];S.p1Res=null;S.p2Res=null;
  if(S.mode==='2p'){S.char=S.p1Char;S.foe=S.p2Char;beginQuizTurn('p1')}
  else{var others=CHARS.filter(function(c){return c.id!==S.char.id});S.foe=others[Math.floor(Math.random()*others.length)];beginQuizTurn('p1')}}
 function beginQuizTurn(who){S.quizWho=who;var catSel=($('quizCat')&&$('quizCat').value)||'*';var base=allQuestions().filter(function(q){return catSel==='*'||q.cat===catSel});if(!base.length)base=allQuestions();var freshQ=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)<0}));var oldQ=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)>=0}));var seqQ=freshQ.concat(oldQ);S.quiz=[];for(var qi=0;qi<5&&seqQ.length;qi++){S.quiz.push(seqQ[qi%seqQ.length])}S.quiz.forEach(function(q){if(S.usedQ.indexOf(q)<0)S.usedQ.push(q)});S.qIdx=0;S.correct=0;S.wrong=0;S.ups=[];S.downs=[];S.lastOk=null;S.curBtns=null;S.curOrder=null;
@@ -475,7 +506,7 @@ function beginQuizTurn(who){S.quizWho=who;var catSel=($('quizCat')&&$('quizCat')
  show('screen-quiz');renderQ()}
 function saveQuizTurn(){var res={correct:S.correct,wrong:S.wrong,ups:S.ups.slice(),downs:S.downs.slice()};if(S.quizWho==='p2')S.p2Res=res;else S.p1Res=res}
 function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];S.curBtns=[];S.curOrder=shuffle([0,1,2,3]);S.curOrder.forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn);S.curBtns.push(btn)});hostPublishFlow();applyQuizVisibility()}
-function applyQuizVisibility(){var turn=S.quizWho==='p2'?2:1;S.monitorMode=(ROLE==='host')&&!!HOST.slots[turn];var hideQ=!!S.monitorMode;
+function applyQuizVisibility(){S.monitorMode=(ROLE==='host');var hideQ=S.monitorMode;
  var meta=document.querySelector('.quizCard .meta');if(meta)meta.style.display=hideQ?'none':'';
  var card=document.querySelector('.quizCard');if(card)card.style.display=hideQ?'none':'';
  ['qText','qOpts','qFeedback'].forEach(function(id){var e=$(id);if(e)e.style.display=hideQ?'none':''});
@@ -511,12 +542,12 @@ function renderSummary(){
   show('screen-summary');return}
  var ps=calcStats(S.char,S.ups,S.downs);var foeUps=[UP_POOL[0],UP_POOL[1]];var fs=calcStats(S.foe,foeUps,[]);S.playerStats=ps;S.foeStats=fs;S.foeUps=foeUps;$('sumScore').textContent=S.correct+' / 5';var un=S.correct>=3;$('sumVerdict').textContent=un?'Jurus TERBUKA — '+S.char.skillName:'Jurus TERKUNCI — butuh minimal 3 benar';$('sumSkillNote').textContent=un?'Tombol jurus emas aktif sekali pakai di arena. Tekan L atau tombol JURUS saat momen tepat.':'Kamu tetap bisa menang dengan tebasan dan tangkisan. Jurus AI tetap bisa terbuka lewat meternya.';$('sumYouTag').textContent='KAMU';$('sumFoeTag').textContent='LAWAN • AI';$('sumYouName').textContent=S.char.name;$('sumYouWeapon').textContent=S.char.weapon+' • Jurus: '+S.char.skillName;$('sumYouPotions').innerHTML=potionPills(S.ups,'up')+potionPills(S.downs,'down');$('sumYouStats').innerHTML='HP awal <b>'+ps.maxHp+'</b> • Damage <b>'+ps.dmg+'</b> • Kecepatan <b>'+Math.round(ps.spdF*100)+'%</b> • Perisai <b>'+ps.shield+'×</b><br>Jangkauan '+S.char.range+' • Jeda tebas '+Math.round(S.char.cd*1000)+'ms';$('sumFoeName').textContent=S.foe.name;$('sumFoeWeapon').textContent=S.foe.weapon+' • Jurus: '+S.foe.skillName+' (AI)';$('sumFoePotions').innerHTML=potionPills(foeUps,'up')+'<span class="pill neutral">Ramuan tetap AI = 2 benar</span>';$('sumFoeStats').innerHTML='HP awal <b>'+fs.maxHp+'</b> • Damage <b>'+fs.dmg+'</b> • Kecepatan <b>'+Math.round(fs.spdF*100)+'%</b><br>Jurus AI terbuka setelah meter penuh.';show('screen-summary')}
 $('btnBackSelect').onclick=function(){show('screen-select')};
-function backToRole(){if(ROLE==='host'){endHost()}else{show('screen-role')}}
+function backToRole(){if(ROLE==='host'){endHost()}else if(ROLE==='proyektor'){projLeave()}else{show('screen-role')}}
 $('btnBackRole').onclick=backToRole;
 $('btnQuizBack').onclick=function(){setMode(S.mode);show('screen-select')};
-$('btnQuitDuel').onclick=function(){if(raf)cancelAnimationFrame(raf);raf=null;if(G)G.over=true;show('screen-select')};
+$('btnQuitDuel').onclick=function(){if(ROLE==='proyektor'){projLeave();return}if(raf)cancelAnimationFrame(raf);raf=null;if(G)G.over=true;show('screen-select')};
 $('btnHome').onclick=backToRole;
-$('btnStartDuel').onclick=function(){startDuel()};
+$('btnStartDuel').onclick=function(){if(ROLE==='host'){HOST.duelId=(HOST.duelId||0)+1;HOST.winner=0;HOST.hp=null;hostSetStep('duel');show('screen-guru-duel');renderGuruDuel()}else startDuel()};
 
 /* ================= DUEL ================= */
 var cv=$('game'),ctx=cv.getContext('2d');var G=null,raf=null,lastTs=0;
@@ -539,14 +570,14 @@ function startDuel(){show('screen-duel');var two=S.mode==='2p';var cYou=two?S.p1
  if(!un1)G.player.meter=0;
  updateHUD();$('duelMsg').textContent='Bersiap…';syncSkillButtons();
  if(raf)cancelAnimationFrame(raf);lastTs=0;raf=requestAnimationFrame(loop)}
-function endDuel(winner,how){if(!G||G.over)return;G.over=true;G.how=how;G.winner=winner;var loser=winner===G.player?G.foe:G.player;loser.ko=true;juiceHit(winner===G.player?G.player.x:G.foe.x,groundY()-100,'besar',winner.char.color,'#D9A441');setTimeout(function(){if(raf)cancelAnimationFrame(raf);$('resKicker').textContent=how==='KO'?'KO! Duel Berakhir':'Waktu Habis — HP Tertinggi Menang';var ri=$('resImg');ri.src=winner.char.img;ri.alt='Pendekar pemenang: '+winner.char.name;var two=G.mode==='2p';var loser=winner===G.player?G.foe:G.player;var wName=winner===G.player?'Pemain 1':'Pemain 2';var lName=winner===G.player?'Pemain 2':'Pemain 1';
+function endDuel(winner,how){if(!G||G.over)return;G.over=true;G.how=how;G.winner=winner;if(ROLE==='proyektor'&&typeof PROJ!=='undefined'&&PROJ.client){try{PROJ.client.publish(TOPIC_BASE+PROJ.code+'/duelend',JSON.stringify({winner:winner===G.player?1:2}))}catch(e){}var rb=$('btnRematch'),cb=$('btnChangeChar');if(rb)rb.style.display='none';if(cb)cb.style.display='none'}var loser=winner===G.player?G.foe:G.player;loser.ko=true;juiceHit(winner===G.player?G.player.x:G.foe.x,groundY()-100,'besar',winner.char.color,'#D9A441');setTimeout(function(){if(raf)cancelAnimationFrame(raf);$('resKicker').textContent=how==='KO'?'KO! Duel Berakhir':'Waktu Habis — HP Tertinggi Menang';var ri=$('resImg');ri.src=winner.char.img;ri.alt='Pendekar pemenang: '+winner.char.name;var two=G.mode==='2p';var loser=winner===G.player?G.foe:G.player;var wName=winner===G.player?'Pemain 1':'Pemain 2';var lName=winner===G.player?'Pemain 2':'Pemain 1';
 $('resTitle').textContent=two?wName+' Menang!':(winner===G.player?'Kamu Menang!':winner.char.name+' Menang');
 $('resDesc').textContent=two?wName+' ('+winner.char.name+') mengalahkan '+lName+' ('+loser.char.name+') lewat '+how+'. Ramuan masing-masing: P1 '+S.p1Res.correct+' benar, P2 '+S.p2Res.correct+' benar.':(winner===G.player?S.char.name+' mengalahkan '+S.foe.name+' ('+how+'). Ramuan dari '+S.correct+' jawaban benar ikut menentukan.':S.foe.name+' (AI) memenangkan duel ini ('+how+'). Coba ramuan baru: jawab lebih banyak soal dengan benar.');
 $('resQuiz').textContent=two?'P1 '+S.p1Res.correct+'/5 • P2 '+S.p2Res.correct+'/5':S.correct+' / 5 benar';
 $('resHpLabel').textContent=two?'Sisa HP Pemenang':(winner===G.player?'Sisa HP Kamu':'Sisa HP Lawan');
 $('resHp').textContent=Math.max(0,Math.ceil(winner.hp))+' / '+winner.maxHp;
 $('resNote').textContent=two?'Main Lagi memakai mode dan pendekar yang sama, dengan soal baru untuk kedua pemain.':'Main Lagi memakai pendekar yang sama melawan lawan acak baru, dengan 5 soal baru.';$('resHow').textContent=how+(how==='KO'?' — HP '+(two?lName:(winner===G.player?'lawan':'kamu'))+' habis':' — '+Math.ceil(G.player.hp)+' vs '+Math.ceil(G.foe.hp));show('screen-result')},1150)}
-$('btnRematch').onclick=function(){startQuizFlow()};$('btnChangeChar').onclick=function(){setMode(S.mode);show('screen-select')};
+$('btnRematch').onclick=function(){if(ROLE==='proyektor'){show('screen-proj');return}startQuizFlow()};$('btnChangeChar').onclick=function(){if(ROLE==='proyektor'){show('screen-proj');return}setMode(S.mode);show('screen-select')};
 
 /* ---------- [disciplines/game-feel] JUICE BERLAPIS BERTINGKAT ---------- */
 var JUICE_TIER={kecil:{stop:0.018,shake:2,parts:5,rings:0},sedang:{stop:0.055,shake:5,parts:14,rings:1},besar:{stop:0.13,shake:11,parts:30,rings:2}};
@@ -629,7 +660,7 @@ bindTouch('tc2Left',InputP2,'gerak_kiri');bindTouch('tc2Right',InputP2,'gerak_ka
 
 /* ---------- HUD & loop ---------- */
 function syncSkillButtons(){if(!G)return;var t0=$('tcSkill');if(t0)t0.disabled=!G.playerSkillUnlocked||G.player.skillUsed;var t1=$('tc1Skill');if(t1)t1.disabled=!G.player.skillUnlocked||G.player.skillUsed;var t2=$('tc2Skill');if(t2)t2.disabled=!G.foe.skillUnlocked||G.foe.skillUsed}
-function updateHUD(){if(!G)return;$('hpYou').style.width=Math.max(0,G.player.hp/G.player.maxHp*100)+'%';$('hpYouText').textContent=Math.max(0,Math.ceil(G.player.hp))+' HP';$('hpFoe').style.width=Math.max(0,G.foe.hp/G.foe.maxHp*100)+'%';$('hpFoeText').textContent=Math.max(0,Math.ceil(G.foe.hp))+' HP';$('timerNum').textContent=Math.max(0,Math.ceil(G.t));$('hudYouShield').textContent=G.player.shield>0?'Perisai ×'+G.player.shield:'';$('hudFoeShield').textContent=G.foe.shield>0?'Perisai ×'+G.foe.shield:'';var un=G.playerSkillUnlocked;$('skillYouText').textContent=!un?'TERKUNCI':G.player.skillUsed?'TERPAKAI':'SIAP — tekan '+(G.mode==='2p'?'H':'L');$('skillYouBar').style.width=(!un||G.player.skillUsed)?'0%':'100%';if(G.mode==='2p'){$('skillFoeText').textContent=!G.foe.skillUnlocked?'TERKUNCI':G.foe.skillUsed?'TERPAKAI':'SIAP — tekan /';$('skillFoeBar').style.width=(!G.foe.skillUnlocked||G.foe.skillUsed)?'0%':'100%'}else{$('skillFoeText').textContent=G.foe.skillUsed?'Jurus terpakai':'Meter '+Math.floor(G.foe.meter)+'%';$('skillFoeBar').style.width=G.foe.meter+'%'}syncSkillButtons()}
+function updateHUD(){if(!G)return;$('hpYou').style.width=Math.max(0,G.player.hp/G.player.maxHp*100)+'%';$('hpYouText').textContent=Math.max(0,Math.ceil(G.player.hp))+' HP';$('hpFoe').style.width=Math.max(0,G.foe.hp/G.foe.maxHp*100)+'%';$('hpFoeText').textContent=Math.max(0,Math.ceil(G.foe.hp))+' HP';$('timerNum').textContent=Math.max(0,Math.ceil(G.t));$('hudYouShield').textContent=G.player.shield>0?'Perisai ×'+G.player.shield:'';$('hudFoeShield').textContent=G.foe.shield>0?'Perisai ×'+G.foe.shield:'';var un=G.playerSkillUnlocked;$('skillYouText').textContent=!un?'TERKUNCI':G.player.skillUsed?'TERPAKAI':'SIAP — tekan '+(G.mode==='2p'?'H':'L');$('skillYouBar').style.width=(!un||G.player.skillUsed)?'0%':'100%';if(G.mode==='2p'){$('skillFoeText').textContent=!G.foe.skillUnlocked?'TERKUNCI':G.foe.skillUsed?'TERPAKAI':'SIAP — tekan /';$('skillFoeBar').style.width=(!G.foe.skillUnlocked||G.foe.skillUsed)?'0%':'100%'}else{$('skillFoeText').textContent=G.foe.skillUsed?'Jurus terpakai':'Meter '+Math.floor(G.foe.meter)+'%';$('skillFoeBar').style.width=G.foe.meter+'%'}syncSkillButtons();if(ROLE==='proyektor'&&typeof PROJ!=='undefined'&&PROJ.client&&G){var nw=Date.now();if(!PROJ._hpT||nw-PROJ._hpT>200){PROJ._hpT=nw;try{PROJ.client.publish(TOPIC_BASE+PROJ.code+'/state',JSON.stringify({t:'hp',hp1:Math.max(0,Math.ceil(G.player.hp)),m1:G.player.maxHp,hp2:Math.max(0,Math.ceil(G.foe.hp)),m2:G.foe.maxHp}))}catch(e){}}}}
 function loop(ts){if(!G)return;var dt=lastTs?Math.min(0.04,(ts-lastTs)/1000):0.016;lastTs=ts;var now=ts/1000;
  if(G.hitStop>0){G.hitStop-=dt;draw();raf=requestAnimationFrame(loop);return}
  if(G.countdown>0){G.countdown-=dt;$('duelMsg').textContent=G.countdown>1.4?'Bersiap… 3':G.countdown>0.7?'Bersiap… 2':'Bersiap… 1';if(G.countdown<=0)$('duelMsg').textContent='MULAI! Adu pedang!'}
@@ -722,15 +753,59 @@ function applyNetState(slot,a,d){var inp=netInputForSlot(slot);if(!inp||!inp.map
 function clearNetSlot(slot){var inp=netInputForSlot(slot);if(inp)inp.netHeld={};var inp2=slot===1?InputSolo:null;if(inp2&&inp2!==inp)inp2.netHeld={}}
 
 /* ---------- TUAN RUMAH ---------- */
-var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby',brokerIdx:0,connected:false,failTimer:null};
+var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby',brokerIdx:0,connected:false,failTimer:null,display:null,winner:0,duelId:0,hp:null};
 function hostBarUpdate(){$('hostCode').textContent=HOST.code||'····';
  [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')});
- if(ROLE==='host')renderMonitor()}
-function hostPublishFlow(){if(HOST.client&&HOST.code){try{var pl={step:HOST.step,picks:{1:HOST.picks[1],2:HOST.picks[2]}};var qz=hostQuizPayload();if(qz)pl.quiz=qz;HOST.client.publish(TOPIC_BASE+HOST.code+'/flow',JSON.stringify(pl),{retain:true})}catch(e){}}}
-function hostQuizPayload(){if(HOST.step!=='quiz'||CUR_SCREEN!=='screen-quiz'||!S.quiz||!S.quiz[S.qIdx]||!S.curOrder)return null;var q=S.quiz[S.qIdx];return{who:S.quizWho==='p2'?2:1,idx:S.qIdx,total:S.quiz.length,cat:q.cat,q:q.q,hint:q.hint||'',opts:S.curOrder.map(function(oi){return q.opts[oi]}),answered:!!S.answered,ok:S.answered?(S.lastOk?true:false):null,correct:S.correct,wrong:S.wrong}}
+ var dEl=$('hostDisp');if(dEl){dEl.classList.toggle('on',!!HOST.display);dEl.textContent='Proyektor: '+(HOST.display?'terhubung':'belum')}
+ if(ROLE==='host'){renderMonitor();renderGuruPick()}}
+function hostPublishFlow(){if(HOST.client&&HOST.code){try{var pl={step:HOST.step,mode:S.mode,picks:{1:HOST.picks[1],2:HOST.picks[2]},slots:{1:HOST.slots[1],2:HOST.slots[2]},display:HOST.display?1:0,winner:HOST.winner||0};
+ if(HOST.step==='quiz')pl.quiz={1:hostQuizPayloadFor(1),2:hostQuizPayloadFor(2)};
+ if(HOST.step==='summary'||HOST.step==='duel'||HOST.step==='over'){pl.res={1:S.p1Res,2:S.p2Res};pl.foe=S.foe?S.foe.id:null;pl.duelId=HOST.duelId||0}
+ HOST.client.publish(TOPIC_BASE+HOST.code+'/flow',JSON.stringify(pl),{retain:true})}catch(e){}}}
+var PQ={1:null,2:null};
+function sampleQuizSet(){var catSel=($('quizCat')&&$('quizCat').value)||'*';var base=allQuestions().filter(function(q){return catSel==='*'||q.cat===catSel});if(!base.length)base=allQuestions();var fresh=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)<0}));var old=shuffle(base.filter(function(q){return S.usedQ.indexOf(q)>=0}));var seq=fresh.concat(old);var out=[];for(var i=0;i<5&&seq.length;i++)out.push(seq[i%seq.length]);out.forEach(function(q){if(S.usedQ.indexOf(q)<0)S.usedQ.push(q)});return out}
+function startQuizConcurrent(){S.usedQ=[];S.p1Res=null;S.p2Res=null;HOST.winner=0;HOST.hp=null;
+ if(S.mode==='2p'){S.char=S.p1Char;S.foe=S.p2Char}else{var others=CHARS.filter(function(c){return c.id!==S.char.id});S.foe=others[Math.floor(Math.random()*others.length)]}
+ PQ={1:null,2:null};var slots=S.mode==='2p'?[1,2]:[1];
+ slots.forEach(function(s){PQ[s]={list:sampleQuizSet(),idx:0,correct:0,wrong:0,ups:[],downs:[],answered:false,lastOk:null,order:shuffle([0,1,2,3]),done:false}});
+ $('quizTurn').style.display='none';$('quizCharName').textContent=S.mode==='2p'?('Pemain 1: '+S.p1Char.name+' • Pemain 2: '+S.p2Char.name):('Pemain 1: '+S.char.name+' • Lawan AI: '+S.foe.name);
+ show('screen-quiz');applyQuizVisibility();hostPublishFlow()}
+function hostQuizPayloadFor(s){var P=PQ[s];if(!P||HOST.step!=='quiz')return null;if(P.done)return{who:s,done:true,correct:P.correct,wrong:P.wrong,total:5};var q=P.list[P.idx];if(!q)return null;return{who:s,idx:P.idx,total:5,cat:q.cat,q:q.q,hint:q.hint||'',opts:P.order.map(function(oi){return q.opts[oi]}),answered:!!P.answered,ok:P.answered?(P.lastOk?true:false):null,correct:P.correct,wrong:P.wrong,done:false}}
+function hostAnswerSlot(s,di){var P=PQ[s];if(!P||P.done||P.answered||HOST.step!=='quiz')return;var q=P.list[P.idx];if(!q||typeof di!=='number'||di<0||di>3)return;var ok=P.order[di]===q.a;P.answered=true;P.lastOk=ok;
+ if(ok){P.correct++;P.ups.push(UP_POOL[(P.correct-1)%UP_POOL.length])}else{P.wrong++;P.downs.push(DOWN_POOL[(P.wrong-1)%DOWN_POOL.length])}
+ hostPublishFlow();renderMonitor();
+ setTimeout(function(){if(HOST.step!=='quiz'||!PQ[s])return;var P2=PQ[s];P2.idx++;P2.answered=false;P2.lastOk=null;
+  if(P2.idx>=5){P2.done=true;var res={correct:P2.correct,wrong:P2.wrong,ups:P2.ups.slice(),downs:P2.downs.slice()};if(s===1)S.p1Res=res;else S.p2Res=res}
+  else P2.order=shuffle([0,1,2,3]);
+  hostPublishFlow();renderMonitor();checkQuizDone()},1500)}
+function checkQuizDone(){var slots=S.mode==='2p'?[1,2]:[1];var all=slots.every(function(s){return PQ[s]&&PQ[s].done});if(!all)return;
+ if(S.mode!=='2p'){var P=PQ[1];S.correct=P.correct;S.wrong=P.wrong;S.ups=P.ups;S.downs=P.downs}
+ renderSummary()}
+function renderMonitor(){var mv=$('monitorView');if(!mv||ROLE!=='host')return;if(CUR_SCREEN!=='screen-quiz'){mv.style.display='none';return}mv.style.display='block';
+ function panel(slot){var el=$(slot===1?'monP1':'monP2');if(!el)return;if(S.mode!=='2p'&&slot===2){el.style.display='none';return}el.style.display='block';var P=PQ[slot];
+  var status,prog;
+  if(!P){status='Belum mulai';prog=0}
+  else if(P.done){status='Selesai — kelima soal sudah dikerjakan';prog=5}
+  else{prog=Math.min(5,P.idx+(P.answered?1:0));status='Sedang mengerjakan soal nomor '+(Math.min(5,P.idx+1))+' dari 5'}
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><b>Pemain '+slot+'</b><span style="font-size:11.5px;font-weight:800;color:'+(HOST.slots[slot]?'#0B4F4A':'#B4552D')+'">'+(HOST.slots[slot]?'kontroler terhubung':'kontroler belum terhubung')+'</span></div><div class="pTrack" style="margin:8px 0"><i style="width:'+(prog/5*100)+'%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>'+status+'</span><span style="font-weight:800">Soal '+prog+' / 5</span></div>'}
+ panel(1);panel(2);
+ $('monNote').textContent='Soal hanya tampil di HP siswa dan di proyektor (terbelah dua). Layar Guru hanya memantau sampai soal nomor berapa tiap siswa.';
+ var tot=0,cnt=0;[1,2].forEach(function(s){if(PQ[s]){cnt++;tot+=PQ[s].done?5:Math.min(5,PQ[s].idx+(PQ[s].answered?1:0))}});
+ $('quizCount').textContent='Kuis berjalan di HP siswa';$('quizProg').style.width=(cnt?(tot/(5*cnt)*100):0)+'%';$('quizScore').textContent=''}
+function renderGuruPick(){var el=$('guruPickView');if(!el)return;if(ROLE!=='host'||CUR_SCREEN!=='screen-select'){el.style.display='none';return}el.style.display='block';
+ function line(s){var ch=s===1?(S.mode==='2p'?S.p1Char:S.char):S.p2Char;return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:3px 0"><span><b>Pemain '+s+'</b> — Kontroler: '+(HOST.slots[s]?'terhubung':'belum terhubung')+'</span><span>'+(ch?('Sudah memilih: <b>'+ch.name+'</b>'):'Belum memilih pendekar')+'</span></div>'}
+ el.innerHTML='<div style="font-weight:800;margin-bottom:4px">Pantauan Layar Guru — pendekar dipilih siswa di HP atau di proyektor</div>'+line(1)+(S.mode==='2p'?line(2):'<div style="font-size:13.5px;padding:3px 0">Lawan: komputer (AI)</div>')+'<div style="font-size:13.5px;padding:3px 0">Proyektor: '+(HOST.display?'terhubung':'belum terhubung')+'</div>'}
+function renderGuruDuel(){if(ROLE!=='host')return;var yn=$('gdYouName');if(!yn)return;var two=S.mode==='2p';var c1=two?S.p1Char:S.char,c2=two?S.p2Char:S.foe;if(!c1||!c2)return;
+ yn.textContent='Pemain 1 — '+c1.name;$('gdFoeName').textContent=(two?'Pemain 2 — ':'Lawan AI — ')+c2.name;$('gdYouImg').src=c1.img;$('gdFoeImg').src=c2.img;
+ var hp=HOST.hp;var m1=hp?hp.m1:(S.playerStats?S.playerStats.maxHp:100);var m2=hp?hp.m2:(S.foeStats?S.foeStats.maxHp:100);var v1=hp?hp.hp1:m1,v2=hp?hp.hp2:m2;
+ $('gdHpYou').style.width=Math.max(0,v1/m1*100)+'%';$('gdHpYouText').textContent=Math.max(0,v1)+' HP';$('gdHpFoe').style.width=Math.max(0,v2/m2*100)+'%';$('gdHpFoeText').textContent=Math.max(0,v2)+' HP';
+ var w=$('gdWinner');if(HOST.step==='over'&&HOST.winner){w.style.display='block';var wc=HOST.winner===1?c1:c2;w.textContent='Duel selesai — Pemenang: Pemain '+HOST.winner+' ('+wc.name+')'}else w.style.display='none'}
+$('gdRematch').onclick=function(){startQuizFlow()};
+$('gdChars').onclick=function(){setMode(S.mode);show('screen-select')};
+$('gdHome').onclick=backToRole;
 function hostSetStep(st){var changed=HOST.step!==st;HOST.step=st;hostPublishFlow();
  if(st==='pick'&&changed){var si=$('selectIntro');if(si)si.textContent=S.mode==='2p'?'Tiap pemain memilih pendekar di HP kontrolernya sendiri. Kartu di layar ini tetap bisa diketuk sebagai cadangan bila HP seorang pemain bermasalah.':'Pemain 1 memilih pendekar di HP kontrolernya. Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI.'}
- if(st==='pick')hostSyncPicks()}
+ if(st==='pick'){hostSyncPicks();renderGuruPick()}}
 function hostCharById(id){for(var i=0;i<CHARS.length;i++)if(CHARS[i].id===id)return CHARS[i];return null}
 function hostApplyPick(slot,charId){var ch=hostCharById(charId);if(!ch)return;HOST.picks[slot]=charId;
  if(CUR_SCREEN!=='screen-select'){hostPublishFlow();return}
@@ -742,6 +817,7 @@ function hostApplyPick(slot,charId){var ch=hostCharById(charId);if(!ch)return;HO
  refreshCards();refreshSelectUI();hostPublishFlow()}
 function hostSyncPicks(){if(ROLE!=='host'||CUR_SCREEN!=='screen-select')return;var p1=HOST.picks[1],p2=HOST.picks[2];if(S.mode==='2p'){if(p1)hostApplyPick(1,p1);if(p2)hostApplyPick(2,p2)}else if(p1)hostApplyPick(1,p1)}
 function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';HOST.brokerIdx=0;HOST.connected=false;$('hostBar').classList.add('on');hostBarUpdate();
+ HOST.display=null;HOST.winner=0;HOST.hp=null;HOST.duelId=0;PQ={1:null,2:null};var cgEl=$('charGrid');if(cgEl)cgEl.style.display='none';var gpEl=$('guruPickView');if(gpEl)gpEl.style.display='block';
  $('hostRelay').textContent='Relai: menyambungkan…';
  if(typeof mqtt==='undefined'){$('hostRelay').textContent='Relai: perpustakaan MQTT gagal dimuat (CDN terhalang) — game lokal tetap jalan, kontroler belum bisa bergabung.';return}
  hostConnect()}
@@ -749,14 +825,17 @@ function hostConnect(){var base=TOPIC_BASE+HOST.code;var client=null;
  try{client=mqtt.connect(BROKER_URLS[HOST.brokerIdx%BROKER_URLS.length],{clientId:'duel-host-'+HOST.code+'-'+Math.random().toString(36).slice(2,8),connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/host',payload:'off',retain:true}})}catch(e){hostFailover();return}
  HOST.client=client;
  clearTimeout(HOST.failTimer);HOST.failTimer=setTimeout(function(){if(!HOST.connected&&HOST.client===client)hostFailover()},10000);
- client.on('connect',function(){if(HOST.client!==client)return;HOST.connected=true;clearTimeout(HOST.failTimer);client.subscribe([base+'/join',base+'/state',base+'/bye',base+'/pick',base+'/answer'],function(){client.publish(base+'/host','on',{retain:true});hostPublishFlow();$('hostRelay').textContent='Relai: terhubung'+(HOST.brokerIdx>0?' (jalur cadangan)':'')+' — bagikan kode di atas ke HP pemain.'})});
+ client.on('connect',function(){if(HOST.client!==client)return;HOST.connected=true;clearTimeout(HOST.failTimer);client.subscribe([base+'/join',base+'/state',base+'/bye',base+'/pick',base+'/answer',base+'/duelend'],function(){client.publish(base+'/host','on',{retain:true});hostPublishFlow();$('hostRelay').textContent='Relai: terhubung'+(HOST.brokerIdx>0?' (jalur cadangan)':'')+' — bagikan kode di atas ke HP pemain.'})});
  client.on('message',function(topic,payload){var msg;try{msg=JSON.parse(payload.toString())}catch(e){return}
-  if(topic===base+'/join'&&msg.cid){var slot=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:!HOST.slots[1]?1:!HOST.slots[2]?2:0;
-   if(slot){HOST.slots[slot]=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({slot:slot}));hostBarUpdate()}}
-  else if(topic===base+'/pick'&&msg.char){var s3=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s3)hostApplyPick(s3,msg.char)}
-  else if(topic===base+'/answer'&&typeof msg.di==='number'){var s4=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;var turn=S.quizWho==='p2'?2:1;if(s4&&s4===turn&&CUR_SCREEN==='screen-quiz'&&!S.answered&&S.curBtns&&S.curBtns[msg.di])S.curBtns[msg.di].click()}
+  if(topic===base+'/join'&&msg.cid){if(msg.role==='display'){HOST.display=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({display:true}));hostBarUpdate();hostPublishFlow()}
+   else{var slot=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:!HOST.slots[1]?1:!HOST.slots[2]?2:0;
+   if(slot){HOST.slots[slot]=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({slot:slot}));hostBarUpdate()}}}
+  else if(topic===base+'/pick'&&msg.char){var s3=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(!s3&&msg.via==='display'&&HOST.display===msg.cid&&(msg.slot===1||msg.slot===2)&&!HOST.slots[msg.slot])s3=msg.slot;if(s3)hostApplyPick(s3,msg.char)}
+  else if(topic===base+'/answer'&&typeof msg.di==='number'){var s4=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(!s4&&msg.via==='display'&&HOST.display===msg.cid&&(msg.slot===1||msg.slot===2)&&!HOST.slots[msg.slot])s4=msg.slot;if(s4)hostAnswerSlot(s4,msg.di)}
+  else if(topic===base+'/state'&&msg.t==='hp'){HOST.hp={hp1:msg.hp1,m1:msg.m1,hp2:msg.hp2,m2:msg.m2};renderGuruDuel()}
   else if(topic===base+'/state'&&msg.a){var s2=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s2)applyNetState(s2,msg.a,msg.d)}
-  else if(topic===base+'/bye'&&msg.cid){[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;HOST.picks[n]=null;clearNetSlot(n)}});if(CUR_SCREEN==='screen-select'){if(S.mode==='2p'){if(!HOST.slots[1])S.p1Char=null;if(!HOST.slots[2])S.p2Char=null;S.pickTurn=S.p1Char?'p2':'p1'}else if(!HOST.slots[1])S.char=null;refreshCards();refreshSelectUI()}hostPublishFlow();hostBarUpdate()}});
+  else if(topic===base+'/duelend'){HOST.winner=msg.winner||0;hostSetStep('over');renderGuruDuel()}
+  else if(topic===base+'/bye'&&msg.cid){if(HOST.display===msg.cid){HOST.display=null;hostBarUpdate();hostPublishFlow()}[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;HOST.picks[n]=null;clearNetSlot(n)}});if(CUR_SCREEN==='screen-select'){if(S.mode==='2p'){if(!HOST.slots[1])S.p1Char=null;if(!HOST.slots[2])S.p2Char=null;S.pickTurn=S.p1Char?'p2':'p1'}else if(!HOST.slots[1])S.char=null;refreshCards();refreshSelectUI()}hostPublishFlow();hostBarUpdate()}});
  client.on('offline',function(){if(HOST.connected)$('hostRelay').textContent='Relai: terputus, mencoba menyambung lagi…'});
  client.on('error',function(){if(HOST.connected)$('hostRelay').textContent='Relai: ada gangguan sambungan — game lokal tetap jalan.'})}
 function hostFailover(){var old=HOST.client;HOST.client=null;if(old){try{old.end(true)}catch(e){}}
@@ -767,7 +846,7 @@ function endHost(){clearTimeout(HOST.failTimer);HOST.connected=false;if(HOST.cli
 $('btnEndHost').onclick=endHost;
 
 /* ---------- KONTROLER HP ---------- */
-var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false,pick:null,flowStep:'lobby',flowPicks:{1:null,2:null},brokerIdx:0,scanTimer:null,flowQuiz:null,quizKey:null};
+var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false,pick:null,flowStep:'lobby',flowPicks:{1:null,2:null},brokerIdx:0,scanTimer:null,flowQuiz:null,flowQuizAll:null,quizKey:null};
 function ctlStatus(t,on){var el=$('ctlJoinStatus');el.textContent=t;el.classList.toggle('on',!!on)}
 function ctlSend(a,d){if(CTL.client&&CTL.slot)CTL.client.publish(TOPIC_BASE+CTL.code+'/state',JSON.stringify({cid:CTL.cid,slot:CTL.slot,a:a,d:d?1:0}))}
 function ctlPickChar(ch){if(!CTL.client||!CTL.slot)return;CTL.pick=ch.id;try{CTL.client.publish(TOPIC_BASE+CTL.code+'/pick',JSON.stringify({cid:CTL.cid,slot:CTL.slot,char:ch.id}))}catch(e){}$('ctlPickInfo').textContent='Mengirim pilihan '+ch.name+' ke layar tuan rumah.';ctlRefreshPickCards()}
@@ -778,18 +857,19 @@ function ctlRefreshPickCards(){var grid=$('ctlCharGrid');if(!grid||!CTL.slot)ret
  else if(other&&CTL.pick===other){CTL.pick=null;info.textContent='Pendekar itu baru saja diambil lawan. Pilih pendekar lain.'}
  else if(CTL.pick){var c2=hostCharById(CTL.pick);info.textContent='Mengirim pilihan '+(c2?c2.name:CTL.pick)+' ke layar tuan rumah.'}
  else info.textContent='Menunggu pilihanmu.'}
-function ctlShowPhase(){if(!CTL.slot)return;$('ctlJoinView').style.display='none';var step=CTL.flowStep;var qz=CTL.flowQuiz;
+function ctlShowPhase(){if(!CTL.slot)return;$('ctlJoinView').style.display='none';var step=CTL.flowStep;var qz=CTL.flowQuizAll&&CTL.slot?CTL.flowQuizAll[CTL.slot]:null;CTL.flowQuiz=qz;
  if(step==='duel'){$('ctlPickView').style.display='none';$('ctlQuizView').style.display='none';$('ctlPadView').style.display='block';$('ctlPadStatus').textContent='Terhubung, kamu Pemain '+CTL.slot+'. Duel sedang berjalan, kendalikan pendekarmu!';return}
- if(step==='quiz'&&qz&&qz.who===CTL.slot&&!qz.answered){$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlQuizView').style.display='block';ctlRenderQuiz();return}
+ if(step==='quiz'&&qz&&!qz.done&&!qz.answered){$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlQuizView').style.display='block';ctlRenderQuiz();return}
  $('ctlPadView').style.display='none';$('ctlQuizView').style.display='none';$('ctlPickView').style.display='block';var st=$('ctlPickStatus');
- if(step==='quiz'){if(qz&&qz.who===CTL.slot&&qz.answered)st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Jawabanmu terkirim'+(qz.ok===true?' — benar!':qz.ok===false?' — belum tepat, lihat penjelasannya di layar besar.':'.')+' Menunggu soal berikutnya.';
-  else if(qz)st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Sekarang giliran Pemain '+qz.who+' menjawab soal di HP-nya.';
-  else st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Kuis selesai, lihat ramuan di layar tuan rumah.'}
+ if(step==='quiz'){if(qz&&qz.done)st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Kuis kamu sudah selesai — menunggu pemain lain selesai. Progresnya terlihat di proyektor.';
+  else if(qz&&qz.answered)st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Jawabanmu terkirim'+(qz.ok===true?' — benar!':qz.ok===false?' — belum tepat.':'')+' Menunggu soal berikutnya.';
+  else st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Kuis berjalan — jawab soal di HP ini.'}
+ else if(step==='summary')st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Kuis selesai — lihat ramuan dan hasil kalian di proyektor.';
  else if(step==='over')st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Duel selesai, lihat hasilnya di layar tuan rumah.';
  else st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Pilih pendekarmu di bawah ini.';
  ctlRefreshPickCards()}
 function ctlRenderQuiz(){var qz=CTL.flowQuiz;if(!qz)return;var key=qz.who+':'+qz.idx+':'+qz.q;if(CTL.quizKey===key)return;CTL.quizKey=key;
- $('ctlQuizStatus').textContent='Giliranmu menjawab — soal '+(qz.idx+1)+' dari '+qz.total+' • Skor kamu: ✓ '+qz.correct+'  ✕ '+qz.wrong;
+ $('ctlQuizStatus').textContent='Soal '+(qz.idx+1)+' dari '+qz.total+' untukmu • Skor kamu: ✓ '+qz.correct+'  ✕ '+qz.wrong;
  $('ctlQuizCat').textContent=qz.cat||'';
  $('ctlQuizQ').textContent=qz.q;
  var h=$('ctlQuizHint');h.textContent=qz.hint?('Petunjuk: '+qz.hint):'';h.style.display=qz.hint?'block':'none';
@@ -798,7 +878,7 @@ function ctlRenderQuiz(){var qz=CTL.flowQuiz;if(!qz)return;var key=qz.who+':'+qz
  qz.opts.forEach(function(t,di){var b=document.createElement('button');b.className='opt';b.innerHTML='<span class="badge">'+labels[di]+'</span>';var sp=document.createElement('span');sp.textContent=t;b.appendChild(sp);b.onclick=function(){ctlAnswer(di)};box.appendChild(b)})}
 function ctlAnswer(di){if(!CTL.client||!CTL.slot)return;var qz=CTL.flowQuiz;if(!qz||qz.answered||qz.who!==CTL.slot)return;try{CTL.client.publish(TOPIC_BASE+CTL.code+'/answer',JSON.stringify({cid:CTL.cid,di:di}))}catch(e){}
  Array.prototype.forEach.call($('ctlQuizOpts').children,function(b){b.disabled=true});
- $('ctlQuizInfo').textContent='Jawaban terkirim — lihat hasilnya di layar besar.'}
+ $('ctlQuizInfo').textContent='Jawaban terkirim — hasilnya tercatat di Layar Guru dan proyektor.'}
 function ctlJoin(){var code=$('ctlCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){ctlStatus('Kode harus 4 karakter — lihat kode besar di layar tuan rumah.');return}
  if(typeof mqtt==='undefined'){ctlStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — kontroler belum bisa bergabung.');return}
  CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};CTL.brokerIdx=0;CTL.hostAlive=false;ctlStatus('Menyambung ke relai…');
@@ -811,7 +891,7 @@ function ctlConnect(){var base=TOPIC_BASE+CTL.code;var client=null;
  client.on('message',function(topic,payload){if(CTL.client!==client)return;
   if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);
    $('ctlJoinView').style.display='none';$('ctlPadLabel').textContent='Pemain '+CTL.slot+' (P'+CTL.slot+')';$('ctlPickLabel').textContent='Pemain '+CTL.slot+' — Pilih Pendekarmu';ctlShowPhase()}
-  else if(topic===base+'/flow'){var f;try{f=JSON.parse(payload.toString())}catch(e){return}CTL.flowStep=f.step||'lobby';CTL.flowPicks=f.picks||{1:null,2:null};CTL.flowQuiz=f.quiz||null;ctlShowPhase()}
+  else if(topic===base+'/flow'){var f;try{f=JSON.parse(payload.toString())}catch(e){return}CTL.flowStep=f.step||'lobby';CTL.flowPicks=f.picks||{1:null,2:null};CTL.flowQuizAll=f.quiz||null;CTL.flowQuiz=(f.quiz&&CTL.slot)?f.quiz[CTL.slot]:null;ctlShowPhase()}
   else if(topic===base+'/host'){CTL.hostAlive=payload.toString()==='on';if(!CTL.hostAlive&&CTL.slot){$('ctlPadStatus').textContent='Tuan rumah terputus, pendekarmu berhenti menerima tombol.';$('ctlPickStatus').textContent='Tuan rumah terputus.'}else if(CTL.slot){$('ctlPadStatus').textContent='Terhubung, kamu Pemain '+CTL.slot+'.';ctlShowPhase()}}});
  client.on('offline',function(){if(!CTL.slot&&CTL.client===client)ctlStatus('Relai terputus — mencoba menyambung lagi…')});
  client.on('error',function(){if(!CTL.slot&&CTL.client===client)ctlStatus('Relai tidak terjangkau dari jaringan ini.')});
@@ -822,7 +902,7 @@ function ctlScanStep(){if(CTL.slot||!CTL.client)return;
 function ctlAdvance(){var old=CTL.client;CTL.client=null;clearInterval(CTL.joinTimer);if(old){try{old.end(true)}catch(e){}}
  CTL.brokerIdx=(CTL.brokerIdx+1)%BROKER_URLS.length;CTL.hostAlive=false;
  if(ROLE==='controller'&&CTL.code&&!CTL.slot){ctlStatus('Tuan rumah belum ketemu di jalur itu — mencari di jalur relai lain…');ctlConnect()}}
-function ctlLeave(){clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlQuizView').style.display='none';$('ctlJoinView').style.display='block';CTL.flowQuiz=null;CTL.quizKey=null;ctlStatus('Sudah diputuskan.');show('screen-role')}
+function ctlLeave(){clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlQuizView').style.display='none';$('ctlJoinView').style.display='block';CTL.flowQuiz=null;CTL.flowQuizAll=null;CTL.quizKey=null;ctlStatus('Sudah diputuskan.');show('screen-role')}
 $('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlLeave2').onclick=ctlLeave;$('btnCtlLeave3').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
 document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.getAttribute('data-act');
  var dn=function(e){e.preventDefault();b.classList.add('active');ctlSend(a,1)};
@@ -831,8 +911,73 @@ document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.get
 
 (function(){var grid=$('ctlCharGrid');if(!grid)return;CHARS.forEach(function(ch){var b=document.createElement('button');b.className='ctlCharCard';b.setAttribute('data-char',ch.id);b.innerHTML='<img src="'+ch.img+'" alt="Pendekar '+ch.name+'"/><b>'+ch.name+'</b><small>'+ch.weapon+'</small>';b.onclick=function(){ctlPickChar(ch)};grid.appendChild(b)})})();
 
+/* ---------- PROYEKTOR ---------- */
+var PROJ={client:null,code:null,cid:'disp-'+Math.random().toString(36).slice(2,10),flow:null,brokerIdx:0,scanTimer:null,joinTimer:null,hostAlive:false,joined:false,duelKey:null,_hpT:0};
+function escT(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function projStatus(t){var e=$('projJoinStatus');if(e)e.textContent=t}
+function projJoin(){var code=$('projCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){projStatus('Kode harus 4 karakter — lihat kode besar di Layar Guru.');return}
+ if(typeof mqtt==='undefined'){projStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — proyektor belum bisa bergabung.');return}
+ PROJ.code=code;PROJ.flow=null;PROJ.joined=false;PROJ.brokerIdx=0;PROJ.hostAlive=false;projStatus('Menyambung ke relai…');projConnect()}
+function projConnect(){var base=TOPIC_BASE+PROJ.code;var client=null;
+ try{client=mqtt.connect(BROKER_URLS[PROJ.brokerIdx%BROKER_URLS.length],{clientId:'duel-'+PROJ.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/bye',payload:JSON.stringify({cid:PROJ.cid})}})}catch(e){projAdvance();return}
+ PROJ.client=client;
+ client.on('connect',function(){if(PROJ.client!==client)return;client.subscribe([base+'/assign/'+PROJ.cid,base+'/host',base+'/flow',base+'/state']);projStatus('Terhubung ke relai — menunggu diterima Layar Guru…');
+  var join=function(){if(!PROJ.joined&&PROJ.client===client)client.publish(base+'/join',JSON.stringify({cid:PROJ.cid,role:'display'}))};join();clearInterval(PROJ.joinTimer);PROJ.joinTimer=setInterval(join,2500)});
+ client.on('message',function(topic,payload){if(PROJ.client!==client)return;
+  if(topic===base+'/assign/'+PROJ.cid){PROJ.joined=true;clearInterval(PROJ.joinTimer);clearTimeout(PROJ.scanTimer);$('projJoinView').style.display='none';$('projView').style.display='block';projRender()}
+  else if(topic===base+'/flow'){var f;try{f=JSON.parse(payload.toString())}catch(e){return}PROJ.flow=f;projRender()}
+  else if(topic===base+'/state'){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(m.cid&&PROJ.flow&&PROJ.flow.slots){var s=PROJ.flow.slots[1]===m.cid?1:PROJ.flow.slots[2]===m.cid?2:0;if(s&&m.a)applyNetState(s,m.a,m.d)}}
+  else if(topic===base+'/host'){PROJ.hostAlive=payload.toString()==='on';if(!PROJ.hostAlive&&PROJ.joined)projStatus('Layar Guru terputus.')}});
+ client.on('offline',function(){if(!PROJ.joined&&PROJ.client===client)projStatus('Relai terputus — mencoba menyambung lagi…')});
+ client.on('error',function(){if(!PROJ.joined&&PROJ.client===client)projStatus('Relai tidak terjangkau dari jaringan ini.')});
+ clearTimeout(PROJ.scanTimer);PROJ.scanTimer=setTimeout(projScanStep,9000)}
+function projScanStep(){if(PROJ.joined||!PROJ.client)return;if(PROJ.hostAlive){PROJ.scanTimer=setTimeout(projScanStep,9000);return}projAdvance()}
+function projAdvance(){var old=PROJ.client;PROJ.client=null;clearInterval(PROJ.joinTimer);if(old){try{old.end(true)}catch(e){}}PROJ.brokerIdx=(PROJ.brokerIdx+1)%BROKER_URLS.length;PROJ.hostAlive=false;if(ROLE==='proyektor'&&PROJ.code&&!PROJ.joined){projStatus('Ruangan belum ketemu di jalur itu — mencari di jalur relai lain…');projConnect()}}
+function projLeave(){clearInterval(PROJ.joinTimer);clearTimeout(PROJ.scanTimer);if(PROJ.client){try{PROJ.client.publish(TOPIC_BASE+PROJ.code+'/bye',JSON.stringify({cid:PROJ.cid}));PROJ.client.end(true)}catch(e){}PROJ.client=null}PROJ.joined=false;PROJ.flow=null;PROJ.duelKey=null;if(raf)cancelAnimationFrame(raf);raf=null;if(G)G.over=true;ROLE='local';show('screen-role')}
+function projShow(id){['projLobby','projPick','projQuiz','projSummary'].forEach(function(x){var e=$(x);if(e)e.style.display=(x===id)?'block':'none'})}
+function projRender(){var f=PROJ.flow;if(!PROJ.joined)return;if(!f){projShow('projLobby');$('projLobbyStat').textContent='Menunggu data ruangan dari Layar Guru…';return}
+ if(f.step==='duel'){projStartDuel(f);return}
+ if(f.step==='over'){return}
+ if(CUR_SCREEN!=='screen-proj')show('screen-proj');
+ if(f.step==='quiz'){projShow('projQuiz');projRenderQuiz(f)}
+ else if(f.step==='summary'){projShow('projSummary');projRenderSummary(f)}
+ else if(f.step==='lobby'){projShow('projLobby');$('projLobbyStat').innerHTML='Ruangan <b>'+PROJ.code+'</b> • Mode '+(f.mode==='2p'?'Dua Pemain':'Lawan Komputer')+'<br/>Kontroler 1: '+(f.slots&&f.slots[1]?'terhubung':'belum')+(f.mode==='2p'?('<br/>Kontroler 2: '+(f.slots&&f.slots[2]?'terhubung':'belum')):'')+'<br/>Menunggu guru membuka pilih pendekar dari Layar Guru.'}
+ else{projShow('projPick');projRenderPick(f)}}
+function projRenderPick(f){$('projPickNote').textContent=f.mode==='2p'?'Tiap pemain memilih pendekarnya — dari HP masing-masing, atau ketuk kartu di separuh layarnya di sini bila HP pemain itu bermasalah.':'Pemain 1 memilih pendekar dari HP atau dari layar ini. Lawan dikendalikan komputer.';
+ [1,2].forEach(function(s){var box=$('projPickHalf'+s);if(!box)return;
+  if(f.mode!=='2p'&&s===2){box.innerHTML='<div class="kicker">Lawan</div><h3 style="margin:4px 0">Komputer (AI)</h3><p style="color:#6B5A44;font-size:13px;line-height:1.6">Pendekar lawan dipilih acak oleh Layar Guru saat kuis dimulai.</p>';return}
+  var pickId=f.picks?f.picks[s]:null;var hasCtl=!!(f.slots&&f.slots[s]);var other=f.picks?f.picks[s===1?2:1]:null;
+  var h='<div class="kicker">Pemain '+s+(hasCtl?' — memilih dari HP-nya':' — bisa memilih di layar ini')+'</div>';
+  if(pickId){var ch=hostCharById(pickId);h+='<div style="text-align:center;padding:8px 0"><img src="'+(ch?ch.img:'')+'" alt="" style="width:120px;height:120px;object-fit:contain"/><div style="font-family:\'Lilita One\',sans-serif;font-size:24px">'+(ch?ch.name:pickId)+'</div><div style="color:#6B5A44;font-size:13px">'+(ch?ch.weapon:'')+'</div></div>'}
+  else{h+='<div class="projGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:8px"></div><p style="color:#6B5A44;font-size:13px;text-align:center">Belum memilih'+(hasCtl?' — menunggu pilihan dari HP pemain ini.':' — ketuk satu kartu untuk pemain ini.')+'</p>'}
+  box.innerHTML=h;
+  var g=box.querySelector('.projGrid');if(g){CHARS.forEach(function(ch){var b=document.createElement('button');b.className='ctlCharCard';b.innerHTML='<img src="'+ch.img+'" alt="Pendekar '+ch.name+'"/><b>'+ch.name+'</b><small>'+ch.weapon+'</small>';if(other&&other===ch.id){b.disabled=true;b.style.opacity='.4'}b.onclick=function(){projPick(s,ch.id)};g.appendChild(b)})}})}
+function projPick(s,charId){if(!PROJ.client||!PROJ.joined)return;var f=PROJ.flow;if(f&&f.slots&&f.slots[s])return;try{PROJ.client.publish(TOPIC_BASE+PROJ.code+'/pick',JSON.stringify({cid:PROJ.cid,via:'display',slot:s,char:charId}))}catch(e){}}
+function projRenderQuiz(f){[1,2].forEach(function(s){var box=$('projQHalf'+s);if(!box)return;
+  if(f.mode!=='2p'&&s===2){box.innerHTML='<div class="kicker">Lawan AI</div><p style="color:#6B5A44;font-size:13.5px;line-height:1.6">Ramuan lawan setara 2 jawaban benar. Jurusnya terbuka setelah meter penuh.</p>';return}
+  var qz=f.quiz?f.quiz[s]:null;var hasCtl=!!(f.slots&&f.slots[s]);
+  var h='<div class="kicker">Pemain '+s+'</div>';
+  if(!qz)h+='<p style="color:#6B5A44">Menunggu soal…</p>';
+  else if(qz.done)h+='<div style="text-align:center;padding:16px 0"><div style="font-size:40px">✓</div><b>Selesai</b><p style="color:#6B5A44;font-size:13px">Benar '+qz.correct+' dari 5 soal.</p></div>';
+  else h+='<div style="font-weight:800;font-size:13px">Soal '+(qz.idx+1)+' / 5 • ✓ '+qz.correct+'  ✕ '+qz.wrong+'</div><div style="font-size:12px;color:#8A7355;margin-top:2px">'+escT(qz.cat||'')+'</div><h3 style="margin:8px 0 4px;font-size:20px;line-height:1.35">'+escT(qz.q)+'</h3>'+(qz.hint?'<p style="color:#6B5A44;font-size:13px;margin:2px 0">Petunjuk: '+escT(qz.hint)+'</p>':'')+'<div class="opts projOpts"></div><p style="color:#6B5A44;font-size:12.5px;margin-top:8px">'+(qz.answered?('Jawaban sudah masuk: '+(qz.ok?'BENAR ✓':'belum tepat ✗')):hasCtl?'Menjawab dari HP pemain ini.':'Ketuk jawaban di separuh layar ini untuk pemain ini.')+'</p>';
+  box.innerHTML=h;
+  var ob=box.querySelector('.projOpts');if(ob&&qz&&!qz.done){var labels=['A','B','C','D'];qz.opts.forEach(function(t,di){var b=document.createElement('button');b.className='opt';b.innerHTML='<span class="badge">'+labels[di]+'</span>';var sp=document.createElement('span');sp.textContent=t;b.appendChild(sp);if(qz.answered||hasCtl)b.disabled=true;else b.onclick=function(){projAnswer(s,di)};ob.appendChild(b)})}})}
+function projAnswer(s,di){if(!PROJ.client||!PROJ.joined)return;var f=PROJ.flow;if(f&&f.slots&&f.slots[s])return;try{PROJ.client.publish(TOPIC_BASE+PROJ.code+'/answer',JSON.stringify({cid:PROJ.cid,via:'display',slot:s,di:di}))}catch(e){}}
+function projRenderSummary(f){var box=$('projSummary');var r1=f.res?f.res[1]:null,r2=f.res?f.res[2]:null;var c1=hostCharById(f.picks?f.picks[1]:null);var foeId=f.mode==='2p'?(f.picks?f.picks[2]:null):f.foe;var c2=hostCharById(foeId);
+ var h='<div class="kicker">Langkah 3 dari 4 — Ramuan Selesai</div><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px"><div class="scoreBig">'+(f.mode==='2p'?((r1?r1.correct:0)+' – '+(r2?r2.correct:0)):((r1?r1.correct:0)+' / 5'))+'</div><div style="font-weight:800">'+(f.mode==='2p'?('Jurus P1 '+((r1&&r1.correct>=3)?'TERBUKA':'TERKUNCI')+' • Jurus P2 '+((r2&&r2.correct>=3)?'TERBUKA':'TERKUNCI')):('Jurus '+((r1&&r1.correct>=3)?'TERBUKA':'TERKUNCI')))+'</div></div>';
+ h+='<div class="versus"><div class="vsCard you"><b>'+(c1?c1.name:'Pemain 1')+'</b><div style="font-size:12px;color:#6B5A44;margin-top:2px">'+(c1?c1.weapon:'')+'</div><div class="potionList">'+(r1?potionPills(r1.ups,'up')+potionPills(r1.downs,'down'):'')+'</div></div><div class="vsBadge">VS</div><div class="vsCard"><b>'+(c2?c2.name:'Lawan')+'</b><div style="font-size:12px;color:#6B5A44;margin-top:2px">'+(c2?c2.weapon:'')+'</div><div class="potionList">'+(f.mode==='2p'?(r2?potionPills(r2.ups,'up')+potionPills(r2.downs,'down'):''):potionPills([UP_POOL[0],UP_POOL[1]],'up'))+'</div></div></div>';
+ h+='<p style="color:#6B5A44;font-size:13.5px;margin-top:12px">Guru memulai duel dari Layar Guru.</p>';box.innerHTML=h}
+function projStartDuel(f){if(!f.res||!f.res[1])return;if(PROJ.duelKey===f.duelId&&G&&!G.over)return;if(G&&!G.over)return;PROJ.duelKey=f.duelId;
+ S.mode=f.mode||'2p';var c1=hostCharById(f.picks?f.picks[1]:null);if(!c1)return;
+ if(S.mode==='2p'){var c2=hostCharById(f.picks?f.picks[2]:null);if(!c2)return;S.p1Char=c1;S.p2Char=c2;S.char=c1;S.foe=c2;S.p1Res=f.res[1];S.p2Res=f.res[2];S.playerStats=calcStats(c1,f.res[1].ups,f.res[1].downs);S.foeStats=calcStats(c2,f.res[2].ups,f.res[2].downs);S.foeUps=f.res[2].ups}
+ else{var cf=hostCharById(f.foe);if(!cf)return;S.char=c1;S.foe=cf;S.p1Res=f.res[1];S.correct=f.res[1].correct;S.wrong=f.res[1].wrong;S.ups=f.res[1].ups;S.downs=f.res[1].downs;var fups=[UP_POOL[0],UP_POOL[1]];S.playerStats=calcStats(c1,S.ups,S.downs);S.foeStats=calcStats(cf,fups,[]);S.foeUps=fups}
+ startDuel()}
+$('btnProjJoin').onclick=projJoin;
+$('btnProjBack').onclick=function(){show('screen-role')};
+$('btnProjLeave').onclick=projLeave;
+
 /* ---------- PILIH PERAN ---------- */
-$('roleLocal').onclick=function(){ROLE='local';show('screen-select')};
+$('roleLocal').onclick=function(){ROLE='proyektor';show('screen-proj')};
 $('roleHost').onclick=function(){startHost();show('screen-select')};
 $('roleCtl').onclick=function(){ROLE='controller';show('screen-controller')};
 /* ================= BANK SOAL LOKAL + BANK LMS (pola game mandiri Magguru) ================= */
