@@ -101,6 +101,13 @@ canvas#game{touch-action:none}
 .ctlWrap{max-width:560px;margin:0 auto}
 .codeInput{width:100%;font-family:"Lilita One",sans-serif;font-size:34px;letter-spacing:.3em;text-transform:uppercase;text-align:center;padding:14px;border:3px solid var(--ink);border-radius:14px;background:#FFFDF4;color:var(--ink)}
 .padGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ctlCharGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-top:12px}
+.ctlCharCard{border:3px solid var(--ink);border-radius:16px;background:rgba(251,244,225,.97);padding:10px 8px;text-align:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.45);font-family:inherit;color:var(--ink)}
+.ctlCharCard img{width:74px;height:74px;object-fit:contain}
+.ctlCharCard b{display:block;font-size:16px;margin-top:4px}
+.ctlCharCard small{display:block;color:#6B5A44;font-size:11.5px;margin-top:2px;line-height:1.35}
+.ctlCharCard.mine{outline:4px solid #0B4F4A;background:#DFF5EF}
+.ctlCharCard.taken{opacity:.38;pointer-events:none}
 .padBtn{min-height:92px;border-radius:18px;border:3px solid var(--ink);background:rgba(251,244,225,.97);color:var(--ink);font-weight:900;font-size:17px;box-shadow:0 5px 0 rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .padBtn small{font-size:11px;font-weight:800;color:#6B5B40}.padBtn.active,.padBtn:active{background:var(--goldBg);transform:translateY(3px)}
 .padBtn.attack{background:var(--terra);color:#FFF6DE}.padBtn.attack small{color:#F6D9C8}
@@ -316,6 +323,13 @@ canvas#game{touch-action:none}
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn primary" id="btnCtlJoin" style="flex:1">Gabung</button><button class="btn" id="btnCtlBack">Kembali</button></div>
         <div class="ctlStatus" id="ctlJoinStatus" style="margin-top:14px">Belum terhubung.</div>
       </div>
+      <div id="ctlPickView" style="display:none">
+        <div class="ctlStatus on" id="ctlPickStatus">Terhubung</div>
+        <div style="text-align:center;margin-top:12px"><span id="ctlPickLabel" style="font-family:'Lilita One',sans-serif;font-size:26px">Pilih Pendekarmu</span><div style="font-size:12.5px;color:#6B5A44">Ketuk satu pendekar. Pilihanmu terkirim ke layar tuan rumah dan tidak bisa sama dengan pilihan lawan.</div></div>
+        <div class="ctlCharGrid" id="ctlCharGrid"></div>
+        <div class="ctlStatus" id="ctlPickInfo" style="margin-top:12px">Menunggu pilihanmu.</div>
+        <button class="btn dark" id="btnCtlLeave2" style="width:100%;margin-top:14px;justify-content:center">Putuskan Sambungan</button>
+      </div>
       <div id="ctlPadView" style="display:none">
         <div class="ctlStatus on" id="ctlPadStatus">Terhubung</div>
         <div style="text-align:center;margin-top:12px"><span id="ctlPadLabel" style="font-family:'Lilita One',sans-serif;font-size:30px">Pemain 1</span><div style="font-size:12.5px;color:#6B5A44">Tombolmu menggerakkan pendekar ini di layar tuan rumah. Duel dimulai dari layar tuan rumah.</div></div>
@@ -408,7 +422,8 @@ CHARS.forEach(function(ch){var im=new Image(); im.src=ch.img; ch.sprite=im; ch.w
 var S={mode:'ai',char:null,foe:null,p1Char:null,p2Char:null,pickTurn:'p1',quizWho:'p1',p1Res:null,p2Res:null,usedQ:[],quiz:[],qIdx:0,correct:0,wrong:0,ups:[],downs:[],answered:false,playerStats:null,foeStats:null,foeUps:[]};
 function $(id){return document.getElementById(id)}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
-function show(id){document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'})}
+var CUR_SCREEN='screen-role';
+function show(id){CUR_SCREEN=id;document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'});if(ROLE==='host'&&typeof hostSetStep==='function'){var mp={'screen-select':'pick','screen-quiz':'quiz','screen-summary':'quiz','screen-duel':'duel','screen-result':'over'};if(mp[id])hostSetStep(mp[id])}}
 function calcStats(char,ups,downs){var dmgF=1,spdF=1,hpAdd=0,shield=0;ups.concat(downs).forEach(function(p){if(p.type==='dmg')dmgF+=p.val;if(p.type==='spd')spdF+=p.val;if(p.type==='hp')hpAdd+=p.val;if(p.type==='shield')shield+=p.val});if(dmgF<0.3)dmgF=0.3;if(spdF<0.4)spdF=0.4;return{maxHp:Math.max(50,100+hpAdd),dmg:Math.round(char.dmg*dmgF*10)/10,speed:char.speed*spdF,dmgF:dmgF,spdF:spdF,shield:shield}}
 function potionPills(list,cls){if(!list.length)return '<span class="pill neutral">Tidak ada</span>';var counts={};list.forEach(function(p){counts[p.name]=(counts[p.name]||0)+1});return Object.keys(counts).map(function(k){var p=list.find(function(x){return x.name===k});return '<span class="pill '+cls+'">'+k+(counts[k]>1?' ×'+counts[k]:'')+' • '+p.desc+'</span>'}).join('')}
 
@@ -430,7 +445,7 @@ function pickChar(ch){
   else{if(S.p1Char&&ch.id===S.p1Char.id)return;S.p2Char=ch}
  }else S.char=ch;
  refreshCards();refreshSelectUI()}
-function setMode(m){S.mode=m;S.p1Char=null;S.p2Char=null;S.pickTurn='p1';$('modeAI').classList.toggle('on',m==='ai');$('mode2P').classList.toggle('on',m==='2p');$('selectIntro').textContent=m==='2p'?'Dua orang, satu layar. Pemain 1 memilih pendekar dulu, lalu Pemain 2 (tidak boleh sama). Tiap pemain meramu kekuatannya sendiri dari 5 soal.':'Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI. Tidak ada yang mutlak terkuat — beda rasa, beda cara menang.';refreshCards();refreshSelectUI()}
+function setMode(m){S.mode=m;S.p1Char=null;S.p2Char=null;S.pickTurn='p1';if(ROLE==='host'){HOST.picks={1:null,2:null};hostPublishFlow()}$('modeAI').classList.toggle('on',m==='ai');$('mode2P').classList.toggle('on',m==='2p');$('selectIntro').textContent=m==='2p'?'Dua orang, satu layar. Pemain 1 memilih pendekar dulu, lalu Pemain 2 (tidak boleh sama). Tiap pemain meramu kekuatannya sendiri dari 5 soal.':'Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI. Tidak ada yang mutlak terkuat — beda rasa, beda cara menang.';refreshCards();refreshSelectUI()}
 $('modeAI').onclick=function(){setMode('ai')};$('mode2P').onclick=function(){setMode('2p')};
 $('btnToQuiz').onclick=function(){startQuizFlow()};
 
@@ -673,48 +688,81 @@ function applyNetState(slot,a,d){var inp=netInputForSlot(slot);if(!inp||!inp.map
 function clearNetSlot(slot){var inp=netInputForSlot(slot);if(inp)inp.netHeld={};var inp2=slot===1?InputSolo:null;if(inp2&&inp2!==inp)inp2.netHeld={}}
 
 /* ---------- TUAN RUMAH ---------- */
-var HOST={client:null,code:null,slots:{1:null,2:null}};
+var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby'};
 function hostBarUpdate(){$('hostCode').textContent=HOST.code||'····';
  [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')})}
-function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};$('hostBar').classList.add('on');hostBarUpdate();
+function hostPublishFlow(){if(HOST.client&&HOST.code){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/flow',JSON.stringify({step:HOST.step,picks:{1:HOST.picks[1],2:HOST.picks[2]}}),{retain:true})}catch(e){}}}
+function hostSetStep(st){var changed=HOST.step!==st;HOST.step=st;hostPublishFlow();
+ if(st==='pick'&&changed){var si=$('selectIntro');if(si)si.textContent=S.mode==='2p'?'Tiap pemain memilih pendekar di HP kontrolernya sendiri. Kartu di layar ini tetap bisa diketuk sebagai cadangan bila HP seorang pemain bermasalah.':'Pemain 1 memilih pendekar di HP kontrolernya. Lawan dipilih acak dari empat pendekar lain dan dikendalikan AI.'}
+ if(st==='pick')hostSyncPicks()}
+function hostCharById(id){for(var i=0;i<CHARS.length;i++)if(CHARS[i].id===id)return CHARS[i];return null}
+function hostApplyPick(slot,charId){var ch=hostCharById(charId);if(!ch)return;HOST.picks[slot]=charId;
+ if(CUR_SCREEN!=='screen-select'){hostPublishFlow();return}
+ if(S.mode==='2p'){
+  if(slot===1){S.p1Char=ch;if(S.p2Char&&S.p2Char.id===charId){S.p2Char=null;HOST.picks[2]=null}}
+  else{if(S.p1Char&&S.p1Char.id===charId){hostPublishFlow();return}S.p2Char=ch}
+  S.pickTurn=S.p1Char?'p2':'p1';
+ }else{if(slot===1)S.char=ch}
+ refreshCards();refreshSelectUI();hostPublishFlow()}
+function hostSyncPicks(){if(ROLE!=='host'||CUR_SCREEN!=='screen-select')return;var p1=HOST.picks[1],p2=HOST.picks[2];if(S.mode==='2p'){if(p1)hostApplyPick(1,p1);if(p2)hostApplyPick(2,p2)}else if(p1)hostApplyPick(1,p1)}
+function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';$('hostBar').classList.add('on');hostBarUpdate();
  $('hostRelay').textContent='Relai: menyambungkan…';
  if(typeof mqtt==='undefined'){$('hostRelay').textContent='Relai: perpustakaan MQTT gagal dimuat (CDN terhalang) — game lokal tetap jalan, kontroler belum bisa bergabung.';return}
  try{HOST.client=mqtt.connect(BROKER_URL,{clientId:'duel-host-'+HOST.code+'-'+Math.random().toString(36).slice(2,8),connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+HOST.code+'/host',payload:'off',retain:true}})}catch(e){$('hostRelay').textContent='Relai: gagal menyambung — game lokal tetap jalan.';return}
  var base=TOPIC_BASE+HOST.code;
- HOST.client.on('connect',function(){HOST.client.subscribe([base+'/join',base+'/state',base+'/bye'],function(){HOST.client.publish(base+'/host','on',{retain:true});$('hostRelay').textContent='Relai: terhubung — bagikan kode di atas ke HP pemain.'})});
+ HOST.client.on('connect',function(){HOST.client.subscribe([base+'/join',base+'/state',base+'/bye',base+'/pick'],function(){HOST.client.publish(base+'/host','on',{retain:true});hostPublishFlow();$('hostRelay').textContent='Relai: terhubung — bagikan kode di atas ke HP pemain.'})});
  HOST.client.on('message',function(topic,payload){var msg;try{msg=JSON.parse(payload.toString())}catch(e){return}
   if(topic===base+'/join'&&msg.cid){var slot=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:!HOST.slots[1]?1:!HOST.slots[2]?2:0;
    if(slot){HOST.slots[slot]=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({slot:slot}));hostBarUpdate()}}
+  else if(topic===base+'/pick'&&msg.char){var s3=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s3)hostApplyPick(s3,msg.char)}
   else if(topic===base+'/state'&&msg.a){var s2=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s2)applyNetState(s2,msg.a,msg.d)}
-  else if(topic===base+'/bye'&&msg.cid){[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;clearNetSlot(n)}});hostBarUpdate()}});
+  else if(topic===base+'/bye'&&msg.cid){[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;HOST.picks[n]=null;clearNetSlot(n)}});if(CUR_SCREEN==='screen-select'){if(S.mode==='2p'){if(!HOST.slots[1])S.p1Char=null;if(!HOST.slots[2])S.p2Char=null;S.pickTurn=S.p1Char?'p2':'p1'}else if(!HOST.slots[1])S.char=null;refreshCards();refreshSelectUI()}hostPublishFlow();hostBarUpdate()}});
  HOST.client.on('offline',function(){$('hostRelay').textContent='Relai: terputus, mencoba menyambung lagi…'});
  HOST.client.on('error',function(){$('hostRelay').textContent='Relai: ada gangguan sambungan — game lokal tetap jalan.'})}
-function endHost(){if(HOST.client){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/host','off',{retain:true});HOST.client.end(true)}catch(e){}HOST.client=null}HOST.slots={1:null,2:null};ROLE='local';$('hostBar').classList.remove('on');[InputSolo,InputP1,InputP2].forEach(function(i){i.netHeld={}});show('screen-role')}
+function endHost(){if(HOST.client){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/host','off',{retain:true});HOST.client.end(true)}catch(e){}HOST.client=null}HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';ROLE='local';$('hostBar').classList.remove('on');[InputSolo,InputP1,InputP2].forEach(function(i){i.netHeld={}});show('screen-role')}
 $('btnEndHost').onclick=endHost;
 
 /* ---------- KONTROLER HP ---------- */
-var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false};
+var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false,pick:null,flowStep:'lobby',flowPicks:{1:null,2:null}};
 function ctlStatus(t,on){var el=$('ctlJoinStatus');el.textContent=t;el.classList.toggle('on',!!on)}
 function ctlSend(a,d){if(CTL.client&&CTL.slot)CTL.client.publish(TOPIC_BASE+CTL.code+'/state',JSON.stringify({cid:CTL.cid,slot:CTL.slot,a:a,d:d?1:0}))}
+function ctlPickChar(ch){if(!CTL.client||!CTL.slot)return;CTL.pick=ch.id;try{CTL.client.publish(TOPIC_BASE+CTL.code+'/pick',JSON.stringify({cid:CTL.cid,slot:CTL.slot,char:ch.id}))}catch(e){}$('ctlPickInfo').textContent='Mengirim pilihan '+ch.name+' ke layar tuan rumah.';ctlRefreshPickCards()}
+function ctlRefreshPickCards(){var grid=$('ctlCharGrid');if(!grid||!CTL.slot)return;var mine=CTL.flowPicks[CTL.slot];var other=CTL.flowPicks[CTL.slot===1?2:1];
+ Array.prototype.forEach.call(grid.children,function(b){var id=b.getAttribute('data-char');b.classList.toggle('mine',!!mine&&id===mine);b.classList.toggle('taken',!!other&&id===other)});
+ var info=$('ctlPickInfo');if(!info)return;
+ if(mine){var ch=hostCharById(mine);info.textContent='Pilihanmu terkunci di layar tuan rumah: '+(ch?ch.name:mine)+'. Masih bisa diganti selama duel belum mulai.'}
+ else if(other&&CTL.pick===other){CTL.pick=null;info.textContent='Pendekar itu baru saja diambil lawan. Pilih pendekar lain.'}
+ else if(CTL.pick){var c2=hostCharById(CTL.pick);info.textContent='Mengirim pilihan '+(c2?c2.name:CTL.pick)+' ke layar tuan rumah.'}
+ else info.textContent='Menunggu pilihanmu.'}
+function ctlShowPhase(){if(!CTL.slot)return;$('ctlJoinView').style.display='none';var step=CTL.flowStep;
+ if(step==='duel'){$('ctlPickView').style.display='none';$('ctlPadView').style.display='block';$('ctlPadStatus').textContent='Terhubung, kamu Pemain '+CTL.slot+'. Duel sedang berjalan, kendalikan pendekarmu!'}
+ else{$('ctlPadView').style.display='none';$('ctlPickView').style.display='block';var st=$('ctlPickStatus');
+  if(step==='quiz')st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Kuis berjalan di layar tuan rumah, bersiaplah.';
+  else if(step==='over')st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Duel selesai, lihat hasilnya di layar tuan rumah.';
+  else st.textContent='Terhubung, kamu Pemain '+CTL.slot+'. Pilih pendekarmu di bawah ini.';
+  ctlRefreshPickCards()}}
 function ctlJoin(){var code=$('ctlCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){ctlStatus('Kode harus 4 karakter — lihat kode besar di layar tuan rumah.');return}
  if(typeof mqtt==='undefined'){ctlStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — kontroler belum bisa bergabung.');return}
- CTL.code=code;CTL.slot=0;ctlStatus('Menyambung ke relai…');
+ CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};ctlStatus('Menyambung ke relai…');
  try{CTL.client=mqtt.connect(BROKER_URL,{clientId:'duel-'+CTL.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+code+'/bye',payload:JSON.stringify({cid:CTL.cid})}})}catch(e){ctlStatus('Gagal menyambung ke relai.');return}
  var base=TOPIC_BASE+code;
- CTL.client.on('connect',function(){CTL.client.subscribe([base+'/assign/'+CTL.cid,base+'/host']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
+ CTL.client.on('connect',function(){CTL.client.subscribe([base+'/assign/'+CTL.cid,base+'/host',base+'/flow']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
   var join=function(){if(!CTL.slot)CTL.client.publish(base+'/join',JSON.stringify({cid:CTL.cid}))};join();clearInterval(CTL.joinTimer);CTL.joinTimer=setInterval(join,2500)});
  CTL.client.on('message',function(topic,payload){
   if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);
-   $('ctlJoinView').style.display='none';$('ctlPadView').style.display='block';$('ctlPadLabel').textContent='Pemain '+CTL.slot+' (P'+CTL.slot+')';$('ctlPadStatus').textContent='Terhubung — kamu Pemain '+CTL.slot+'. Duel dimulai dari layar tuan rumah.'}
-  else if(topic===base+'/host'){CTL.hostAlive=payload.toString()==='on';if(!CTL.hostAlive&&CTL.slot)$('ctlPadStatus').textContent='Tuan rumah terputus — pendekarmu berhenti menerima tombol.';else if(CTL.slot)$('ctlPadStatus').textContent='Terhubung — kamu Pemain '+CTL.slot+'. Duel dimulai dari layar tuan rumah.'}});
+   $('ctlJoinView').style.display='none';$('ctlPadLabel').textContent='Pemain '+CTL.slot+' (P'+CTL.slot+')';$('ctlPickLabel').textContent='Pemain '+CTL.slot+' — Pilih Pendekarmu';ctlShowPhase()}
+  else if(topic===base+'/flow'){var f;try{f=JSON.parse(payload.toString())}catch(e){return}CTL.flowStep=f.step||'lobby';CTL.flowPicks=f.picks||{1:null,2:null};ctlShowPhase()}
+  else if(topic===base+'/host'){CTL.hostAlive=payload.toString()==='on';if(!CTL.hostAlive&&CTL.slot){$('ctlPadStatus').textContent='Tuan rumah terputus, pendekarmu berhenti menerima tombol.';$('ctlPickStatus').textContent='Tuan rumah terputus.'}else if(CTL.slot){$('ctlPadStatus').textContent='Terhubung, kamu Pemain '+CTL.slot+'.';ctlShowPhase()}}});
  CTL.client.on('offline',function(){if(!CTL.slot)ctlStatus('Relai terputus — mencoba menyambung lagi…')});
  CTL.client.on('error',function(){if(!CTL.slot)ctlStatus('Relai tidak terjangkau dari jaringan ini.')})}
-function ctlLeave(){clearInterval(CTL.joinTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;$('ctlPadView').style.display='none';$('ctlJoinView').style.display='block';ctlStatus('Sudah diputuskan.');show('screen-role')}
-$('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
+function ctlLeave(){clearInterval(CTL.joinTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlJoinView').style.display='block';ctlStatus('Sudah diputuskan.');show('screen-role')}
+$('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlLeave2').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
 document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.getAttribute('data-act');
  var dn=function(e){e.preventDefault();b.classList.add('active');ctlSend(a,1)};
  var up=function(e){if(e.cancelable)e.preventDefault();b.classList.remove('active');ctlSend(a,0)};
  b.addEventListener('pointerdown',dn);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);b.addEventListener('contextmenu',function(e){e.preventDefault()})});
+
+(function(){var grid=$('ctlCharGrid');if(!grid)return;CHARS.forEach(function(ch){var b=document.createElement('button');b.className='ctlCharCard';b.setAttribute('data-char',ch.id);b.innerHTML='<img src="'+ch.img+'" alt="Pendekar '+ch.name+'"/><b>'+ch.name+'</b><small>'+ch.weapon+'</small>';b.onclick=function(){ctlPickChar(ch)};grid.appendChild(b)})})();
 
 /* ---------- PILIH PERAN ---------- */
 $('roleLocal').onclick=function(){ROLE='local';show('screen-select')};
