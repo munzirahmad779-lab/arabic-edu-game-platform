@@ -11,7 +11,22 @@ type PracticeGame = {
   name: string;
   mode: "endless" | "practice";
   question_count: number;
+  // Diisi RPC sesudah migrasi 0114; sebelum itu kolom tidak ada dan
+  // lencana progres tidak tampil (dianggap belum ada jawaban).
+  answered_count?: number;
+  correct_count?: number;
 };
+
+function fmtBadge(
+  tpl: string,
+  vars: Record<string, string | number>,
+): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+  }
+  return out;
+}
 
 export default async function StudentPracticePage() {
   const session = await requireStudent();
@@ -132,6 +147,26 @@ export default async function StudentPracticePage() {
                           <span className="text-xs text-neutral-500">
                             {game.question_count} {t.practice_question_suffix}
                           </span>
+                          {(game.answered_count ?? 0) > 0 &&
+                          game.question_count > 0 ? (
+                            (game.answered_count ?? 0) >=
+                            game.question_count ? (
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                                ✓{" "}
+                                {fmtBadge(t.practice_badge_done, {
+                                  correct: game.correct_count ?? 0,
+                                  total: game.question_count,
+                                })}
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">
+                                {fmtBadge(t.practice_badge_progress, {
+                                  answered: game.answered_count ?? 0,
+                                  total: game.question_count,
+                                })}
+                              </span>
+                            )
+                          ) : null}
                         </div>
                       </div>
                     </div>

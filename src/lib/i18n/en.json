@@ -396,6 +396,8 @@
     "practice_available_title": "Available Practices",
     "practice_count_suffix": "practices",
     "practice_question_suffix": "questions",
+    "practice_badge_done": "Completed · {correct} correct out of {total} questions",
+    "practice_badge_progress": "In progress · {answered} of {total} questions answered",
     "practice_help_title": "💡 How self practice works",
     "practice_help_1": "Choose a practice from the list above.",
     "practice_help_2": "Questions appear one by one — no time limit.",

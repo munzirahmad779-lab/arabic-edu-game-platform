@@ -280,7 +280,7 @@ export interface Database {
       admin_cleanup_expired_sessions: { Args: Record<string, never>; Returns: number; };
       student_list_materials: { Args: { p_token: string; p_class_id: string }; Returns: Array<{ id: string; title: string; position: number; updated_at: string }>; };
       student_get_material: { Args: { p_token: string; p_material_id: string }; Returns: Array<{ id: string; class_id: string; title: string; content_json: Json | null; youtube_url: string | null; image_path: string | null; pdf_path: string | null; updated_at: string }>; };
-      student_list_practice_games: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; mode: string; question_count: number }>; };
+      student_list_practice_games: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; mode: string; question_count: number; answered_count: number; correct_count: number }>; };
       student_get_practice_game: { Args: { p_token: string; p_game_id: string }; Returns: Array<{ game_id: string; game_name: string; game_mode: string; questions: Json }>; };
       student_submit_practice_answer: { Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string }; Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null }>; };
       student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };

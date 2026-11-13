@@ -284,7 +284,14 @@ export async function saveProjectorReport(
   // 4. Sort teams by score descending and assign 1-based ranks
   const sortedTeams = [...teams].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  // 5. Insert participants: both team entries and individual student entries.
+  // 5. Insert participants: SATU baris per tim saja. Nama anggota tim
+  // tetap tercantum di dalam label baris tim, tetapi skor dan jumlah
+  // benar tim TIDAK lagi disalin menjadi baris per siswa: angka itu
+  // bukan nilai pribadi siswa, dan penyalinannya menggandakan setiap
+  // tim di Laporan Harian (temuan live 13 Nov 2026; baris warisan
+  // berakhiran "[...]" disaring di teacher_daily_report oleh migrasi
+  // 0113). Nilai per siswa yang sah untuk permainan room dibaca laporan
+  // dari submissions, bukan dari salinan tim.
   // avg_response_ms diisi 0: alur hotseat tidak mengukur waktu respons
   // per peserta, dan 0 adalah nilai bawaan skema untuk "tidak terukur";
   // angka tetap apa pun di sini adalah karangan.
@@ -314,19 +321,6 @@ export async function saveProjectorReport(
       correct_count: t.correctCount ?? 0,
       total_questions: targetRounds,
       avg_response_ms: 0,
-    });
-
-    // Individual student rows so they appear directly by student name in daily report
-    (t.members || []).forEach((m) => {
-      participantRows.push({
-        session_id: sessionId,
-        participant_name: `${m.name} [${t.name.split(" ")[0] || "Tim"}]`,
-        final_score: t.score ?? 0,
-        rank: calculatedRank,
-        correct_count: t.correctCount ?? 0,
-        total_questions: targetRounds,
-        avg_response_ms: 0,
-      });
     });
   });
 

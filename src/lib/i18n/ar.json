@@ -396,6 +396,8 @@
     "practice_available_title": "التدريبات المتاحة",
     "practice_count_suffix": "تدريب",
     "practice_question_suffix": "سؤال",
+    "practice_badge_done": "اكتمل · {correct} إجابة صحيحة من {total} سؤال",
+    "practice_badge_progress": "قيد التقدم · أجبت عن {answered} من {total} سؤال",
     "practice_help_title": "💡 كيف يعمل التدريب الذاتي؟",
     "practice_help_1": "اختر تدريبًا من القائمة أعلاه.",
     "practice_help_2": "ستظهر الأسئلة واحدًا تلو الآخر — بدون وقت.",

@@ -431,9 +431,9 @@ test("rezim lengkap 0001-0080: payload gladi lolos semua tahap", async () => {
   if (!result.ok) return;
   assert.equal(result.reusedRoom, true);
   assert.equal(result.roomId, "room-7lfez3");
-  // 4 baris tim + 16 baris anggota
-  assert.equal(result.recordedCount, 20);
-  assert.equal(db.participants.length, 20);
+  // 4 baris tim saja; anggota tercantum di label tim, bukan baris sendiri
+  assert.equal(result.recordedCount, 4);
+  assert.equal(db.participants.length, 4);
   // Sesi baru menempel ke room lama dengan nomor max+1
   assert.equal(db.sessions.length, 2);
   const sesi = db.sessions.find((s) => s.id === result.sessionId);

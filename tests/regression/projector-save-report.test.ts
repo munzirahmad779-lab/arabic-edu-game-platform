@@ -234,14 +234,13 @@ test("code belum terdaftar: room baru dibuat persis perilaku lama", async () => 
   assert.equal(db.sessions.length, 1);
   assert.equal(db.sessions[0]?.room_id, result.roomId);
   assert.equal(db.sessions[0]?.session_number, 1);
-  // 1 baris tim + 1 baris anggota, menempel ke sesi baru
-  assert.equal(result.recordedCount, 2);
-  assert.equal(db.participants.length, 2);
+  // 1 baris tim saja (nama anggota tetap di label tim), menempel ke sesi baru
+  assert.equal(result.recordedCount, 1);
+  assert.equal(db.participants.length, 1);
   assert.ok(
     db.participants.every((p) => p.session_id === result.sessionId),
   );
   assert.equal(db.participants[0]?.participant_name, "Pesawat Terbang Awan (Budi)");
-  assert.equal(db.participants[1]?.participant_name, "Budi [Pesawat]");
 });
 
 test("code sudah terdaftar milik guru yang sama: sesi menempel ke room lama, baris rooms tidak berubah", async () => {
@@ -288,7 +287,7 @@ test("code sudah terdaftar milik guru yang sama: sesi menempel ke room lama, bar
   const sesiBaru = db.sessions.find((s) => s.id === result.sessionId);
   assert.equal(sesiBaru?.room_id, "room-lama");
   assert.equal(sesiBaru?.session_number, 3);
-  assert.equal(db.participants.length, 2);
+  assert.equal(db.participants.length, 1);
   assert.ok(
     db.participants.every((p) => p.session_id === result.sessionId),
   );
@@ -361,7 +360,7 @@ test("game terikat kelas lain dari kelas bermain: room baru ber-class_id null, p
   // Sesi dan peserta tetap tercatat menempel ke room baru
   assert.equal(db.sessions.length, 1);
   assert.equal(db.sessions[0]?.room_id, result.roomId);
-  assert.equal(db.participants.length, 2);
+  assert.equal(db.participants.length, 1);
 });
 
 test("game terikat kelas yang sama dengan kelas bermain: class_id room tetap kelas itu, tanpa playedClassId", async () => {

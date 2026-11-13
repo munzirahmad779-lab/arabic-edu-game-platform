@@ -396,6 +396,8 @@
     "practice_available_title": "Latihan Tersedia",
     "practice_count_suffix": "latihan",
     "practice_question_suffix": "soal",
+    "practice_badge_done": "Selesai · {correct} benar dari {total} soal",
+    "practice_badge_progress": "Berprogres · {answered} dari {total} soal sudah dijawab",
     "practice_help_title": "💡 Cara kerja latihan mandiri",
     "practice_help_1": "Pilih latihan dari daftar di atas.",
     "practice_help_2": "Soal akan muncul satu per satu — tanpa waktu.",
