@@ -675,9 +675,10 @@ function drawFighter(f,now){var gy=groundY();var baseY=gy+f.y;var isP=f===G.play
    untuk gerak/tangkis. Kontroler hanya mengirim PERUBAHAN
    keadaan tombol {a:aksi, d:1|0}; tuan rumah menerapkan
    held-state, bukan streaming per frame.
-   Relai: MQTT over WebSocket, broker publik EMQX. Topik berisi
+   Relai: MQTT over WebSocket, beberapa broker publik cadangan yang dicoba berurutan; tuan rumah berpindah jalur bila jalur pertama tak terjangkau, kontroler memindai semua jalur sampai menemukan tuan rumah. Topik berisi
    kode gabung acak 4 karakter; tak ada data pribadi.          */
-var BROKER_URL=(typeof window!=='undefined'&&window.MQTT_BROKER_URL)||'wss://broker.emqx.io:8084/mqtt';
+var BROKER_URLS=(typeof window!=='undefined'&&window.MQTT_BROKER_URL)?[window.MQTT_BROKER_URL]:['wss://broker.emqx.io:8084/mqtt','wss://mqtt.eclipseprojects.io:443/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+var BROKER_URL=BROKER_URLS[0];
 var TOPIC_BASE='muse/duel-stickman/';
 var ROLE='local';
 function genJoinCode(){var cs='ABCDEFGHJKMNPQRSTUVWXYZ23456789';var s='';for(var i=0;i<4;i++)s+=cs.charAt(Math.floor(Math.random()*cs.length));return s}
@@ -688,7 +689,7 @@ function applyNetState(slot,a,d){var inp=netInputForSlot(slot);if(!inp||!inp.map
 function clearNetSlot(slot){var inp=netInputForSlot(slot);if(inp)inp.netHeld={};var inp2=slot===1?InputSolo:null;if(inp2&&inp2!==inp)inp2.netHeld={}}
 
 /* ---------- TUAN RUMAH ---------- */
-var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby'};
+var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby',brokerIdx:0,connected:false,failTimer:null};
 function hostBarUpdate(){$('hostCode').textContent=HOST.code||'····';
  [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')})}
 function hostPublishFlow(){if(HOST.client&&HOST.code){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/flow',JSON.stringify({step:HOST.step,picks:{1:HOST.picks[1],2:HOST.picks[2]}}),{retain:true})}catch(e){}}}
@@ -705,25 +706,32 @@ function hostApplyPick(slot,charId){var ch=hostCharById(charId);if(!ch)return;HO
  }else{if(slot===1)S.char=ch}
  refreshCards();refreshSelectUI();hostPublishFlow()}
 function hostSyncPicks(){if(ROLE!=='host'||CUR_SCREEN!=='screen-select')return;var p1=HOST.picks[1],p2=HOST.picks[2];if(S.mode==='2p'){if(p1)hostApplyPick(1,p1);if(p2)hostApplyPick(2,p2)}else if(p1)hostApplyPick(1,p1)}
-function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';$('hostBar').classList.add('on');hostBarUpdate();
+function startHost(){ROLE='host';HOST.code=genJoinCode();HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';HOST.brokerIdx=0;HOST.connected=false;$('hostBar').classList.add('on');hostBarUpdate();
  $('hostRelay').textContent='Relai: menyambungkan…';
  if(typeof mqtt==='undefined'){$('hostRelay').textContent='Relai: perpustakaan MQTT gagal dimuat (CDN terhalang) — game lokal tetap jalan, kontroler belum bisa bergabung.';return}
- try{HOST.client=mqtt.connect(BROKER_URL,{clientId:'duel-host-'+HOST.code+'-'+Math.random().toString(36).slice(2,8),connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+HOST.code+'/host',payload:'off',retain:true}})}catch(e){$('hostRelay').textContent='Relai: gagal menyambung — game lokal tetap jalan.';return}
- var base=TOPIC_BASE+HOST.code;
- HOST.client.on('connect',function(){HOST.client.subscribe([base+'/join',base+'/state',base+'/bye',base+'/pick'],function(){HOST.client.publish(base+'/host','on',{retain:true});hostPublishFlow();$('hostRelay').textContent='Relai: terhubung — bagikan kode di atas ke HP pemain.'})});
- HOST.client.on('message',function(topic,payload){var msg;try{msg=JSON.parse(payload.toString())}catch(e){return}
+ hostConnect()}
+function hostConnect(){var base=TOPIC_BASE+HOST.code;var client=null;
+ try{client=mqtt.connect(BROKER_URLS[HOST.brokerIdx%BROKER_URLS.length],{clientId:'duel-host-'+HOST.code+'-'+Math.random().toString(36).slice(2,8),connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/host',payload:'off',retain:true}})}catch(e){hostFailover();return}
+ HOST.client=client;
+ clearTimeout(HOST.failTimer);HOST.failTimer=setTimeout(function(){if(!HOST.connected&&HOST.client===client)hostFailover()},10000);
+ client.on('connect',function(){if(HOST.client!==client)return;HOST.connected=true;clearTimeout(HOST.failTimer);client.subscribe([base+'/join',base+'/state',base+'/bye',base+'/pick'],function(){client.publish(base+'/host','on',{retain:true});hostPublishFlow();$('hostRelay').textContent='Relai: terhubung'+(HOST.brokerIdx>0?' (jalur cadangan)':'')+' — bagikan kode di atas ke HP pemain.'})});
+ client.on('message',function(topic,payload){var msg;try{msg=JSON.parse(payload.toString())}catch(e){return}
   if(topic===base+'/join'&&msg.cid){var slot=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:!HOST.slots[1]?1:!HOST.slots[2]?2:0;
    if(slot){HOST.slots[slot]=msg.cid;HOST.client.publish(base+'/assign/'+msg.cid,JSON.stringify({slot:slot}));hostBarUpdate()}}
   else if(topic===base+'/pick'&&msg.char){var s3=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s3)hostApplyPick(s3,msg.char)}
   else if(topic===base+'/state'&&msg.a){var s2=HOST.slots[1]===msg.cid?1:HOST.slots[2]===msg.cid?2:0;if(s2)applyNetState(s2,msg.a,msg.d)}
   else if(topic===base+'/bye'&&msg.cid){[1,2].forEach(function(n){if(HOST.slots[n]===msg.cid){HOST.slots[n]=null;HOST.picks[n]=null;clearNetSlot(n)}});if(CUR_SCREEN==='screen-select'){if(S.mode==='2p'){if(!HOST.slots[1])S.p1Char=null;if(!HOST.slots[2])S.p2Char=null;S.pickTurn=S.p1Char?'p2':'p1'}else if(!HOST.slots[1])S.char=null;refreshCards();refreshSelectUI()}hostPublishFlow();hostBarUpdate()}});
- HOST.client.on('offline',function(){$('hostRelay').textContent='Relai: terputus, mencoba menyambung lagi…'});
- HOST.client.on('error',function(){$('hostRelay').textContent='Relai: ada gangguan sambungan — game lokal tetap jalan.'})}
-function endHost(){if(HOST.client){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/host','off',{retain:true});HOST.client.end(true)}catch(e){}HOST.client=null}HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';ROLE='local';$('hostBar').classList.remove('on');[InputSolo,InputP1,InputP2].forEach(function(i){i.netHeld={}});show('screen-role')}
+ client.on('offline',function(){if(HOST.connected)$('hostRelay').textContent='Relai: terputus, mencoba menyambung lagi…'});
+ client.on('error',function(){if(HOST.connected)$('hostRelay').textContent='Relai: ada gangguan sambungan — game lokal tetap jalan.'})}
+function hostFailover(){var old=HOST.client;HOST.client=null;if(old){try{old.end(true)}catch(e){}}
+ HOST.brokerIdx++;
+ if(HOST.brokerIdx<BROKER_URLS.length){$('hostRelay').textContent='Relai: jalur sebelumnya tak terjangkau, mencoba jalur lain…';hostConnect()}
+ else{HOST.brokerIdx=0;$('hostRelay').textContent='Relai: semua jalur belum terjangkau — mencoba lagi dari jalur pertama…';clearTimeout(HOST.failTimer);HOST.failTimer=setTimeout(function(){if(ROLE==='host'&&!HOST.connected)hostConnect()},6000)}}
+function endHost(){clearTimeout(HOST.failTimer);HOST.connected=false;if(HOST.client){try{HOST.client.publish(TOPIC_BASE+HOST.code+'/host','off',{retain:true});HOST.client.end(true)}catch(e){}HOST.client=null}HOST.slots={1:null,2:null};HOST.picks={1:null,2:null};HOST.step='lobby';ROLE='local';$('hostBar').classList.remove('on');[InputSolo,InputP1,InputP2].forEach(function(i){i.netHeld={}});show('screen-role')}
 $('btnEndHost').onclick=endHost;
 
 /* ---------- KONTROLER HP ---------- */
-var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false,pick:null,flowStep:'lobby',flowPicks:{1:null,2:null}};
+var CTL={client:null,code:null,cid:'ctl-'+Math.random().toString(36).slice(2,10),slot:0,joinTimer:null,hostAlive:false,pick:null,flowStep:'lobby',flowPicks:{1:null,2:null},brokerIdx:0,scanTimer:null};
 function ctlStatus(t,on){var el=$('ctlJoinStatus');el.textContent=t;el.classList.toggle('on',!!on)}
 function ctlSend(a,d){if(CTL.client&&CTL.slot)CTL.client.publish(TOPIC_BASE+CTL.code+'/state',JSON.stringify({cid:CTL.cid,slot:CTL.slot,a:a,d:d?1:0}))}
 function ctlPickChar(ch){if(!CTL.client||!CTL.slot)return;CTL.pick=ch.id;try{CTL.client.publish(TOPIC_BASE+CTL.code+'/pick',JSON.stringify({cid:CTL.cid,slot:CTL.slot,char:ch.id}))}catch(e){}$('ctlPickInfo').textContent='Mengirim pilihan '+ch.name+' ke layar tuan rumah.';ctlRefreshPickCards()}
@@ -743,19 +751,28 @@ function ctlShowPhase(){if(!CTL.slot)return;$('ctlJoinView').style.display='none
   ctlRefreshPickCards()}}
 function ctlJoin(){var code=$('ctlCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){ctlStatus('Kode harus 4 karakter — lihat kode besar di layar tuan rumah.');return}
  if(typeof mqtt==='undefined'){ctlStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — kontroler belum bisa bergabung.');return}
- CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};ctlStatus('Menyambung ke relai…');
- try{CTL.client=mqtt.connect(BROKER_URL,{clientId:'duel-'+CTL.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:TOPIC_BASE+code+'/bye',payload:JSON.stringify({cid:CTL.cid})}})}catch(e){ctlStatus('Gagal menyambung ke relai.');return}
- var base=TOPIC_BASE+code;
- CTL.client.on('connect',function(){CTL.client.subscribe([base+'/assign/'+CTL.cid,base+'/host',base+'/flow']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
-  var join=function(){if(!CTL.slot)CTL.client.publish(base+'/join',JSON.stringify({cid:CTL.cid}))};join();clearInterval(CTL.joinTimer);CTL.joinTimer=setInterval(join,2500)});
- CTL.client.on('message',function(topic,payload){
-  if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);
+ CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};CTL.brokerIdx=0;CTL.hostAlive=false;ctlStatus('Menyambung ke relai…');
+ ctlConnect()}
+function ctlConnect(){var base=TOPIC_BASE+CTL.code;var client=null;
+ try{client=mqtt.connect(BROKER_URLS[CTL.brokerIdx%BROKER_URLS.length],{clientId:'duel-'+CTL.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/bye',payload:JSON.stringify({cid:CTL.cid})}})}catch(e){ctlAdvance();return}
+ CTL.client=client;
+ client.on('connect',function(){if(CTL.client!==client)return;client.subscribe([base+'/assign/'+CTL.cid,base+'/host',base+'/flow']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
+  var join=function(){if(!CTL.slot&&CTL.client===client)client.publish(base+'/join',JSON.stringify({cid:CTL.cid}))};join();clearInterval(CTL.joinTimer);CTL.joinTimer=setInterval(join,2500)});
+ client.on('message',function(topic,payload){if(CTL.client!==client)return;
+  if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);
    $('ctlJoinView').style.display='none';$('ctlPadLabel').textContent='Pemain '+CTL.slot+' (P'+CTL.slot+')';$('ctlPickLabel').textContent='Pemain '+CTL.slot+' — Pilih Pendekarmu';ctlShowPhase()}
   else if(topic===base+'/flow'){var f;try{f=JSON.parse(payload.toString())}catch(e){return}CTL.flowStep=f.step||'lobby';CTL.flowPicks=f.picks||{1:null,2:null};ctlShowPhase()}
   else if(topic===base+'/host'){CTL.hostAlive=payload.toString()==='on';if(!CTL.hostAlive&&CTL.slot){$('ctlPadStatus').textContent='Tuan rumah terputus, pendekarmu berhenti menerima tombol.';$('ctlPickStatus').textContent='Tuan rumah terputus.'}else if(CTL.slot){$('ctlPadStatus').textContent='Terhubung, kamu Pemain '+CTL.slot+'.';ctlShowPhase()}}});
- CTL.client.on('offline',function(){if(!CTL.slot)ctlStatus('Relai terputus — mencoba menyambung lagi…')});
- CTL.client.on('error',function(){if(!CTL.slot)ctlStatus('Relai tidak terjangkau dari jaringan ini.')})}
-function ctlLeave(){clearInterval(CTL.joinTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlJoinView').style.display='block';ctlStatus('Sudah diputuskan.');show('screen-role')}
+ client.on('offline',function(){if(!CTL.slot&&CTL.client===client)ctlStatus('Relai terputus — mencoba menyambung lagi…')});
+ client.on('error',function(){if(!CTL.slot&&CTL.client===client)ctlStatus('Relai tidak terjangkau dari jaringan ini.')});
+ clearTimeout(CTL.scanTimer);CTL.scanTimer=setTimeout(ctlScanStep,9000)}
+function ctlScanStep(){if(CTL.slot||!CTL.client)return;
+ if(CTL.hostAlive){CTL.scanTimer=setTimeout(ctlScanStep,9000);return}
+ ctlAdvance()}
+function ctlAdvance(){var old=CTL.client;CTL.client=null;clearInterval(CTL.joinTimer);if(old){try{old.end(true)}catch(e){}}
+ CTL.brokerIdx=(CTL.brokerIdx+1)%BROKER_URLS.length;CTL.hostAlive=false;
+ if(ROLE==='controller'&&CTL.code&&!CTL.slot){ctlStatus('Tuan rumah belum ketemu di jalur itu — mencari di jalur relai lain…');ctlConnect()}}
+function ctlLeave(){clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlJoinView').style.display='block';ctlStatus('Sudah diputuskan.');show('screen-role')}
 $('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlLeave2').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
 document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.getAttribute('data-act');
  var dn=function(e){e.preventDefault();b.classList.add('active');ctlSend(a,1)};
