@@ -196,6 +196,13 @@ canvas#game{touch-action:none}
       <p style="color:#6B5A44;font-size:13.5px;line-height:1.6">Campuran kosakata Arab dasar, hitung cepat, dan pengetahuan umum.</p>
       <div class="turnBanner" id="quizTurn" style="display:none"></div>
       <div class="progressWrap"><span id="quizCount" style="font-weight:800;font-size:13px">Soal 1 / 5</span><div class="pTrack"><i id="quizProg" style="width:20%"></i></div><span id="quizScore" style="font-weight:800;font-size:13px">✓ 0 ✕ 0</span></div>
+      <div id="monitorView" style="display:none;margin-top:14px">
+        <div style="display:grid;gap:10px">
+          <div id="monP1" style="border:2.5px solid #211C15;border-radius:14px;padding:12px 14px;background:#FFFDF4"></div>
+          <div id="monP2" style="border:2.5px solid #211C15;border-radius:14px;padding:12px 14px;background:#FFFDF4"></div>
+        </div>
+        <p id="monNote" style="font-size:12.5px;color:#6B5A44;margin-top:10px"></p>
+      </div>
       <div class="quizCard"><div class="meta"><span id="qCat">—</span><span>Benar = Power Up • Salah = Power Down</span></div>
         <h2 id="qText">—</h2><p class="hint" id="qHint"></p><div class="opts" id="qOpts"></div>
         <div class="feedback" id="qFeedback"></div>
@@ -467,8 +474,26 @@ function beginQuizTurn(who){S.quizWho=who;var catSel=($('quizCat')&&$('quizCat')
  $('quizCharName').textContent=ch.name+' ('+ch.weapon+')'+(S.mode==='2p'?(who==='p1'?' — Pemain 1':' — Pemain 2'):'');
  show('screen-quiz');renderQ()}
 function saveQuizTurn(){var res={correct:S.correct,wrong:S.wrong,ups:S.ups.slice(),downs:S.downs.slice()};if(S.quizWho==='p2')S.p2Res=res;else S.p1Res=res}
-function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];S.curBtns=[];S.curOrder=shuffle([0,1,2,3]);S.curOrder.forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn);S.curBtns.push(btn)});hostPublishFlow()}
-function answer(btn,ok,q){if(S.answered)return;S.answered=true;S.lastOk=ok;document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+q.ex}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+q.ex}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block';hostPublishFlow()}
+function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];S.curBtns=[];S.curOrder=shuffle([0,1,2,3]);S.curOrder.forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn);S.curBtns.push(btn)});hostPublishFlow();applyQuizVisibility()}
+function applyQuizVisibility(){var turn=S.quizWho==='p2'?2:1;S.monitorMode=(ROLE==='host')&&!!HOST.slots[turn];var hideQ=!!S.monitorMode;
+ var meta=document.querySelector('.quizCard .meta');if(meta)meta.style.display=hideQ?'none':'';
+ ['qText','qOpts','qFeedback'].forEach(function(id){var e=$(id);if(e)e.style.display=hideQ?'none':''});
+ var h=$('qHint');if(h)h.style.display=hideQ?'none':(S.quiz&&S.quiz[S.qIdx]&&S.quiz[S.qIdx].hint?'block':'none');
+ var bn=$('btnNextQ');if(bn)bn.style.display=hideQ?'none':(S.answered?'inline-block':'none');
+ var mv=$('monitorView');if(mv)mv.style.display=(ROLE==='host')?'block':'none';
+ if(ROLE==='host')renderMonitor()}
+function renderMonitor(){var mv=$('monitorView');if(!mv||ROLE!=='host'||CUR_SCREEN!=='screen-quiz')return;var turn=S.quizWho==='p2'?2:1;
+ function panel(slot){var el=$(slot===1?'monP1':'monP2');if(!el)return;
+  if(S.mode!=='2p'&&slot===2){el.style.display='none';return}el.style.display='block';
+  var ch=slot===1?(S.mode==='2p'?S.p1Char:S.char):S.p2Char;var res=slot===1?S.p1Res:S.p2Res;
+  var status,prog,skor;
+  if(res){status='Selesai menjawab';prog=5;skor='✓ '+res.correct+'  ✕ '+res.wrong}
+  else if(turn===slot){prog=Math.min(5,S.qIdx+(S.answered?1:0));skor='✓ '+S.correct+'  ✕ '+S.wrong;status=S.answered?('Sudah menjawab: '+(S.lastOk?'BENAR ✓':'belum tepat ✗')):'Sedang menjawab di HP…'}
+  else{status='Menunggu giliran';prog=0;skor='✓ 0  ✕ 0'}
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><b>Pemain '+slot+' — '+(ch?ch.name:'—')+'</b><span style="font-size:11.5px;font-weight:800;color:'+(HOST.slots[slot]?'#0B4F4A':'#B4552D')+'">'+(HOST.slots[slot]?'terhubung':'tidak terhubung')+'</span></div><div class="pTrack" style="margin:8px 0"><i style="width:'+(prog/5*100)+'%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>'+status+'</span><span style="font-weight:800">Soal '+prog+' / 5 • '+skor+'</span></div>'}
+ panel(1);panel(2);
+ $('monNote').textContent=S.monitorMode?'Soal hanya tampil di HP siswa. Layar guru memantau pengerjaan kedua siswa; soal lanjut sendiri sesudah jawaban masuk.':'Kontroler pemain yang sedang giliran tidak terhubung, jadi soal ditampilkan di layar ini sebagai cadangan agar permainan tidak macet.'}
+function answer(btn,ok,q){if(S.answered)return;S.answered=true;S.lastOk=ok;document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+q.ex}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+q.ex}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block';hostPublishFlow();applyQuizVisibility();if(S.monitorMode){var tk=S.advToken=(S.advToken||0)+1;setTimeout(function(){if(S.advToken===tk&&S.answered&&CUR_SCREEN==='screen-quiz'&&ROLE==='host'){var b=$('btnNextQ');if(b)b.click()}},2800)}}
 $('btnNextQ').onclick=function(){if(S.qIdx<4){S.qIdx++;renderQ()}else{saveQuizTurn();if(S.mode==='2p'&&S.quizWho==='p1')beginQuizTurn('p2');else renderSummary()}};
 function renderSummary(){
  if(S.mode==='2p'){var r1=S.p1Res,r2=S.p2Res;var ps=calcStats(S.p1Char,r1.ups,r1.downs),fs=calcStats(S.p2Char,r2.ups,r2.downs);S.playerStats=ps;S.foeStats=fs;S.foeUps=r2.ups;
@@ -698,7 +723,8 @@ function clearNetSlot(slot){var inp=netInputForSlot(slot);if(inp)inp.netHeld={};
 /* ---------- TUAN RUMAH ---------- */
 var HOST={client:null,code:null,slots:{1:null,2:null},picks:{1:null,2:null},step:'lobby',brokerIdx:0,connected:false,failTimer:null};
 function hostBarUpdate(){$('hostCode').textContent=HOST.code||'····';
- [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')})}
+ [1,2].forEach(function(n){var el=$('hostSlot'+n);var on=!!HOST.slots[n];el.classList.toggle('on',on);el.textContent='Kontroler '+n+' (P'+n+'): '+(on?'terhubung':'belum')});
+ if(ROLE==='host')renderMonitor()}
 function hostPublishFlow(){if(HOST.client&&HOST.code){try{var pl={step:HOST.step,picks:{1:HOST.picks[1],2:HOST.picks[2]}};var qz=hostQuizPayload();if(qz)pl.quiz=qz;HOST.client.publish(TOPIC_BASE+HOST.code+'/flow',JSON.stringify(pl),{retain:true})}catch(e){}}}
 function hostQuizPayload(){if(HOST.step!=='quiz'||CUR_SCREEN!=='screen-quiz'||!S.quiz||!S.quiz[S.qIdx]||!S.curOrder)return null;var q=S.quiz[S.qIdx];return{who:S.quizWho==='p2'?2:1,idx:S.qIdx,total:S.quiz.length,cat:q.cat,q:q.q,hint:q.hint||'',opts:S.curOrder.map(function(oi){return q.opts[oi]}),answered:!!S.answered,ok:S.answered?(S.lastOk?true:false):null,correct:S.correct,wrong:S.wrong}}
 function hostSetStep(st){var changed=HOST.step!==st;HOST.step=st;hostPublishFlow();
