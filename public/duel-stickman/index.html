@@ -117,6 +117,7 @@ canvas#game{touch-action:none}
 </style>
 </head>
 <body>
+<button id="btnSuara" title="Suara hidup/mati" style="position:fixed;top:10px;right:10px;z-index:999;width:42px;height:42px;border-radius:50%;border:2px solid #14100A;background:#FFF6DE;font-size:19px;cursor:pointer;box-shadow:0 2px 0 #14100A"></button>
 <!--
   ============================================================
   GAMBAR MEMBUATKAN KODE — bukan kode membuat gambar.
@@ -478,6 +479,20 @@ CHARS.forEach(function(ch){var im=new Image(); im.src=ch.img; ch.sprite=im; ch.w
 /* ================= STATE & HELPERS ================= */
 var S={mode:'ai',char:null,foe:null,p1Char:null,p2Char:null,pickTurn:'p1',quizWho:'p1',p1Res:null,p2Res:null,usedQ:[],quiz:[],qIdx:0,correct:0,wrong:0,ups:[],downs:[],answered:false,playerStats:null,foeStats:null,foeUps:[]};
 function $(id){return document.getElementById(id)}
+function escT(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+/* ---------- SUARA: WebAudio tanpa berkas, tombol bisu persisten ---------- */
+var SUARA_ON=true;try{SUARA_ON=localStorage.getItem('duelStickmanSuara')!=='0'}catch(e){}
+var AC=null;
+function ac(){if(!SUARA_ON)return null;try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function nada(f0,f1,dur,tipe,vol,delay){var c=ac();if(!c)return;var t=c.currentTime+(delay||0);var o=c.createOscillator(),g=c.createGain();o.type=tipe||'square';o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);g.gain.setValueAtTime(vol||0.05,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+0.03)}
+function bunyiJawab(ok){if(ok){nada(660,660,0.09,'square',0.045);nada(990,990,0.15,'square',0.045,0.09)}else{nada(220,110,0.22,'sawtooth',0.04)}}
+function bunyiKena(tertahan){if(tertahan){nada(330,240,0.08,'triangle',0.06)}else{nada(180,60,0.13,'sawtooth',0.07)}}
+function bunyiJurus(){nada(300,1250,0.3,'sawtooth',0.05)}
+function bunyiKO(){nada(520,520,0.12,'square',0.06);nada(390,390,0.12,'square',0.06,0.13);nada(260,65,0.42,'square',0.07,0.26)}
+function bunyiKlik(){nada(880,880,0.05,'square',0.03)}
+window.addEventListener('pointerdown',function(){ac()});
+window.addEventListener('keydown',function(){ac()});
+var bSuara=$('btnSuara');if(bSuara){var updSuara=function(){bSuara.textContent=SUARA_ON?'\uD83D\uDD0A':'\uD83D\uDD07'};bSuara.onclick=function(){SUARA_ON=!SUARA_ON;try{localStorage.setItem('duelStickmanSuara',SUARA_ON?'1':'0')}catch(e){}updSuara();if(SUARA_ON)bunyiKlik()};updSuara()}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 var CUR_SCREEN='screen-role';
 function show(id){CUR_SCREEN=id;document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('active')});$(id).classList.add('active');var m={'screen-select':1,'screen-quiz':2,'screen-summary':3,'screen-duel':4,'screen-result':4};for(var i=1;i<=4;i++)$('step'+i).classList.toggle('on',i<=(m[id]||1));window.scrollTo({top:0,behavior:'smooth'});if(ROLE==='host'&&typeof hostSetStep==='function'){var mp={'screen-select':'pick','screen-quiz':'quiz','screen-summary':'summary','screen-duel':'duel','screen-result':'over'};if(mp[id])hostSetStep(mp[id])}}
@@ -517,7 +532,7 @@ function beginQuizTurn(who){S.quizWho=who;var catSel=($('quizCat')&&$('quizCat')
  $('quizCharName').textContent=ch.name+' ('+ch.weapon+')'+(S.mode==='2p'?(who==='p1'?' — Pemain 1':' — Pemain 2'):'');
  show('screen-quiz');renderQ()}
 function saveQuizTurn(){var res={correct:S.correct,wrong:S.wrong,ups:S.ups.slice(),downs:S.downs.slice()};if(S.quizWho==='p2')S.p2Res=res;else S.p1Res=res}
-function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];S.curBtns=[];S.curOrder=shuffle([0,1,2,3]);S.curOrder.forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+q.opts[oi]+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn);S.curBtns.push(btn)});hostPublishFlow();applyQuizVisibility()}
+function renderQ(){S.answered=false;var q=S.quiz[S.qIdx];$('quizCount').textContent='Soal '+(S.qIdx+1)+' / 5';$('quizProg').style.width=((S.qIdx+1)/5*100)+'%';$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('qCat').textContent=q.cat+' • Soal '+(S.qIdx+1);$('qText').textContent=q.q;$('qHint').textContent=q.hint?('Petunjuk: '+q.hint):'';$('qHint').style.display=q.hint?'block':'none';$('qFeedback').className='feedback';$('qFeedback').innerHTML='';$('btnNextQ').style.display='none';$('btnNextQ').textContent=S.qIdx===4?(S.mode==='2p'?(S.quizWho==='p1'?'Lanjut — Soal Pemain 2 →':'Lihat Ramuan →'):'Lihat Ramuanku →'):'Soal Berikutnya →';var box=$('qOpts');box.innerHTML='';var labels=['A','B','C','D'];S.curBtns=[];S.curOrder=shuffle([0,1,2,3]);S.curOrder.forEach(function(oi,idx){var btn=document.createElement('button');btn.className='opt';btn.innerHTML='<span class="badge">'+labels[idx]+'</span><span>'+escT(q.opts[oi])+'</span>';btn.onclick=function(){answer(btn,oi===q.a,q)};box.appendChild(btn);S.curBtns.push(btn)});hostPublishFlow();applyQuizVisibility()}
 function applyQuizVisibility(){S.monitorMode=(ROLE==='host');var hideQ=S.monitorMode;
  var meta=document.querySelector('.quizCard .meta');if(meta)meta.style.display=hideQ?'none':'';
  var card=document.querySelector('.quizCard');if(card)card.style.display=hideQ?'none':'';
@@ -537,7 +552,7 @@ function renderMonitor(){var mv=$('monitorView');if(!mv||ROLE!=='host'||CUR_SCRE
   el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><b>Pemain '+slot+' — '+(ch?ch.name:'—')+'</b><span style="font-size:11.5px;font-weight:800;color:'+(HOST.slots[slot]?'#0B4F4A':'#B4552D')+'">'+(HOST.slots[slot]?'terhubung':'tidak terhubung')+'</span></div><div class="pTrack" style="margin:8px 0"><i style="width:'+(prog/5*100)+'%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>'+status+'</span><span style="font-weight:800">Soal '+prog+' / 5 • '+skor+'</span></div>'}
  panel(1);panel(2);
  $('monNote').textContent=S.monitorMode?'Soal hanya tampil di HP siswa. Layar guru memantau pengerjaan kedua siswa; soal lanjut sendiri sesudah jawaban masuk.':'Kontroler pemain yang sedang giliran tidak terhubung, jadi soal ditampilkan di layar ini sebagai cadangan agar permainan tidak macet.'}
-function answer(btn,ok,q){if(S.answered)return;S.answered=true;S.lastOk=ok;document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+q.ex}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+q.ex}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block';hostPublishFlow();applyQuizVisibility();if(S.monitorMode){var tk=S.advToken=(S.advToken||0)+1;setTimeout(function(){if(S.advToken===tk&&S.answered&&CUR_SCREEN==='screen-quiz'&&ROLE==='host'){var b=$('btnNextQ');if(b)b.click()}},2800)}}
+function answer(btn,ok,q){if(S.answered)return;S.answered=true;S.lastOk=ok;bunyiJawab(ok);document.querySelectorAll('#qOpts .opt').forEach(function(o){o.disabled=true});var fb=$('qFeedback');if(ok){S.correct++;btn.classList.add('correct');var up=UP_POOL[(S.correct-1)%UP_POOL.length];S.ups.push(up);fb.className='feedback show good';fb.innerHTML='<b>Benar! + Power Up: '+up.name+'</b> — '+up.desc+'.<br>'+escT(q.ex)}else{S.wrong++;btn.classList.add('wrong');document.querySelectorAll('#qOpts .opt').forEach(function(o){if(o.textContent.indexOf(q.opts[q.a])>-1)o.classList.add('correct')});var dn=DOWN_POOL[(S.wrong-1)%DOWN_POOL.length];S.downs.push(dn);fb.className='feedback show bad';fb.innerHTML='<b>Salah. + Power Down: '+dn.name+'</b> — '+dn.desc+'.<br>'+escT(q.ex)}$('quizScore').textContent='✓ '+S.correct+'  ✕ '+S.wrong;$('btnNextQ').style.display='inline-block';hostPublishFlow();applyQuizVisibility();if(S.monitorMode){var tk=S.advToken=(S.advToken||0)+1;setTimeout(function(){if(S.advToken===tk&&S.answered&&CUR_SCREEN==='screen-quiz'&&ROLE==='host'){var b=$('btnNextQ');if(b)b.click()}},2800)}}
 $('btnNextQ').onclick=function(){if(S.qIdx<4){S.qIdx++;renderQ()}else{saveQuizTurn();if(S.mode==='2p'&&S.quizWho==='p1')beginQuizTurn('p2');else renderSummary()}};
 function renderSummary(){
  if(S.mode==='2p'){var r1=S.p1Res,r2=S.p2Res;var ps=calcStats(S.p1Char,r1.ups,r1.downs),fs=calcStats(S.p2Char,r2.ups,r2.downs);S.playerStats=ps;S.foeStats=fs;S.foeUps=r2.ups;
@@ -582,7 +597,7 @@ function startDuel(){show('screen-duel');var two=S.mode==='2p';var cYou=two?S.p1
  if(!un1)G.player.meter=0;
  updateHUD();$('duelMsg').textContent='Bersiap…';syncSkillButtons();
  if(raf)cancelAnimationFrame(raf);lastTs=0;raf=requestAnimationFrame(loop)}
-function endDuel(winner,how){if(!G||G.over)return;G.over=true;G.how=how;G.winner=winner;if(ROLE==='proyektor'){HOST.winner=winner===G.player?1:2}var loser=winner===G.player?G.foe:G.player;loser.ko=true;juiceHit(winner===G.player?G.player.x:G.foe.x,groundY()-100,'besar',winner.char.color,'#D9A441');setTimeout(function(){if(raf)cancelAnimationFrame(raf);$('resKicker').textContent=how==='KO'?'KO! Duel Berakhir':'Waktu Habis — HP Tertinggi Menang';var ri=$('resImg');ri.src=winner.char.img;ri.alt='Pendekar pemenang: '+winner.char.name;var two=G.mode==='2p';var loser=winner===G.player?G.foe:G.player;var wName=winner===G.player?'Pemain 1':'Pemain 2';var lName=winner===G.player?'Pemain 2':'Pemain 1';
+function endDuel(winner,how){if(!G||G.over)return;bunyiKO();G.over=true;G.how=how;G.winner=winner;if(ROLE==='proyektor'){HOST.winner=winner===G.player?1:2}var loser=winner===G.player?G.foe:G.player;loser.ko=true;juiceHit(winner===G.player?G.player.x:G.foe.x,groundY()-100,'besar',winner.char.color,'#D9A441');setTimeout(function(){if(raf)cancelAnimationFrame(raf);$('resKicker').textContent=how==='KO'?'KO! Duel Berakhir':'Waktu Habis — HP Tertinggi Menang';var ri=$('resImg');ri.src=winner.char.img;ri.alt='Pendekar pemenang: '+winner.char.name;var two=G.mode==='2p';var loser=winner===G.player?G.foe:G.player;var wName=winner===G.player?'Pemain 1':'Pemain 2';var lName=winner===G.player?'Pemain 2':'Pemain 1';
 $('resTitle').textContent=two?wName+' Menang!':(winner===G.player?'Kamu Menang!':winner.char.name+' Menang');
 $('resDesc').textContent=two?wName+' ('+winner.char.name+') mengalahkan '+lName+' ('+loser.char.name+') lewat '+how+'. Ramuan masing-masing: P1 '+S.p1Res.correct+' benar, P2 '+S.p2Res.correct+' benar.':(winner===G.player?S.char.name+' mengalahkan '+S.foe.name+' ('+how+'). Ramuan dari '+S.correct+' jawaban benar ikut menentukan.':S.foe.name+' (AI) memenangkan duel ini ('+how+'). Coba ramuan baru: jawab lebih banyak soal dengan benar.');
 $('resQuiz').textContent=two?'P1 '+S.p1Res.correct+'/5 • P2 '+S.p2Res.correct+'/5':S.correct+' / 5 benar';
@@ -603,13 +618,13 @@ function tryAttack(f){if(!G||G.over||G.countdown>0||!f)return false;if(f.atkCd>0
  if(dist<=f.char.range+22&&ok&&Math.abs(target.y-f.y)<74)dealHit(f,target,false);else juiceHit(f.x+f.facing*(f.char.range*0.7),groundY()+f.y-100,'kecil',f.char.color);
  return true}
 function dealHit(att,def,isSkill,skillDmg){if(def.invuln>0&&!isSkill)return;var dmg=isSkill?skillDmg:att.stats.dmg;var blocked=false,shielded=false;if(def.shield>0){def.shield--;shielded=true;dmg=0}else if(def.block&&!isSkill){dmg=Math.round(dmg*0.25*10)/10;blocked=true}
- def.hp-=dmg;def.hitFlash=0.18;def.hitStun=isSkill?0.32:0.16;if(G.mode!=='2p'&&def===G.foe&&!isSkill)setAIState('Terkena',0.16);
+ bunyiKena(shielded||blocked);def.hp-=dmg;def.hitFlash=0.18;def.hitStun=isSkill?0.32:0.16;if(G.mode!=='2p'&&def===G.foe&&!isSkill)setAIState('Terkena',0.16);
  if(!blocked&&!shielded){def.vx=att.facing*att.char.knock*(isSkill?1.6:1);if(def.onGround)def.vy=Math.min(def.vy,isSkill?-190:-70)}
  if(att.meterMode)att.meter=Math.min(100,att.meter+18);if(def.meterMode)def.meter=Math.min(100,(def.meter||0)+12);
  var tier=isSkill?'besar':'sedang';var hx=def.x,hy=groundY()+def.y-100;juiceHit(hx,hy,tier,att.char.color,def.char.color);
  addFloater(def.x,groundY()+def.y-215,shielded?'PERISAI MENAHAN!':blocked?'-'+dmg+' (ditangkis)':'-'+dmg,shielded?'#0F766E':blocked?'#475569':'#B91C1C');
  if(def.hp<=0){def.hp=0;endDuel(att,'KO')}updateHUD()}
-function trySkill(f){if(!G||G.over||G.countdown>0||!f||f.skillUsed||f.ko||f.frozen>0||f.bound>0)return;if(!f.meterMode&&!f.skillUnlocked){$('duelMsg').textContent=(G.mode==='2p'?(f===G.player?'Jurus Pemain 1':'Jurus Pemain 2'):'Jurus')+' terkunci — butuh minimal 3 jawaban benar dari soal pemain itu.';return}if(f.meterMode&&f.meter<100)return;f.skillUsed=true;if(f.meterMode)f.meter=0;var foe=f===G.player?G.foe:G.player;f.facing=foe.x>=f.x?1:-1;$('duelMsg').textContent=f.char.name+': '+f.char.skillName+'!';juiceHit(f.x+f.facing*40,groundY()+f.y-100,'besar',f.char.color,'#D9A441');
+function trySkill(f){if(!G||G.over||G.countdown>0||!f||f.skillUsed||f.ko||f.frozen>0||f.bound>0)return;if(!f.meterMode&&!f.skillUnlocked){$('duelMsg').textContent=(G.mode==='2p'?(f===G.player?'Jurus Pemain 1':'Jurus Pemain 2'):'Jurus')+' terkunci — butuh minimal 3 jawaban benar dari soal pemain itu.';return}if(f.meterMode&&f.meter<100)return;f.skillUsed=true;bunyiJurus();if(f.meterMode)f.meter=0;var foe=f===G.player?G.foe:G.player;f.facing=foe.x>=f.x?1:-1;$('duelMsg').textContent=f.char.name+': '+f.char.skillName+'!';juiceHit(f.x+f.facing*40,groundY()+f.y-100,'besar',f.char.color,'#D9A441');
  if(f.char.id==='tarsius'){foe.frozen=2;foe.block=false;dealHit(f,foe,true,6);addFloater(foe.x,groundY()+foe.y-225,'MEMBEKU 2 DETIK!','#0369A1')}
  else if(f.char.id==='anoa'){f.skillActive=0.42;f.vx=f.facing*780;setTimeout(function(){if(!G||G.over)return;if(Math.abs(foe.x-f.x)<95)dealHit(f,foe,true,20)},170)}
  else if(f.char.id==='maleo'){f.vy=-940;f.onGround=false;f.invuln=0.9;f.dive=true;setTimeout(function(){if(!G||G.over)return;f.vy=520;f.vx=f.facing*420;setTimeout(function(){if(!G||G.over)return;f.invuln=0;f.dive=false;if(Math.abs(foe.x-f.x)<92&&Math.abs(foe.y-f.y)<84)dealHit(f,foe,true,18)},320)},400)}
@@ -782,7 +797,7 @@ function startQuizConcurrent(){S.usedQ=[];S.p1Res=null;S.p2Res=null;HOST.winner=
  $('quizTurn').style.display='none';$('quizCharName').textContent=S.mode==='2p'?('Pemain 1: '+S.p1Char.name+' • Pemain 2: '+S.p2Char.name):('Pemain 1: '+S.char.name+' • Lawan AI: '+S.foe.name);
  hostSetStep('quiz');show('screen-proj');projShow('projQuiz');projRenderQuiz(buildFlowLocal());hostPublishFlow()}
 function hostQuizPayloadFor(s){var P=PQ[s];if(!P||HOST.step!=='quiz')return null;if(P.done)return{who:s,done:true,correct:P.correct,wrong:P.wrong,total:5};var q=P.list[P.idx];if(!q)return null;return{who:s,idx:P.idx,total:5,cat:q.cat,q:q.q,hint:q.hint||'',opts:P.order.map(function(oi){return q.opts[oi]}),answered:!!P.answered,ok:P.answered?(P.lastOk?true:false):null,correct:P.correct,wrong:P.wrong,done:false}}
-function hostAnswerSlot(s,di){var P=PQ[s];if(!P||P.done||P.answered||HOST.step!=='quiz')return;var q=P.list[P.idx];if(!q||typeof di!=='number'||di<0||di>3)return;var ok=P.order[di]===q.a;P.answered=true;P.lastOk=ok;
+function hostAnswerSlot(s,di){var P=PQ[s];if(!P||P.done||P.answered||HOST.step!=='quiz')return;var q=P.list[P.idx];if(!q||typeof di!=='number'||di<0||di>3)return;var ok=P.order[di]===q.a;P.answered=true;P.lastOk=ok;bunyiJawab(ok);
  if(ok){P.correct++;P.ups.push(UP_POOL[(P.correct-1)%UP_POOL.length])}else{P.wrong++;P.downs.push(DOWN_POOL[(P.wrong-1)%DOWN_POOL.length])}
  hostPublishFlow();projQuizRefresh();
  setTimeout(function(){if(HOST.step!=='quiz'||!PQ[s])return;var P2=PQ[s];P2.idx++;P2.answered=false;P2.lastOk=null;
@@ -885,17 +900,17 @@ function ctlRenderQuiz(){var qz=CTL.flowQuiz;if(!qz)return;var key=qz.who+':'+qz
  $('ctlQuizInfo').textContent='Ketuk satu jawaban. Jawabanmu terkirim ke layar tuan rumah.';
  var box=$('ctlQuizOpts');box.innerHTML='';var labels=['A','B','C','D'];
  qz.opts.forEach(function(t,di){var b=document.createElement('button');b.className='opt';b.innerHTML='<span class="badge">'+labels[di]+'</span>';var sp=document.createElement('span');sp.textContent=t;b.appendChild(sp);b.onclick=function(){ctlAnswer(di)};box.appendChild(b)})}
-function ctlAnswer(di){if(!CTL.client||!CTL.slot)return;var qz=CTL.flowQuiz;if(!qz||qz.answered||qz.who!==CTL.slot)return;try{CTL.client.publish(TOPIC_BASE+CTL.code+'/answer',JSON.stringify({cid:CTL.cid,di:di}))}catch(e){}
+function ctlAnswer(di){if(!CTL.client||!CTL.slot)return;var qz=CTL.flowQuiz;if(!qz||qz.answered||qz.who!==CTL.slot)return;bunyiKlik();try{CTL.client.publish(TOPIC_BASE+CTL.code+'/answer',JSON.stringify({cid:CTL.cid,di:di}))}catch(e){}
  Array.prototype.forEach.call($('ctlQuizOpts').children,function(b){b.disabled=true});
  $('ctlQuizInfo').textContent='Jawaban terkirim — hasilnya tercatat di Layar Guru dan proyektor.'}
 function ctlJoin(){var code=$('ctlCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){ctlStatus('Kode harus 4 karakter — lihat kode besar di layar tuan rumah.');return}
  if(typeof mqtt==='undefined'){ctlStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — kontroler belum bisa bergabung.');return}
- CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};CTL.brokerIdx=0;CTL.hostAlive=false;ctlStatus('Menyambung ke relai…');
+ CTL.code=code;CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};CTL.brokerIdx=0;CTL.hostAlive=false;CTL.scanCycles=0;ctlStatus('Menyambung ke relai…');
  ctlConnect()}
 function ctlConnect(){var base=TOPIC_BASE+CTL.code;var client=null;
  try{client=mqtt.connect(BROKER_URLS[CTL.brokerIdx%BROKER_URLS.length],{clientId:'duel-'+CTL.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/bye',payload:JSON.stringify({cid:CTL.cid})}})}catch(e){ctlAdvance();return}
  CTL.client=client;
- client.on('connect',function(){if(CTL.client!==client)return;client.subscribe([base+'/assign/'+CTL.cid,base+'/host',base+'/flow']);ctlStatus('Terhubung ke relai — menunggu diterima tuan rumah…');
+ client.on('connect',function(){if(CTL.client!==client)return;client.subscribe([base+'/assign/'+CTL.cid,base+'/host',base+'/flow']);ctlStatus(CTL.scanCycles>=1?('Ruangan berkode '+CTL.code+' tidak ditemukan — periksa kembali kode besar di layar proyektor. Tetap mencari…'):'Terhubung ke relai — menunggu diterima tuan rumah…');
   var join=function(){if(!CTL.slot&&CTL.client===client)client.publish(base+'/join',JSON.stringify({cid:CTL.cid}))};join();clearInterval(CTL.joinTimer);CTL.joinTimer=setInterval(join,2500)});
  client.on('message',function(topic,payload){if(CTL.client!==client)return;
   if(topic===base+'/assign/'+CTL.cid){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m.slot)return;CTL.slot=m.slot;clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);
@@ -909,8 +924,8 @@ function ctlScanStep(){if(CTL.slot||!CTL.client)return;
  if(CTL.hostAlive){CTL.scanTimer=setTimeout(ctlScanStep,9000);return}
  ctlAdvance()}
 function ctlAdvance(){var old=CTL.client;CTL.client=null;clearInterval(CTL.joinTimer);if(old){try{old.end(true)}catch(e){}}
- CTL.brokerIdx=(CTL.brokerIdx+1)%BROKER_URLS.length;CTL.hostAlive=false;
- if(ROLE==='controller'&&CTL.code&&!CTL.slot){ctlStatus('Tuan rumah belum ketemu di jalur itu — mencari di jalur relai lain…');ctlConnect()}}
+ CTL.brokerIdx=(CTL.brokerIdx+1)%BROKER_URLS.length;CTL.hostAlive=false;if(CTL.brokerIdx===0)CTL.scanCycles=(CTL.scanCycles||0)+1;
+ if(ROLE==='controller'&&CTL.code&&!CTL.slot){ctlStatus(CTL.scanCycles>=1?('Ruangan berkode '+CTL.code+' tidak ditemukan — periksa kembali kode besar di layar proyektor. Tetap mencari…'):'Tuan rumah belum ketemu di jalur itu — mencari di jalur relai lain…');ctlConnect()}}
 function ctlLeave(){clearInterval(CTL.joinTimer);clearTimeout(CTL.scanTimer);if(CTL.client){try{CTL.client.publish(TOPIC_BASE+CTL.code+'/bye',JSON.stringify({cid:CTL.cid}));CTL.client.end(true)}catch(e){}CTL.client=null}CTL.slot=0;CTL.pick=null;CTL.flowStep='lobby';CTL.flowPicks={1:null,2:null};$('ctlPadView').style.display='none';$('ctlPickView').style.display='none';$('ctlQuizView').style.display='none';$('ctlJoinView').style.display='block';CTL.flowQuiz=null;CTL.flowQuizAll=null;CTL.quizKey=null;ctlStatus('Sudah diputuskan.');show('screen-role')}
 $('btnCtlJoin').onclick=ctlJoin;$('btnCtlLeave').onclick=ctlLeave;$('btnCtlLeave2').onclick=ctlLeave;$('btnCtlLeave3').onclick=ctlLeave;$('btnCtlBack').onclick=function(){show('screen-role')};
 document.querySelectorAll('#ctlPadView .padBtn').forEach(function(b){var a=b.getAttribute('data-act');
@@ -959,11 +974,11 @@ var GURU={client:null,code:null,cid:'guru-'+Math.random().toString(36).slice(2,1
 function guruStatus(t){var e=$('guruJoinStatus');if(e)e.textContent=t}
 function guruJoin(){var code=$('guruCode').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){guruStatus('Kode harus 4 karakter — lihat kode besar di proyektor.');return}
  if(typeof mqtt==='undefined'){guruStatus('Perpustakaan MQTT gagal dimuat (CDN terhalang) — Layar Guru belum bisa bergabung.');return}
- GURU.code=code;GURU.flow=null;GURU.joined=false;GURU.brokerIdx=0;GURU.hostAlive=false;GURU.hp=null;guruStatus('Menyambung ke relai…');guruConnect()}
+ GURU.code=code;GURU.flow=null;GURU.joined=false;GURU.brokerIdx=0;GURU.hostAlive=false;GURU.scanCycles=0;GURU.hp=null;guruStatus('Menyambung ke relai…');guruConnect()}
 function guruConnect(){var base=TOPIC_BASE+GURU.code;var client=null;
  try{client=mqtt.connect(BROKER_URLS[GURU.brokerIdx%BROKER_URLS.length],{clientId:'duel-'+GURU.cid,connectTimeout:8000,reconnectPeriod:3000,will:{topic:base+'/bye',payload:JSON.stringify({cid:GURU.cid})}})}catch(e){guruAdvance();return}
  GURU.client=client;
- client.on('connect',function(){if(GURU.client!==client)return;client.subscribe([base+'/assign/'+GURU.cid,base+'/host',base+'/flow',base+'/state']);guruStatus('Terhubung ke relai — menunggu diterima proyektor…');
+ client.on('connect',function(){if(GURU.client!==client)return;client.subscribe([base+'/assign/'+GURU.cid,base+'/host',base+'/flow',base+'/state']);guruStatus(GURU.scanCycles>=1?('Ruangan berkode '+GURU.code+' tidak ditemukan — periksa kembali kode besar di layar proyektor. Tetap mencari…'):'Terhubung ke relai — menunggu diterima proyektor…');
   var join=function(){if(!GURU.joined&&GURU.client===client)client.publish(base+'/join',JSON.stringify({cid:GURU.cid,role:'guru'}))};join();clearInterval(GURU.joinTimer);GURU.joinTimer=setInterval(join,2500)});
  client.on('message',function(topic,payload){if(GURU.client!==client)return;
   if(topic===base+'/assign/'+GURU.cid){GURU.joined=true;clearInterval(GURU.joinTimer);clearTimeout(GURU.scanTimer);$('guruJoinView').style.display='none';$('guruView').style.display='block';guruRender()}
@@ -974,7 +989,7 @@ function guruConnect(){var base=TOPIC_BASE+GURU.code;var client=null;
  client.on('error',function(){if(!GURU.joined&&GURU.client===client)guruStatus('Relai tidak terjangkau dari jaringan ini.')});
  clearTimeout(GURU.scanTimer);GURU.scanTimer=setTimeout(guruScanStep,9000)}
 function guruScanStep(){if(GURU.joined||!GURU.client)return;if(GURU.hostAlive){GURU.scanTimer=setTimeout(guruScanStep,9000);return}guruAdvance()}
-function guruAdvance(){var old=GURU.client;GURU.client=null;clearInterval(GURU.joinTimer);if(old){try{old.end(true)}catch(e){}}GURU.brokerIdx=(GURU.brokerIdx+1)%BROKER_URLS.length;GURU.hostAlive=false;if(ROLE==='guru'&&GURU.code&&!GURU.joined){guruStatus('Ruangan belum ketemu di jalur itu — mencari di jalur relai lain…');guruConnect()}}
+function guruAdvance(){var old=GURU.client;GURU.client=null;clearInterval(GURU.joinTimer);if(old){try{old.end(true)}catch(e){}}GURU.brokerIdx=(GURU.brokerIdx+1)%BROKER_URLS.length;GURU.hostAlive=false;if(GURU.brokerIdx===0)GURU.scanCycles=(GURU.scanCycles||0)+1;if(ROLE==='guru'&&GURU.code&&!GURU.joined){guruStatus(GURU.scanCycles>=1?('Ruangan berkode '+GURU.code+' tidak ditemukan — periksa kembali kode besar di layar proyektor. Tetap mencari…'):'Ruangan belum ketemu di jalur itu — mencari di jalur relai lain…');guruConnect()}}
 function guruLeave(){clearInterval(GURU.joinTimer);clearTimeout(GURU.scanTimer);if(GURU.client){try{GURU.client.publish(TOPIC_BASE+GURU.code+'/bye',JSON.stringify({cid:GURU.cid}));GURU.client.end(true)}catch(e){}GURU.client=null}GURU.joined=false;GURU.flow=null;GURU.hp=null;ROLE='local';show('screen-role')}
 function guruRender(){var f=GURU.flow;if(!GURU.joined)return;if(!f){$('guruStatView').innerHTML='<p style="color:#6B5A44;font-size:14px">Menunggu data ruangan dari proyektor…</p>';return}
  if(f.step==='summary'||f.step==='duel'||f.step==='over'){if(CUR_SCREEN!=='screen-guru-duel')show('screen-guru-duel');renderGuruDuel();return}
