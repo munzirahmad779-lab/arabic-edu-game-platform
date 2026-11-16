@@ -610,18 +610,32 @@ export function ProjectorScreen({
     playSfx("click");
   }, []);
 
-  // Check if all teams answered -> trigger reveal automatically
+  // Check if all teams answered -> trigger reveal automatically.
+  // Yang wajib menjawab adalah tim yang stiknya AKTIF tersambung
+  // (activeControllers), bukan seluruh tim terkonfigurasi: tim tanpa
+  // stik tidak boleh menahan kelas menunggu timer 30 detik sesudah
+  // semua tim yang bermain sudah menjawab (perintah user 16 Nov
+  // 2026). Bila belum ada data stik aktif sama sekali (mis. pratinjau
+  // guru tanpa stik), kembali ke aturan lama: semua tim.
   useEffect(() => {
     if (phase === "question" && gameStarted) {
-      const answeredCount = Object.keys(answers).length;
-      if (answeredCount >= teams.length && teams.length > 0) {
+      const teamIds = teams.map((t) => t.id);
+      const activeTeamIds = teamIds.filter((id) =>
+        activeControllers.includes(id),
+      );
+      const expectedTeamIds =
+        activeTeamIds.length > 0 ? activeTeamIds : teamIds;
+      const allExpectedAnswered =
+        expectedTeamIds.length > 0 &&
+        expectedTeamIds.every((id) => Boolean(answers[id]));
+      if (allExpectedAnswered) {
         const timeout = setTimeout(() => {
           triggerRevealPhase();
         }, 600);
         return () => clearTimeout(timeout);
       }
     }
-  }, [answers, phase, gameStarted, teams.length, triggerRevealPhase]);
+  }, [answers, phase, gameStarted, teams, activeControllers, triggerRevealPhase]);
 
   // STABLE TIMER
   useEffect(() => {
