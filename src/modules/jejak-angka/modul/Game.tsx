@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LmsBankPicker, type LmsBankChoice } from "@/modules/game-bank/connector";
+import { submitStudentGameResult } from "@/modules/game-results/submit";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -199,7 +200,18 @@ const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-export default function JejakAngkaGame() {
+export default function JejakAngkaGame({
+  studentMode = false,
+}: {
+  /**
+   * Mode siswa (rute /student/play/jejak-angka): permainan dipaksa
+   * SOLO melawan bot, panel bank memakai umpan bank kelas siswa,
+   * tautan keluar menuju area siswa, dan hasil akhir sesi tercatat ke
+   * server (student_game_results). Mode guru (bawaan) tidak berubah
+   * dan tidak mengirim hasil apa pun.
+   */
+  studentMode?: boolean;
+}) {
   const [screen, setScreen] = useState<Screen>("home");
   const [bank, setBank] = useState<Bank>(() => loadBank());
   const [guru, setGuru] = useState<GuruBank>(() => loadGuru());
@@ -398,6 +410,20 @@ export default function JejakAngkaGame() {
     winInfoRef.current = { reason, winners: winners.map((w) => w.def.name) };
     setWinInfo({ reason, winners: winners.map((w) => w.def.name) });
     setScreen("result");
+    // Mode siswa: catat hasil pembalap manusia ke server satu kali per
+    // pertandingan (finish sudah dijaga endedRef). Skor diseragamkan
+    // 10 poin per jawaban benar, sama seperti game Magguru lain yang
+    // memberi +10 per jawaban benar.
+    if (studentMode) {
+      const human = m.racers.find((r) => !r.isBot);
+      if (human) {
+        void submitStudentGameResult("jejak-angka", {
+          score: human.correct * 10,
+          correct: human.correct,
+          total: human.answered,
+        });
+      }
+    }
   };
 
   const startQuestion = (answererIdx: number, bonus: boolean): void => {
@@ -685,7 +711,7 @@ export default function JejakAngkaGame() {
     }
     setNotice("");
     sfx.setEnabled(settings.sound);
-    const effMode: GameMode = narrow ? "SOLO" : settings.mode;
+    const effMode: GameMode = studentMode || narrow ? "SOLO" : settings.mode;
     modeRef.current = effMode;
     clearTimers();
     const hidden = generateHidden(rnd);
@@ -1305,7 +1331,7 @@ export default function JejakAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col items-center px-4 py-6">
             <div className="flex w-full items-center justify-start">
-              <Link href="/dashboard" className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
+              <Link href={studentMode ? "/student/practice" : "/dashboard"} className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
             </div>
 
             <div className="flex items-end gap-1">
@@ -1369,8 +1395,8 @@ export default function JejakAngkaGame() {
 
             <p className="mt-5 self-start text-sm font-black text-[#1F4A4E]">Mode Main</p>
             <div className="mt-2 grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-              {MODES.filter((m) => !narrow || m.id === "SOLO").map((m) => {
-                const active = (narrow ? "SOLO" : settings.mode) === m.id;
+              {MODES.filter((m) => (!narrow && !studentMode) || m.id === "SOLO").map((m) => {
+                const active = (studentMode || narrow ? "SOLO" : settings.mode) === m.id;
                 return (
                   <button
                     key={m.id}
@@ -1438,7 +1464,10 @@ export default function JejakAngkaGame() {
               dipilih untuk satu pertandingan ular tangga.
             </p>
             <div className="mt-4">
-              <LmsBankPicker onSelect={applyLmsChoice} />
+              <LmsBankPicker
+                apiBase={studentMode ? "/api/student/game-bank" : undefined}
+                onSelect={applyLmsChoice}
+              />
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {SUBJECTS.map((s) => (

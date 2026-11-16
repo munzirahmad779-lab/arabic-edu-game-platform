@@ -1,27 +1,20 @@
 // Konfigurasi langkah game (Langkah 4) pada Tugas Susulan.
 //
-// Pemeriksaan gerbang rute permainan solo di src/app/game/*/layout.tsx
-// (16 Nov 2026): ludo-angka, ketapel-buah, ketapel-burung, dan
-// jejak-angka SEMUA memakai gerbang sesi guru (getCurrentUser, tamu
-// diarahkan ke /login). Siswa masuk dengan token sesi siswa, bukan
-// sesi guru, jadi belum ada permainan solo yang bisa dibuka siswa.
-//
-// Karena itu nilai awal di bawah: url null dan required false. Langkah
-// game tampil sebagai "menyusul" dan TIDAK menghalangi status lulus
-// keseluruhan (syarat lulus di migrasi 0115 saat ini juga tanpa
-// langkah game, sejalan dengan required false di sini).
-//
-// Cara mengaktifkan kelak: isi name dan url permainan solo yang sudah
-// bisa dibuka siswa, ubah required menjadi true, lalu di migrasi
-// 0115 tambahkan syarat langkah game pada status lulus RPC
-// student_get_catchup_tasks (c.game_ok) dan naikkan steps_done
-// menjadi 4 pada RPC teacher_catchup_overview.
+// Sejak perluasan game solo siswa (migrasi 0116), permainan solo bisa
+// dibuka siswa dari akunnya sendiri lewat rute /student/play/<slug>.
+// Langkah game memakai Space War versi siswa: siswa memainkannya
+// sendirian (mode SOLO dipaksakan di mode siswa), dan penyelesaiannya
+// TIDAK lagi dikonfirmasi tombol. RPC student_get_catchup_tasks
+// menghitung langkah ini selesai bila ada baris student_game_results
+// milik siswa itu untuk game_slug 'space-war', dan status 'lulus'
+// mensyaratkannya; teacher_catchup_overview sejalan (syarat selesai
+// tetap 4 langkah: baca, kosakata, qawaid, game).
 export const GAME_STEP: {
   name: string;
   url: string | null;
   required: boolean;
 } = {
-  name: "Game Solo",
-  url: null,
-  required: false,
+  name: "Space War",
+  url: "/student/play/space-war",
+  required: true,
 };

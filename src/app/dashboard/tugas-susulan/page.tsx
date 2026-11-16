@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { studentGameName } from "@/modules/game-results/student-games";
 
 type SearchParams = { class?: string };
 
@@ -10,6 +11,27 @@ type OverviewRow = {
   total_tasks: number;
   done_tasks: number;
 };
+
+type GameResultRow = {
+  student_id: string;
+  student_name: string;
+  game_slug: string;
+  score: number;
+  correct_count: number;
+  total_questions: number;
+  finished_at: string;
+};
+
+function fmtWaktu(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default async function TeacherTugasSusulanPage({
   searchParams,
@@ -38,6 +60,7 @@ export default async function TeacherTugasSusulanPage({
 
   let rows: OverviewRow[] = [];
   let loadError = false;
+  const gameResultsByStudent = new Map<string, GameResultRow[]>();
   if (selected) {
     const { data, error } = await supabase.rpc("teacher_catchup_overview", {
       p_class_id: selected.id,
@@ -47,6 +70,22 @@ export default async function TeacherTugasSusulanPage({
       loadError = true;
     }
     rows = (data ?? []) as OverviewRow[];
+
+    // Hasil permainan mandiri terbaru per siswa per game (migrasi
+    // 0116). Bila RPC belum ada (migrasi belum dijalankan), bagian ini
+    // cukup kosong tanpa menggagalkan halaman.
+    const { data: gameData, error: gameError } = await supabase.rpc(
+      "teacher_student_game_results",
+      { p_class_id: selected.id },
+    );
+    if (gameError) {
+      console.error("[tugas-susulan] game results rpc error:", gameError);
+    }
+    for (const gr of (gameData ?? []) as GameResultRow[]) {
+      const list = gameResultsByStudent.get(gr.student_id) ?? [];
+      list.push(gr);
+      gameResultsByStudent.set(gr.student_id, list);
+    }
   }
 
   const withTasks = rows.filter((r) => r.total_tasks > 0);
@@ -68,9 +107,11 @@ export default async function TeacherTugasSusulanPage({
         <p className="mt-2 text-sm text-white/85">
           Siswa yang bolong pada pertemuan 1 s.d. 16 mendapat satu tugas per
           dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
-          membaca materi, menghafal kosakata, memahami qawaid, dan lulus
+          membaca materi, menghafal kosakata, memahami qawaid, lulus
           Latihan Mandiri dars itu (salah maksimal 5 pada permainan minimal
-          25 soal). Langkah game solo menyusul, menunggu pilihan guru.
+          25 soal), dan menyelesaikan Space War versi siswa sampai hasil
+          permainannya tercatat. Di bawah tiap nama juga tampil hasil
+          permainan mandiri terbarunya dari semua game solo siswa.
         </p>
         {selected ? (
           <p className="mt-2 text-xs text-white/70">
@@ -107,9 +148,11 @@ export default async function TeacherTugasSusulanPage({
         </section>
       ) : loadError ? (
         <section className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm text-red-800">
-          Data progres belum bisa dimuat. Bila migrasi 0115 belum dijalankan,
-          jalankan dulu berkas supabase/migrations/0115_tugas_susulan.sql di
-          SQL Editor Supabase proyek Magguru.
+          Data progres belum bisa dimuat. Bila migrasi 0115 dan 0116 belum
+          dijalankan, jalankan dulu berkas
+          supabase/migrations/0115_tugas_susulan.sql dan
+          supabase/migrations/0116_game_solo_siswa.sql di SQL Editor
+          Supabase proyek Magguru.
         </section>
       ) : (
         <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
@@ -144,6 +187,33 @@ export default async function TeacherTugasSusulanPage({
                         }`}
                         style={{ width: `${pct}%` }}
                       />
+                    </div>
+                  ) : null}
+                  {(gameResultsByStudent.get(r.student_id) ?? []).length >
+                  0 ? (
+                    <div className="mt-3 rounded-2xl bg-teal-50 px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-wide text-teal-800">
+                        Hasil game mandiri terbaru
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {(gameResultsByStudent.get(r.student_id) ?? []).map(
+                          (gr) => (
+                            <li
+                              key={gr.game_slug}
+                              className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                            >
+                              <span className="font-bold text-neutral-800">
+                                🎮 {studentGameName(gr.game_slug)}
+                              </span>
+                              <span className="text-neutral-600">
+                                Skor {gr.score} · Benar {gr.correct_count}{" "}
+                                dari {gr.total_questions} soal ·{" "}
+                                {fmtWaktu(gr.finished_at)}
+                              </span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
                     </div>
                   ) : null}
                 </li>

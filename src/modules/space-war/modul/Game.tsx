@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import { LmsBankPicker } from "@/modules/game-bank/connector";
+import { submitStudentGameResult } from "@/modules/game-results/submit";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -45,7 +46,18 @@ interface Lane {
 
 const fmtTime = (sec: number): string => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
-export default function SpaceWarGame() {
+export default function SpaceWarGame({
+  studentMode = false,
+}: {
+  /**
+   * Mode siswa (rute /student/play/space-war): permainan dipaksa SOLO,
+   * panel bank memakai umpan bank kelas siswa, tautan keluar menuju
+   * area siswa, dan hasil akhir sesi tercatat ke server
+   * (student_game_results). Mode guru (bawaan) tidak berubah sama
+   * sekali dan tidak mengirim hasil apa pun.
+   */
+  studentMode?: boolean;
+}) {
   const [screen, setScreen] = useState<Screen>("home");
   const [settings, setSettings] = useState<Settings>({ mode: "DUEL", subject: "matematika", sound: true });
   const [overrides, setOverrides] = useState<BankOverrides>({});
@@ -85,6 +97,12 @@ export default function SpaceWarGame() {
   const canvasSizeRef = useRef({ w: 0, h: 0 });
   const dprRef = useRef(1);
   const lastSecondRef = useRef(-1);
+  /** Mode efektif: siswa selalu SOLO, guru mengikuti pengaturannya. */
+  const effMode: ModeId = studentMode ? "SOLO" : settings.mode;
+  /** Cacah tembakan siswa (hanya diisi pada mode siswa). */
+  const shotsCorrectRef = useRef(0);
+  const shotsTotalRef = useRef(0);
+  const resultSentRef = useRef(false);
 
   /* ---------------------------------------------------------- bootstrap */
 
@@ -148,11 +166,14 @@ export default function SpaceWarGame() {
       notify("Mapel Guru masih kurang dari 2 soal. Isi dulu lewat Bank Soal.");
       return;
     }
-    lanesRef.current = buildLanes(settings.mode, settings.subject);
+    lanesRef.current = buildLanes(effMode, settings.subject);
     rocksRef.current = [];
     lasersRef.current = [];
     particlesRef.current = [];
     popupsRef.current = [];
+    shotsCorrectRef.current = 0;
+    shotsTotalRef.current = 0;
+    resultSentRef.current = false;
     endedRef.current = false;
     lastSecondRef.current = -1;
     activeIdsRef.current = "";
@@ -161,7 +182,7 @@ export default function SpaceWarGame() {
     setInputsView(lanesRef.current.map(() => ""));
     setCountdown(3);
     setScreen("countdown");
-  }, [buildLanes, settings.mode, settings.subject, guru.questions.length, notify]);
+  }, [buildLanes, effMode, settings.subject, guru.questions.length, notify]);
 
   useEffect(() => {
     if (screen !== "countdown") return;
@@ -183,13 +204,23 @@ export default function SpaceWarGame() {
     saveScore({
       date: new Date().toISOString(),
       subjectLabel: subjectLabel(settings.subject),
-      mode: settings.mode,
+      mode: effMode,
       results: rows,
     });
     setScores(loadScores());
     setResult([...rows].sort((a, b) => b.score - a.score));
     setScreen("result");
-  }, [settings.mode, settings.subject, subjectLabel]);
+    // Mode siswa: catat hasil akhir sesi ke server satu kali per ronde
+    // (endGame sudah dijaga endedRef, resultSentRef pengaman tambahan).
+    if (studentMode && !resultSentRef.current) {
+      resultSentRef.current = true;
+      void submitStudentGameResult("space-war", {
+        score: lanesRef.current[0]?.score ?? 0,
+        correct: shotsCorrectRef.current,
+        total: shotsTotalRef.current,
+      });
+    }
+  }, [effMode, settings.subject, subjectLabel, studentMode]);
 
   /* ------------------------------------------------------------ input */
 
@@ -235,6 +266,12 @@ export default function SpaceWarGame() {
     const laneW = w / Math.max(1, lanesRef.current.length);
     lasersRef.current.push({ lane: slot, x: slot * laneW + laneW / 2, yTop: rock.y, bornAt: now, color: lane.def.ship });
     if (settings.sound) { sfx.resume(); sfx.play("laser"); }
+    if (studentMode) {
+      // Satu tembakan dinilai = satu soal terjawab bagi siswa (SOLO
+      // hanya punya satu lajur, yaitu lajur siswa sendiri).
+      shotsTotalRef.current += 1;
+      if (ok) shotsCorrectRef.current += 1;
+    }
     if (ok) {
       lane.score += RULES.scoreCorrect;
       lane.streak += 1;
@@ -251,7 +288,7 @@ export default function SpaceWarGame() {
       popupsRef.current.push({ x: rock.x, y: rock.y, text: "Meleset!", color: "#DC2626", bornAt: now });
       if (settings.sound) sfx.play("wrong");
     }
-  }, [settings.sound]);
+  }, [settings.sound, studentMode]);
 
   const fire = useCallback((slot: number) => {
     const lane = lanesRef.current[slot];
@@ -521,14 +558,14 @@ export default function SpaceWarGame() {
 
   /* -------------------------------------------------------------- JSX */
 
-  const players = MODES.find((m) => m.id === settings.mode)?.players ?? 2;
+  const players = MODES.find((m) => m.id === effMode)?.players ?? 2;
 
   return (
     <div className="flex min-h-dvh flex-col bg-gradient-to-b from-sky-200 via-indigo-100 to-rose-100 text-indigo-950">
       {screen === "home" && (
         <>
           <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 pt-4">
-            <Link href="/dashboard/games" className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold shadow ring-1 ring-indigo-900/10">← Lobby</Link>
+            <Link href={studentMode ? "/student/practice" : "/dashboard/games"} className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold shadow ring-1 ring-indigo-900/10">← Lobby</Link>
             <button
               type="button"
               onClick={() => {
@@ -552,9 +589,9 @@ export default function SpaceWarGame() {
                 {MODES.map((m) => (
                   <button key={m.id} type="button" data-mode={m.id}
                     onClick={() => { const next = { ...settings, mode: m.id }; setSettings(next); saveSettings(next); }}
-                    className={`rounded-2xl px-3 py-3 text-left shadow ring-2 transition ${settings.mode === m.id ? "bg-indigo-600 text-white ring-indigo-800" : "bg-white/85 ring-indigo-900/10 hover:bg-white"}`}>
+                    className={`rounded-2xl px-3 py-3 text-left shadow ring-2 transition ${effMode === m.id ? "bg-indigo-600 text-white ring-indigo-800" : "bg-white/85 ring-indigo-900/10 hover:bg-white"}`}>
                     <span className="block text-lg font-black">{m.label}</span>
-                    <span className={`block text-xs font-semibold ${settings.mode === m.id ? "text-indigo-100" : "text-indigo-900/60"}`}>{m.desc}</span>
+                    <span className={`block text-xs font-semibold ${effMode === m.id ? "text-indigo-100" : "text-indigo-900/60"}`}>{m.desc}</span>
                   </button>
                 ))}
               </div>
@@ -615,7 +652,7 @@ export default function SpaceWarGame() {
 
       {screen === "countdown" && (
         <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-          <p className="text-lg font-black uppercase tracking-widest text-indigo-900/60">{subjectLabel(settings.subject)} · {settings.mode}</p>
+          <p className="text-lg font-black uppercase tracking-widest text-indigo-900/60">{subjectLabel(settings.subject)} · {effMode}</p>
           <div className="mt-4 text-[9rem] font-black leading-none text-indigo-700" aria-live="polite">{countdown > 0 ? countdown : "🚀"}</div>
           <p className="mt-2 text-xl font-bold">Bersiap di kokpit masing-masing…</p>
         </div>
@@ -646,7 +683,7 @@ export default function SpaceWarGame() {
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
                     <button type="button" onClick={startMatch} className="rounded-full bg-rose-600 px-6 py-2.5 font-black text-white shadow">Main Lagi</button>
                     <button type="button" onClick={() => setScreen("home")} className="rounded-full bg-white px-6 py-2.5 font-black shadow ring-1 ring-indigo-900/15">Beranda</button>
-                    <Link href="/dashboard/games" className="rounded-full bg-white px-6 py-2.5 font-black shadow ring-1 ring-indigo-900/15">🎮 Game Lain</Link>
+                    <Link href={studentMode ? "/student/practice" : "/dashboard/games"} className="rounded-full bg-white px-6 py-2.5 font-black shadow ring-1 ring-indigo-900/15">🎮 Game Lain</Link>
                   </div>
                 </div>
               </div>
@@ -710,6 +747,7 @@ export default function SpaceWarGame() {
 
           <div className="mb-4">
             <LmsBankPicker
+              apiBase={studentMode ? "/api/student/game-bank" : undefined}
               onSelect={(choice) => {
                 const questions: NQ[] = choice.questions.map((q) => ({
                   id: uid(),

@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { LmsBankPicker, type LmsBankChoice } from "@/modules/game-bank/connector";
+import { submitStudentGameResult } from "@/modules/game-results/submit";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -223,7 +224,18 @@ const YARD_POS: readonly CSSProperties[] = [
 const cellCenter = (i: number): string =>
   `calc(8px + ${i} * ((100% - 44px) / 15 + 2px) + (100% - 44px) / 30)`;
 
-export default function LudoAngkaGame() {
+export default function LudoAngkaGame({
+  studentMode = false,
+}: {
+  /**
+   * Mode siswa (rute /student/play/ludo-angka): permainan dipaksa
+   * SOLO melawan bot, panel bank memakai umpan bank kelas siswa,
+   * tautan keluar menuju area siswa, dan hasil akhir sesi tercatat ke
+   * server (student_game_results). Mode guru (bawaan) tidak berubah
+   * dan tidak mengirim hasil apa pun.
+   */
+  studentMode?: boolean;
+}) {
   const [screen, setScreen] = useState<Screen>("home");
   const [bank, setBank] = useState<Bank>(() => loadBank());
   const [guru, setGuru] = useState<GuruBank>(() => loadGuru());
@@ -375,6 +387,20 @@ export default function LudoAngkaGame() {
     winInfoRef.current = { reason, winners: winners.map((w) => w.def.name) };
     setWinInfo({ reason, winners: winners.map((w) => w.def.name) });
     setScreen("result");
+    // Mode siswa: catat hasil pembalap manusia ke server satu kali per
+    // pertandingan (finish sudah dijaga endedRef). Skor diseragamkan
+    // 10 poin per jawaban benar, sama seperti game Magguru lain yang
+    // memberi +10 per jawaban benar.
+    if (studentMode) {
+      const human = m.racers.find((r) => !r.isBot);
+      if (human) {
+        void submitStudentGameResult("ludo-angka", {
+          score: human.correct * 10,
+          correct: human.correct,
+          total: human.answered,
+        });
+      }
+    }
   };
 
   const startQuestion = (answererIdx: number, bonus: boolean): void => {
@@ -689,7 +715,7 @@ export default function LudoAngkaGame() {
     }
     setNotice("");
     sfx.setEnabled(settings.sound);
-    const effMode: GameMode = narrow ? "SOLO" : settings.mode;
+    const effMode: GameMode = studentMode || narrow ? "SOLO" : settings.mode;
     modeRef.current = effMode;
     clearTimers();
     matchRef.current = {
@@ -1413,7 +1439,7 @@ export default function LudoAngkaGame() {
         <div className="absolute inset-0 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col items-center px-4 py-6">
             <div className="flex w-full items-center justify-start">
-              <Link href="/dashboard" className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
+              <Link href={studentMode ? "/student/practice" : "/dashboard"} className="rounded-full bg-white/85 px-4 py-2 text-sm font-bold text-[#1F4A4E] shadow ring-1 ring-[#1F4A4E]/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
             </div>
 
             <div className="flex items-end gap-1">
@@ -1478,8 +1504,8 @@ export default function LudoAngkaGame() {
 
             <p className="mt-5 self-start text-sm font-black text-[#1F4A4E]">Mode Main</p>
             <div className="mt-2 grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-              {MODES.filter((m) => !narrow || m.id === "SOLO").map((m) => {
-                const active = (narrow ? "SOLO" : settings.mode) === m.id;
+              {MODES.filter((m) => (!narrow && !studentMode) || m.id === "SOLO").map((m) => {
+                const active = (studentMode || narrow ? "SOLO" : settings.mode) === m.id;
                 return (
                   <button
                     key={m.id}
@@ -1547,7 +1573,10 @@ export default function LudoAngkaGame() {
               dipilih untuk satu pertandingan Ludo.
             </p>
             <div className="mt-4">
-              <LmsBankPicker onSelect={applyLmsChoice} />
+              <LmsBankPicker
+                apiBase={studentMode ? "/api/student/game-bank" : undefined}
+                onSelect={applyLmsChoice}
+              />
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {SUBJECTS.map((s) => (

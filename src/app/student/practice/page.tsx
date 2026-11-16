@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { displayGameName } from "@/lib/game-name";
+import { STUDENT_GAMES } from "@/modules/game-results/student-games";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -113,6 +114,52 @@ export default async function StudentPracticePage() {
             ←
           </span>
         </Link>
+
+        <section className="rounded-[2rem] border border-teal-100 bg-white p-6 shadow-lg">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-black text-neutral-900">
+              Game Solo
+            </h2>
+            <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-700">
+              {STUDENT_GAMES.length} permainan
+            </span>
+          </div>
+          <p className="mb-4 text-sm text-neutral-500">
+            Permainan utama Magguru yang bisa kamu mainkan sendirian dari
+            akunmu. Selesaikan satu ronde penuh, hasilmu tercatat dan
+            terlihat oleh gurumu.
+          </p>
+          <ul className="space-y-3">
+            {STUDENT_GAMES.map((g) => (
+              <li key={g.slug}>
+                <Link
+                  href={`/student/play/${g.slug}`}
+                  className="group flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:shadow-md"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 text-2xl text-white shadow-md transition group-hover:scale-110">
+                      {g.emoji}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-neutral-900 group-hover:text-teal-700">
+                        {g.name}
+                      </p>
+                      <p className="mt-0.5 text-sm text-neutral-500">
+                        {g.desc}
+                      </p>
+                      <p className="mt-0.5 text-xs text-neutral-400">
+                        {g.bankNote}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-2xl text-neutral-400 transition group-hover:text-teal-600">
+                    ←
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {games.length === 0 ? (
           <section className="rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white p-12 text-center shadow-lg">

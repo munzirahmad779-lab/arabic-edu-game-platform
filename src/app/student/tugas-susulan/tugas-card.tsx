@@ -171,22 +171,11 @@ function TimerStep({
   );
 }
 
-function GameStep({
-  darsNo,
-  initialDone,
-}: {
-  darsNo: number;
-  initialDone: boolean;
-}) {
-  const router = useRouter();
-  const [done, setDone] = useState(initialDone);
-  const [busy, setBusy] = useState(false);
-  const [pesan, setPesan] = useState<string | null>(null);
-
-  if (done) {
+function GameStep({ initialDone }: { initialDone: boolean }) {
+  if (initialDone) {
     return (
       <p className="mt-1 text-sm font-bold text-emerald-700">
-        Sudah main {GAME_STEP.name} ✓
+        Sudah main {GAME_STEP.name} ✓ Hasilmu tercatat di server.
       </p>
     );
   }
@@ -194,43 +183,20 @@ function GameStep({
   return (
     <>
       <p className="mt-1 text-sm text-neutral-500">
-        Mainkan {GAME_STEP.name} sampai selesai, lalu konfirmasi dengan
-        tombol di bawah.
+        Mainkan {GAME_STEP.name} sampai selesai satu ronde penuh.
+        Hasilmu tercatat otomatis ke server sesudah ronde selesai, jadi
+        langkah ini tuntas tanpa tombol konfirmasi.
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {GAME_STEP.url ? (
-          <a
+      {GAME_STEP.url ? (
+        <div className="mt-2">
+          <Link
             href={GAME_STEP.url}
-            target="_blank"
-            rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-violet-700"
           >
             <span>🎮</span>
             <span>Main: {GAME_STEP.name}</span>
-          </a>
-        ) : null}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            const res = await completeCatchupStep(darsNo, "game");
-            setBusy(false);
-            if (res.ok) {
-              setDone(true);
-              router.refresh();
-            } else {
-              setPesan("Belum bisa dicatat. Coba lagi sebentar.");
-            }
-          }}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-emerald-700 disabled:opacity-50"
-        >
-          <span>✓</span>
-          <span>Sudah Main</span>
-        </button>
-      </div>
-      {pesan ? (
-        <p className="mt-2 text-xs font-bold text-red-600">{pesan}</p>
+          </Link>
+        </div>
       ) : null}
     </>
   );
@@ -418,7 +384,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
               🔒 Terkunci. Luluskan Latihan Mandiri pada Langkah 3 dulu.
             </p>
           ) : (
-            <GameStep darsNo={task.darsNo} initialDone={task.gameDone} />
+            <GameStep initialDone={task.gameDone} />
           )}
         </li>
       </ol>

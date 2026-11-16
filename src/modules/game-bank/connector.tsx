@@ -16,11 +16,18 @@ export type LmsBankChoice = {
  * Guru memilih bank miliknya, soal ditarik dari /api/game-bank, lalu
  * diserahkan ke game lewat onSelect untuk dipetakan ke tipe soal game itu.
  * Bank lokal game tidak diubah oleh panel ini.
+ *
+ * Prop apiBase mengganti alamat umpan bila panel dipakai di mode
+ * siswa: permainan versi siswa mengarahkannya ke
+ * /api/student/game-bank (bank guru pemilik kelas siswa, sesi siswa).
+ * Bawaan tetap /api/game-bank untuk guru, perilakunya tidak berubah.
  */
 export function LmsBankPicker({
   onSelect,
+  apiBase = "/api/game-bank",
 }: {
   onSelect: (choice: LmsBankChoice) => void;
+  apiBase?: string;
 }) {
   const [banks, setBanks] = useState<LmsBankSummary[] | null>(null);
   const [selectedId, setSelectedId] = useState("");
@@ -29,7 +36,7 @@ export function LmsBankPicker({
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/game-bank")
+    fetch(apiBase)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("gagal"))))
       .then((data: { banks?: LmsBankSummary[] }) => {
         if (!alive) return;
@@ -41,7 +48,7 @@ export function LmsBankPicker({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [apiBase]);
 
   const apply = useCallback(async () => {
     const bank = (banks ?? []).find((b) => b.id === selectedId);
@@ -50,7 +57,7 @@ export function LmsBankPicker({
     setStatus("Memuat soal...");
     try {
       const res = await fetch(
-        `/api/game-bank?bankId=${encodeURIComponent(bank.id)}`,
+        `${apiBase}?bankId=${encodeURIComponent(bank.id)}`,
       );
       if (!res.ok) throw new Error("gagal");
       const data = (await res.json()) as { questions?: LmsQuestion[] };
@@ -66,7 +73,7 @@ export function LmsBankPicker({
     } finally {
       setBusy(false);
     }
-  }, [banks, selectedId, busy, onSelect]);
+  }, [banks, selectedId, busy, onSelect, apiBase]);
 
   return (
     <div className="rounded-2xl border-2 border-teal-600/40 bg-teal-50 p-4">

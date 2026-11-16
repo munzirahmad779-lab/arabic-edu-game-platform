@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LmsBankPicker } from "@/modules/game-bank/connector";
+import { submitStudentGameResult } from "@/modules/game-results/submit";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -78,7 +79,18 @@ interface DragState { lane: number; downX: number; downY: number; pouch: { x: nu
 
 const newStone = (): StonePhys => ({ x: 0, y: 0, vx: 0, vy: 0, flying: false, bounces: 0 });
 
-export default function KetapelBurungGame() {
+export default function KetapelBurungGame({
+  studentMode = false,
+}: {
+  /**
+   * Mode siswa (rute /student/play/ketapel-burung): permainan dipaksa
+   * SOLO, panel bank memakai umpan bank kelas siswa, tautan keluar
+   * menuju area siswa, dan hasil akhir sesi tercatat ke server
+   * (student_game_results). Mode guru (bawaan) tidak berubah dan
+   * tidak mengirim hasil apa pun.
+   */
+  studentMode?: boolean;
+}) {
   const [screen, setScreen] = useState<Screen>("home");
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [bank, setBank] = useState<Bank>(() => loadBank());
@@ -117,6 +129,9 @@ export default function KetapelBurungGame() {
   const lastTsRef = useRef(0);
   const lastShownSecRef = useRef<number>(RULES.durationSec);
   const endedRef = useRef(false);
+  /** Cacah burung yang dinilai bagi siswa (hanya mode siswa, lajur 0). */
+  const statsRef = useRef({ correct: 0, answered: 0 });
+  const resultSentRef = useRef(false);
   const hitTargetRef = useRef(new Map<number, number>());
   const showExitRef = useRef(false);
   const rndRef = useRef(() => Math.random());
@@ -194,7 +209,18 @@ export default function KetapelBurungGame() {
     };
     setScores(saveScore(rec));
     setScreen("result");
-  }, [settings.mode, settings.subject, guru.name]);
+    // Mode siswa: catat hasil akhir sesi ke server satu kali per babak
+    // (finishMatch sudah dijaga endedRef, resultSentRef pengaman
+    // tambahan). Skor memakai poin permainan itu sendiri.
+    if (studentMode && !resultSentRef.current) {
+      resultSentRef.current = true;
+      void submitStudentGameResult("ketapel-burung", {
+        score: lanes[0]?.score ?? 0,
+        correct: statsRef.current.correct,
+        total: statsRef.current.answered,
+      });
+    }
+  }, [settings.mode, settings.subject, guru.name, studentMode]);
 
   const startMatch = useCallback(() => {
     const list = subjectList(settings.subject, bank, guru);
@@ -207,7 +233,7 @@ export default function KetapelBurungGame() {
       return;
     }
     sfx.setEnabled(settings.sound);
-    const effMode: GameMode = narrow ? "SOLO" : settings.mode;
+    const effMode: GameMode = studentMode || narrow ? "SOLO" : settings.mode;
     modeRef.current = effMode;
     const defs = playersFor(effMode);
     lanesRef.current = defs.map((d) => emptyLane(d));
@@ -220,13 +246,15 @@ export default function KetapelBurungGame() {
     partsRef.current = [];
     popsRef.current = [];
     endedRef.current = false;
+    statsRef.current = { correct: 0, answered: 0 };
+    resultSentRef.current = false;
     timeRef.current = RULES.durationSec;
     lastShownSecRef.current = RULES.durationSec;
     setTimeLeft(RULES.durationSec);
     defs.forEach((_, i) => dealNext(i));
     setCountdown(3);
     setScreen("countdown");
-  }, [settings, bank, guru, subjectList, dealNext, narrow]);
+  }, [settings, bank, guru, subjectList, dealNext, narrow, studentMode]);
 
   /* hitung mundur */
   useEffect(() => {
@@ -272,6 +300,12 @@ export default function KetapelBurungGame() {
       stone.flying = false;
       hitTargetRef.current.set(slot, birdIdx);
       const pos = birdPos(lay, kin, birdIdx, elapsedRef.current);
+      if (studentMode && slot === 0) {
+        // Satu burung yang kena = satu soal terjawab (benar atau bukan,
+        // soal berganti sesudahnya).
+        statsRef.current.answered += 1;
+        if (bird.correct) statsRef.current.correct += 1;
+      }
       if (bird.correct) {
         lane.score += RULES.pointsCorrect;
         lane.streak += 1;
@@ -618,6 +652,7 @@ export default function KetapelBurungGame() {
         onPointerUp={onPointerUp}
         changeSettings={changeSettings}
         narrow={narrow}
+        studentMode={studentMode}
         startMatch={startMatch}
         setScreen={setScreen}
         setBank={setBank}
@@ -664,6 +699,7 @@ interface ScreensProps {
   onPointerUp: (e: React.PointerEvent) => void;
   changeSettings: (s: Settings) => void;
   narrow: boolean;
+  studentMode: boolean;
   startMatch: () => void;
   setScreen: (s: Screen) => void;
   setBank: (b: Bank) => void;
@@ -716,7 +752,7 @@ function HomeScreen(p: ScreensProps) {
     <main className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
         <div className="flex items-center justify-start">
-          <Link href="/dashboard" className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-indigo-950 shadow-sm ring-1 ring-indigo-900/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
+          <Link href={p.studentMode ? "/student/practice" : "/dashboard"} className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-indigo-950 shadow-sm ring-1 ring-indigo-900/10 transition hover:bg-white active:scale-95">← Dashboard</Link>
         </div>
 
         <section className="rounded-2xl bg-white/70 p-4 text-center ring-1 ring-indigo-900/10">
@@ -1007,6 +1043,7 @@ function BankScreen(p: ScreensProps) {
           </span>
         </div>
         <LmsBankPicker
+          apiBase={p.studentMode ? "/api/student/game-bank" : undefined}
           onSelect={(choice) => {
             const questions: Q[] = choice.questions.map((q, i) => ({
               id: `lms-${choice.bankId}-${i + 1}`,

@@ -24,7 +24,7 @@ export default async function StudentTugasSusulanPage() {
     console.error("[StudentTugasSusulanPage]", error);
   }
 
-  const tasks: TugasCardData[] = (data ?? []).map((t) => {
+  const allRows: TugasCardData[] = (data ?? []).map((t) => {
     const meta = kosakataDars(t.dars_no);
     const qw = qawaidDars(t.dars_no);
     return {
@@ -49,6 +49,12 @@ export default async function StudentTugasSusulanPage() {
       qawaid: qw ? { judul: qw.judul, isi: qw.isi } : null,
     };
   });
+
+  // Baris status 'selesai' adalah dars yang dihadiri penuh: hanya
+  // keterangan kehadiran, bukan tugas. Persen di kepala halaman tetap
+  // dihitung dari tugas aktif saja (lulus dibagi total tugas).
+  const tasks = allRows.filter((t) => t.status !== "selesai");
+  const selesaiRows = allRows.filter((t) => t.status === "selesai");
 
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === "lulus").length;
@@ -78,8 +84,8 @@ export default async function StudentTugasSusulanPage() {
           <p className="mt-3 text-sm text-white/85">
             Tugas ini muncul karena ada pertemuan yang tidak kamu hadiri.
             Selesaikan langkahnya secara berurutan: baca materi, hafalkan
-            kosakata dan pahami qawaid, lalu kerjakan Latihan Mandiri sampai
-            lulus.
+            kosakata dan pahami qawaid, kerjakan Latihan Mandiri sampai
+            lulus, lalu mainkan game solo sampai selesai.
           </p>
           <p className="mt-2 text-xs text-white/70">
             Kelas <span className="font-bold">{session.class_name}</span>
@@ -128,6 +134,39 @@ export default async function StudentTugasSusulanPage() {
             ))}
           </section>
         )}
+
+        {selesaiRows.length > 0 ? (
+          <section className="space-y-3">
+            <h2 className="px-1 text-sm font-black uppercase tracking-wide text-emerald-700">
+              Pertemuan yang sudah kamu hadiri
+            </h2>
+            {selesaiRows.map((row) => (
+              <article
+                key={row.darsNo}
+                className="flex items-center justify-between gap-4 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xl font-black text-white shadow">
+                    ✓
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-neutral-900">
+                      Dars {row.darsNo}
+                      {row.judul ? ` · ${row.judul}` : ""}
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      Pertemuan {row.meetingNos.join(" dan ")} · kamu hadir
+                      penuh
+                    </p>
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
+                  Sudah Selesai
+                </span>
+              </article>
+            ))}
+          </section>
+        ) : null}
       </div>
     </main>
   );
