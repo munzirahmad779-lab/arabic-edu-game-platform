@@ -88,7 +88,8 @@ export default async function StudentTugasSusulanPage() {
             lulus, lalu mainkan game solo sampai selesai.
           </p>
           <p className="mt-2 text-xs text-white/70">
-            Kelas <span className="font-bold">{session.class_name}</span>
+            <span className="font-bold">{session.name}</span> · Kelas{" "}
+            <span className="font-bold">{session.class_name}</span>
           </p>
           {total > 0 ? (
             <div className="mt-5 rounded-2xl bg-white/15 p-4">

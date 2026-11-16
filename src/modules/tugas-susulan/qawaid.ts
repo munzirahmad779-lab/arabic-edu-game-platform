@@ -3,10 +3,12 @@
 // s.d. modul-dars5.pdf di folder bahan-ajar PPMK SMAN 2 Barru (irisan
 // berkas bergeser satu dars, qawaid Dars 1 ada di modul-dars2.pdf
 // hal. cetak 5, Dars 2 di modul-dars3.pdf hal. 13, Dars 3 dan 4 di
-// modul-dars4.pdf hal. 22 dan 31). Sumber Dars 6: dars6_builder_v2.py,
-// Dars 7: dars7_builder.py, Dars 8: sumber-dars8.md. Qawaid Dars 5
-// tidak dimuat karena bagian qawaidnya tidak ada di kelima berkas
-// modul di atas (modul-dars5.pdf berakhir di tadrib hal. cetak 40).
+// modul-dars4.pdf hal. 22 dan 31). Sumber Dars 5: panel Review
+// Qawaid Dars 5 pada deck Dars 6 (dars6_builder_v2.py), karena
+// bagian qawaid Dars 5 tidak ada di berkas modulnya sendiri
+// (modul-dars5.pdf berakhir di tadrib hal. cetak 40). Sumber
+// Dars 6: dars6_builder_v2.py, Dars 7: dars7_builder.py,
+// Dars 8: sumber-dars8.md.
 
 export type QawaidMeta = { dars: number; judul: string; isi: string[] };
 
@@ -59,6 +61,17 @@ export const DAFTAR_QAWAID: QawaidMeta[] = [
       "Bertanya dengan man (as-sual bi man): man dipakai untuk bertanya tentang seseorang (asy-syakhsh).",
       "Polanya: man + ism al-isyarah (kata tunjuk).",
       "Contoh: man huwa? man hadza? dijawab hadza shadiqi (ini temanku). Man hiya? dijawab hiya Fatimah.",
+    ],
+  },
+  {
+    dars: 5,
+    judul: "Al-Fi'l al-Mudhari' li Dhamir Ana dan as-Sa'ah",
+    isi: [
+      "Al-Fi'l al-Mudhari' (الْفِعْلُ الْمُضَارِعُ) untuk dhomir ana (أَنَا) dipakai untuk kegiatan yang dilakukan oleh saya (pembicara).",
+      "Contoh: أَنَا أَسْتَيْقِظُ (Aku bangun) · أَنَا أَذْهَبُ (Aku pergi) · أَنَا آكُلُ (Aku makan) · أَنَا أَشْرَبُ (Aku minum).",
+      "Contoh lain: أَنَا أَنَامُ (Aku tidur) · أَنَا أَتَعَلَّمُ (Aku belajar) · أَنَا أَقْرَأُ (Aku membaca).",
+      "As-Sa'ah (السَّاعَةُ) dipakai untuk menyebut jam.",
+      "Contoh: السَّاعَةُ الْوَاحِدَةُ (Jam satu) · السَّاعَةُ الثَّانِيَةُ (Jam dua) · السَّاعَةُ الثَّالِثَةُ (Jam tiga) · السَّاعَةُ الرَّابِعَةُ (Jam empat).",
     ],
   },
   {

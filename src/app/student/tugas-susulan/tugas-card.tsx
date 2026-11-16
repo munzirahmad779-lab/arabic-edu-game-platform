@@ -244,9 +244,8 @@ export function TugasCard({ task }: { task: TugasCardData }) {
             </p>
           ) : (
             <>
-              <p className="mt-1 text-sm text-neutral-500">
-                Baca materi Dars {task.darsNo} sampai akhir halaman. Langkah
-                ini tercatat selesai begitu kamu mencapai akhir bacaan.
+              <p className="mt-1 break-words text-sm leading-relaxed text-neutral-500">
+                Baca materi Dars {task.darsNo} sampai akhir halaman. Langkah ini tercatat selesai begitu kamu mencapai akhir bacaan.
               </p>
               <Link
                 href={`/student/tugas-susulan/baca/${task.darsNo}`}

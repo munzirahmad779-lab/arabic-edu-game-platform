@@ -95,7 +95,7 @@ export const DAFTAR_KOSAKATA: DarsMeta[] = [
   },
   {
     dars: 5,
-    judul: "Kehidupan Harian",
+    judul: "Kehidupan Sehari-hari",
     kata: [
       { arab: "الْيَوْمُ الدِّرَاسِيُّ", arti: "Hari belajar" },
       { arab: "الْيَوْمُ", arti: "Hari" },

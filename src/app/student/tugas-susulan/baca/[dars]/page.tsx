@@ -11,6 +11,7 @@ import { MaterialImage } from "@/components/materials/material-image";
 import { MaterialPdf } from "@/components/materials/material-pdf";
 import { getLocale } from "@/lib/i18n/server";
 import { kosakataDars } from "@/modules/tugas-susulan/kosakata";
+import { cocokMateri } from "@/modules/tugas-susulan/materi";
 import { BacaTracker } from "./baca-tracker";
 
 const MATERIAL_CSS = `
@@ -32,15 +33,6 @@ const MATERIAL_CSS = `
   .material-content u { text-decoration: underline; }
   .material-content s { text-decoration: line-through; }
 `;
-
-// Pemetaan dars ke materi kelas dari judul materi terbit:
-// "Dars N" untuk dars yang judulnya begitu, atau "Pertemuan A-B"
-// dengan A = 2d-1 dan B = 2d (mis. Dars 1 -> "Pertemuan 1-2").
-function cocokMateri(judul: string, dars: number): boolean {
-  const j = judul.toLowerCase();
-  if (j.includes(`dars ${dars}`)) return true;
-  return j.includes(`pertemuan ${2 * dars - 1}-${2 * dars}`);
-}
 
 export default async function BacaMateriSusulanPage({
   params,
