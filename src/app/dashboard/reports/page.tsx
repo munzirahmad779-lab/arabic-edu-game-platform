@@ -75,6 +75,29 @@ export default async function ReportsPage({
         </p>
       </header>
 
+      <Link
+        href="/dashboard/tugas-susulan"
+        className="group flex items-center justify-between gap-4 rounded-[2rem] border border-violet-100 bg-white p-5 shadow transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl text-white shadow-md transition group-hover:scale-110">
+            📋
+          </span>
+          <div>
+            <p className="font-black text-neutral-900 group-hover:text-violet-700">
+              Progres Tugas Susulan
+            </p>
+            <p className="text-sm text-neutral-500">
+              Lihat siswa yang punya tugas susulan karena bolong, dan berapa
+              persen yang sudah lulus.
+            </p>
+          </div>
+        </div>
+        <span className="shrink-0 text-2xl text-neutral-400 transition group-hover:text-violet-600">
+          →
+        </span>
+      </Link>
+
       <ReportView
         date={date}
         roomRows={roomRows}

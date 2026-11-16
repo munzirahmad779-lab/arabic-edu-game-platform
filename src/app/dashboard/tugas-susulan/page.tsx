@@ -1,0 +1,162 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+type SearchParams = { class?: string };
+
+type OverviewRow = {
+  student_id: string;
+  student_name: string;
+  total_tasks: number;
+  done_tasks: number;
+};
+
+export default async function TeacherTugasSusulanPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Kelas diambil dari data kelas milik guru yang masuk (RLS membatasi
+  // ke kelas sendiri); tidak ada ID kelas yang ditanam di kode.
+  const { data: classes } = await supabase
+    .from("classes")
+    .select("id, name")
+    .order("created_at", { ascending: true });
+
+  const classList = classes ?? [];
+  const requested = searchParams.class;
+  const selected =
+    classList.find((c) => c.id === requested) ??
+    classList.find((c) => c.name.toLowerCase().includes("mangkoso")) ??
+    classList[0];
+
+  let rows: OverviewRow[] = [];
+  let loadError = false;
+  if (selected) {
+    const { data, error } = await supabase.rpc("teacher_catchup_overview", {
+      p_class_id: selected.id,
+    });
+    if (error) {
+      console.error("[tugas-susulan] rpc error:", error);
+      loadError = true;
+    }
+    rows = (data ?? []) as OverviewRow[];
+  }
+
+  const withTasks = rows.filter((r) => r.total_tasks > 0);
+
+  return (
+    <main className="space-y-6">
+      <div>
+        <Link
+          href="/dashboard/reports"
+          className="text-sm font-medium text-neutral-600 underline hover:text-neutral-900"
+        >
+          ← Kembali ke Laporan Harian
+        </Link>
+      </div>
+
+      <header className="rounded-[2rem] bg-gradient-to-l from-violet-700 via-fuchsia-700 to-pink-600 p-6 text-white shadow-xl">
+        <p className="text-sm font-semibold text-white/75">TUGAS SUSULAN</p>
+        <h1 className="mt-1 text-3xl font-black">Progres Tugas Susulan</h1>
+        <p className="mt-2 text-sm text-white/85">
+          Siswa yang bolong pada pertemuan 1 s.d. 16 mendapat satu tugas per
+          dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
+          membaca materi, menghafal kosakata, memahami qawaid, dan lulus
+          Latihan Mandiri dars itu (salah maksimal 5 pada permainan minimal
+          25 soal). Langkah game solo menyusul, menunggu pilihan guru.
+        </p>
+        {selected ? (
+          <p className="mt-2 text-xs text-white/70">
+            Kelas <span className="font-bold">{selected.name}</span> ·{" "}
+            {withTasks.length} siswa punya tugas
+          </p>
+        ) : null}
+      </header>
+
+      {classList.length > 1 ? (
+        <nav className="flex flex-wrap gap-2">
+          {classList.map((c) => (
+            <Link
+              key={c.id}
+              href={`/dashboard/tugas-susulan?class=${c.id}`}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                selected?.id === c.id
+                  ? "bg-violet-600 text-white shadow"
+                  : "border border-neutral-200 bg-white text-neutral-700 hover:border-violet-300 hover:text-violet-700"
+              }`}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
+      {!selected ? (
+        <section className="rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white p-12 text-center shadow-lg">
+          <p className="font-bold text-neutral-700">Belum ada kelas.</p>
+          <p className="mt-2 text-sm text-neutral-500">
+            Buat kelas terlebih dahulu untuk melihat progres tugas susulan.
+          </p>
+        </section>
+      ) : loadError ? (
+        <section className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm text-red-800">
+          Data progres belum bisa dimuat. Bila migrasi 0115 belum dijalankan,
+          jalankan dulu berkas supabase/migrations/0115_tugas_susulan.sql di
+          SQL Editor Supabase proyek Magguru.
+        </section>
+      ) : (
+        <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
+          <ul className="divide-y divide-neutral-100">
+            {rows.map((r) => {
+              const pct =
+                r.total_tasks > 0
+                  ? Math.round((r.done_tasks / r.total_tasks) * 100)
+                  : 100;
+              return (
+                <li key={r.student_id} className="py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-bold text-neutral-900">
+                      {r.student_name}
+                    </p>
+                    {r.total_tasks > 0 ? (
+                      <span className="text-sm text-neutral-600">
+                        {r.done_tasks} dari {r.total_tasks} tugas lulus ·{" "}
+                        {pct}%
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                        Kehadiran lengkap, tanpa tugas
+                      </span>
+                    )}
+                  </div>
+                  {r.total_tasks > 0 ? (
+                    <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className={`h-full rounded-full ${
+                          pct >= 100 ? "bg-emerald-500" : "bg-violet-500"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {rows.length === 0 ? (
+            <p className="py-6 text-center text-sm text-neutral-500">
+              Belum ada siswa di kelas ini.
+            </p>
+          ) : null}
+        </section>
+      )}
+    </main>
+  );
+}

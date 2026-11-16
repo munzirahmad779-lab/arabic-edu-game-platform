@@ -91,6 +91,29 @@ export default async function StudentPracticePage() {
           </p>
         </header>
 
+        <Link
+          href="/student/tugas-susulan"
+          className="group flex items-center justify-between gap-4 rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-2xl text-white shadow-md transition group-hover:scale-110">
+              📋
+            </span>
+            <div>
+              <p className="font-black text-neutral-900 group-hover:text-amber-700">
+                Tugas Susulan Saya
+              </p>
+              <p className="text-sm text-neutral-500">
+                Ada pertemuan yang kamu lewatkan? Cek dan selesaikan tugas
+                susulanmu di sini.
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 text-2xl text-neutral-400 transition group-hover:text-amber-600">
+            ←
+          </span>
+        </Link>
+
         {games.length === 0 ? (
           <section className="rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white p-12 text-center shadow-lg">
             <div className="text-6xl">📚</div>
