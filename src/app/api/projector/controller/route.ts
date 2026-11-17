@@ -28,9 +28,8 @@ export async function GET(req: NextRequest) {
   // Room yang belum ada / sudah kedaluwarsa dijawab dengan state bawaan
   // tanpa dibuat permanen (room hanya lahir dari sync proyektor / press /
   // heartbeat, bukan dari polling).
-  const roomData =
-    (await fetchProjectorRoomData(roomCode)) ??
-    createDefaultProjectorRoomData();
+  const fetchedRoomData = await fetchProjectorRoomData(roomCode);
+  const roomData = fetchedRoomData ?? createDefaultProjectorRoomData();
   const now = Date.now();
 
   // Clean old events (> 60s)
@@ -60,15 +59,25 @@ export async function GET(req: NextRequest) {
   // hitungan dan jawaban timnya sendiri seperti sebelumnya, supaya
   // pilihan tim lain tidak bocor ke stik mana pun sebelum reveal.
   // Gerbang yang sama seperti aksi sync_state pada POST di bawah.
+  // Jalur cepat tanpa sesi: stik siswa tidak membawa cookie auth
+  // Supabase, jadi getUser() pasti menjawab tanpa user. Lewati pembuatan
+  // klien dan panggilan jaringan auth bila cookie itu tidak ada sama
+  // sekali (pola yang sama dengan jalur cepat middleware). Pemanggil
+  // yang membawa cookie tetap diperiksa persis seperti sebelumnya.
+  const hasAuthCookie = req.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
   let viewerIsAuthenticated = false;
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    viewerIsAuthenticated = Boolean(user);
-  } catch {
-    viewerIsAuthenticated = false;
+  if (hasAuthCookie) {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      viewerIsAuthenticated = Boolean(user);
+    } catch {
+      viewerIsAuthenticated = false;
+    }
   }
 
   // Sinyal keberadaan room untuk halaman kontroler: true hanya selama
@@ -76,7 +85,15 @@ export async function GET(req: NextRequest) {
   // rentang TTL-nya. Tanpa sinyal ini kontroler tidak bisa membedakan
   // room yang hidup dari kode yang salah ketik, karena GET selalu
   // menjawab state bawaan untuk room yang tidak ada.
-  const roomActive = await isProjectorRoomActiveShared(roomCode);
+  // Bila bacaan state di atas mengembalikan baris room, baris itu lolos
+  // saringan kedaluwarsa yang sama dengan RPC is_projector_room_active
+  // (keduanya mensyaratkan expires_at > now()), jadi room pasti aktif
+  // dan panggilan RPC kedua tidak diperlukan. RPC hanya tetap dipanggil
+  // bila state tidak ditemukan, untuk menutup celah balapan dengan
+  // penulisan yang baru saja mendarat.
+  const roomActive =
+    fetchedRoomData !== null ||
+    (await isProjectorRoomActiveShared(roomCode));
 
   return NextResponse.json({
     roomCode: roomCode.toUpperCase(),

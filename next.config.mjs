@@ -31,6 +31,39 @@ const nextConfig = {
   // menguncinya tanpa nonce akan mematahkan aplikasi.
   async headers() {
     return [
+      // Aset statis publik yang isinya hanya berubah saat deploy:
+      // beri cache peramban agar kunjungan ulang (terutama embed game
+      // Duel Stickman di perangkat guru dan siswa) tidak mengunduh
+      // ulang 1,6 MB berkas yang sama. max-age satu jam menjaga jeda
+      // aman bila berkas game diperbarui, stale-while-revalidate
+      // menutup kunjungan sesudahnya tanpa menunggu jaringan.
+      {
+        source: "/duel-stickman/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/logo-horizontal.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      {
+        source: "/og-image.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
