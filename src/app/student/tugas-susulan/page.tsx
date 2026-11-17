@@ -83,9 +83,11 @@ export default async function StudentTugasSusulanPage() {
           </h1>
           <p className="mt-3 text-sm text-white/85">
             Tugas ini muncul karena ada pertemuan yang tidak kamu hadiri.
-            Selesaikan langkahnya secara berurutan: baca materi, hafalkan
-            kosakata dan pahami qawaid, lalu kerjakan Latihan Mandiri
-            sampai lulus. Game solo pada langkah terakhir tidak wajib.
+            Tugasmu lulus cukup dengan dua langkah wajib: baca materi
+            sampai selesai, lalu kerjakan Latihan Mandiri dars itu
+            sampai lulus. Hafalan kosakata, qawaid, dan game solo tidak
+            wajib, tetapi tetap boleh dikerjakan untuk menambah
+            pemahamanmu.
           </p>
           <p className="mt-2 text-xs text-white/70">
             <span className="font-bold">{session.name}</span> · Kelas{" "}

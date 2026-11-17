@@ -107,10 +107,9 @@ export default async function TeacherTugasSusulanPage({
         <p className="mt-2 text-sm text-white/85">
           Siswa yang bolong pada pertemuan 1 s.d. 16 mendapat satu tugas per
           dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
-          membaca materi, menghafal kosakata, memahami qawaid, lulus
-          Latihan Mandiri dars itu (salah maksimal 5 pada permainan minimal
-          25 soal), dan menyelesaikan Space War versi siswa sampai hasil
-          permainannya tercatat. Di bawah tiap nama juga tampil hasil
+          membaca materi dan lulus Latihan Mandiri dars itu (salah maksimal
+          5 pada permainan minimal 25 soal). Kosakata, qawaid, dan game
+          solo tidak wajib. Di bawah tiap nama juga tampil hasil
           permainan mandiri terbarunya dari semua game solo siswa.
         </p>
         {selected ? (

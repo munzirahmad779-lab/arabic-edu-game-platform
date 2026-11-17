@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { displayGameName } from "@/lib/game-name";
 import type { KosakataPair } from "@/modules/tugas-susulan/kosakata";
 import { GAME_STEP } from "@/modules/tugas-susulan/game-step";
+import {
+  KOSAKATA_STEP,
+  QAWAID_STEP,
+} from "@/modules/tugas-susulan/optional-steps";
 import { startCatchupStep, completeCatchupStep } from "./actions";
 
 export type TugasCardData = {
@@ -36,6 +40,14 @@ const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
   lulus: { label: "Lulus", cls: "bg-emerald-100 text-emerald-800" },
 };
 
+function TidakWajibChip() {
+  return (
+    <span className="ms-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-bold text-neutral-600">
+      tidak wajib
+    </span>
+  );
+}
+
 const TOTAL_DETIK = 600; // timer 10 menit
 const BATAS_AKTIF_DETIK = 420; // tombol aktif sesudah 7 menit berjalan
 
@@ -54,6 +66,7 @@ function TimerStep({
   doneLabel,
   initialStartedAt,
   initialDone,
+  opsional,
   children,
 }: {
   darsNo: number;
@@ -63,6 +76,7 @@ function TimerStep({
   doneLabel: string;
   initialStartedAt: string | null;
   initialDone: boolean;
+  opsional?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -82,7 +96,7 @@ function TimerStep({
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm font-black text-emerald-800">
-          {icon} {title}: Selesai ✓
+          {icon} {title}: Selesai ✓{opsional ? <TidakWajibChip /> : null}
         </p>
       </div>
     );
@@ -93,6 +107,7 @@ function TimerStep({
       <div className="rounded-2xl border border-neutral-200 bg-white p-4">
         <p className="text-sm font-black text-neutral-900">
           {icon} {title}
+          {opsional ? <TidakWajibChip /> : null}
         </p>
         <p className="mt-1 text-sm text-neutral-500">
           Timer 10 menit mulai berjalan saat bagian ini dibuka. Tombol
@@ -133,6 +148,7 @@ function TimerStep({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-black text-neutral-900">
           {icon} {title}
+          {opsional ? <TidakWajibChip /> : null}
         </p>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-700 shadow-sm">
           Sisa waktu: {fmtWaktu(sisa)}
@@ -212,7 +228,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
   const chip = STATUS_CHIP[task.status] ?? STATUS_CHIP.belum;
   const maxWrong = task.totalQuestions - task.passCorrect;
   const langkah2Buka = task.bacaDone;
-  const langkah3Buka = task.kosakataDone && task.qawaidDone;
+  const langkah3Buka = task.bacaDone;
 
   return (
     <article className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
@@ -223,7 +239,8 @@ export function TugasCard({ task }: { task: TugasCardData }) {
           </h2>
           <p className="mt-1 text-sm text-neutral-500">
             Kamu tidak hadir pada pertemuan {task.meetingNos.join(" dan ")}.
-            Selesaikan langkah-langkah berikut secara berurutan.
+            Tugas ini lulus cukup dengan dua langkah wajib: Baca Materi
+            dan Latihan dars ini. Kosakata, qawaid, dan game tidak wajib.
           </p>
         </div>
         <span
@@ -282,6 +299,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
                 doneLabel="Sudah Hafal"
                 initialStartedAt={task.kosakataStartedAt}
                 initialDone={task.kosakataDone}
+                opsional={!KOSAKATA_STEP.required}
               >
                 <ul className="grid gap-2 sm:grid-cols-2">
                   {task.kata.map((k) => (
@@ -311,6 +329,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
                 doneLabel="Sudah Paham"
                 initialStartedAt={task.qawaidStartedAt}
                 initialDone={task.qawaidDone}
+                opsional={!QAWAID_STEP.required}
               >
                 {task.qawaid ? (
                   <div className="rounded-xl border border-amber-100 bg-white px-4 py-3">
@@ -341,8 +360,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
           </p>
           {!langkah3Buka ? (
             <p className="mt-1 text-sm text-neutral-500">
-              🔒 Terkunci. Selesaikan kosakata dan qawaid pada Langkah 2
-              dulu.
+              🔒 Terkunci. Selesaikan Langkah 1 (baca materi) dulu.
             </p>
           ) : task.latihanLulus ? (
             <p className="mt-1 text-sm font-bold text-emerald-700">
@@ -378,11 +396,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
         <li>
           <p className="text-sm font-black text-neutral-900">
             Langkah 4 · Game solo
-            {!GAME_STEP.required ? (
-              <span className="ms-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-bold text-neutral-600">
-                tidak wajib
-              </span>
-            ) : null}
+            {!GAME_STEP.required ? <TidakWajibChip /> : null}
           </p>
           {!task.latihanLulus && !task.gameDone ? (
             <p className="mt-1 text-sm text-neutral-500">
