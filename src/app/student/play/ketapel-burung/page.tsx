@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { PauseGlobalAudio } from "@/components/pause-global-audio";
 import { requireStudent } from "@/lib/student-auth";
+import { statusKunciGameSolo } from "@/modules/game-results/solo-lock-server";
+import SoloLockNotice from "@/modules/game-results/solo-lock-notice";
 import KetapelBurungGame from "@/modules/ketapel-burung/modul/Game";
 
 export const metadata: Metadata = {
@@ -17,6 +19,14 @@ export const metadata: Metadata = {
  */
 export default async function StudentKetapelBurungPage() {
   await requireStudent();
+
+  // Kunci Game Solo (perintah pemilik, 17 Nov 2026): permainan hanya
+  // terbuka bila latihan siswa sudah tuntas untuk 7 dars berbeda.
+  // Penegakan di server, jadi URL langsung pun tertolak.
+  const kunci = await statusKunciGameSolo();
+  if (!kunci.terbuka) {
+    return <SoloLockNotice jumlahDarsTuntas={kunci.jumlahDarsTuntas} />;
+  }
 
   return (
     <>
