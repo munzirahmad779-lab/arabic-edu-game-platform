@@ -1,0 +1,13 @@
+# Header cache untuk aset statis publik di Cloudflare Workers Assets.
+# next.config headers() tidak menjangkau berkas public/ yang dilayani
+# binding ASSETS pada jalur OpenNext, jadi aturannya dinyatakan di sini.
+# Isi berkas ini hanya berubah saat deploy; max-age menjaga jeda aman
+# bila berkas game diperbarui.
+/duel-stickman/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/logo-horizontal.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/og-image.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
