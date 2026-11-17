@@ -1,11 +1,12 @@
-// Data kosakata Kartu Hafalan Dars 1 s.d. 10 untuk fitur Tugas Susulan.
+// Data kosakata Kartu Hafalan Dars 1 s.d. 15 untuk fitur Tugas Susulan.
 // Dars 1 s.d. 8 diekstrak dari berkas cadangan ruang Kartu Hafalan
 // milik guru (Cadangan-Ruang-Kartu-Hafalan-Dars-1-9.txt); Dars 9 dari
 // kartu-dars9.txt dan Dars 10 dari kartu-dars10.txt di folder
 // bank-soal PPMK SMAN 2 Barru. Tiap baris sumber berbentuk
-// "Arab = Arti". RPC tugas susulan saat ini masih hanya
-// mengembalikan Dars 1 s.d. 8; data Dars 9 dan 10 disiapkan di sini
-// lebih dulu tanpa mengubah perilaku.
+// "Arab = Arti". Dars 11 s.d. 15 diambil dari tabel mufradat modul
+// sebagaimana diringkas di data-dars11.md s.d. data-dars15.md pada
+// folder tugas-susulan PPMK SMAN 2 Barru. Cakupan RPC tugas susulan
+// diperluas menjadi Dars 1 s.d. 15 oleh migrasi 0125.
 
 export type KosakataPair = { arab: string; arti: string };
 
@@ -238,6 +239,130 @@ export const DAFTAR_KOSAKATA: DarsMeta[] = [
       { arab: "كُلَّ يَوْمٍ", arti: "setiap hari" },
       { arab: "أَحْيَانًا", arti: "kadang-kadang" },
       { arab: "كَثِيرًا", arti: "Sering/banyak" },
+    ],
+  },
+  {
+    dars: 11,
+    judul: "Tempat dan Arah",
+    kata: [
+      { arab: "مَسْجِدٌ", arti: "Masjid" },
+      { arab: "مَدْرَسَةٌ", arti: "Sekolah" },
+      { arab: "مَكْتَبَةٌ", arti: "Perpustakaan" },
+      { arab: "مُسْتَشْفَى", arti: "Rumah Sakit" },
+      { arab: "سُوقٌ", arti: "Pasar" },
+      { arab: "حَدِيقَةٌ", arti: "Taman" },
+      { arab: "مَحَطَّةٌ", arti: "Terminal" },
+      { arab: "مَطْعَمٌ", arti: "Restoran" },
+      { arab: "شَارِعٌ", arti: "Jalan" },
+      { arab: "جِسْرٌ", arti: "Jembatan" },
+      { arab: "يَمِينٌ", arti: "Kanan" },
+      { arab: "يَسَارٌ", arti: "Kiri" },
+      { arab: "أَمَامَ", arti: "Di depan" },
+      { arab: "خَلْفَ", arti: "Di Belakang" },
+      { arab: "جَانِبَ", arti: "Di Samping" },
+      { arab: "قَرِيبٌ", arti: "Dekat" },
+      { arab: "بَعِيدٌ", arti: "Jauh" },
+      { arab: "مُسْتَقِيمًا", arti: "Lurus" },
+      { arab: "اِنْعَطِفْ", arti: "Belok" },
+      { arab: "اِتِّجَاهٌ", arti: "Arah" },
+    ],
+  },
+  {
+    dars: 12,
+    judul: "Lingkungan Sekitar dan Lingkungan Hidup",
+    kata: [
+      { arab: "بِيئَةٌ", arti: "Lingkungan" },
+      { arab: "شَجَرَةٌ", arti: "Pohon" },
+      { arab: "زَهْرَةٌ", arti: "Bunga" },
+      { arab: "نَهْرٌ", arti: "Sungai" },
+      { arab: "مَاءٌ", arti: "Air" },
+      { arab: "هَوَاءٌ", arti: "Udara" },
+      { arab: "نُفَايَاتٌ", arti: "Sampah" },
+      { arab: "مِزْبَلَةٌ", arti: "Tong Sampah" },
+      { arab: "نَظِيفٌ", arti: "Bersih" },
+      { arab: "قَذِرٌ", arti: "Kotor" },
+      { arab: "زِرَاعَةٌ", arti: "Menanam" },
+      { arab: "حِمَايَةٌ", arti: "Perlindungan" },
+      { arab: "طَبِيعَةٌ", arti: "Alam" },
+      { arab: "تَلَوُّثٌ", arti: "Polusi" },
+      { arab: "إِعَادَةُ التَّدْوِيرِ", arti: "Daur ulang" },
+      { arab: "صِحَّةٌ", arti: "Kesehatan" },
+      { arab: "حَيَوَانٌ", arti: "Hewan" },
+      { arab: "نَبَاتٌ", arti: "Tumbuhan" },
+    ],
+  },
+  {
+    dars: 13,
+    judul: "Transportasi",
+    kata: [
+      { arab: "سَيَّارَةٌ", arti: "Mobil" },
+      { arab: "حَافِلَةٌ", arti: "Bus" },
+      { arab: "قِطَارٌ", arti: "Kereta" },
+      { arab: "طَائِرَةٌ", arti: "Pesawat" },
+      { arab: "سَفِينَةٌ", arti: "Perahu" },
+      { arab: "دَرَّاجَةٌ", arti: "Sepeda" },
+      { arab: "دَرَّاجَةٌ نَارِيَّةٌ", arti: "Motor" },
+      { arab: "مَحَطَّةٌ", arti: "Terminal" },
+      { arab: "مَطَارٌ", arti: "Bandara" },
+      { arab: "مِينَاءٌ", arti: "Pelabuhan" },
+      { arab: "تَذْكِرَةٌ", arti: "Tiket" },
+      { arab: "رِحْلَةٌ", arti: "Perjalanan" },
+      { arab: "سَائِقٌ", arti: "Sopir" },
+      { arab: "مُسَافِرٌ", arti: "Penumpang" },
+      { arab: "سَرِيعٌ", arti: "Cepat" },
+      { arab: "بَطِيءٌ", arti: "Lambat" },
+      { arab: "مُرِيحٌ", arti: "Nyaman" },
+      { arab: "اِزْدِحَامٌ", arti: "Kemacetan" },
+      { arab: "طَرِيقٌ", arti: "Jalan" },
+    ],
+  },
+  {
+    dars: 14,
+    judul: "Perjalanan dan Wisata",
+    kata: [
+      { arab: "فُنْدُقٌ", arti: "Hotel" },
+      { arab: "شَاطِئٌ", arti: "Pantai" },
+      { arab: "جَبَلٌ", arti: "Gunung" },
+      { arab: "مُتْحَفٌ", arti: "Museum" },
+      { arab: "قَصْرٌ", arti: "Istana" },
+      { arab: "مَدِينَةٌ", arti: "Kota" },
+      { arab: "قَرْيَةٌ", arti: "Desa" },
+      { arab: "حَقِيبَةٌ", arti: "Tas" },
+      { arab: "تَذْكَارٌ", arti: "Oleh-oleh" },
+      { arab: "دَلِيلٌ", arti: "Pemandu" },
+      { arab: "زَائِرٌ", arti: "Pengunjung" },
+      { arab: "صُورَةٌ", arti: "Foto" },
+      { arab: "إِقَامَةٌ", arti: "Menginap" },
+      { arab: "مَنْظَرٌ جَمِيلٌ", arti: "Pemandangan indah" },
+      { arab: "عُطْلَةٌ", arti: "Liburan" },
+      { arab: "اِسْتِرَاحَةٌ", arti: "Istirahat" },
+      { arab: "مَكَانٌ سِيَاحِيٌّ", arti: "Tempat wisata" },
+    ],
+  },
+  {
+    dars: 15,
+    judul: "Teknologi",
+    kata: [
+      { arab: "حَاسُوبٌ", arti: "Komputer" },
+      { arab: "هَاتِفٌ ذَكِيٌّ", arti: "Telpon Pintar (Gadget)" },
+      { arab: "إِنْتَرْنِت", arti: "Internet" },
+      { arab: "تَطْبِيقٌ", arti: "Aplikasi" },
+      { arab: "بَرْنَامَجٌ", arti: "Program" },
+      { arab: "شَبَكَةٌ", arti: "Jaringan" },
+      { arab: "بَحْثٌ", arti: "Pencarian" },
+      { arab: "تَحْمِيلٌ", arti: "Mengunduh" },
+      { arab: "رِسَالَةٌ", arti: "Pesan" },
+      { arab: "بَرِيدٌ إِلِكْتْرُونِيٌّ", arti: "Surat Elektronik (Email)" },
+      { arab: "تِكْنُولُوجْيَا", arti: "Teknologi" },
+      { arab: "مَعْلُومَاتٌ", arti: "Informasi" },
+      { arab: "إِرْسَالٌ", arti: "Mengirim" },
+      { arab: "شَاشَةٌ", arti: "Layar" },
+      { arab: "جِهَازٌ", arti: "Perangkat" },
+      { arab: "اِتِّصَالٌ", arti: "Koneksi" },
+      { arab: "تَعَلُّمٌ", arti: "Pembelajaran" },
+      { arab: "مُفِيدٌ", arti: "Bermanfaat" },
+      { arab: "اِخْتِرَاعٌ", arti: "Penemuan" },
+      { arab: "رَقْمِيٌّ", arti: "Digital" },
     ],
   },
 ];

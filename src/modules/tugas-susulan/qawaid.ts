@@ -1,4 +1,4 @@
-// Data qawaid (kaidah) Dars 1 s.d. 10 untuk fitur Tugas Susulan.
+// Data qawaid (kaidah) Dars 1 s.d. 15 untuk fitur Tugas Susulan.
 // Sumber Dars 1 s.d. 4: bagian al-Qawaid pada berkas modul-dars1.pdf
 // s.d. modul-dars5.pdf di folder bahan-ajar PPMK SMAN 2 Barru (irisan
 // berkas bergeser satu dars, qawaid Dars 1 ada di modul-dars2.pdf
@@ -9,9 +9,11 @@
 // (modul-dars5.pdf berakhir di tadrib hal. cetak 40). Sumber
 // Dars 6: dars6_builder_v2.py, Dars 7: dars7_builder.py,
 // Dars 8: sumber-dars8.md, Dars 9: sumber-dars9.md,
-// Dars 10: sumber-dars10.md. RPC tugas susulan saat ini masih hanya
-// mengembalikan Dars 1 s.d. 8; data Dars 9 dan 10 disiapkan di sini
-// lebih dulu tanpa mengubah perilaku.
+// Dars 10: sumber-dars10.md. Sumber Dars 11 s.d. 15:
+// data-dars11.md s.d. data-dars15.md pada folder tugas-susulan
+// (diringkas dari sumber-dars11.md s.d. sumber-dars15.md).
+// Cakupan RPC tugas susulan diperluas menjadi Dars 1 s.d. 15 oleh
+// migrasi 0125.
 
 export type QawaidMeta = { dars: number; judul: string; isi: string[] };
 
@@ -138,6 +140,71 @@ export const DAFTAR_QAWAID: QawaidMeta[] = [
       "Contoh dalam kalimat: أَنْتَ تَلْعَبُ كُرَةَ الْقَدَمِ. · أَنْتَ تُمَارِسُ الرِّيَاضَةَ. · أَنْتَ تَسْبَحُ مَرَّتَيْنِ فِي الْأُسْبُوعِ. · أَنْتَ تَرْكَبُ الدَّرَّاجَةَ.",
       "Kalimat at-Takrar adalah kata keterangan frekuensi: نَسْتَخْدِمُ كَلِمَاتٍ لِبَيَانِ عَدَدِ مَرَّاتِ فِعْلِ شَيْءٍ (kita memakai kata-kata untuk menyatakan berapa kali suatu perbuatan dilakukan).",
       "Kata takrar pada tabel modul: كُلَّ يَوْمٍ (setiap hari) · كُلَّ أُسْبُوعٍ (setiap minggu) · دَائِمًا (selalu) · غَالِبًا (biasanya/sering) · أَحْيَانًا (kadang-kadang) · نَادِرًا (jarang).",
+    ],
+  },
+  {
+    dars: 11,
+    judul: "Zharf al-Makan, Ism al-Isyarah li al-Makan, dan as-Sual li al-Makan",
+    isi: [
+      "Zharf al-Makan adalah kata keterangan tempat. Kata zharf pada tabel modul: أَمَامَ (di depan) · خَلْفَ (di belakang) · فَوْقَ (di atas) · تَحْتَ (di bawah) · بَيْنَ (di antara) · جَانِبَ (di samping).",
+      "Contoh zharf al-makan dalam kalimat: الْمَسْجِدُ أَمَامَ الْمَدْرَسَةِ. · السَّيَّارَةُ تَحْتَ الشَّجَرَةِ.",
+      "Ism al-Isyarah li al-Makan adalah kata tunjuk untuk tempat: هُنَا untuk tempat yang dekat dan هُنَاكَ untuk tempat yang jauh, sebagaimana contoh modul.",
+      "Contoh ism al-isyarah li al-makan: هُنَا الْمَكْتَبَةُ. · هُنَاكَ الْمَلْعَبُ.",
+      "As-Sual li al-Makan adalah cara bertanya tentang tempat dengan pola modul: أَيْنَ + الِاسْمُ؟",
+      "Contoh as-sual li al-makan: أَيْنَ الْفَصْلُ؟ الْفَصْلُ فِي الطَّابِقِ الثَّانِي.",
+    ],
+  },
+  {
+    dars: 12,
+    judul: "Al-Jumlah al-Ismiyyah, An-Na't wa al-Man'ut, dan Kana wa Akhawatuha",
+    isi: [
+      "Al-Jumlah al-Ismiyyah adalah kalimat nominal yang tersusun dari الْمُبْتَدَأُ + الْخَبَرُ (mubtada dan khabar), seperti pada modul.",
+      "Contoh al-Jumlah al-Ismiyyah pada modul: الْهَوَاءُ نَقِيٌّ · الْحَدِيقَةُ جَمِيلَةٌ.",
+      "An-Na't (kata sifat) mengikuti al-Man'ut (kata yang disifati) dalam dua hal: النَّعْتُ يَتْبَعُ الْمَنْعُوتَ فِي التَّذْكِيرِ وَالتَّأْنِيثِ (mudzakkar dan muannats) serta التَّعْرِيفِ وَالتَّنْكِيرِ (ma'rifah dan nakirah).",
+      "Contoh na't dan man'ut pada modul: شَجَرَةٌ كَبِيرَةٌ · الْبِيئَةُ النَّظِيفَةُ.",
+      "Kana wa Akhawatuha adalah kata kerja bantu seperti كَانَ yang masuk pada jumlah ismiyyah dengan kaedah: تَرْفَعُ الْإِسْمَ وَتَنْصِبُ الْخَبَرَ (merafa'kan isimnya dan menashabkan khabarnya).",
+      "Contoh kana pada modul: كَانَتِ الْبِيئَةُ نَظِيفَةً · كَانَ الْجَوُّ جَمِيلًا.",
+    ],
+  },
+  {
+    dars: 13,
+    judul: "Al-Fi'l al-Mudhari', Huruf al-Jarr, dan as-Sual bi Kaifa",
+    isi: [
+      "Al-Fi'l al-Mudhari' pada Dars 13 ditabelkan dengan fi'il رَكِبَ untuk semua dhamir (kata ganti).",
+      "Pasangan pada tabel modul: هُوَ يَرْكَبُ · هُمَا يَرْكَبَانِ · هُمْ يَرْكَبُونَ · هِيَ تَرْكَبُ · هُمَا تَرْكَبَانِ · هُنَّ يَرْكَبْنَ.",
+      "Pasangan lain: أَنْتَ تَرْكَبُ · أَنْتُمَا تَرْكَبَانِ · أَنْتُمْ تَرْكَبُونَ · أَنْتِ تَرْكَبِينَ · أَنْتُمَا تَرْكَبَانِ · أَنْتُنَّ تَرْكَبْنَ · أَنَا أَرْكَبُ · نَحْنُ نَرْكَبُ.",
+      "Contoh dalam kalimat: أَرْكَبُ الْحَافِلَةَ. · يَرْكَبُ أَحْمَدُ الدَّرَّاجَةَ.",
+      "Huruf al-Jarr pada tabel modul: إِلَى (ke) · مِنْ (dari) · فِي (di).",
+      "Contoh huruf al-jarr: أَذْهَبُ إِلَى الْمَدْرَسَةِ. · أَرْجِعُ مِنَ الْمَطَارِ.",
+      "As-Sual bi Kaifa: bertanya tentang cara dengan pola كَيْفَ + الْفِعْلُ الْمُضَارِعُ.",
+      "Contoh pada modul: كَيْفَ تَذْهَبُ؟ أَذْهَبُ بِالسَّيَّارَةِ.",
+    ],
+  },
+  {
+    dars: 14,
+    judul: "Al-Fi'l al-Madhi, Zharf az-Zaman, dan as-Su'al bi Mata",
+    isi: [
+      "Al-Fi'l al-Madhi adalah kata kerja lampau; pada tabel modul, fi'il سَافَرَ (bepergian) ditasrif dengan seluruh dhamir.",
+      "Pasangan pada tabel modul: هُوَ سَافَرَ · هُمَا سَافَرَا · هُمْ سَافَرُوا · هِيَ سَافَرَتْ.",
+      "Pasangan lain: هُمَا سَافَرَتَا · هُنَّ سَافَرْنَ · أَنْتَ سَافَرْتَ · أَنْتُمَا سَافَرْتُمَا.",
+      "Pasangan lain: أَنْتُمْ سَافَرْتُمْ · أَنْتِ سَافَرْتِ · أَنْتُمَا سَافَرْتُمَا · أَنْتُنَّ سَافَرْتُنَّ.",
+      "Pasangan lain: أَنَا سَافَرْتُ · نَحْنُ سَافَرْنَا.",
+      "Contoh dalam kalimat: سَافَرْتُ إِلَى بَالِي. · زُرْنَا الْمُتْحَفَ.",
+      "Zharf az-Zaman adalah kata keterangan waktu; kata pada tabel modul: أَمْسِ (Kemarin) · الْيَوْمَ (Hari ini) · الْآنَ (Sekarang) · غَدًا (Besok).",
+      "Contoh zharf az-zaman: سَافَرْتُ إِلَى الْجَبَلِ أَمْسِ. · أُسَافِرُ إِلَى الْقَرْيَةِ غَدًا.",
+      "As-Su'al bi Mata adalah bertanya tentang waktu dengan pola modul: مَتَى + الْفِعْلُ الْمَاضِي.",
+      "Contoh: مَتَى سَافَرْتَ إِلَى الْمَدِينَةِ؟ سَافَرْتُ إِلَى الْمَدِينَةِ أَمْسِ. · مَتَى سَافَرْتُمْ إِلَى الْقَرْيَةِ؟ سَافَرْنَا إِلَى الْقَرْيَةِ أَمْسِ.",
+    ],
+  },
+  {
+    dars: 15,
+    judul: "Al-Mashdar dan La an-Nahiyah",
+    isi: [
+      "Al-Mashdar adalah kata benda yang dibentuk dari fi'il (kata kerja) dan menunjukkan perbuatannya, seperti pada tabel modul.",
+      "Pasangan pada tabel modul: اِسْتَعْمَلَ menjadi اِسْتِعْمَالٌ · كَتَبَ menjadi كِتَابَةٌ · حَمَّلَ menjadi تَحْمِيلٌ.",
+      "Contoh dalam kalimat: اِسْتِعْمَالُ الْحَاسُوبِ مُفِيدٌ. · تَحْمِيلُ التَّطْبِيقَاتِ التَّعْلِيمِيَّةِ.",
+      "La an-Nahiyah adalah la yang dipakai untuk melarang; polanya pada modul: لَا + الْفِعْلُ الْمُضَارِعُ (la diikuti fi'il mudhari').",
+      "Contoh pada modul: لَا تَسْتَعْمِلِ الْهَاتِفَ أَثْنَاءَ الدَّرْسِ.",
     ],
   },
 ];

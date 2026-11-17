@@ -105,7 +105,7 @@ export default async function TeacherTugasSusulanPage({
         <p className="text-sm font-semibold text-white/75">TUGAS SUSULAN</p>
         <h1 className="mt-1 text-3xl font-black">Progres Tugas Susulan</h1>
         <p className="mt-2 text-sm text-white/85">
-          Siswa yang bolong pada pertemuan 1 s.d. 16 mendapat satu tugas per
+          Siswa yang bolong pada pertemuan 1 s.d. 30 mendapat satu tugas per
           dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
           membaca materi dan lulus Latihan Mandiri dars itu (salah maksimal
           5 pada permainan minimal 25 soal). Kosakata, qawaid, dan game

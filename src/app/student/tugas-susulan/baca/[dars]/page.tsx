@@ -40,7 +40,7 @@ export default async function BacaMateriSusulanPage({
   params: { dars: string };
 }) {
   const darsNo = Number(params.dars);
-  if (!Number.isInteger(darsNo) || darsNo < 1 || darsNo > 8) notFound();
+  if (!Number.isInteger(darsNo) || darsNo < 1 || darsNo > 15) notFound();
 
   const session = await requireStudent();
   const token = await getStudentToken();
