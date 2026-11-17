@@ -1,8 +1,11 @@
-// Data kosakata Kartu Hafalan Dars 1 s.d. 8 untuk fitur Tugas Susulan.
-// Diekstrak dari berkas cadangan ruang Kartu Hafalan milik guru
-// (Cadangan-Ruang-Kartu-Hafalan-Dars-1-9.txt); tiap baris sumber
-// berbentuk "Arab = Arti". Dars 9 tidak dipakai fitur ini karena
-// tugas susulan hanya mencakup pertemuan 1 s.d. 16 (Dars 1 s.d. 8).
+// Data kosakata Kartu Hafalan Dars 1 s.d. 10 untuk fitur Tugas Susulan.
+// Dars 1 s.d. 8 diekstrak dari berkas cadangan ruang Kartu Hafalan
+// milik guru (Cadangan-Ruang-Kartu-Hafalan-Dars-1-9.txt); Dars 9 dari
+// kartu-dars9.txt dan Dars 10 dari kartu-dars10.txt di folder
+// bank-soal PPMK SMAN 2 Barru. Tiap baris sumber berbentuk
+// "Arab = Arti". RPC tugas susulan saat ini masih hanya
+// mengembalikan Dars 1 s.d. 8; data Dars 9 dan 10 disiapkan di sini
+// lebih dulu tanpa mengubah perilaku.
 
 export type KosakataPair = { arab: string; arti: string };
 
@@ -193,6 +196,48 @@ export const DAFTAR_KOSAKATA: DarsMeta[] = [
       { arab: "فَاكِهَةٌ", arti: "buah" },
       { arab: "مَوْزٌ", arti: "pisang" },
       { arab: "تُفَّاحٌ", arti: "apel" },
+    ],
+  },
+  {
+    dars: 9,
+    judul: "Kesehatan dan Kebersihan",
+    kata: [
+      { arab: "صِحَّةٌ", arti: "kesehatan" },
+      { arab: "مَرَضٌ", arti: "penyakit" },
+      { arab: "صُدَاعٌ", arti: "sakit kepala" },
+      { arab: "أَلَمٌ", arti: "rasa sakit" },
+      { arab: "حَلْقٌ", arti: "tenggorokan" },
+      { arab: "دَوَاءٌ", arti: "obat" },
+      { arab: "نَظَافَةٌ", arti: "kebersihan" },
+      { arab: "يَدٌ", arti: "tangan" },
+      { arab: "أَسْنَانٌ", arti: "Gigi" },
+      { arab: "مَاءٌ", arti: "air" },
+      { arab: "طَعَامٌ صِحِّيٌّ", arti: "makanan sehat" },
+      { arab: "رِيَاضَةٌ", arti: "olahraga" },
+      { arab: "نَوْمٌ", arti: "tidur" },
+      { arab: "رَاحَةٌ", arti: "istirahat" },
+      { arab: "نَظِيفٌ", arti: "bersih" },
+    ],
+  },
+  {
+    dars: 10,
+    judul: "Olahraga",
+    kata: [
+      { arab: "رِيَاضَةٌ", arti: "olahraga" },
+      { arab: "رُكُوبُ الدَّرَّاجَةِ", arti: "bersepeda" },
+      { arab: "كُرَةُ الطَّائِرَةِ", arti: "bola voli" },
+      { arab: "الْجَرْيُ", arti: "berlari" },
+      { arab: "الْمَشْيُ", arti: "berjalan" },
+      { arab: "كُرَةُ الطَّاوِلَةِ", arti: "tenis" },
+      { arab: "نَشِيطٌ", arti: "Aktif/rajin" },
+      { arab: "قَوِيٌّ", arti: "kuat" },
+      { arab: "مُفِيدٌ", arti: "bermanfaat" },
+      { arab: "جِسْمٌ", arti: "tubuh" },
+      { arab: "مَرَّةٌ", arti: "kali" },
+      { arab: "أُسْبُوعٌ", arti: "minggu" },
+      { arab: "كُلَّ يَوْمٍ", arti: "setiap hari" },
+      { arab: "أَحْيَانًا", arti: "kadang-kadang" },
+      { arab: "كَثِيرًا", arti: "Sering/banyak" },
     ],
   },
 ];

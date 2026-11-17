@@ -187,6 +187,12 @@ function GameStep({ initialDone }: { initialDone: boolean }) {
         Hasilmu tercatat otomatis ke server sesudah ronde selesai, jadi
         langkah ini tuntas tanpa tombol konfirmasi.
       </p>
+      {!GAME_STEP.required ? (
+        <p className="mt-1 text-sm text-neutral-500">
+          Langkah ini tidak wajib: tugasmu tetap bisa lulus tanpa
+          memainkan game ini.
+        </p>
+      ) : null}
       {GAME_STEP.url ? (
         <div className="mt-2">
           <Link
@@ -372,13 +378,13 @@ export function TugasCard({ task }: { task: TugasCardData }) {
         <li>
           <p className="text-sm font-black text-neutral-900">
             Langkah 4 · Game solo
+            {!GAME_STEP.required ? (
+              <span className="ms-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-bold text-neutral-600">
+                tidak wajib
+              </span>
+            ) : null}
           </p>
-          {!GAME_STEP.required ? (
-            <p className="mt-1 text-sm text-neutral-500">
-              🎮 Game solo menyusul, menunggu pilihan guru. Langkah ini
-              belum menjadi syarat lulus tugas.
-            </p>
-          ) : !task.latihanLulus ? (
+          {!task.latihanLulus && !task.gameDone ? (
             <p className="mt-1 text-sm text-neutral-500">
               🔒 Terkunci. Luluskan Latihan Mandiri pada Langkah 3 dulu.
             </p>

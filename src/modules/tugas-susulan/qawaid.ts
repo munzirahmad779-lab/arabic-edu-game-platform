@@ -1,4 +1,4 @@
-// Data qawaid (kaidah) Dars 1 s.d. 8 untuk fitur Tugas Susulan.
+// Data qawaid (kaidah) Dars 1 s.d. 10 untuk fitur Tugas Susulan.
 // Sumber Dars 1 s.d. 4: bagian al-Qawaid pada berkas modul-dars1.pdf
 // s.d. modul-dars5.pdf di folder bahan-ajar PPMK SMAN 2 Barru (irisan
 // berkas bergeser satu dars, qawaid Dars 1 ada di modul-dars2.pdf
@@ -8,7 +8,10 @@
 // bagian qawaid Dars 5 tidak ada di berkas modulnya sendiri
 // (modul-dars5.pdf berakhir di tadrib hal. cetak 40). Sumber
 // Dars 6: dars6_builder_v2.py, Dars 7: dars7_builder.py,
-// Dars 8: sumber-dars8.md.
+// Dars 8: sumber-dars8.md, Dars 9: sumber-dars9.md,
+// Dars 10: sumber-dars10.md. RPC tugas susulan saat ini masih hanya
+// mengembalikan Dars 1 s.d. 8; data Dars 9 dan 10 disiapkan di sini
+// lebih dulu tanpa mengubah perilaku.
 
 export type QawaidMeta = { dars: number; judul: string; isi: string[] };
 
@@ -111,6 +114,30 @@ export const DAFTAR_QAWAID: QawaidMeta[] = [
       "Al-Jam': مَا دَلَّ عَلَى أَكْثَرَ مِنْ وَاحِدٍ (isim yang menunjukkan lebih dari satu).",
       "Pasangan mufrad dan jamak: تُفَّاحَةٌ menjadi تُفَّاحٌ · كِتَابٌ menjadi كُتُبٌ · كُوبٌ menjadi أَكْوَابٌ.",
       "Pasangan lain: فَصْلٌ menjadi فُصُولٌ · مُدَرِّسٌ menjadi مُدَرِّسُونَ.",
+    ],
+  },
+  {
+    dars: 9,
+    judul: "Fi'l al-Amr al-Basith dan Uslub an-Nashihah wa al-Irsyad",
+    isi: [
+      "Fi'l al-Amr adalah kata kerja perintah: فِعْلُ الْأَمْرِ هُوَ الْفِعْلُ الَّذِي نَسْتَخْدِمُهُ لِطَلَبِ فِعْلِ شَيْءٍ (fi'il amr adalah kata kerja yang kita gunakan untuk meminta dilakukannya sesuatu).",
+      "Pasangan fi'il mudhari' dan fi'il amr pada tabel modul: يَغْسِلُ menjadi اِغْسِلْ (cucilah) · يَشْرَبُ menjadi اِشْرَبْ (minumlah) · يَأْكُلُ menjadi كُلْ (makanlah) · يُمَارِسُ menjadi مَارِسْ (lakukanlah).",
+      "Pasangan lain: يَنَامُ menjadi نَمْ (tidurlah) · يَرْتَاحُ menjadi اِرْتَحْ (beristirahatlah) · يَنْظُرُ menjadi اُنْظُرْ (lihatlah) · يَذْهَبُ menjadi اِذْهَبْ (pergilah).",
+      "Contoh dalam kalimat: اِغْسِلْ يَدَيْكَ. · اِشْرَبِ الْمَاءَ. · كُلِ الطَّعَامَ الصِّحِّيَّ. · مَارِسِ الرِّيَاضَةَ. · نَمْ مُبَكِّرًا.",
+      "Uslub an-Nashihah wa al-Irsyad: fi'il amr juga dipakai untuk memberi nasihat sederhana, نَسْتَخْدِمُ فِعْلَ الْأَمْرِ لِإِعْطَاءِ نَصِيحَةٍ بَسِيطَةٍ.",
+      "Contoh nasihat: اِغْسِلْ يَدَيْكَ قَبْلَ الطَّعَامِ. · اِشْرَبِ الْمَاءَ كَثِيرًا. · اِرْتَحْ قَلِيلًا.",
+    ],
+  },
+  {
+    dars: 10,
+    judul: "Al-Fi'l al-Mudhari' dengan Dhamir Anta dan Kalimat at-Takrar",
+    isi: [
+      "Untuk dhomir أَنْتَ (kamu laki-laki), fi'il mudhari' tampil dalam bentuk yang diawali ta, seperti pada tabel modul.",
+      "Pasangan pada tabel modul: يَلْعَبُ menjadi أَنْتَ تَلْعَبُ · يَسْبَحُ menjadi أَنْتَ تَسْبَحُ · يَجْرِي menjadi أَنْتَ تَجْرِي · يَرْكَبُ menjadi أَنْتَ تَرْكَبُ.",
+      "Pasangan lain: يَشْرَبُ menjadi أَنْتَ تَشْرَبُ · يُمَارِسُ menjadi أَنْتَ تُمَارِسُ · يَمْشِي menjadi أَنْتَ تَمْشِي · يَذْهَبُ menjadi أَنْتَ تَذْهَبُ.",
+      "Contoh dalam kalimat: أَنْتَ تَلْعَبُ كُرَةَ الْقَدَمِ. · أَنْتَ تُمَارِسُ الرِّيَاضَةَ. · أَنْتَ تَسْبَحُ مَرَّتَيْنِ فِي الْأُسْبُوعِ. · أَنْتَ تَرْكَبُ الدَّرَّاجَةَ.",
+      "Kalimat at-Takrar adalah kata keterangan frekuensi: نَسْتَخْدِمُ كَلِمَاتٍ لِبَيَانِ عَدَدِ مَرَّاتِ فِعْلِ شَيْءٍ (kita memakai kata-kata untuk menyatakan berapa kali suatu perbuatan dilakukan).",
+      "Kata takrar pada tabel modul: كُلَّ يَوْمٍ (setiap hari) · كُلَّ أُسْبُوعٍ (setiap minggu) · دَائِمًا (selalu) · غَالِبًا (biasanya/sering) · أَحْيَانًا (kadang-kadang) · نَادِرًا (jarang).",
     ],
   },
 ];
