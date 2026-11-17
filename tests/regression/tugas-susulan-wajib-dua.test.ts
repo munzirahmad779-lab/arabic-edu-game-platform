@@ -30,6 +30,10 @@ const card = readFileSync(
   path.join(root, "src/app/student/tugas-susulan/tugas-card.tsx"),
   "utf8",
 );
+const page = readFileSync(
+  path.join(root, "src/app/student/tugas-susulan/page.tsx"),
+  "utf8",
+);
 
 // Badan SQL tanpa komentar, supaya kata "Campuran" yang hanya disebut
 // di catatan kepala berkas tidak ikut terhitung sebagai logika.
@@ -118,5 +122,57 @@ describe("kartu tugas siswa: rantai kunci dan label tidak wajib", () => {
     assert.ok(card.includes("QAWAID_STEP"));
     assert.ok(card.includes("opsional={!KOSAKATA_STEP.required}"));
     assert.ok(card.includes("opsional={!QAWAID_STEP.required}"));
+  });
+});
+
+describe("kartu tugas siswa: penegasan label wajib dan tidak wajib", () => {
+  test("chip langkah wajib memuat teks persis WAJIB · KERJAKAN SEGERA", () => {
+    const mulai = card.indexOf("function WajibChip()");
+    assert.notEqual(mulai, -1, "komponen WajibChip harus ada");
+    const chip = card.slice(mulai, mulai + 320);
+    assert.ok(chip.includes("WAJIB · KERJAKAN SEGERA"));
+  });
+
+  test("chip wajib tampil tepat dua kali, pada judul Langkah 1 dan Langkah 3", () => {
+    assert.equal(card.split("<WajibChip />").length - 1, 2);
+    const langkah1 = card.slice(
+      card.indexOf("Langkah 1 · Baca materi"),
+      card.indexOf("Langkah 1 · Baca materi") + 160,
+    );
+    assert.ok(langkah1.includes("<WajibChip />"));
+    const langkah3 = card.slice(
+      card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri"),
+      card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri") + 160,
+    );
+    assert.ok(langkah3.includes("<WajibChip />"));
+  });
+
+  test("chip wajib tidak tampil pada judul langkah opsional", () => {
+    const langkah2 = card.slice(
+      card.indexOf("Langkah 2 · Hafalkan kosakata dan pahami qawaid"),
+      card.indexOf("Langkah 2 · Hafalkan kosakata dan pahami qawaid") + 160,
+    );
+    assert.equal(langkah2.includes("<WajibChip />"), false);
+    const langkah4 = card.slice(
+      card.indexOf("Langkah 4 · Game solo"),
+      card.indexOf("Langkah 4 · Game solo") + 160,
+    );
+    assert.equal(langkah4.includes("<WajibChip />"), false);
+    assert.ok(langkah4.includes("<TidakWajibChip />"));
+  });
+
+  test("chip tidak wajib memakai teks kapital TIDAK WAJIB", () => {
+    const mulai = card.indexOf("function TidakWajibChip()");
+    assert.notEqual(mulai, -1, "komponen TidakWajibChip harus ada");
+    const chip = card.slice(mulai, mulai + 320);
+    assert.ok(chip.includes("TIDAK WAJIB"));
+    assert.equal(chip.includes(">tidak wajib<"), false);
+  });
+
+  test("pengantar halaman dan kartu menegaskan wajib segera dan tidak wajib", () => {
+    assert.ok(page.includes("WAJIB dan harus dikerjakan segera"));
+    assert.ok(page.includes("TIDAK WAJIB"));
+    assert.ok(card.includes("WAJIB dan harus dikerjakan segera"));
+    assert.ok(card.includes("TIDAK WAJIB"));
   });
 });

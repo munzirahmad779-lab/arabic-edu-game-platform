@@ -43,7 +43,15 @@ const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
 function TidakWajibChip() {
   return (
     <span className="ms-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-bold text-neutral-600">
-      tidak wajib
+      TIDAK WAJIB
+    </span>
+  );
+}
+
+function WajibChip() {
+  return (
+    <span className="ms-2 rounded-full bg-red-600 px-2 py-0.5 align-middle text-xs font-black text-white shadow-sm">
+      WAJIB · KERJAKAN SEGERA
     </span>
   );
 }
@@ -239,8 +247,10 @@ export function TugasCard({ task }: { task: TugasCardData }) {
           </h2>
           <p className="mt-1 text-sm text-neutral-500">
             Kamu tidak hadir pada pertemuan {task.meetingNos.join(" dan ")}.
-            Tugas ini lulus cukup dengan dua langkah wajib: Baca Materi
-            dan Latihan dars ini. Kosakata, qawaid, dan game tidak wajib.
+            Dua langkah WAJIB dan harus dikerjakan segera: Baca Materi
+            (Langkah 1) dan Latihan dars ini (Langkah 3). Tugas ini lulus
+            bila kedua langkah wajib itu selesai. Kosakata, qawaid, dan
+            game TIDAK WAJIB.
           </p>
         </div>
         <span
@@ -254,6 +264,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
         <li>
           <p className="text-sm font-black text-neutral-900">
             Langkah 1 · Baca materi
+            <WajibChip />
           </p>
           {task.bacaDone ? (
             <p className="mt-1 text-sm font-bold text-emerald-700">
@@ -357,6 +368,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
         <li>
           <p className="text-sm font-black text-neutral-900">
             Langkah 3 · Kerjakan Latihan Mandiri
+            <WajibChip />
           </p>
           {!langkah3Buka ? (
             <p className="mt-1 text-sm text-neutral-500">

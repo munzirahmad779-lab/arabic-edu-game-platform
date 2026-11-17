@@ -14,6 +14,6 @@
 // latihan lulus; bukti kosakata dan qawaid tetap dihitung dan tetap
 // memicu status 'proses', tetapi tidak menentukan lulus. Karena itu
 // required = false untuk kedua langkah ini: kartu tugas memberi
-// label "tidak wajib" pada masing-masing langkah.
+// label "TIDAK WAJIB" pada masing-masing langkah.
 export const KOSAKATA_STEP: { required: boolean } = { required: false };
 export const QAWAID_STEP: { required: boolean } = { required: false };
