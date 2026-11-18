@@ -8,13 +8,17 @@
  *    (pengecualian post_test_closed diperiksa sebelum insert).
  * 3. RPC baca sisi siswa tidak pernah mengembalikan jawaban_model.
  * 4. Rute unggah /api/student/post-test/upload menolak tanpa sesi
- *    siswa (401) dan membalas jelas bila env Google Drive belum
- *    terpasang (DRIVE_NOT_CONFIGURED).
+ *    siswa (401) dan membalas jelas bila env jembatan unggah belum
+ *    terpasang (UPLOAD_NOT_CONFIGURED, 503).
  * 5. Halaman siswa menampilkan keadaan tertutup dengan teks
  *    pemberitahuan resmi, dan kartu masuk ada di Latihan Mandiri.
+ * 6. Fungsi unggah mengirim JSON { token, filename, mime, data }
+ *    ke Web App Apps Script dan memetakan balasan { ok, id, url }
+ *    menjadi { fileId, link }.
  *
  * Test membaca berkas sumber seperti pola test tugas-susulan, plus
- * satu unit test murni untuk pembersih nama berkas Drive.
+ * unit test murni untuk pembersih nama berkas dan fungsi unggah
+ * dengan fetch yang dimock.
  */
 
 import { test, describe } from "node:test";
@@ -22,8 +26,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  driveConfigured,
   sanitizeDriveFileName,
+  uploadAudioToDrive,
+  uploadConfigured,
 } from "../../src/lib/google-drive";
 
 const root = process.cwd();
@@ -178,9 +183,9 @@ describe("rute unggah suara", () => {
     assert.ok(uploadRoute.includes('"UNAUTHORIZED"'));
   });
 
-  test("membalas jelas bila env Drive belum terpasang", () => {
-    assert.ok(uploadRoute.includes("driveConfigured()"));
-    assert.ok(uploadRoute.includes("DRIVE_NOT_CONFIGURED"));
+  test("membalas jelas bila env jembatan unggah belum terpasang", () => {
+    assert.ok(uploadRoute.includes("uploadConfigured()"));
+    assert.ok(uploadRoute.includes("UPLOAD_NOT_CONFIGURED"));
     assert.ok(uploadRoute.includes("status: 503"));
   });
 
@@ -219,20 +224,125 @@ describe("pustaka google-drive", () => {
     assert.equal(sanitizeDriveFileName("  nama bersih.webm  "), "nama bersih.webm");
   });
 
-  test("driveConfigured false bila env belum terpasang", () => {
-    const lamaJson = process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
-    const lamaFolder = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    delete process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
-    delete process.env.GOOGLE_DRIVE_FOLDER_ID;
+  function denganEnvUpload(
+    nilai: { url?: string; secret?: string },
+    fn: () => void | Promise<void>,
+  ): Promise<void> {
+    const lamaUrl = process.env.POST_TEST_UPLOAD_URL;
+    const lamaSecret = process.env.POST_TEST_UPLOAD_SECRET;
+    if (nilai.url === undefined) delete process.env.POST_TEST_UPLOAD_URL;
+    else process.env.POST_TEST_UPLOAD_URL = nilai.url;
+    if (nilai.secret === undefined) delete process.env.POST_TEST_UPLOAD_SECRET;
+    else process.env.POST_TEST_UPLOAD_SECRET = nilai.secret;
+    return Promise.resolve()
+      .then(fn)
+      .finally(() => {
+        if (lamaUrl === undefined) delete process.env.POST_TEST_UPLOAD_URL;
+        else process.env.POST_TEST_UPLOAD_URL = lamaUrl;
+        if (lamaSecret === undefined) delete process.env.POST_TEST_UPLOAD_SECRET;
+        else process.env.POST_TEST_UPLOAD_SECRET = lamaSecret;
+      });
+  }
+
+  test("uploadConfigured false bila env belum terpasang", async () => {
+    await denganEnvUpload({}, () => {
+      assert.equal(uploadConfigured(), false);
+    });
+    await denganEnvUpload({ url: "https://script.google.com/macros/s/uji/exec" }, () => {
+      assert.equal(uploadConfigured(), false);
+    });
+  });
+
+  test("uploadConfigured true bila kedua env terpasang", async () => {
+    await denganEnvUpload(
+      { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+      () => {
+        assert.equal(uploadConfigured(), true);
+      },
+    );
+  });
+
+  test("uploadAudioToDrive menolak jelas bila env belum terpasang", async () => {
+    await denganEnvUpload({}, async () => {
+      await assert.rejects(
+        uploadAudioToDrive({
+          fileName: "Anya - Soal 1.webm",
+          mimeType: "audio/webm",
+          bytes: new Uint8Array([1, 2, 3]),
+        }),
+        /UPLOAD_NOT_CONFIGURED/,
+      );
+    });
+  });
+
+  test("uploadAudioToDrive mengirim JSON token dan base64 lalu memetakan id dan url", async () => {
+    const fetchAsli = globalThis.fetch;
+    let urlTerpanggil = "";
+    let initTerpanggil: RequestInit | undefined;
+    globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+      urlTerpanggil = String(input);
+      initTerpanggil = init;
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          id: "fileId123",
+          url: "https://drive.google.com/file/d/fileId123/view?usp=drivesdk",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
     try {
-      assert.equal(driveConfigured(), false);
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          const hasil = await uploadAudioToDrive({
+            fileName: "Anya - Soal 1.webm",
+            mimeType: "audio/webm",
+            bytes: new Uint8Array([1, 2, 3]),
+          });
+          assert.deepEqual(hasil, {
+            fileId: "fileId123",
+            link: "https://drive.google.com/file/d/fileId123/view?usp=drivesdk",
+          });
+        },
+      );
     } finally {
-      if (lamaJson !== undefined) {
-        process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON = lamaJson;
-      }
-      if (lamaFolder !== undefined) {
-        process.env.GOOGLE_DRIVE_FOLDER_ID = lamaFolder;
-      }
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(urlTerpanggil, "https://script.google.com/macros/s/uji/exec");
+    assert.equal(initTerpanggil?.method, "POST");
+    const headers = (initTerpanggil?.headers ?? {}) as Record<string, string>;
+    assert.equal(headers["Content-Type"], "application/json");
+    const body = JSON.parse(String(initTerpanggil?.body)) as Record<string, string>;
+    assert.equal(body.token, "token-uji");
+    assert.equal(body.filename, "Anya - Soal 1.webm");
+    assert.equal(body.mime, "audio/webm");
+    assert.equal(body.data, "AQID");
+  });
+
+  test("uploadAudioToDrive menolak bila jembatan membalas ok false", async () => {
+    const fetchAsli = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ ok: false, error: "token_salah" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+    try {
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          await assert.rejects(
+            uploadAudioToDrive({
+              fileName: "Anya - Soal 1.webm",
+              mimeType: "audio/webm",
+              bytes: new Uint8Array([1]),
+            }),
+            /UPLOAD_REJECTED: token_salah/,
+          );
+        },
+      );
+    } finally {
+      globalThis.fetch = fetchAsli;
     }
   });
 });

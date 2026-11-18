@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getStudentSession } from "@/lib/student-auth";
 import {
-  driveConfigured,
   sanitizeDriveFileName,
   uploadAudioToDrive,
+  uploadConfigured,
 } from "@/lib/google-drive";
 
 export const runtime = "nodejs";
@@ -18,9 +18,9 @@ export const dynamic = "force-dynamic";
  * "urutan" (nomor soal, untuk nama berkas). Nama berkas di Drive:
  * nama siswa + nomor soal + timestamp.
  *
- * Bila env Google Drive belum terpasang (GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON
- * atau GOOGLE_DRIVE_FOLDER_ID kosong), rute membalas 503 dengan pesan
- * yang jelas: fitur tertidur, bukan crash.
+ * Bila env jembatan unggah belum terpasang (POST_TEST_UPLOAD_URL
+ * atau POST_TEST_UPLOAD_SECRET kosong), rute membalas 503 dengan
+ * pesan yang jelas: fitur tertidur, bukan crash.
  *
  * Sukses: 200 { file_id, link }. Klien lalu menyimpan hasilnya lewat
  * RPC student_save_post_test_answer (server action di halaman siswa).
@@ -45,10 +45,10 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!driveConfigured()) {
+  if (!uploadConfigured()) {
     return NextResponse.json(
       {
-        error: "DRIVE_NOT_CONFIGURED",
+        error: "UPLOAD_NOT_CONFIGURED",
         message:
           "Penyimpanan rekaman belum disiapkan guru. Coba lagi nanti atau hubungi gurumu.",
       },
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     console.error("[api/student/post-test/upload]", err);
     return NextResponse.json(
       {
-        error: "DRIVE_UPLOAD_FAILED",
+        error: "UPLOAD_FAILED",
         message:
           "Rekaman gagal diunggah. Periksa koneksimu lalu coba kirim lagi.",
       },
