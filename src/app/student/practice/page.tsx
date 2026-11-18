@@ -65,6 +65,25 @@ export default async function StudentPracticePage() {
 
   const games = (data ?? []) as PracticeGame[];
 
+  // Keadaan Post Tes VN (migrasi 0126) untuk kartu masuk di bawah:
+  // terbuka atau masih terkunci. Bila RPC belum tersedia (migrasi
+  // belum dijalankan), kartu tampil sebagai belum dibuka.
+  const { data: postTestData, error: postTestError } = await supabase.rpc(
+    "student_get_post_test",
+    { p_token: token },
+  );
+  if (postTestError) {
+    console.error("[StudentPracticePage] post tes:", postTestError);
+  }
+  const postTest = (postTestData ?? null) as {
+    is_open?: boolean;
+    total_questions?: number;
+    answered_count?: number;
+  } | null;
+  const postTesOpen = postTest?.is_open === true;
+  const postTesTotal = postTest?.total_questions ?? 0;
+  const postTesAnswered = postTest?.answered_count ?? 0;
+
   // Kunci Game Solo (perintah pemilik, 17 Nov 2026): terbuka bila
   // latihan sudah tuntas untuk 7 dars yang berbeda. Dihitung dari
   // data RPC yang sama dengan daftar latihan di halaman ini, jadi
@@ -125,6 +144,38 @@ export default async function StudentPracticePage() {
           <span className="shrink-0 text-2xl text-neutral-400 transition group-hover:text-amber-600">
             ←
           </span>
+        </Link>
+
+        <Link
+          href="/student/post-tes"
+          className="group flex items-center justify-between gap-4 rounded-[2rem] border border-rose-200 bg-rose-50 p-5 shadow transition hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 text-2xl text-white shadow-md transition group-hover:scale-110">
+              🎙️
+            </span>
+            <div>
+              <p className="font-black text-neutral-900 group-hover:text-rose-700">
+                Post Tes: Ujian Akhir
+              </p>
+              <p className="text-sm text-neutral-500">
+                {postTesOpen
+                  ? postTesTotal > 0
+                    ? `Post tes sudah dibuka. ${postTesAnswered} dari ${postTesTotal} soal sudah kamu kirim. Jawab tiap soal dengan merekam suaramu.`
+                    : "Post tes sudah dibuka. Jawab tiap soal dengan merekam suaramu."
+                  : "Ujian akhir dengan jawaban rekaman suara. Menunggu dibuka oleh guru."}
+              </p>
+            </div>
+          </div>
+          {postTesOpen ? (
+            <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800">
+              Sudah dibuka
+            </span>
+          ) : (
+            <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
+              🔒 Belum dibuka
+            </span>
+          )}
         </Link>
 
         <section className="rounded-[2rem] border border-teal-100 bg-white p-6 shadow-lg">

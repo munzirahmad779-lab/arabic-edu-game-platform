@@ -289,6 +289,13 @@ export interface Database {
       student_list_class_banks: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; question_count: number }>; };
       student_get_class_bank: { Args: { p_token: string; p_bank_id: string }; Returns: { questions: Array<{ id: string; question_text: string | null; correct_option_key: string | null }>; options: Array<{ question_id: string; option_key: string; option_text: string }> } | null };
       teacher_student_game_results: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; game_slug: string; score: number; correct_count: number; total_questions: number; finished_at: string }>; };
+      student_get_post_test: { Args: { p_token: string }; Returns: Json };
+      student_save_post_test_answer: { Args: { p_token: string; p_question_id: string; p_drive_file_id: string; p_drive_link: string; p_durasi_detik: number }; Returns: boolean };
+      teacher_post_test_status: { Args: Record<string, never>; Returns: Array<{ is_open: boolean; total_questions: number }>; };
+      teacher_set_post_test_open: { Args: { p_open: boolean }; Returns: boolean };
+      teacher_post_test_overview: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; sent_count: number; graded_count: number; total_questions: number }>; };
+      teacher_post_test_student: { Args: { p_student_id: string }; Returns: Array<{ student_name: string; question_id: string; urutan: number; dars: number; pertanyaan: string; jawaban_model: string | null; answer_id: string | null; drive_file_id: string | null; drive_link: string | null; durasi_detik: number | null; skor: number | null; transkrip: string | null; catatan: string | null; graded_at: string | null; answered_at: string | null }>; };
+      teacher_set_post_test_grade: { Args: { p_answer_id: string; p_skor: number | null; p_transkrip: string | null; p_catatan: string | null }; Returns: boolean };
       student_get_practice_game: { Args: { p_token: string; p_game_id: string }; Returns: Array<{ game_id: string; game_name: string; game_mode: string; questions: Json }>; };
       student_submit_practice_answer: { Args: { p_token: string; p_game_id: string; p_question_id: string; p_selected_option_key: string }; Returns: Array<{ accepted: boolean; is_correct: boolean; correct_option_key: string; explanation: string | null }>; };
       student_reset_practice: { Args: { p_token: string; p_game_id: string }; Returns: undefined; };

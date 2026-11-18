@@ -19,6 +19,7 @@ type SidebarDict = {
   nav_question_banks: string;
   nav_assessments: string;
   nav_reports: string;
+  nav_post_tes: string;
   nav_account: string;
   nav_audio: string;
   nav_admin: string;
@@ -68,6 +69,7 @@ export function DashboardSidebar({
     },
     { href: "/dashboard/assessments", labelKey: "nav_assessments", icon: "📝" },
     { href: "/dashboard/reports", labelKey: "nav_reports", icon: "📊" },
+    { href: "/dashboard/post-tes", labelKey: "nav_post_tes", icon: "🎙️" },
   ];
 
   const otherItems: MenuItem[] = [
