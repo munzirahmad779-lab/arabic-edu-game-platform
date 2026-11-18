@@ -15,6 +15,15 @@
  * 6. Fungsi unggah mengirim JSON { token, filename, mime, data }
  *    ke Web App Apps Script dan memetakan balasan { ok, id, url }
  *    menjadi { fileId, link }.
+ * 7. Fungsi unggah TAHAN kegagalan sesaat: fetch yang terlempar,
+ *    status HTTP galat, dan balasan ok:false dicoba ulang sampai
+ *    3 percobaan dengan jeda bertingkat; ok:true langsung berhenti.
+ *    UPLOAD_NOT_CONFIGURED tidak dicoba ulang dan fetch tidak
+ *    dipanggil sama sekali.
+ * 8. Klien mencoba ulang fetch unggah satu kali secara otomatis
+ *    bila jaringan putus, dan rekaman TIDAK hilang saat kirim
+ *    gagal: fase kembali ke "recorded" dan blob hanya dikosongkan
+ *    oleh tombol Rekam Ulang.
  *
  * Test membaca berkas sumber seperti pola test tugas-susulan, plus
  * unit test murni untuk pembersih nama berkas dan fungsi unggah
@@ -42,6 +51,10 @@ const uploadRoute = readFileSync(
 );
 const studentPage = readFileSync(
   path.join(root, "src/app/student/post-tes/page.tsx"),
+  "utf8",
+);
+const studentClient = readFileSync(
+  path.join(root, "src/app/student/post-tes/post-tes-client.tsx"),
   "utf8",
 );
 const practicePage = readFileSync(
@@ -320,13 +333,16 @@ describe("pustaka google-drive", () => {
     assert.equal(body.data, "AQID");
   });
 
-  test("uploadAudioToDrive menolak bila jembatan membalas ok false", async () => {
+  test("uploadAudioToDrive menolak bila jembatan membalas ok false, sesudah 3 percobaan", async () => {
     const fetchAsli = globalThis.fetch;
-    globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ ok: false, error: "token_salah" }), {
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      return new Response(JSON.stringify({ ok: false, error: "token_salah" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      })) as typeof fetch;
+      });
+    }) as typeof fetch;
     try {
       await denganEnvUpload(
         { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
@@ -344,5 +360,187 @@ describe("pustaka google-drive", () => {
     } finally {
       globalThis.fetch = fetchAsli;
     }
+    assert.equal(panggilan, 3, "ok:false harus dicoba ulang sampai 3 percobaan");
+  });
+
+  test("uploadAudioToDrive berhasil pada percobaan kedua sesudah fetch pertama terlempar", async () => {
+    const fetchAsli = globalThis.fetch;
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      if (panggilan === 1) {
+        throw new TypeError("fetch failed");
+      }
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          id: "fileIdRetry",
+          url: "https://drive.google.com/file/d/fileIdRetry/view?usp=drivesdk",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+    try {
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          const hasil = await uploadAudioToDrive({
+            fileName: "Anya - Soal 1.webm",
+            mimeType: "audio/webm",
+            bytes: new Uint8Array([1, 2, 3]),
+          });
+          assert.deepEqual(hasil, {
+            fileId: "fileIdRetry",
+            link: "https://drive.google.com/file/d/fileIdRetry/view?usp=drivesdk",
+          });
+        },
+      );
+    } finally {
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(panggilan, 2, "sukses pada percobaan kedua harus berhenti");
+  });
+
+  test("uploadAudioToDrive berhasil pada percobaan kedua sesudah balasan ok false", async () => {
+    const fetchAsli = globalThis.fetch;
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      if (panggilan === 1) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "sedang_penuh" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          id: "fileIdKedua",
+          url: "https://drive.google.com/file/d/fileIdKedua/view?usp=drivesdk",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+    try {
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          const hasil = await uploadAudioToDrive({
+            fileName: "Anya - Soal 2.webm",
+            mimeType: "audio/webm",
+            bytes: new Uint8Array([4, 5]),
+          });
+          assert.equal(hasil.fileId, "fileIdKedua");
+        },
+      );
+    } finally {
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(panggilan, 2);
+  });
+
+  test("uploadAudioToDrive berhasil pada percobaan kedua sesudah status HTTP galat", async () => {
+    const fetchAsli = globalThis.fetch;
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      if (panggilan === 1) {
+        return new Response("Apps Script sibuk", { status: 503 });
+      }
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          id: "fileIdHttp",
+          url: "https://drive.google.com/file/d/fileIdHttp/view?usp=drivesdk",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+    try {
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          const hasil = await uploadAudioToDrive({
+            fileName: "Anya - Soal 3.webm",
+            mimeType: "audio/webm",
+            bytes: new Uint8Array([6]),
+          });
+          assert.equal(hasil.fileId, "fileIdHttp");
+        },
+      );
+    } finally {
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(panggilan, 2);
+  });
+
+  test("uploadAudioToDrive menyerah sesudah 3 percobaan jaringan gagal semua", async () => {
+    const fetchAsli = globalThis.fetch;
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      throw new TypeError("fetch failed");
+    }) as typeof fetch;
+    try {
+      await denganEnvUpload(
+        { url: "https://script.google.com/macros/s/uji/exec", secret: "token-uji" },
+        async () => {
+          await assert.rejects(
+            uploadAudioToDrive({
+              fileName: "Anya - Soal 1.webm",
+              mimeType: "audio/webm",
+              bytes: new Uint8Array([1]),
+            }),
+            /fetch failed/,
+          );
+        },
+      );
+    } finally {
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(panggilan, 3, "harus berhenti tepat pada 3 percobaan");
+  });
+
+  test("uploadAudioToDrive tidak memanggil fetch sama sekali bila env belum terpasang", async () => {
+    const fetchAsli = globalThis.fetch;
+    let panggilan = 0;
+    globalThis.fetch = (async () => {
+      panggilan++;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    try {
+      await denganEnvUpload({}, async () => {
+        await assert.rejects(
+          uploadAudioToDrive({
+            fileName: "Anya - Soal 1.webm",
+            mimeType: "audio/webm",
+            bytes: new Uint8Array([1]),
+          }),
+          /UPLOAD_NOT_CONFIGURED/,
+        );
+      });
+    } finally {
+      globalThis.fetch = fetchAsli;
+    }
+    assert.equal(panggilan, 0, "konfigurasi kosong tidak boleh dicoba ulang");
+  });
+});
+
+describe("klien post tes: ketahanan kirim", () => {
+  test("klien memakai helper unggah dengan satu percobaan ulang jaringan", () => {
+    assert.ok(studentClient.includes("fetchUnggahJawaban"));
+    assert.ok(studentClient.includes("await fetchUnggahJawaban(form)"));
+  });
+
+  test("kegagalan kirim mengembalikan fase ke recorded, bukan menghapus rekaman", () => {
+    assert.ok(studentClient.includes('setPhase("recorded")'));
+    const jumlahKosongkanBlob = studentClient
+      .split("blobRef.current = null")
+      .length - 1;
+    assert.equal(
+      jumlahKosongkanBlob,
+      1,
+      "blob hanya boleh dikosongkan di Rekam Ulang, bukan di jalur galat kirim",
+    );
   });
 });

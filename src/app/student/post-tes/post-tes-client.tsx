@@ -41,6 +41,28 @@ type Phase =
   | "sent"
   | "error";
 
+/**
+ * Kirim data rekaman ke rute unggah. Bila fetch pertama terlempar
+ * karena jaringan putus sesaat (janji fetch ditolak), coba sekali
+ * lagi secara otomatis dengan data yang sama persis sebelum
+ * menyerah. Balasan yang diterima dari server, termasuk balasan
+ * galat, tidak dicoba ulang di sini; ketahanan di sisi server
+ * sudah menangani kegagalan jembatan unggahnya.
+ */
+async function fetchUnggahJawaban(form: FormData): Promise<Response> {
+  try {
+    return await fetch("/api/student/post-test/upload", {
+      method: "POST",
+      body: form,
+    });
+  } catch {
+    return fetch("/api/student/post-test/upload", {
+      method: "POST",
+      body: form,
+    });
+  }
+}
+
 function SoalCard({
   question,
   onAnsweredChange,
@@ -186,10 +208,7 @@ function SoalCard({
       );
       form.append("urutan", String(question.urutan));
 
-      const res = await fetch("/api/student/post-test/upload", {
-        method: "POST",
-        body: form,
-      });
+      const res = await fetchUnggahJawaban(form);
       const payload = (await res.json().catch(() => null)) as {
         file_id?: string;
         link?: string;
