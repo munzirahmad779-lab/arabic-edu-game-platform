@@ -118,6 +118,34 @@ export async function deleteAssessment(fd: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
+  // Penjaga percobaan siswa (perintah pemilik, 18 Nov 2026; fakta
+  // produksi terverifikasi dari katalog basis data: seluruh
+  // rantai kunci asing asesmen berbentuk CASCADE, jadi menghapus
+  // asesmen menghapus attempt dan jawaban siswa di dalamnya).
+  // Hitung attempt lebih dulu; bila ada, batalkan penghapusan
+  // dengan pesan yang jelas. Kegagalan membaca hitungan juga
+  // membatalkan (fail-closed), sama seperti penjaga lain.
+  const { count: attemptCount, error: attemptCountError } = await db
+    .from("assessment_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("assessment_id", id);
+
+  if (attemptCountError) {
+    redirect(
+      `/dashboard/assessments?error=${encodeURIComponent(
+        "Penghapusan dibatalkan karena jumlah percobaan siswa pada asesmen ini tidak bisa diperiksa. Coba lagi beberapa saat lagi.",
+      )}`,
+    );
+  }
+
+  if ((attemptCount ?? 0) > 0) {
+    redirect(
+      `/dashboard/assessments?error=${encodeURIComponent(
+        `Asesmen ini tidak bisa dihapus karena sudah ada ${attemptCount} percobaan siswa yang tersimpan. Menghapus asesmen akan menghapus percobaan dan jawaban siswa di dalamnya.`,
+      )}`,
+    );
+  }
+
   const { data: deletedRows, error } = await db
     .from("assessments")
     .delete()
@@ -233,6 +261,54 @@ export async function importAssessment(fd: FormData) {
 
   if (!existingSections || existingSections.length === 0) {
     redirect(`/dashboard/assessments/${assessmentId}?error=no_sections`);
+  }
+
+  // Penjaga jawaban siswa pada impor ulang (perintah pemilik,
+  // 18 Nov 2026; fakta produksi terverifikasi dari katalog basis
+  // data: kunci asing assessment_answers.question_id berbentuk
+  // CASCADE, jadi menghapus soal lama di bawah akan menghapus
+  // jawaban siswa untuk soal-soal itu). Hitung jawaban yang
+  // menunjuk ke soal lama lebih dulu; bila ada, batalkan seluruh
+  // impor ulang sebelum apa pun terhapus. Kegagalan membaca
+  // hitungan juga membatalkan (fail-closed).
+  const { data: oldQuestions, error: oldQuestionsError } = await db
+    .from("assessment_questions")
+    .select("id")
+    .eq("assessment_id", assessmentId);
+
+  if (oldQuestionsError) {
+    redirect(
+      `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(
+        "Impor ulang dibatalkan karena soal lama asesmen ini tidak bisa diperiksa. Coba lagi beberapa saat lagi.",
+      )}`,
+    );
+  }
+
+  const oldQuestionIds = (
+    (oldQuestions ?? []) as Array<{ id: string }>
+  ).map((q) => q.id);
+
+  if (oldQuestionIds.length > 0) {
+    const { count: answerCount, error: answerCountError } = await db
+      .from("assessment_answers")
+      .select("id", { count: "exact", head: true })
+      .in("question_id", oldQuestionIds);
+
+    if (answerCountError) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(
+          "Impor ulang dibatalkan karena jawaban siswa pada soal lama tidak bisa diperiksa. Coba lagi beberapa saat lagi.",
+        )}`,
+      );
+    }
+
+    if ((answerCount ?? 0) > 0) {
+      redirect(
+        `/dashboard/assessments/${assessmentId}?error=${encodeURIComponent(
+          `Impor ulang dibatalkan: soal lama sudah mempunyai ${answerCount} jawaban siswa. Mengganti soal lewat impor ulang akan menghapus jawaban itu, jadi soal yang sudah dijawab tidak bisa diganti lewat jalur ini.`,
+        )}`,
+      );
+    }
   }
 
   // Seluruh isi workbook sudah tervalidasi parser pada titik ini; baru

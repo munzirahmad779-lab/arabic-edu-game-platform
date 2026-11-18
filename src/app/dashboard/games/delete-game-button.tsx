@@ -8,11 +8,19 @@ export function DeleteGameButton({
   gameName,
   title,
   triggerClassName,
+  archiveSessionCount = 0,
+  archiveSubmissionCount = 0,
 }: {
   gameId: string;
   gameName: string;
   title: string;
   triggerClassName: string;
+  // Pemberitahuan arsip (perintah pemilik, 18 Nov 2026): jumlah
+  // sesi arsip (room_sessions) dan jawaban ruangan (submissions)
+  // milik room permainan ini yang ikut terhapus permanen bersama
+  // permainan, dihitung server di halaman permainan.
+  archiveSessionCount?: number;
+  archiveSubmissionCount?: number;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -47,6 +55,15 @@ export function DeleteGameButton({
             <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
               {`Apakah Anda yakin ingin menghapus permainan "${gameName}"?`}
             </p>
+            {archiveSessionCount > 0 || archiveSubmissionCount > 0 ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+                Menghapus permainan ini juga menghapus permanen{" "}
+                {archiveSessionCount} sesi arsip dan {archiveSubmissionCount}{" "}
+                jawaban ruangan (submissions) dari room permainan ini. Riwayat
+                sesi yang sudah diarsipkan ikut hilang dan tidak bisa
+                dikembalikan.
+              </p>
+            ) : null}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"

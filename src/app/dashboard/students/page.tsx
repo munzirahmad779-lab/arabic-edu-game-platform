@@ -71,6 +71,84 @@ export default async function StudentsPage({
     studentsByClass.get(s.class_id)!.push(s);
   }
 
+  // Hitungan data pekerjaan per siswa untuk modal hapus siswa
+  // (perintah pemilik, 18 Nov 2026): menghapus siswa menjalankan
+  // cascade basis data yang menghapus seluruh pekerjaan siswa itu,
+  // jadi modal konfirmasi wajib mengungkapkan hitungannya, bukan
+  // hanya kalimat umum. Hitungan dibaca dari baris tersimpan per
+  // tabel; keenam tabel ini adalah seluruh data pekerjaan yang
+  // menunjuk ke baris siswa.
+  type StudentDataCounts = {
+    practiceAnswers: number;
+    catchupProgress: number;
+    attendance: number;
+    gameResults: number;
+    postTestAnswers: number;
+    essaySubmissions: number;
+  };
+  const studentCounts = new Map<string, StudentDataCounts>();
+  if (allStudents.length > 0) {
+    const studentIds = allStudents.map((s) => s.id);
+    for (const s of allStudents) {
+      studentCounts.set(s.id, {
+        practiceAnswers: 0,
+        catchupProgress: 0,
+        attendance: 0,
+        gameResults: 0,
+        postTestAnswers: 0,
+        essaySubmissions: 0,
+      });
+    }
+    const bump = (
+      rows: Array<{ student_id: string }> | null,
+      key: keyof StudentDataCounts,
+    ) => {
+      for (const r of rows ?? []) {
+        const entry = studentCounts.get(r.student_id);
+        if (entry) entry[key] += 1;
+      }
+    };
+    const [practice, progress, attendance, games, postTest, essays] =
+      await Promise.all([
+        supabase
+          .from("student_practice_answers")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+        supabase
+          .from("student_catchup_progress")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+        supabase
+          .from("student_meeting_attendance")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+        supabase
+          .from("student_game_results")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+        supabase
+          .from("post_test_answers")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+        supabase
+          .from("essay_submissions")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .limit(10000),
+      ]);
+    bump(practice.data, "practiceAnswers");
+    bump(progress.data, "catchupProgress");
+    bump(attendance.data, "attendance");
+    bump(games.data, "gameResults");
+    bump(postTest.data, "postTestAnswers");
+    bump(essays.data, "essaySubmissions");
+  }
+
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
   let portalUrl: string;
 
@@ -372,6 +450,11 @@ export default async function StudentsPage({
                                           s.name,
                                         ),
                                     }}
+                                    scopeText={(() => {
+                                      const sc = studentCounts.get(s.id);
+                                      if (!sc) return undefined;
+                                      return `Data yang ikut terhapus bersama siswa ini: ${sc.practiceAnswers} jawaban latihan, ${sc.catchupProgress} progres Tugas Susulan, ${sc.attendance} baris kehadiran, ${sc.gameResults} hasil game solo, ${sc.postTestAnswers} jawaban post tes, dan ${sc.essaySubmissions} pengumpulan esai.`;
+                                    })()}
                                   />
                                 </div>
                               </div>

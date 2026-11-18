@@ -22,6 +22,39 @@ type GameResultRow = {
   finished_at: string;
 };
 
+type ProgressDetailRow = {
+  student_id: string;
+  student_name: string;
+  dars_no: number;
+  baca_done: boolean;
+  kosakata_done: boolean;
+  qawaid_done: boolean;
+  answered_count: number;
+  correct_count: number;
+  total_questions: number;
+};
+
+// Satu segmen rincian proses per dars, contoh: "Dars 3 (Baca
+// selesai)" atau "Dars 1 (Baca, Kosakata selesai; Latihan 10 dari
+// 30 terjawab)".
+function segmenProses(d: ProgressDetailRow): string {
+  const selesai: string[] = [];
+  if (d.baca_done) selesai.push("Baca");
+  if (d.kosakata_done) selesai.push("Kosakata");
+  if (d.qawaid_done) selesai.push("Qawaid");
+  const parts: string[] = [];
+  if (selesai.length > 0) parts.push(`${selesai.join(", ")} selesai`);
+  if (d.total_questions > 0) {
+    parts.push(
+      `Latihan ${d.answered_count} dari ${d.total_questions} terjawab`,
+    );
+  } else if (d.answered_count > 0) {
+    parts.push(`Latihan ${d.answered_count} terjawab`);
+  }
+  if (parts.length === 0) parts.push("baru dimulai");
+  return `Dars ${d.dars_no} (${parts.join("; ")})`;
+}
+
 function fmtWaktu(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -61,6 +94,7 @@ export default async function TeacherTugasSusulanPage({
   let rows: OverviewRow[] = [];
   let loadError = false;
   const gameResultsByStudent = new Map<string, GameResultRow[]>();
+  const progressDetailByStudent = new Map<string, ProgressDetailRow[]>();
   if (selected) {
     const { data, error } = await supabase.rpc("teacher_catchup_overview", {
       p_class_id: selected.id,
@@ -85,6 +119,25 @@ export default async function TeacherTugasSusulanPage({
       const list = gameResultsByStudent.get(gr.student_id) ?? [];
       list.push(gr);
       gameResultsByStudent.set(gr.student_id, list);
+    }
+
+    // Rincian dars yang sedang berproses per siswa (migrasi 0132,
+    // perintah pemilik 18 Nov 2026: munculkan siswa yang sudah
+    // mengerjakan tetapi belum lulus, yang selama ini tidak
+    // terlihat dari hitungan ringkasan). Bila RPC belum ada
+    // (migrasi belum dijalankan), bagian ini cukup kosong tanpa
+    // menggagalkan halaman, sama seperti hasil game di atas.
+    const { data: detailData, error: detailError } = await supabase.rpc(
+      "teacher_catchup_progress_detail",
+      { p_class_id: selected.id },
+    );
+    if (detailError) {
+      console.error("[tugas-susulan] progress detail rpc error:", detailError);
+    }
+    for (const d of (detailData ?? []) as ProgressDetailRow[]) {
+      const list = progressDetailByStudent.get(d.student_id) ?? [];
+      list.push(d);
+      progressDetailByStudent.set(d.student_id, list);
     }
   }
 
@@ -187,6 +240,17 @@ export default async function TeacherTugasSusulanPage({
                         style={{ width: `${pct}%` }}
                       />
                     </div>
+                  ) : null}
+                  {(progressDetailByStudent.get(r.student_id) ?? []).length >
+                  0 ? (
+                    <p className="mt-2 text-sm text-violet-800">
+                      Sedang proses:{" "}
+                      {(
+                        progressDetailByStudent.get(r.student_id) ?? []
+                      )
+                        .map(segmenProses)
+                        .join(" · ")}
+                    </p>
                   ) : null}
                   {(gameResultsByStudent.get(r.student_id) ?? []).length >
                   0 ? (

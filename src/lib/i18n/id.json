@@ -168,7 +168,7 @@
     "students_empty": "Belum ada siswa di kelas ini",
     "students_add": "Tambah Siswa",
     "games_section_title": "Permainan di Kelas Ini",
-    "delete_student_confirm": "Hapus siswa \"{name}\"? Tindakan ini tidak bisa dibatalkan.",
+    "delete_student_confirm": "Hapus siswa \"{name}\"? Semua data pekerjaan siswa ini (jawaban latihan, progres Tugas Susulan, kehadiran, hasil game solo, jawaban post tes, dan esai) akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.",
     "games_count": "permainan",
     "games_manage": "Manajemen Permainan",
     "games_empty": "Belum ada permainan untuk kelas ini",

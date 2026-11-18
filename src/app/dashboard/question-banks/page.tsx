@@ -116,6 +116,18 @@ export default async function QuestionBanksPage({
         : locale === "en"
           ? "Invalid bank ID."
           : "ID bank tidak valid.",
+    err_has_practice_answers:
+      locale === "ar"
+        ? "لا يمكن حذف بنك الأسئلة هذا لأن إجابات تدريب الطلاب موجودة بالفعل لأسئلة فيه. إجابات الطلاب هي نتاج عملهم ولا يجوز أن تُحذف معه."
+        : locale === "en"
+          ? "This question bank cannot be deleted because students' practice answers already exist for its questions. Students' answers are their own work and must not be deleted with it."
+          : "Bank soal ini tidak bisa dihapus karena sudah ada jawaban latihan siswa untuk soal di dalamnya. Jawaban siswa adalah hasil pekerjaan mereka dan tidak boleh ikut terhapus.",
+    err_bank_fk_blocked:
+      locale === "ar"
+        ? "لا يمكن حذف بنك الأسئلة هذا لأن بيانات أخرى ما زالت تشير إلى أسئلة فيه."
+        : locale === "en"
+          ? "This question bank cannot be deleted because other data still points to its questions."
+          : "Bank soal ini tidak bisa dihapus karena masih ada data lain yang menunjuk ke soal di dalamnya.",
     cat_invalid:
       locale === "ar"
         ? "Nama topik tidak valid. Gunakan 1–100 karakter."
@@ -316,6 +328,10 @@ export default async function QuestionBanksPage({
         return L.err_create_bank;
       case "invalid_bank_id":
         return L.err_invalid_bank_id;
+      case "has_practice_answers":
+        return L.err_has_practice_answers;
+      case "bank_fk_blocked":
+        return L.err_bank_fk_blocked;
       default:
         return searchParams.error
           ? `${dict.common.error}: ${searchParams.error}`
@@ -408,6 +424,55 @@ export default async function QuestionBanksPage({
     if (mediaError) throw new Error("Gagal memuat media soal.");
     options = (optionData ?? []) as OptionRow[];
     media = (mediaData ?? []) as MediaRow[];
+  }
+
+  // Hitungan jawaban per bank untuk modal hapus bank (perintah
+  // pemilik, 18 Nov 2026): jumlah jawaban ruangan (submissions)
+  // yang ikut terhapus bersama bank menurut desain RPC, dan
+  // jumlah jawaban latihan yang membuat penghapusan tertolak
+  // oleh penjaga migrasi 0131. Keduanya ditampilkan di modal
+  // konfirmasi sebelum guru menyetujui.
+  const bankSubmissionCounts = new Map<string, number>();
+  const bankPracticeCounts = new Map<string, number>();
+  if (questionIds.length > 0) {
+    const bankByQuestion = new Map(
+      questionRows.map((q) => [q.id, q.question_bank_id] as const),
+    );
+    const [{ data: submissionRows }, { data: practiceRows }] =
+      await Promise.all([
+        supabase
+          .from("submissions")
+          .select("question_id")
+          .in("question_id", questionIds)
+          .limit(10000),
+        supabase
+          .from("student_practice_answers")
+          .select("question_id")
+          .in("question_id", questionIds)
+          .limit(10000),
+      ]);
+    for (const r of submissionRows ?? []) {
+      const bankId = r.question_id
+        ? bankByQuestion.get(r.question_id)
+        : null;
+      if (bankId) {
+        bankSubmissionCounts.set(
+          bankId,
+          (bankSubmissionCounts.get(bankId) ?? 0) + 1,
+        );
+      }
+    }
+    for (const r of practiceRows ?? []) {
+      const bankId = r.question_id
+        ? bankByQuestion.get(r.question_id)
+        : null;
+      if (bankId) {
+        bankPracticeCounts.set(
+          bankId,
+          (bankPracticeCounts.get(bankId) ?? 0) + 1,
+        );
+      }
+    }
   }
 
   const categoryMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
@@ -544,6 +609,8 @@ export default async function QuestionBanksPage({
                     bankId={bank.id}
                     bankName={bank.name}
                     questionCount={bankQuestions.length}
+                    submissionCount={bankSubmissionCounts.get(bank.id) ?? 0}
+                    practiceAnswerCount={bankPracticeCounts.get(bank.id) ?? 0}
                     qd={dict.qb.delete}
                   />
                 </div>

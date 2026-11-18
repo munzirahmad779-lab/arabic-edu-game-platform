@@ -39,6 +39,50 @@ export default async function ClassesPage({
     ? classes?.find((cls) => cls.id === searchParams.edit) ?? null
     : null;
 
+  // Hitungan isi kelas yang sedang diubah, untuk modal penjaga
+  // hapus kelas (perintah pemilik, 18 Nov 2026): modal menampilkan
+  // jumlah siswa beserta pekerjaan mereka yang ikut terhapus
+  // lewat rantai cascade, dan mewajibkan pengetikan nama kelas.
+  const deleteCounts = {
+    students: 0,
+    practiceAnswers: 0,
+    catchupProgress: 0,
+    gameResults: 0,
+    essaySubmissions: 0,
+  };
+  if (editingClass) {
+    const { data: classStudents } = await supabase
+      .from("students")
+      .select("id")
+      .eq("class_id", editingClass.id);
+    const studentIds = (classStudents ?? []).map((s) => s.id);
+    deleteCounts.students = studentIds.length;
+    if (studentIds.length > 0) {
+      const [practice, progress, games, essays] = await Promise.all([
+        supabase
+          .from("student_practice_answers")
+          .select("id", { count: "exact", head: true })
+          .in("student_id", studentIds),
+        supabase
+          .from("student_catchup_progress")
+          .select("id", { count: "exact", head: true })
+          .in("student_id", studentIds),
+        supabase
+          .from("student_game_results")
+          .select("id", { count: "exact", head: true })
+          .in("student_id", studentIds),
+        supabase
+          .from("essay_submissions")
+          .select("id", { count: "exact", head: true })
+          .in("student_id", studentIds),
+      ]);
+      deleteCounts.practiceAnswers = practice.count ?? 0;
+      deleteCounts.catchupProgress = progress.count ?? 0;
+      deleteCounts.gameResults = games.count ?? 0;
+      deleteCounts.essaySubmissions = essays.count ?? 0;
+    }
+  }
+
   const errorMsg = (() => {
     switch (searchParams.error) {
       case "invalid_name":
@@ -55,6 +99,8 @@ export default async function ClassesPage({
         return "Gagal menyimpan perubahan kelas. Coba lagi.";
       case "invalid_delete":
         return "Permintaan hapus kelas tidak valid.";
+      case "name_mismatch":
+        return "Penghapusan kelas dibatalkan karena nama kelas yang diketik tidak sama persis dengan nama kelasnya.";
       case "delete_failed":
         return "Gagal menghapus kelas. Coba lagi.";
       case "not_found":
@@ -164,6 +210,8 @@ export default async function ClassesPage({
           <div className="mt-5 border-t border-rose-100 pt-4">
             <DeleteClassButton
               classId={editingClass.id}
+              className={editingClass.name}
+              counts={deleteCounts}
               label={c.delete}
               confirmText={t.delete_confirm}
             />

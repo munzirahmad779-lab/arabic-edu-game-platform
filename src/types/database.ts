@@ -285,6 +285,7 @@ export interface Database {
       student_catchup_step_start: { Args: { p_token: string; p_dars: number; p_step: string }; Returns: string; };
       student_catchup_step_complete: { Args: { p_token: string; p_dars: number; p_step: string }; Returns: boolean; };
       teacher_catchup_overview: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; total_tasks: number; done_tasks: number }>; };
+      teacher_catchup_progress_detail: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; dars_no: number; baca_done: boolean; kosakata_done: boolean; qawaid_done: boolean; answered_count: number; correct_count: number; total_questions: number }>; };
       student_submit_game_result: { Args: { p_token: string; p_game_slug: string; p_score: number; p_correct: number; p_total: number }; Returns: boolean };
       student_list_class_banks: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; question_count: number }>; };
       student_get_class_bank: { Args: { p_token: string; p_bank_id: string }; Returns: { questions: Array<{ id: string; question_text: string | null; correct_option_key: string | null }>; options: Array<{ question_id: string; option_key: string; option_text: string }> } | null };

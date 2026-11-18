@@ -21,6 +21,7 @@ type SearchParams = {
   essay_created?: string;
   essay_deleted?: string;
   essay_error?: string;
+  essay_msg?: string;
 };
 
 type EssayRow = {
@@ -133,6 +134,16 @@ export default async function ClassDetailPage({
       return { type: "error" as const, text: t.error_essay_duration };
     if (searchParams.essay_error === "rubric_sum")
       return { type: "error" as const, text: t.error_essay_rubric };
+    if (searchParams.essay_error === "has_submissions")
+      return {
+        type: "error" as const,
+        text: `Tugas esai ini tidak bisa dihapus karena sudah ada esai siswa yang terkumpul di dalamnya. Esai siswa adalah hasil pekerjaan mereka dan tidak boleh ikut terhapus.${searchParams.essay_msg ? ` ${searchParams.essay_msg}` : ""}`,
+      };
+    if (searchParams.essay_error === "delete_failed")
+      return {
+        type: "error" as const,
+        text: "Penghapusan tugas esai gagal diproses. Coba lagi beberapa saat lagi.",
+      };
     if (searchParams.essay_error)
       return {
         type: "error" as const,

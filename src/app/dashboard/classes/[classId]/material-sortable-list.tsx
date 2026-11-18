@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { materialAction, reorderMaterials } from "./material-actions";
+import { darsDariJudulMateri } from "@/modules/tugas-susulan/materi";
 
 type Material = {
   id: string;
@@ -201,6 +202,26 @@ export function MaterialSortableList({
             <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
               {fmt(ml.delete_confirm, { title: pendingDelete.title })}
             </p>
+            {(() => {
+              // Peringatan bahan Baca Tugas Susulan (perintah
+              // pemilik, 18 Nov 2026): materi yang judulnya memetakan
+              // ke sebuah dars adalah bahan Langkah Baca wajib pada
+              // Tugas Susulan dars itu. Menghapusnya membuat siswa
+              // yang belum membaca tidak bisa menyelesaikan langkah
+              // wajib tersebut. Ini peringatan saja, bukan penolakan;
+              // pemetaan memakai pemeta yang sama seperti halaman
+              // Baca siswa.
+              const darsNo = darsDariJudulMateri(pendingDelete.title);
+              if (darsNo === null) return null;
+              return (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+                  Perhatian: materi ini adalah bahan Langkah Baca Tugas
+                  Susulan Dars {darsNo}. Bila materi ini dihapus, siswa yang
+                  belum membaca materi Dars {darsNo} tidak akan bisa
+                  menyelesaikan langkah wajib itu.
+                </p>
+              );
+            })()}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"

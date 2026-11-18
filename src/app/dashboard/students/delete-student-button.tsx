@@ -7,6 +7,7 @@ export function DeleteStudentButton({
   studentId,
   classId,
   labels,
+  scopeText,
 }: {
   studentId: string;
   classId: string;
@@ -15,6 +16,10 @@ export function DeleteStudentButton({
     cancelLabel: string;
     confirmMessage: string;
   };
+  // Rincian hitungan data siswa yang ikut terhapus (perintah
+  // pemilik, 18 Nov 2026), dihitung server di halaman siswa dan
+  // ditampilkan apa adanya di modal ini.
+  scopeText?: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -43,6 +48,11 @@ export function DeleteStudentButton({
             <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
               {labels.confirmMessage}
             </p>
+            {scopeText ? (
+              <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-900">
+                {scopeText}
+              </p>
+            ) : null}
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"

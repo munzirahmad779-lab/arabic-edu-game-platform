@@ -23,11 +23,20 @@ export function DeleteBankForm({
   bankId,
   bankName,
   questionCount,
+  submissionCount = 0,
+  practiceAnswerCount = 0,
   qd,
 }: {
   bankId: string;
   bankName: string;
   questionCount: number;
+  // Hitungan jawaban untuk modal (perintah pemilik, 18 Nov 2026),
+  // dihitung server di halaman bank soal: submissions adalah
+  // jawaban ruangan yang ikut terhapus bersama bank menurut
+  // desain RPC delete_question_bank, sedangkan jawaban latihan
+  // membuat penghapusan DITOLAK oleh penjaga migrasi 0131.
+  submissionCount?: number;
+  practiceAnswerCount?: number;
   qd: DeleteDict;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -38,13 +47,29 @@ export function DeleteBankForm({
   // dialog bawaan browser bisa tidak pernah sampai ke pengguna (webview/
   // otomasi menelannya diam-diam), sehingga klik berhenti di
   // e.preventDefault() sebelum form terkirim dan tombol tampak mati.
-  const message =
+  const baseMessage =
     questionCount > 0
       ? fmt(qd.confirm_with_questions, {
           name: bankName,
           n: questionCount,
         })
       : fmt(qd.confirm_empty, { name: bankName });
+
+  const countNotes: string[] = [];
+  if (submissionCount > 0) {
+    countNotes.push(
+      `Menghapus bank ini juga menghapus permanen ${submissionCount} jawaban ruangan (submissions) untuk soal di dalamnya.`,
+    );
+  }
+  if (practiceAnswerCount > 0) {
+    countNotes.push(
+      `Bank ini mempunyai ${practiceAnswerCount} jawaban latihan siswa, jadi penghapusan akan ditolak: jawaban latihan siswa tidak boleh ikut terhapus.`,
+    );
+  }
+  const message =
+    countNotes.length > 0
+      ? `${baseMessage}\n\n${countNotes.join("\n")}`
+      : baseMessage;
 
   return (
     <form ref={formRef} action={deleteQuestionBank}>

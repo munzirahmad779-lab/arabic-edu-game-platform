@@ -165,8 +165,22 @@ export async function deleteQuestionBank(formData: FormData) {
 
   if (error) {
     console.error("[deleteQuestionBank]", error);
+    // Penjaga bank soal (migrasi 0131, perintah pemilik 18 Nov
+    // 2026): galat kunci asing dari RPC diterjemahkan menjadi kode
+    // yang halamannya punya pesan Bahasa Indonesia yang jelas.
+    // Teks PostgreSQL mentah tidak lagi diteruskan ke guru.
+    const rawMessage = error.message ?? "";
+    if (rawMessage.includes("bank_has_practice_answers")) {
+      redirect("/dashboard/question-banks?error=has_practice_answers");
+    }
+    if (
+      rawMessage.includes("violates foreign key constraint") ||
+      (error as { code?: string }).code === "23503"
+    ) {
+      redirect("/dashboard/question-banks?error=bank_fk_blocked");
+    }
     redirect(
-      `/dashboard/question-banks?error=${encodeURIComponent(error.message)}`,
+      `/dashboard/question-banks?error=${encodeURIComponent(rawMessage)}`,
     );
   }
 

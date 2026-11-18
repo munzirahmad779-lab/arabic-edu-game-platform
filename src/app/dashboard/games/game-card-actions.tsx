@@ -11,11 +11,15 @@ export function GameCardActions({
   gameName,
   gameModeAr,
   isRoomMode,
+  archiveSessionCount = 0,
+  archiveSubmissionCount = 0,
 }: {
   gameId: string;
   gameName: string;
   gameModeAr: string;
   isRoomMode: boolean;
+  archiveSessionCount?: number;
+  archiveSubmissionCount?: number;
 }) {
   const [showPreview, setShowPreview] = useState(false);
   const [cloning, setCloning] = useState(false);
@@ -85,6 +89,8 @@ export function GameCardActions({
           gameName={gameName}
           title="Hapus Permainan"
           triggerClassName="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 shadow-sm"
+          archiveSessionCount={archiveSessionCount}
+          archiveSubmissionCount={archiveSubmissionCount}
         />
       </div>
 

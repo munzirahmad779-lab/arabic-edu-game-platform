@@ -142,6 +142,57 @@ export default async function GamesPage({
     }
   }
 
+  // Hitungan arsip per permainan untuk pemberitahuan pada modal
+  // hapus permainan (perintah pemilik, 18 Nov 2026): menghapus
+  // permainan ikut menghapus sesi arsip (room_sessions) dan
+  // jawaban ruangan (submissions) dari semua room permainan itu,
+  // jadi jumlahnya ditampilkan di modal sebelum guru menyetujui.
+  const archiveByGame = new Map<
+    string,
+    { sessions: number; submissions: number }
+  >();
+  if (gameList.length > 0) {
+    const { data: allRooms } = await supabase
+      .from("rooms")
+      .select("id, game_id")
+      .eq("teacher_id", user.id);
+    const roomGame = new Map<string, string>();
+    for (const r of allRooms ?? []) {
+      if (r.game_id) roomGame.set(r.id, r.game_id);
+    }
+    const roomIds = [...roomGame.keys()];
+    if (roomIds.length > 0) {
+      const [{ data: sessionRows }, { data: submissionRows }] =
+        await Promise.all([
+          supabase
+            .from("room_sessions")
+            .select("room_id")
+            .in("room_id", roomIds)
+            .limit(10000),
+          supabase
+            .from("submissions")
+            .select("room_id")
+            .in("room_id", roomIds)
+            .limit(10000),
+        ]);
+      const ensureArchive = (gid: string) => {
+        if (!archiveByGame.has(gid)) {
+          archiveByGame.set(gid, { sessions: 0, submissions: 0 });
+        }
+        return archiveByGame.get(gid)!;
+      };
+      for (const s of sessionRows ?? []) {
+        const gid = roomGame.get(s.room_id);
+        if (gid) ensureArchive(gid).sessions += 1;
+      }
+      for (const s of submissionRows ?? []) {
+        if (!s.room_id) continue;
+        const gid = roomGame.get(s.room_id);
+        if (gid) ensureArchive(gid).submissions += 1;
+      }
+    }
+  }
+
   const getModeLabel = (mode: string) => {
     const key = (MODE_LABEL_KEY[mode] ?? "mode_competitive") as keyof typeof t;
     return t[key] ?? mode;
@@ -367,6 +418,12 @@ export default async function GamesPage({
                       gameName={displayName}
                       gameModeAr={getModeLabel(game.mode)}
                       isRoomMode={isRoom}
+                      archiveSessionCount={
+                        archiveByGame.get(game.id)?.sessions ?? 0
+                      }
+                      archiveSubmissionCount={
+                        archiveByGame.get(game.id)?.submissions ?? 0
+                      }
                     />
                   </div>
                 </article>

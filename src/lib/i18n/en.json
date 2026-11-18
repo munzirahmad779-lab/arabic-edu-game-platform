@@ -168,7 +168,7 @@
     "students_empty": "No students in this class yet",
     "students_add": "Add Students",
     "games_section_title": "Games in This Class",
-    "delete_student_confirm": "Delete student \"{name}\"? This action cannot be undone.",
+    "delete_student_confirm": "Delete student \"{name}\"? All of this student's work data (practice answers, catch-up task progress, attendance, solo game results, post test answers, and essays) will also be deleted. This action cannot be undone.",
     "games_count": "games",
     "games_manage": "Game Management",
     "games_empty": "No games for this class yet",

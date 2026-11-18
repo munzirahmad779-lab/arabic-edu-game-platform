@@ -133,6 +133,30 @@ export async function deleteClass(formData: FormData) {
     redirect("/dashboard/classes?error=invalid_delete");
   }
 
+  // Penjaga hapus kelas (perintah pemilik, 18 Nov 2026): menghapus
+  // kelas menjalankan rantai cascade basis data yang menghapus
+  // seluruh siswa kelas itu beserta semua pekerjaan mereka
+  // (jawaban latihan, progres Tugas Susulan, hasil game solo,
+  // esai). Karena cakupannya sebesar itu, server memeriksa ulang
+  // di sini bahwa guru mengetik nama kelas PERSIS seperti nama
+  // kelasnya, sama seperti yang diwajibkan modal konfirmasi di
+  // halaman. Ketikan yang tidak sama membatalkan penghapusan.
+  const { data: classRow, error: classError } = await supabase
+    .from("classes")
+    .select("id, name")
+    .eq("id", classId)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (classError || !classRow) {
+    redirect("/dashboard/classes?error=not_found");
+  }
+
+  const confirmName = normalizeName(formData.get("confirm_name"));
+  if (confirmName !== classRow.name) {
+    redirect("/dashboard/classes?error=name_mismatch");
+  }
+
   const { data, error } = await supabase
     .from("classes")
     .delete()

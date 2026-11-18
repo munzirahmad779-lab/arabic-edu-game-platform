@@ -143,6 +143,31 @@ export async function deleteEssay(formData: FormData) {
 
   if (!essayId || !classId) redirect("/dashboard/classes");
 
+  // Penjaga pengumpulan esai (perintah pemilik, 18 Nov 2026):
+  // menghapus tugas esai menjalankan cascade basis data yang
+  // menghapus semua esai siswa yang sudah terkumpul untuk tugas
+  // itu. Hitung dulu sebelum menghapus; bila sudah ada
+  // pengumpulan, batalkan dengan pesan yang jelas untuk guru.
+  // Kegagalan membaca hitungan juga membatalkan penghapusan
+  // (fail-closed), sama seperti penjaga deleteGame.
+  const { count: submissionCount, error: countError } = await supabase
+    .from("essay_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("assignment_id", essayId);
+
+  if (countError) {
+    console.error("[deleteEssay] submission count failed:", countError);
+    redirect(`/dashboard/classes/${classId}?essay_error=delete_failed`);
+  }
+
+  if ((submissionCount ?? 0) > 0) {
+    redirect(
+      `/dashboard/classes/${classId}?essay_error=has_submissions&essay_msg=${encodeURIComponent(
+        `Sudah ada ${submissionCount} esai siswa yang terkumpul pada tugas ini.`,
+      )}`,
+    );
+  }
+
   const { error } = await supabase
     .from("essay_assignments")
     .delete()
