@@ -4,11 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { displayGameName } from "@/lib/game-name";
-import type { KosakataPair } from "@/modules/tugas-susulan/kosakata";
-import {
-  KOSAKATA_STEP,
-  QAWAID_STEP,
-} from "@/modules/tugas-susulan/optional-steps";
+import { QAWAID_STEP } from "@/modules/tugas-susulan/optional-steps";
 import { startCatchupStep, completeCatchupStep } from "./actions";
 
 export type TugasCardData = {
@@ -22,13 +18,10 @@ export type TugasCardData = {
   correctCount: number;
   passCorrect: number;
   bacaDone: boolean;
-  kosakataDone: boolean;
   qawaidDone: boolean;
-  kosakataStartedAt: string | null;
   qawaidStartedAt: string | null;
   latihanLulus: boolean;
   status: string;
-  kata: KosakataPair[];
   qawaid: { judul: string; isi: string[] } | null;
 };
 
@@ -76,7 +69,7 @@ function TimerStep({
   children,
 }: {
   darsNo: number;
-  step: "kosakata" | "qawaid";
+  step: "qawaid";
   icon: string;
   title: string;
   doneLabel: string;
@@ -217,8 +210,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
             Kamu tidak hadir pada pertemuan {task.meetingNos.join(" dan ")}.
             Dua langkah WAJIB dan harus dikerjakan segera: Baca Materi
             (Langkah 1) dan Latihan dars ini (Langkah 3). Tugas ini lulus
-            bila kedua langkah wajib itu selesai. Kosakata dan qawaid
-            TIDAK WAJIB.
+            bila kedua langkah wajib itu selesai. Qawaid TIDAK WAJIB.
           </p>
         </div>
         <span
@@ -262,7 +254,7 @@ export function TugasCard({ task }: { task: TugasCardData }) {
 
         <li>
           <p className="text-sm font-black text-neutral-900">
-            Langkah 2 · Hafalkan kosakata dan pahami qawaid
+            Langkah 2 · Pahami qawaid
           </p>
           {!langkah2Buka ? (
             <p className="mt-1 text-sm text-neutral-500">
@@ -270,36 +262,6 @@ export function TugasCard({ task }: { task: TugasCardData }) {
             </p>
           ) : (
             <div className="mt-2 space-y-3">
-              <TimerStep
-                darsNo={task.darsNo}
-                step="kosakata"
-                icon="🔤"
-                title="Kosakata"
-                doneLabel="Sudah Hafal"
-                initialStartedAt={task.kosakataStartedAt}
-                initialDone={task.kosakataDone}
-                opsional={!KOSAKATA_STEP.required}
-              >
-                <ul className="grid gap-2 sm:grid-cols-2">
-                  {task.kata.map((k) => (
-                    <li
-                      key={k.arab}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2"
-                    >
-                      <span
-                        dir="rtl"
-                        className="text-base font-bold text-neutral-900"
-                      >
-                        {k.arab}
-                      </span>
-                      <span className="text-right text-sm text-neutral-600">
-                        {k.arti}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </TimerStep>
-
               <TimerStep
                 darsNo={task.darsNo}
                 step="qawaid"

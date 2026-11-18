@@ -122,11 +122,11 @@ describe("kartu tugas siswa: rantai kunci dan label tidak wajib", () => {
     );
   });
 
-  test("kosakata dan qawaid memakai konfigurasi langkah opsional", () => {
-    assert.ok(card.includes("KOSAKATA_STEP"));
+  test("qawaid memakai konfigurasi langkah opsional, kosakata sudah dihapus", () => {
     assert.ok(card.includes("QAWAID_STEP"));
-    assert.ok(card.includes("opsional={!KOSAKATA_STEP.required}"));
     assert.ok(card.includes("opsional={!QAWAID_STEP.required}"));
+    assert.equal(card.includes("KOSAKATA_STEP"), false);
+    assert.equal(card.includes("Kosakata"), false);
   });
 });
 
@@ -154,8 +154,8 @@ describe("kartu tugas siswa: penegasan label wajib dan tidak wajib", () => {
 
   test("chip wajib tidak tampil pada judul langkah opsional", () => {
     const langkah2 = card.slice(
-      card.indexOf("Langkah 2 · Hafalkan kosakata dan pahami qawaid"),
-      card.indexOf("Langkah 2 · Hafalkan kosakata dan pahami qawaid") + 160,
+      card.indexOf("Langkah 2 · Pahami qawaid"),
+      card.indexOf("Langkah 2 · Pahami qawaid") + 160,
     );
     assert.equal(langkah2.includes("<WajibChip />"), false);
     // Langkah 4 (Game solo) sudah dihapus seluruhnya dari kartu

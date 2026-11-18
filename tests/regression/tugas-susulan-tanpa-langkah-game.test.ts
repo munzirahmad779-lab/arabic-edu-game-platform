@@ -84,13 +84,14 @@ describe("kartu tugas: langkah game hilang seluruhnya", () => {
 
   test("tiga langkah yang tersisa tetap ada dan berurutan", () => {
     const i1 = card.indexOf("Langkah 1 · Baca materi");
-    const i2 = card.indexOf("Langkah 2 · Hafalkan kosakata dan pahami qawaid");
+    const i2 = card.indexOf("Langkah 2 · Pahami qawaid");
     const i3 = card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri");
     assert.ok(i1 > -1 && i2 > i1 && i3 > i2);
   });
 
-  test("pengantar kartu menyebut tidak wajib hanya untuk kosakata dan qawaid", () => {
-    assert.ok(card.includes("Kosakata dan qawaid"));
+  test("pengantar kartu menyebut tidak wajib hanya untuk qawaid, tanpa kosakata", () => {
+    assert.ok(card.includes("Qawaid TIDAK WAJIB."));
+    assert.equal(card.includes("Kosakata"), false);
     assert.equal(card.includes("dan game TIDAK WAJIB"), false);
     assert.equal(card.includes("game TIDAK WAJIB"), false);
   });
@@ -129,7 +130,8 @@ describe("halaman tugas susulan: bagian Game Solo di paling depan", () => {
   });
 
   test("pengantar halaman tidak lagi menyebut game sebagai tidak wajib", () => {
-    assert.ok(page.includes("Hafalan kosakata dan qawaid"));
+    assert.ok(page.includes("Qawaid TIDAK WAJIB, tetapi"));
+    assert.equal(page.includes("Kosakata"), false);
     assert.equal(page.includes("game solo TIDAK WAJIB"), false);
   });
 

@@ -10,7 +10,7 @@ import {
 import { MaterialImage } from "@/components/materials/material-image";
 import { MaterialPdf } from "@/components/materials/material-pdf";
 import { getLocale } from "@/lib/i18n/server";
-import { kosakataDars } from "@/modules/tugas-susulan/kosakata";
+import { judulDars } from "@/modules/tugas-susulan/judul";
 import { cocokMateri } from "@/modules/tugas-susulan/materi";
 import { BacaTracker } from "./baca-tracker";
 
@@ -69,7 +69,7 @@ export default async function BacaMateriSusulanPage({
   });
   const ringkas = (materials ?? []).find((m) => cocokMateri(m.title, darsNo));
 
-  const meta = kosakataDars(darsNo);
+  const judul = judulDars(darsNo);
 
   let isi: React.ReactNode = null;
   let judulMateri = ringkas?.title ?? null;
@@ -154,7 +154,7 @@ export default async function BacaMateriSusulanPage({
             LANGKAH 1 · BACA MATERI · {session.class_name}
           </p>
           <h1 className="mt-2 text-2xl font-black leading-tight text-neutral-900 sm:text-3xl">
-            Dars {darsNo} · {meta?.judul ?? ""}
+            Dars {darsNo} · {judul ?? ""}
           </h1>
           <p className="mt-2 text-xs text-neutral-500">
             {judulMateri

@@ -11,7 +11,7 @@
 // Keputusan FINAL pemilik (17 Nov 2026): langkah game TIDAK WAJIB.
 // Langkah wajib Tugas Susulan tinggal 2, yaitu baca dan latihan.
 // Sejak migrasi 0118, status 'lulus' hanya mensyaratkan baca tuntas
-// dan latihan lulus (kosakata dan qawaid juga tidak wajib);
+// dan latihan lulus (qawaid juga tidak wajib);
 // teacher_catchup_overview sejalan. Karena itu required = false:
 // kartu tugas memberi label "tidak wajib" pada langkah ini, tetapi
 // permainan tetap bisa dibuka dan hasilnya tetap tercatat.
