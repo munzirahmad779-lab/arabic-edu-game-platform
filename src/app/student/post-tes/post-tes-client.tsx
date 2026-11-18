@@ -80,6 +80,15 @@ function SoalCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sentLink, setSentLink] = useState<string | null>(question.drive_link);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Hasil unggahan Drive yang SUDAH berhasil tetapi simpannya ke
+  // server belum berhasil. Disimpan supaya tekanan Kirim berikutnya
+  // cukup mengulang RPC simpan dengan file_id yang sama, tanpa
+  // mengunggah berkas baru dan tanpa menggandakan berkas di Drive
+  // (audit 18 Nov). Dikosongkan hanya saat siswa merekam ulang.
+  const [uploaded, setUploaded] = useState<{
+    fileId: string;
+    link: string;
+  } | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -180,6 +189,10 @@ function SoalCard({
 
   function rekamUlang() {
     blobRef.current = null;
+    // Rekaman baru berarti unggahan lama tidak dipakai lagi: hasil
+    // unggahan tersimpan dibuang supaya kirim berikutnya mengunggah
+    // berkas rekaman yang baru.
+    setUploaded(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
@@ -189,39 +202,54 @@ function SoalCard({
   }
 
   async function kirim() {
-    const blob = blobRef.current;
-    if (!blob) return;
     setPhase("uploading");
     setErrorMsg(null);
     try {
-      const form = new FormData();
-      const ext = blob.type.includes("mp4")
-        ? "m4a"
-        : blob.type.includes("ogg")
-          ? "ogg"
-          : "webm";
-      form.append(
-        "audio",
-        new File([blob], `jawaban-soal-${question.urutan}.${ext}`, {
-          type: blob.type || "audio/webm",
-        }),
-      );
-      form.append("urutan", String(question.urutan));
+      let fileId = uploaded?.fileId;
+      let link = uploaded?.link;
 
-      const res = await fetchUnggahJawaban(form);
-      const payload = (await res.json().catch(() => null)) as {
-        file_id?: string;
-        link?: string;
-        message?: string;
-      } | null;
-      if (!res.ok || !payload?.file_id || !payload?.link) {
-        throw new Error(payload?.message ?? "UPLOAD_FAILED");
+      if (!fileId || !link) {
+        const blob = blobRef.current;
+        if (!blob) {
+          setPhase("recorded");
+          return;
+        }
+        const form = new FormData();
+        const ext = blob.type.includes("mp4")
+          ? "m4a"
+          : blob.type.includes("ogg")
+            ? "ogg"
+            : "webm";
+        form.append(
+          "audio",
+          new File([blob], `jawaban-soal-${question.urutan}.${ext}`, {
+            type: blob.type || "audio/webm",
+          }),
+        );
+        form.append("urutan", String(question.urutan));
+
+        const res = await fetchUnggahJawaban(form);
+        const payload = (await res.json().catch(() => null)) as {
+          file_id?: string;
+          link?: string;
+          message?: string;
+        } | null;
+        if (!res.ok || !payload?.file_id || !payload?.link) {
+          throw new Error(payload?.message ?? "UPLOAD_FAILED");
+        }
+
+        fileId = payload.file_id;
+        link = payload.link;
+        // Unggahan berhasil: simpan file_id dan tautannya SEBELUM
+        // mencoba menyimpan, supaya kegagalan simpan sesudah ini
+        // tidak memaksa unggah ulang.
+        setUploaded({ fileId, link });
       }
 
       const saved = await savePostTestAnswer(
         question.id,
-        payload.file_id,
-        payload.link,
+        fileId,
+        link,
         recordedSeconds,
       );
       if (!saved.ok) {
@@ -232,7 +260,7 @@ function SoalCard({
         );
       }
 
-      setSentLink(payload.link);
+      setSentLink(link);
       setPhase("sent");
       if (!countedRef.current) {
         countedRef.current = true;

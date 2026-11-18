@@ -28,9 +28,9 @@ export async function startCatchupStep(
 export async function completeCatchupStep(
   darsNo: number,
   step: "baca" | "kosakata" | "qawaid" | "game",
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; ditolakWaktu?: boolean }> {
   const token = await getStudentToken();
-  if (!token) return { ok: false };
+  if (!token) return { ok: false, ditolakWaktu: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("student_catchup_step_complete", {
@@ -41,10 +41,15 @@ export async function completeCatchupStep(
 
   if (error) {
     console.error("[completeCatchupStep]", error);
-    return { ok: false };
+    return { ok: false, ditolakWaktu: false };
   }
 
-  // RPC mengembalikan false bila penegakan timer server menolak
-  // (langkah kosakata/qawaid belum 7 menit sejak dibuka).
-  return { ok: data === true };
+  // RPC mengembalikan false KHUSUS bila penegakan waktu minimal
+  // server menolak (langkah kosakata/qawaid belum dibuka atau belum
+  // 7 menit sejak dibuka); kegagalan lain selalu tiba sebagai error
+  // di atas. Keduanya dibedakan ke klien (ditolakWaktu) supaya pesan
+  // ke siswa jujur: pesan aturan 7 menit hanya untuk penolakan
+  // waktu, pesan umum untuk galat jaringan/sesi (audit 18 Nov:
+  // sebelumnya semua kegagalan menyalahkan aturan 7 menit).
+  return { ok: data === true, ditolakWaktu: data === false };
 }

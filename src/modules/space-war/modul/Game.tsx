@@ -13,7 +13,10 @@
 
 import Link from "next/link";
 import { LmsBankPicker } from "@/modules/game-bank/connector";
-import { submitStudentGameResult } from "@/modules/game-results/submit";
+import {
+  StudentResultNote,
+  useStudentResultSubmit,
+} from "@/modules/game-results/submit-status";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -103,6 +106,13 @@ export default function SpaceWarGame({
   const shotsCorrectRef = useRef(0);
   const shotsTotalRef = useRef(0);
   const resultSentRef = useRef(false);
+  // Pencatatan hasil mode siswa yang bersuara: status kirim tampil
+  // di layar hasil, kegagalan bisa dikirim ulang (audit 18 Nov).
+  const {
+    status: hasilStatus,
+    kirim: kirimHasil,
+    kirimUlang: kirimUlangHasil,
+  } = useStudentResultSubmit("space-war");
 
   /* ---------------------------------------------------------- bootstrap */
 
@@ -214,13 +224,13 @@ export default function SpaceWarGame({
     // (endGame sudah dijaga endedRef, resultSentRef pengaman tambahan).
     if (studentMode && !resultSentRef.current) {
       resultSentRef.current = true;
-      void submitStudentGameResult("space-war", {
+      void kirimHasil({
         score: lanesRef.current[0]?.score ?? 0,
         correct: shotsCorrectRef.current,
         total: shotsTotalRef.current,
       });
     }
-  }, [effMode, settings.subject, subjectLabel, studentMode]);
+  }, [effMode, settings.subject, subjectLabel, studentMode, kirimHasil]);
 
   /* ------------------------------------------------------------ input */
 
@@ -680,6 +690,14 @@ export default function SpaceWarGame({
                       </li>
                     ))}
                   </ul>
+                  {studentMode ? (
+                    <div className="mt-4">
+                      <StudentResultNote
+                        status={hasilStatus}
+                        onRetry={() => void kirimUlangHasil()}
+                      />
+                    </div>
+                  ) : null}
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
                     <button type="button" onClick={startMatch} className="rounded-full bg-rose-600 px-6 py-2.5 font-black text-white shadow">Main Lagi</button>
                     <button type="button" onClick={() => setScreen("home")} className="rounded-full bg-white px-6 py-2.5 font-black shadow ring-1 ring-indigo-900/15">Beranda</button>

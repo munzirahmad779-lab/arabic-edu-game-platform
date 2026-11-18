@@ -171,9 +171,16 @@ function TimerStep({
           if (res.ok) {
             setDone(true);
             router.refresh();
-          } else {
+          } else if (res.ditolakWaktu) {
+            // Server menolak karena aturan waktu minimal memang
+            // belum tercapai; hanya untuk penolakan ini pesan waktu
+            // ditampilkan.
             setPesan(
               "Server belum menerima: waktu minimal 7 menit belum tercapai. Tunggu sampai tombol aktif.",
+            );
+          } else {
+            setPesan(
+              "Belum tersimpan. Periksa koneksimu lalu coba lagi.",
             );
           }
         }}

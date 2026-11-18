@@ -122,6 +122,25 @@ export function AssessmentPlayer({
     }
     return map;
   });
+  // Status simpan per soal. Jawaban yang datang dari payload awal
+  // sudah diterima server, jadi mulai sebagai "saved". Jawaban baru
+  // hanya menjadi "saved" sesudah RPC mengonfirmasi; selama belum,
+  // statusnya "saving" atau "failed" dan tampil jelas sebagai BELUM
+  // tersimpan, tidak pernah diam-diam dianggap final.
+  type SaveStatus = "saving" | "saved" | "failed";
+  const [saveStatusMap, setSaveStatusMap] = useState<
+    Record<string, SaveStatus>
+  >(() => {
+    const map: Record<string, SaveStatus> = {};
+    for (const a of answers) {
+      if (a.selected_answer) map[a.question_id] = "saved";
+    }
+    return map;
+  });
+  // Jawaban yang gagal terkirim disimpan di sini (id soal ke jawaban
+  // terakhir yang dipilih) supaya bisa dicoba lagi otomatis saat
+  // siswa menjawab soal lain, atau manual lewat tombol Coba Lagi.
+  const pendingAnswersRef = useRef<Record<string, string>>({});
   const [attemptSectionsState, setAttemptSectionsState] =
     useState<AttemptSection[]>(attemptSections);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -247,8 +266,15 @@ export function AssessmentPlayer({
     attemptSectionsState,
   ]);
 
-  async function saveAnswer(questionId: string, answer: string) {
-    setAnswerMap((prev) => ({ ...prev, [questionId]: answer }));
+  // Satu kali pengiriman jawaban ke server beserta pembaruan status
+  // simpannya. Dua kode khusus mempertahankan perilaku lama
+  // (attempt_completed mengarah ke hasil, section_time_expired
+  // menutup section). Kegagalan LAINNYA tidak didiamkan: jawaban
+  // ditandai "failed" (belum tersimpan) dan masuk antrean coba lagi,
+  // karena skor akhir dihitung server hanya dari jawaban yang
+  // benar-benar sampai.
+  async function kirimJawabanKeServer(questionId: string, answer: string) {
+    setSaveStatusMap((prev) => ({ ...prev, [questionId]: "saving" }));
     try {
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -262,17 +288,41 @@ export function AssessmentPlayer({
         const message = error.message ?? "";
         if (message.includes("attempt_completed")) {
           window.location.href = `/assessment/${attempt.attempt_token}/result`;
-        } else if (message.includes("section_time_expired")) {
+          return;
+        }
+        if (message.includes("section_time_expired")) {
           // Server menyatakan waktu section habis: tutup section
           // lewat jalur yang sama dengan timer.
           void autoNextSection();
+          return;
         }
-        // Error lain diamkan seperti perilaku lama: pilihan siswa
-        // tetap tampil terpilih di UI (optimistis).
+        pendingAnswersRef.current[questionId] = answer;
+        setSaveStatusMap((prev) => ({ ...prev, [questionId]: "failed" }));
+        return;
       }
+      delete pendingAnswersRef.current[questionId];
+      setSaveStatusMap((prev) => ({ ...prev, [questionId]: "saved" }));
     } catch {
-      // silent
+      pendingAnswersRef.current[questionId] = answer;
+      setSaveStatusMap((prev) => ({ ...prev, [questionId]: "failed" }));
     }
+  }
+
+  // Coba lagi semua jawaban yang masih gagal tersimpan, kecuali satu
+  // soal yang dikecualikan (biasanya soal yang sedang dijawab ulang).
+  function cobaLagiYangGagal(kecualiId?: string) {
+    for (const [qid, ans] of Object.entries(pendingAnswersRef.current)) {
+      if (qid === kecualiId) continue;
+      void kirimJawabanKeServer(qid, ans);
+    }
+  }
+
+  async function saveAnswer(questionId: string, answer: string) {
+    setAnswerMap((prev) => ({ ...prev, [questionId]: answer }));
+    // Menjawab soal lain memicu percobaan ulang otomatis untuk
+    // jawaban sebelumnya yang belum tersimpan.
+    cobaLagiYangGagal(questionId);
+    await kirimJawabanKeServer(questionId, answer);
   }
 
   async function startSection(sectionId: string) {
@@ -498,6 +548,9 @@ export function AssessmentPlayer({
 
   const answeredCount = Object.keys(answerMap).length;
   const totalQuestions = questions.length;
+  const failedSaveCount = Object.values(saveStatusMap).filter(
+    (s) => s === "failed",
+  ).length;
 
   return (
     <div className="min-h-screen bg-warmwhite">
@@ -651,6 +704,40 @@ export function AssessmentPlayer({
                   );
                 })}
               </div>
+
+              {(() => {
+                const st = saveStatusMap[currentQuestion.id];
+                if (!answerMap[currentQuestion.id] || !st) return null;
+                if (st === "saving") {
+                  return (
+                    <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+                      ⏳ Sedang menyimpan jawaban, belum tersimpan...
+                    </p>
+                  );
+                }
+                if (st === "failed") {
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-50 px-3 py-2">
+                      <p className="text-xs font-bold text-red-700">
+                        ⚠ Jawaban soal ini BELUM tersimpan. Periksa
+                        koneksimu, jawaban ini belum sampai ke server.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => cobaLagiYangGagal()}
+                        className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white transition hover:bg-red-500"
+                      >
+                        Coba Lagi
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
+                    ✓ Jawaban tersimpan.
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -695,22 +782,56 @@ export function AssessmentPlayer({
               <p className="mt-1 text-[10px] text-softslate/70">
                 {answeredCount} dari {totalQuestions} terjawab
               </p>
+              {failedSaveCount > 0 ? (
+                <div className="mt-2 rounded-lg bg-red-50 px-2 py-1.5">
+                  <p className="text-[10px] font-bold text-red-700">
+                    {failedSaveCount} jawaban belum tersimpan (tombol
+                    merah di bawah).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => cobaLagiYangGagal()}
+                    className="mt-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black text-white transition hover:bg-red-500"
+                  >
+                    Coba Lagi Semua
+                  </button>
+                </div>
+              ) : null}
               <div className="mt-3 grid grid-cols-6 gap-1.5">
                 {sectionQuestions.map((q) => {
                   const answered = Boolean(answerMap[q.id]);
                   const isCurrent = q.question_number === currentQuestionNum;
+                  const st = saveStatusMap[q.id];
+                  let cls =
+                    "bg-sage-100 text-teal-700 hover:bg-sage-200";
+                  if (answered && st === "saved") {
+                    cls = "bg-terracotta-500 text-white";
+                  }
+                  if (st === "saving") {
+                    cls = "animate-pulse bg-amber-400 text-white";
+                  }
+                  if (st === "failed") {
+                    cls = "bg-red-600 text-white";
+                  }
+                  if (isCurrent) {
+                    cls =
+                      st === "failed"
+                        ? "bg-teal-700 text-white ring-4 ring-red-400"
+                        : "bg-teal-700 text-white";
+                  }
                   return (
                     <button
                       key={q.id}
                       type="button"
                       onClick={() => setCurrentQuestionNum(q.question_number)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition ${
-                        isCurrent
-                          ? "bg-teal-700 text-white"
-                          : answered
-                            ? "bg-terracotta-500 text-white"
-                            : "bg-sage-100 text-teal-700 hover:bg-sage-200"
-                      }`}
+                      title={
+                        st === "failed"
+                          ? `Soal ${q.question_number}: jawaban belum tersimpan`
+                          : st === "saving"
+                            ? `Soal ${q.question_number}: sedang menyimpan`
+                            : undefined
+                      }
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition ${cls}`}
                     >
                       {q.question_number}
                     </button>

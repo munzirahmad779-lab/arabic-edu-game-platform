@@ -14,7 +14,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { LmsBankPicker, type LmsBankChoice } from "@/modules/game-bank/connector";
-import { submitStudentGameResult } from "@/modules/game-results/submit";
+import {
+  StudentResultNote,
+  useStudentResultSubmit,
+} from "@/modules/game-results/submit-status";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -263,6 +266,13 @@ export default function LudoAngkaGame({
   const timersRef = useRef<Set<number>>(new Set());
   const modeRef = useRef<GameMode>("DUEL");
   const endedRef = useRef<boolean>(false);
+  // Pencatatan hasil mode siswa yang bersuara: status kirim tampil
+  // di layar hasil, kegagalan bisa dikirim ulang (audit 18 Nov).
+  const {
+    status: hasilStatus,
+    kirim: kirimHasil,
+    kirimUlang: kirimUlangHasil,
+  } = useStudentResultSubmit("ludo-angka");
   const pausedRef = useRef<boolean>(false);
   const screenRef = useRef<Screen>("home");
   const settingsRef = useRef<Settings>(settings);
@@ -394,7 +404,7 @@ export default function LudoAngkaGame({
     if (studentMode) {
       const human = m.racers.find((r) => !r.isBot);
       if (human) {
-        void submitStudentGameResult("ludo-angka", {
+        void kirimHasil({
           score: human.correct * 10,
           correct: human.correct,
           total: human.answered,
@@ -1807,6 +1817,14 @@ export default function LudoAngkaGame({
                 </>
               );
             })()}
+            {studentMode ? (
+              <div className="mt-6 w-full">
+                <StudentResultNote
+                  status={hasilStatus}
+                  onRetry={() => void kirimUlangHasil()}
+                />
+              </div>
+            ) : null}
             <button type="button" className="mt-6 h-14 w-full rounded-[14px] bg-[#1F7A72] text-xl font-extrabold text-white" onClick={startMatch}>
               Main Lagi
             </button>

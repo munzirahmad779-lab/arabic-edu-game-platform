@@ -78,6 +78,14 @@ export function EssayPlayer({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const autoSubmittedRef = useRef(false);
+  // Esai sudah terkumpul tetapi penilaian belum ada (penilaian AI
+  // gagal, atau guru belum menilai untuk pengumpulan sebelumnya).
+  // Keadaan ini TIDAK ditampilkan sebagai skor 0 (audit 18 Nov:
+  // sebelumnya kegagalan penilaian AI menghasilkan layar hasil
+  // berskor 0 yang bisa disalahartikan sebagai nilai akhir).
+  const [belumDinilai, setBelumDinilai] = useState<boolean>(
+    alreadySubmitted && essay.my_score === null,
+  );
 
   useEffect(() => {
     if (phase !== "writing" || startedAt === null) return;
@@ -141,47 +149,52 @@ export function EssayPlayer({
       const submissionId = data;
       setPhase("grading");
 
-      const res = await fetch("/api/grade-essay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submission_id: submissionId }),
-      });
-
-      const json = (await res.json()) as {
-        ok: boolean;
-        score?: number;
-        feedback?: string;
-        subscores?: { content: number; grammar: number; vocabulary: number };
-        message?: string;
-      };
-
-      if (!json.ok) {
-        setError(t.essay_player_err_grading);
-        setPhase("result");
-        setResult({
-          score: 0,
-          feedback: t.essay_player_not_graded,
-          subscores: { content: 0, grammar: 0, vocabulary: 0 },
+      // Sesudah titik ini esai SUDAH terkumpul di server. Kegagalan
+      // penilaian AI (respons gagal atau jaringan putus) karena itu
+      // ditangani terpisah di bawah: siswa diberi tahu esainya sudah
+      // terkumpul dan penilaian menyusul, BUKAN skor 0 palsu.
+      try {
+        const res = await fetch("/api/grade-essay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ submission_id: submissionId }),
         });
-        return;
-      }
 
-      setResult({
-        score: json.score ?? 0,
-        feedback: json.feedback ?? "",
-        subscores: json.subscores ?? { content: 0, grammar: 0, vocabulary: 0 },
-      });
-      setPhase("result");
+        const json = (await res.json()) as {
+          ok: boolean;
+          score?: number;
+          feedback?: string;
+          subscores?: { content: number; grammar: number; vocabulary: number };
+          message?: string;
+        };
+
+        if (!json.ok) {
+          setBelumDinilai(true);
+          setResult(null);
+          setPhase("result");
+          return;
+        }
+
+        setResult({
+          score: json.score ?? 0,
+          feedback: json.feedback ?? "",
+          subscores: json.subscores ?? {
+            content: 0,
+            grammar: 0,
+            vocabulary: 0,
+          },
+        });
+        setPhase("result");
+      } catch {
+        // Jangan terjebak selamanya di fase "grading": esai sudah
+        // terkumpul, tampilkan keadaan belum dinilai dengan jalan
+        // keluar (tautan kembali di halaman hasil).
+        setBelumDinilai(true);
+        setResult(null);
+        setPhase("result");
+      }
     } catch {
       setError(t.essay_player_err_connect);
-      // Jangan terjebak selamanya di fase "grading": esai sudah terkumpul,
-      // tampilkan hasil sebagai belum dinilai dengan jalan keluar.
-      setResult({
-        score: 0,
-        feedback: t.essay_player_not_graded,
-        subscores: { content: 0, grammar: 0, vocabulary: 0 },
-      });
-      setPhase("result");
     } finally {
       setSubmitting(false);
     }
@@ -421,6 +434,20 @@ export function EssayPlayer({
           </h1>
           <p className="mt-2 text-sm text-white/85">{essay.title}</p>
         </header>
+
+        {belumDinilai && !result ? (
+          <section className="rounded-[2rem] bg-white p-8 text-center shadow-lg">
+            <div className="text-5xl">📨</div>
+            <p className="mt-4 text-lg font-black leading-relaxed text-neutral-900">
+              Esaimu sudah terkumpul. Penilaian menyusul oleh guru.
+            </p>
+            <p className="mt-2 text-sm leading-7 text-neutral-500">
+              Nilaimu belum ada, jadi belum ada angka yang bisa
+              ditampilkan. Buka lagi halaman ini nanti untuk melihat
+              hasil penilaian gurumu.
+            </p>
+          </section>
+        ) : null}
 
         {result ? (
           <section className="rounded-[2rem] bg-white p-8 text-center shadow-lg">

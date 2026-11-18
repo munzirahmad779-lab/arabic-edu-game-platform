@@ -17,7 +17,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LmsBankPicker } from "@/modules/game-bank/connector";
-import { submitStudentGameResult } from "@/modules/game-results/submit";
+import {
+  StudentResultNote,
+  useStudentResultSubmit,
+  type StatusKirimHasil,
+} from "@/modules/game-results/submit-status";
 import { hasArabic } from "../lib-pendamping/game-catalog";
 import { music } from "../lib-pendamping/music";
 import { sfx } from "../lib-pendamping/sfx";
@@ -131,6 +135,13 @@ export default function KetapelBuahGame({
   /** Cacah buah yang dinilai bagi siswa (hanya mode siswa, lajur 0). */
   const statsRef = useRef({ correct: 0, answered: 0 });
   const resultSentRef = useRef(false);
+  // Pencatatan hasil mode siswa yang bersuara: status kirim tampil
+  // di layar hasil, kegagalan bisa dikirim ulang (audit 18 Nov).
+  const {
+    status: hasilStatus,
+    kirim: kirimHasil,
+    kirimUlang: kirimUlangHasil,
+  } = useStudentResultSubmit("ketapel-buah");
   const showExitRef = useRef(false);
   const rndRef = useRef(() => Math.random());
   const elapsedRef = useRef(0);
@@ -203,13 +214,13 @@ export default function KetapelBuahGame({
     // tambahan). Skor memakai poin permainan itu sendiri.
     if (studentMode && !resultSentRef.current) {
       resultSentRef.current = true;
-      void submitStudentGameResult("ketapel-buah", {
+      void kirimHasil({
         score: lanes[0]?.score ?? 0,
         correct: statsRef.current.correct,
         total: statsRef.current.answered,
       });
     }
-  }, [settings.mode, settings.subject, guru.name, studentMode]);
+  }, [settings.mode, settings.subject, guru.name, studentMode, kirimHasil]);
 
   const startMatch = useCallback(() => {
     const list = subjectList(settings.subject, bank, guru);
@@ -643,6 +654,8 @@ export default function KetapelBuahGame({
         changeSettings={changeSettings}
         narrow={narrow}
         studentMode={studentMode}
+        hasilStatus={hasilStatus}
+        onKirimUlangHasil={() => void kirimUlangHasil()}
         startMatch={startMatch}
         setScreen={setScreen}
         setBank={setBank}
@@ -690,6 +703,8 @@ interface ScreensProps {
   changeSettings: (s: Settings) => void;
   narrow: boolean;
   studentMode: boolean;
+  hasilStatus: StatusKirimHasil;
+  onKirimUlangHasil: () => void;
   startMatch: () => void;
   setScreen: (s: Screen) => void;
   setBank: (b: Bank) => void;
@@ -845,6 +860,14 @@ function ResultScreen(p: ScreensProps) {
             ))}
           </div>
         </section>
+        {p.studentMode ? (
+          <div className="w-full">
+            <StudentResultNote
+              status={p.hasilStatus}
+              onRetry={p.onKirimUlangHasil}
+            />
+          </div>
+        ) : null}
         <div className="flex gap-2">
           <button type="button" onClick={p.startMatch} className="min-h-11 rounded-xl bg-indigo-600 px-6 font-black text-white hover:bg-indigo-500">
             ↻ Main Lagi

@@ -122,6 +122,7 @@ export function PracticePlayer({
   const [showReview, setShowReview] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   const totalQuestions = questions.length;
   const answeredCount = Object.keys(answers).length;
@@ -213,13 +214,26 @@ export function PracticePlayer({
     if (resetting) return;
 
     setResetting(true);
+    setResetError("");
 
     try {
       const supabase = createClient();
-      await supabase.rpc("student_reset_practice", {
+      const { error } = await supabase.rpc("student_reset_practice", {
         p_token: token,
         p_game_id: game.game_id,
       });
+
+      if (error) {
+        // Reset DITOLAK server: keadaan lokal TIDAK dikosongkan,
+        // supaya tampilan tidak berbohong seolah jawaban sudah
+        // terhapus padahal di server masih tersimpan (audit 18 Nov:
+        // sebelumnya galat RPC tidak diperiksa sama sekali dan
+        // jawaban lama muncul lagi saat halaman dimuat ulang).
+        setResetError(
+          "Gagal mengulang latihan. Jawabanmu belum berubah. Periksa koneksimu lalu coba lagi.",
+        );
+        return;
+      }
 
       setAnswers({});
       setRevealedExplanation({});
@@ -228,7 +242,9 @@ export function PracticePlayer({
       setShowReview(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      // ignore
+      setResetError(
+        "Gagal mengulang latihan. Jawabanmu belum berubah. Periksa koneksimu lalu coba lagi.",
+      );
     } finally {
       setResetting(false);
     }
@@ -333,11 +349,21 @@ export function PracticePlayer({
             </button>
           </div>
 
+          {resetError ? (
+            <div className="rounded-2xl bg-rose-50 p-3 text-center text-sm font-bold text-rose-700">
+              {resetError}
+            </div>
+          ) : null}
+
           {showResetConfirm ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
               <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
                 <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
                   {t.player_confirm_reset}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+                  Perhatian: progres Tugas Susulan untuk dars permainan
+                  ini ikut terhapus.
                 </p>
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
