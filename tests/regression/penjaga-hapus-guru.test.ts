@@ -43,7 +43,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -87,13 +87,18 @@ const migration0024 = read("supabase/migrations/0024_delete_question_bank.sql");
 const migration0132 = read(
   "supabase/migrations/0132_progres_susulan_rinci_guru.sql",
 );
-const seedPostTes = readFileSync(
-  path.join(
-    root,
-    "../../ppmk-barru-10-pertemuan/post-tes/seed-soal-post-tes-15.sql",
-  ),
-  "utf8",
+// Berkas seed post tes tinggal DI LUAR repo (ruang kerja pemilik),
+// jadi di checkout bersih (misalnya CI GitHub) berkas ini tidak ada.
+// Bacaan dibuat toleran: butir 10 dilewati bila berkasnya absen,
+// bukan menggagalkan seluruh berkas tes.
+const seedPath = path.join(
+  root,
+  "../../ppmk-barru-10-pertemuan/post-tes/seed-soal-post-tes-15.sql",
 );
+const seedPostTes = existsSync(seedPath)
+  ? readFileSync(seedPath, "utf8")
+  : null;
+const seedTeks = seedPostTes ?? "";
 
 function badanFungsi(
   sumber: string,
@@ -425,8 +430,11 @@ describe("butir 9: memunculkan progres siswa yang sedang berproses", () => {
   });
 });
 
-describe("butir 10: seed post tes tanpa hapus semua", () => {
-  const kode = seedPostTes
+describe(
+  "butir 10: seed post tes tanpa hapus semua",
+  { skip: seedPostTes === null },
+  () => {
+  const kode = seedTeks
     .split("\n")
     .filter((line) => !line.trimStart().startsWith("--"))
     .join("\n")
@@ -448,19 +456,20 @@ describe("butir 10: seed post tes tanpa hapus semua", () => {
   });
 
   test("isi soal pertama dan terakhir sama seperti versi final", () => {
-    assert.ok(seedPostTes.includes("Apa jawaban dari ''Assalamu alaikum''?"));
+    assert.ok(seedTeks.includes("Apa jawaban dari ''Assalamu alaikum''?"));
     assert.ok(
-      seedPostTes.includes("وَعَلَيْكُمُ السَّلَامُ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ"),
+      seedTeks.includes("وَعَلَيْكُمُ السَّلَامُ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ"),
     );
-    assert.ok(seedPostTes.includes("Madza ta''kulu fil futhur?"));
-    assert.ok(seedPostTes.includes("آكُلُ الْخُبْزَ وَالْبَيْضَ"));
+    assert.ok(seedTeks.includes("Madza ta''kulu fil futhur?"));
+    assert.ok(seedTeks.includes("آكُلُ الْخُبْزَ وَالْبَيْضَ"));
   });
 
   test("kepala seed memperingatkan penolakan basis data", () => {
-    assert.ok(seedPostTes.includes("ON DELETE RESTRICT"));
-    assert.ok(seedPostTes.includes("DITOLAK basis data"));
+    assert.ok(seedTeks.includes("ON DELETE RESTRICT"));
+    assert.ok(seedTeks.includes("DITOLAK basis data"));
   });
-});
+  },
+);
 
 describe("butir 12: penjaga asesmen", () => {
   const deleteBody = badanFungsi(
