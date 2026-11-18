@@ -32,6 +32,12 @@ const MATERIAL_CSS = `
   .material-content em { font-style: italic; }
   .material-content u { text-decoration: underline; }
   .material-content s { text-decoration: line-through; }
+  /* Di layar sentuh, bingkai PDF tidak boleh menelan gestur gulir:
+     PDF di dalam iframe tidak tampil di Chrome Android dan sentuhan
+     yang mulai di atas iframe membuat halaman induk berhenti bergulir,
+     sehingga kemajuan membaca mentok sebelum akhir. Sentuhan dibiarkan
+     lewat ke halaman; PDF tetap bisa dibuka lewat tombol Download PDF. */
+  @media (pointer: coarse) { .baca-pdf iframe { pointer-events: none; } }
 `;
 
 export default async function BacaMateriSusulanPage({
@@ -111,9 +117,15 @@ export default async function BacaMateriSusulanPage({
             )}
           </article>
           {pdfUrl ? (
-            <section className="space-y-2">
+            <section className="baca-pdf space-y-2">
               <h2 className="text-sm font-bold text-neutral-700">Berkas PDF</h2>
               <MaterialPdf url={pdfUrl} title={material.title} />
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+                Bila PDF tidak tampil di layar HP-mu, tekan tombol{" "}
+                <strong>Download PDF</strong> di atas bingkai untuk membukanya,
+                lalu kembali ke halaman ini, gulir sampai bawah, dan selesaikan
+                langkah membaca ini.
+              </p>
             </section>
           ) : null}
         </>
