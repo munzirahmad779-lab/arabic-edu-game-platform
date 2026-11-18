@@ -39,6 +39,8 @@ const GAME_ERROR_MESSAGES: Record<string, string> = {
   update_failed:
     "Perubahan permainan gagal disimpan. Soal lama permainan ini tidak berubah; coba lagi beberapa saat lagi.",
   delete_failed: "Permainan gagal dihapus. Coba lagi beberapa saat lagi.",
+  has_practice_answers:
+    "Permainan ini tidak bisa dihapus karena sudah ada jawaban latihan siswa yang tersimpan di dalamnya. Jawaban siswa adalah hasil pekerjaan mereka dan tidak boleh ikut terhapus.",
   client_failed:
     "Koneksi ke server gagal disiapkan. Muat ulang halaman lalu coba lagi.",
 };

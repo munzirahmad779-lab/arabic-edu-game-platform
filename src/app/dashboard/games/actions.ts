@@ -521,6 +521,38 @@ export async function deleteGame(formData: FormData) {
     redirect("/dashboard/games?error=game_not_found");
   }
 
+  // Penjaga jawaban latihan siswa: permainan yang sudah dikerjakan
+  // siswa lewat Latihan Mandiri tidak boleh dihapus, karena jawaban
+  // mereka tersimpan menunjuk ke permainan ini. Kejadian 17 Nov 2026:
+  // menghapus entri Latihan Campuran menghapus seluruh jawaban siswa
+  // di dalamnya. Migrasi 0127 juga mengubah kunci asingnya menjadi
+  // ON DELETE RESTRICT sebagai pagar terakhir di basis data; penjaga
+  // ini menolak lebih dulu supaya guru menerima pesan yang jelas,
+  // bukan galat mentah dari basis data.
+  const { count: practiceAnswerCount, error: practiceCountError } =
+    await supabase
+      .from("student_practice_answers")
+      .select("id", { count: "exact", head: true })
+      .eq("game_id", gameId);
+
+  if (practiceCountError) {
+    console.error(
+      "[deleteGame] practice answers lookup failed:",
+      practiceCountError,
+    );
+    redirect(
+      `/dashboard/games?error=delete_failed&msg=${encodeURIComponent(practiceCountError.message)}`,
+    );
+  }
+
+  if ((practiceAnswerCount ?? 0) > 0) {
+    redirect(
+      `/dashboard/games?error=has_practice_answers&msg=${encodeURIComponent(
+        `Sudah ada ${practiceAnswerCount} jawaban latihan siswa yang tersimpan pada permainan ini.`,
+      )}`,
+    );
+  }
+
   const { data: rooms, error: roomsError } = await supabase
     .from("rooms")
     .select("id")
