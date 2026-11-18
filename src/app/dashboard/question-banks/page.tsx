@@ -432,48 +432,41 @@ export default async function QuestionBanksPage({
   // jumlah jawaban latihan yang membuat penghapusan tertolak
   // oleh penjaga migrasi 0131. Keduanya ditampilkan di modal
   // konfirmasi sebelum guru menyetujui.
-  const bankSubmissionCounts = new Map<string, number>();
-  const bankPracticeCounts = new Map<string, number>();
-  if (questionIds.length > 0) {
-    const bankByQuestion = new Map(
-      questionRows.map((q) => [q.id, q.question_bank_id] as const),
-    );
-    const [{ data: submissionRows }, { data: practiceRows }] =
-      await Promise.all([
-        supabase
-          .from("submissions")
-          .select("question_id")
-          .in("question_id", questionIds)
-          .limit(10000),
-        supabase
-          .from("student_practice_answers")
-          .select("question_id")
-          .in("question_id", questionIds)
-          .limit(10000),
-      ]);
-    for (const r of submissionRows ?? []) {
-      const bankId = r.question_id
-        ? bankByQuestion.get(r.question_id)
-        : null;
-      if (bankId) {
-        bankSubmissionCounts.set(
-          bankId,
-          (bankSubmissionCounts.get(bankId) ?? 0) + 1,
+  //
+  // Hitungan dibaca lewat RPC teacher_scope_counts_bank
+  // (migrasi 0133), BUKAN lagi SELECT langsung ke tabel
+  // submissions dan student_practice_answers: RLS kedua tabel
+  // itu tidak mengizinkan guru membaca baris siswa, sehingga
+  // jalur lama diam-diam menghasilkan 0 padahal datanya ada
+  // (terverifikasi di layar 18 Nov 2026). Bank yang RPC-nya
+  // gagal tidak masuk peta ini, dan modalnya tampil tanpa
+  // angka, bukan dengan angka 0 palsu.
+  const bankScopeCounts = new Map<
+    string,
+    { submissions: number; practiceAnswers: number }
+  >();
+  await Promise.all(
+    (banks ?? []).map(async (bank) => {
+      const { data, error } = await supabase.rpc(
+        "teacher_scope_counts_bank",
+        { p_bank_id: bank.id },
+      );
+      if (error) {
+        console.error(
+          "[question-banks] scope counts rpc error:",
+          error,
         );
+        return;
       }
-    }
-    for (const r of practiceRows ?? []) {
-      const bankId = r.question_id
-        ? bankByQuestion.get(r.question_id)
-        : null;
-      if (bankId) {
-        bankPracticeCounts.set(
-          bankId,
-          (bankPracticeCounts.get(bankId) ?? 0) + 1,
-        );
+      const row = (data ?? [])[0];
+      if (row) {
+        bankScopeCounts.set(bank.id, {
+          submissions: Number(row.submissions ?? 0),
+          practiceAnswers: Number(row.practice_answers ?? 0),
+        });
       }
-    }
-  }
+    }),
+  );
 
   const categoryMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
 
@@ -609,8 +602,8 @@ export default async function QuestionBanksPage({
                     bankId={bank.id}
                     bankName={bank.name}
                     questionCount={bankQuestions.length}
-                    submissionCount={bankSubmissionCounts.get(bank.id) ?? 0}
-                    practiceAnswerCount={bankPracticeCounts.get(bank.id) ?? 0}
+                    submissionCount={bankScopeCounts.get(bank.id)?.submissions}
+                    practiceAnswerCount={bankScopeCounts.get(bank.id)?.practiceAnswers}
                     qd={dict.qb.delete}
                   />
                 </div>

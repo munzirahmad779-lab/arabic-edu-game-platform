@@ -32,6 +32,13 @@
  *     attempt; impor ulang workbook menolak bila soal lama
  *     sudah mempunyai jawaban siswa (rantai FK asesmen di
  *     produksi terverifikasi CASCADE).
+ * 13. Perbaikan lanjutan (18 Nov 2026 malam): hitungan modal
+ *     kelas, siswa, bank, dan permainan tidak lagi dibaca
+ *     dengan SELECT langsung ke tabel pekerjaan siswa (RLS
+ *     membuatnya diam-diam 0), melainkan lewat RPC migrasi
+ *     0133. Asersi butir 1, 2, 4, dan 8 di berkas ini diperbarui
+ *     ke jalur RPC; rincian 0133 dikunci di berkas tes
+ *     hitungan-cakupan-hapus-rpc.test.ts.
  */
 
 import { test, describe } from "node:test";
@@ -125,14 +132,21 @@ describe("butir 1: penjaga hapus kelas", () => {
     assert.ok(idxGuard < idxDelete);
   });
 
-  test("halaman menghitung isi kelas dari empat tabel pekerjaan", () => {
+  test("halaman menghitung isi kelas lewat RPC cakupan 0133", () => {
+    // Sejak perbaikan lanjutan 18 Nov 2026, hitungan modal kelas
+    // dibaca lewat RPC teacher_scope_counts_class (migrasi
+    // 0133): SELECT langsung ke tabel pekerjaan siswa terbaca 0
+    // secara diam-diam karena RLS tidak mengizinkan guru
+    // membaca baris siswa. Rincian dikunci di berkas tes
+    // hitungan-cakupan-hapus-rpc.test.ts.
+    assert.ok(classesPage.includes('"teacher_scope_counts_class"'));
     for (const tabel of [
       "student_practice_answers",
       "student_catchup_progress",
       "student_game_results",
       "essay_submissions",
     ]) {
-      assert.ok(classesPage.includes(`.from("${tabel}")`), tabel);
+      assert.equal(classesPage.includes(`.from("${tabel}")`), false, tabel);
     }
     assert.ok(classesPage.includes("counts={deleteCounts}"));
     assert.ok(classesPage.includes("className={editingClass.name}"));
@@ -149,16 +163,20 @@ describe("butir 1: penjaga hapus kelas", () => {
 });
 
 describe("butir 2: modal hapus siswa mengungkapkan cakupan", () => {
-  test("halaman menghitung enam tabel data siswa", () => {
-    for (const tabel of [
-      "student_practice_answers",
-      "student_catchup_progress",
-      "student_meeting_attendance",
-      "student_game_results",
+  test("halaman menghitung enam cakupan siswa lewat RPC 0133", () => {
+    // Sama seperti kelas: hitungan kini lewat RPC
+    // teacher_scope_counts_student (migrasi 0133), bukan SELECT
+    // langsung yang terbaca 0 karena RLS.
+    assert.ok(studentsPage.includes('"teacher_scope_counts_student"'));
+    for (const kolom of [
+      "practice_answers",
+      "catchup_progress",
+      "attendance",
+      "solo_results",
       "post_test_answers",
       "essay_submissions",
     ]) {
-      assert.ok(studentsPage.includes(`.from("${tabel}")`), tabel);
+      assert.ok(studentsPage.includes(kolom), kolom);
     }
     assert.ok(
       studentsPage.includes("Data yang ikut terhapus bersama siswa ini"),
@@ -213,13 +231,13 @@ describe("butir 4: pemberitahuan arsip pada hapus permainan", () => {
   test("modal hapus permainan menampilkan hitungan arsip", () => {
     assert.ok(deleteGameButton.includes("archiveSessionCount"));
     assert.ok(deleteGameButton.includes("archiveSubmissionCount"));
-    assert.ok(deleteGameButton.includes("sesi arsip"));
-    assert.ok(deleteGameButton.includes("jawaban ruangan (submissions)"));
+    assert.ok(deleteGameButton.includes("Sesi arsip yang ikut terhapus:"));
+    assert.ok(deleteGameButton.includes("Jawaban ruangan yang ikut terhapus:"));
   });
 
-  test("halaman menghitung room_sessions dan submissions per permainan", () => {
-    assert.ok(gamesPage.includes('.from("room_sessions")'));
-    assert.ok(gamesPage.includes('.from("submissions")'));
+  test("halaman menghitung arsip per permainan lewat RPC 0133", () => {
+    assert.ok(gamesPage.includes('"teacher_scope_counts_game"'));
+    assert.equal(gamesPage.includes('.from("room_sessions")'), false);
     assert.ok(gamesPage.includes("archiveSessionCount={"));
     assert.ok(gamesPage.includes("archiveSubmissionCount={"));
   });
@@ -357,18 +375,19 @@ describe("butir 8: hapus bank, pesan jelas dan modal berangka", () => {
     );
   });
 
-  test("halaman menghitung submissions dan jawaban latihan per bank", () => {
-    assert.ok(qbPage.includes("bankSubmissionCounts"));
-    assert.ok(qbPage.includes("bankPracticeCounts"));
-    assert.ok(qbPage.includes("submissionCount={bankSubmissionCounts.get(bank.id) ?? 0}"));
-    assert.ok(qbPage.includes("practiceAnswerCount={bankPracticeCounts.get(bank.id) ?? 0}"));
+  test("halaman menghitung submissions dan jawaban latihan per bank lewat RPC 0133", () => {
+    assert.ok(qbPage.includes('"teacher_scope_counts_bank"'));
+    assert.ok(qbPage.includes("bankScopeCounts"));
+    assert.ok(qbPage.includes("submissionCount={bankScopeCounts.get(bank.id)?.submissions}"));
+    assert.ok(qbPage.includes("practiceAnswerCount={bankScopeCounts.get(bank.id)?.practiceAnswers}"));
   });
 
   test("modal menampilkan kedua hitungan jawaban", () => {
     assert.ok(deleteBankForm.includes("submissionCount"));
     assert.ok(deleteBankForm.includes("practiceAnswerCount"));
-    assert.ok(deleteBankForm.includes("jawaban ruangan (submissions)"));
-    assert.ok(deleteBankForm.includes("penghapusan akan ditolak"));
+    assert.ok(deleteBankForm.includes("Jawaban ruangan yang ikut terhapus:"));
+    assert.ok(deleteBankForm.includes("Jawaban latihan siswa:"));
+    assert.ok(deleteBankForm.includes("akan ditolak"));
   });
 });
 

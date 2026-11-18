@@ -286,6 +286,10 @@ export interface Database {
       student_catchup_step_complete: { Args: { p_token: string; p_dars: number; p_step: string }; Returns: boolean; };
       teacher_catchup_overview: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; total_tasks: number; done_tasks: number }>; };
       teacher_catchup_progress_detail: { Args: { p_class_id: string }; Returns: Array<{ student_id: string; student_name: string; dars_no: number; baca_done: boolean; kosakata_done: boolean; qawaid_done: boolean; answered_count: number; correct_count: number; total_questions: number }>; };
+      teacher_scope_counts_class: { Args: { p_class_id: string }; Returns: Array<{ students: number; practice_answers: number; catchup_progress: number; solo_results: number; essay_submissions: number }>; };
+      teacher_scope_counts_student: { Args: { p_student_id: string }; Returns: Array<{ practice_answers: number; catchup_progress: number; attendance: number; solo_results: number; post_test_answers: number; essay_submissions: number }>; };
+      teacher_scope_counts_bank: { Args: { p_bank_id: string }; Returns: Array<{ questions: number; submissions: number; practice_answers: number }>; };
+      teacher_scope_counts_game: { Args: { p_game_id: string }; Returns: Array<{ archived_sessions: number; room_submissions: number }>; };
       student_submit_game_result: { Args: { p_token: string; p_game_slug: string; p_score: number; p_correct: number; p_total: number }; Returns: boolean };
       student_list_class_banks: { Args: { p_token: string }; Returns: Array<{ id: string; name: string; question_count: number }>; };
       student_get_class_bank: { Args: { p_token: string; p_bank_id: string }; Returns: { questions: Array<{ id: string; question_text: string | null; correct_option_key: string | null }>; options: Array<{ question_id: string; option_key: string; option_text: string }> } | null };

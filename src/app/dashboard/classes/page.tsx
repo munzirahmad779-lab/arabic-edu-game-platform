@@ -2,7 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createClass, updateClass } from "./actions";
-import { DeleteClassButton } from "./delete-class-button";
+import {
+  DeleteClassButton,
+  type ClassDeleteCounts,
+} from "./delete-class-button";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -43,43 +46,34 @@ export default async function ClassesPage({
   // hapus kelas (perintah pemilik, 18 Nov 2026): modal menampilkan
   // jumlah siswa beserta pekerjaan mereka yang ikut terhapus
   // lewat rantai cascade, dan mewajibkan pengetikan nama kelas.
-  const deleteCounts = {
-    students: 0,
-    practiceAnswers: 0,
-    catchupProgress: 0,
-    gameResults: 0,
-    essaySubmissions: 0,
-  };
+  //
+  // Hitungan dibaca lewat RPC teacher_scope_counts_class
+  // (migrasi 0133), BUKAN lagi SELECT langsung ke tabel
+  // pekerjaan siswa: RLS tabel-tabel itu tidak mengizinkan guru
+  // membaca baris siswa, sehingga jalur lama diam-diam
+  // menghasilkan 0 padahal datanya ada (terverifikasi di layar
+  // 18 Nov 2026). Bila RPC gagal, deleteCounts tetap null dan
+  // modal tampil tanpa angka; angka 0 hanya tampil bila RPC
+  // sungguh menjawab 0.
+  let deleteCounts: ClassDeleteCounts | null = null;
   if (editingClass) {
-    const { data: classStudents } = await supabase
-      .from("students")
-      .select("id")
-      .eq("class_id", editingClass.id);
-    const studentIds = (classStudents ?? []).map((s) => s.id);
-    deleteCounts.students = studentIds.length;
-    if (studentIds.length > 0) {
-      const [practice, progress, games, essays] = await Promise.all([
-        supabase
-          .from("student_practice_answers")
-          .select("id", { count: "exact", head: true })
-          .in("student_id", studentIds),
-        supabase
-          .from("student_catchup_progress")
-          .select("id", { count: "exact", head: true })
-          .in("student_id", studentIds),
-        supabase
-          .from("student_game_results")
-          .select("id", { count: "exact", head: true })
-          .in("student_id", studentIds),
-        supabase
-          .from("essay_submissions")
-          .select("id", { count: "exact", head: true })
-          .in("student_id", studentIds),
-      ]);
-      deleteCounts.practiceAnswers = practice.count ?? 0;
-      deleteCounts.catchupProgress = progress.count ?? 0;
-      deleteCounts.gameResults = games.count ?? 0;
-      deleteCounts.essaySubmissions = essays.count ?? 0;
+    const { data, error } = await supabase.rpc(
+      "teacher_scope_counts_class",
+      { p_class_id: editingClass.id },
+    );
+    if (error) {
+      console.error("[classes] scope counts rpc error:", error);
+    } else {
+      const row = (data ?? [])[0];
+      if (row) {
+        deleteCounts = {
+          students: Number(row.students ?? 0),
+          practiceAnswers: Number(row.practice_answers ?? 0),
+          catchupProgress: Number(row.catchup_progress ?? 0),
+          gameResults: Number(row.solo_results ?? 0),
+          essaySubmissions: Number(row.essay_submissions ?? 0),
+        };
+      }
     }
   }
 

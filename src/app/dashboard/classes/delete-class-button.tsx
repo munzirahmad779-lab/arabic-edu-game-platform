@@ -21,7 +21,10 @@ export function DeleteClassButton({
 }: {
   classId: string;
   className: string;
-  counts: ClassDeleteCounts;
+  // Hitungan dari RPC teacher_scope_counts_class (migrasi
+  // 0133). Boleh kosong (null/undefined) bila RPC gagal: modal
+  // lalu tampil tanpa angka, bukan dengan angka 0 palsu.
+  counts?: ClassDeleteCounts | null;
   label: string;
   confirmText: string;
   cancelText?: string;
@@ -67,18 +70,20 @@ export function DeleteClassButton({
             <p className="whitespace-pre-line text-sm font-semibold leading-relaxed text-neutral-800">
               {confirmText}
             </p>
-            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-relaxed text-rose-900">
-              <p className="font-bold">
-                Yang ikut terhapus dari kelas &quot;{className}&quot;:
-              </p>
-              <ul className="mt-1 list-inside list-disc">
-                <li>{counts.students} siswa beserta akun masuk mereka</li>
-                <li>{counts.practiceAnswers} jawaban latihan siswa</li>
-                <li>{counts.catchupProgress} progres Tugas Susulan</li>
-                <li>{counts.gameResults} hasil game solo</li>
-                <li>{counts.essaySubmissions} pengumpulan esai</li>
-              </ul>
-            </div>
+            {counts ? (
+              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-relaxed text-rose-900">
+                <p className="font-bold">
+                  Yang ikut terhapus dari kelas &quot;{className}&quot;:
+                </p>
+                <ul className="mt-1 list-inside list-disc">
+                  <li>{counts.students} siswa beserta akun masuk mereka</li>
+                  <li>{counts.practiceAnswers} jawaban latihan siswa</li>
+                  <li>{counts.catchupProgress} progres Tugas Susulan</li>
+                  <li>{counts.gameResults} hasil game solo</li>
+                  <li>{counts.essaySubmissions} pengumpulan esai</li>
+                </ul>
+              </div>
+            ) : null}
             <label className="mt-4 block text-sm font-semibold text-neutral-800">
               Ketik nama kelas persis untuk melanjutkan:{" "}
               <span className="font-black">{className}</span>

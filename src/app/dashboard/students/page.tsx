@@ -75,9 +75,17 @@ export default async function StudentsPage({
   // (perintah pemilik, 18 Nov 2026): menghapus siswa menjalankan
   // cascade basis data yang menghapus seluruh pekerjaan siswa itu,
   // jadi modal konfirmasi wajib mengungkapkan hitungannya, bukan
-  // hanya kalimat umum. Hitungan dibaca dari baris tersimpan per
-  // tabel; keenam tabel ini adalah seluruh data pekerjaan yang
-  // menunjuk ke baris siswa.
+  // hanya kalimat umum. Keenam hitungan ini adalah seluruh data
+  // pekerjaan yang menunjuk ke baris siswa.
+  //
+  // Hitungan dibaca lewat RPC teacher_scope_counts_student
+  // (migrasi 0133), BUKAN lagi SELECT langsung ke tabel
+  // pekerjaan siswa: RLS tabel-tabel itu tidak mengizinkan guru
+  // membaca baris siswa, sehingga jalur lama diam-diam
+  // menghasilkan 0 padahal datanya ada (terverifikasi di layar
+  // 18 Nov 2026). Siswa yang RPC-nya gagal tidak masuk peta ini,
+  // dan modalnya tampil tanpa teks cakupan (tanpa angka), bukan
+  // dengan angka 0 palsu.
   type StudentDataCounts = {
     practiceAnswers: number;
     catchupProgress: number;
@@ -88,65 +96,35 @@ export default async function StudentsPage({
   };
   const studentCounts = new Map<string, StudentDataCounts>();
   if (allStudents.length > 0) {
-    const studentIds = allStudents.map((s) => s.id);
-    for (const s of allStudents) {
-      studentCounts.set(s.id, {
-        practiceAnswers: 0,
-        catchupProgress: 0,
-        attendance: 0,
-        gameResults: 0,
-        postTestAnswers: 0,
-        essaySubmissions: 0,
-      });
+    const results = await Promise.all(
+      allStudents.map(async (s) => {
+        const { data, error } = await supabase.rpc(
+          "teacher_scope_counts_student",
+          { p_student_id: s.id },
+        );
+        if (error) {
+          console.error(
+            "[students] scope counts rpc error:",
+            error,
+          );
+          return null;
+        }
+        const row = (data ?? [])[0];
+        if (!row) return null;
+        const counts: StudentDataCounts = {
+          practiceAnswers: Number(row.practice_answers ?? 0),
+          catchupProgress: Number(row.catchup_progress ?? 0),
+          attendance: Number(row.attendance ?? 0),
+          gameResults: Number(row.solo_results ?? 0),
+          postTestAnswers: Number(row.post_test_answers ?? 0),
+          essaySubmissions: Number(row.essay_submissions ?? 0),
+        };
+        return [s.id, counts] as const;
+      }),
+    );
+    for (const r of results) {
+      if (r) studentCounts.set(r[0], r[1]);
     }
-    const bump = (
-      rows: Array<{ student_id: string }> | null,
-      key: keyof StudentDataCounts,
-    ) => {
-      for (const r of rows ?? []) {
-        const entry = studentCounts.get(r.student_id);
-        if (entry) entry[key] += 1;
-      }
-    };
-    const [practice, progress, attendance, games, postTest, essays] =
-      await Promise.all([
-        supabase
-          .from("student_practice_answers")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-        supabase
-          .from("student_catchup_progress")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-        supabase
-          .from("student_meeting_attendance")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-        supabase
-          .from("student_game_results")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-        supabase
-          .from("post_test_answers")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-        supabase
-          .from("essay_submissions")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .limit(10000),
-      ]);
-    bump(practice.data, "practiceAnswers");
-    bump(progress.data, "catchupProgress");
-    bump(attendance.data, "attendance");
-    bump(games.data, "gameResults");
-    bump(postTest.data, "postTestAnswers");
-    bump(essays.data, "essaySubmissions");
   }
 
   const envPublicUrl = process.env.APP_PUBLIC_URL?.trim().replace(/\/$/, "");
