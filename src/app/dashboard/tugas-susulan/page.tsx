@@ -108,8 +108,8 @@ export default async function TeacherTugasSusulanPage({
           Siswa yang bolong pada pertemuan 1 s.d. 30 mendapat satu tugas per
           dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
           membaca materi dan lulus Latihan Mandiri dars itu (salah maksimal
-          5 pada permainan minimal 25 soal). Kosakata, qawaid, dan game
-          solo tidak wajib. Di bawah tiap nama juga tampil hasil
+          5 pada permainan minimal 25 soal). Kosakata dan qawaid
+          tidak wajib. Di bawah tiap nama juga tampil hasil
           permainan mandiri terbarunya dari semua game solo siswa.
         </p>
         {selected ? (
