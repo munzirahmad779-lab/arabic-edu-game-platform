@@ -16,6 +16,13 @@
  *    has_practice_answers sebelum rantai hapus apa pun berjalan;
  *    kode itu diterjemahkan menjadi pesan Bahasa Indonesia yang
  *    jelas di error-messages.ts.
+ *
+ * Lanjutan (perintah pemilik, 18 Nov 2026): migrasi 0129 menerapkan
+ * perlindungan yang sama pada sisi soal: kunci asing
+ * student_practice_answers.question_id menuju public.questions
+ * diubah dari ON DELETE CASCADE menjadi ON DELETE RESTRICT, supaya
+ * menghapus satu soal dari bank soal tidak menghapus jawaban
+ * siswa untuk soal itu.
  */
 
 import { test, describe } from "node:test";
@@ -26,6 +33,13 @@ import path from "node:path";
 const root = process.cwd();
 const migration = readFileSync(
   path.join(root, "supabase/migrations/0127_lindungi_jawaban_latihan.sql"),
+  "utf8",
+);
+const migration0129 = readFileSync(
+  path.join(
+    root,
+    "supabase/migrations/0129_lindungi_jawaban_dari_hapus_soal.sql",
+  ),
   "utf8",
 );
 const actions = readFileSync(
@@ -122,6 +136,59 @@ describe("deleteGame: penjaga jawaban latihan", () => {
     const idxCountError = body.indexOf("practiceCountError");
     const idxGuard = body.indexOf("has_practice_answers");
     assert.ok(idxCountError > -1 && idxCountError < idxGuard);
+  });
+});
+
+describe("migrasi 0129: kunci asing question_id menjadi RESTRICT", () => {
+  const sqlBody0129 = migration0129
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("--"))
+    .join("\n")
+    .toLowerCase();
+
+  test("constraint lama dijatuhkan lewat katalog sistem, bukan nama tebakan", () => {
+    assert.ok(sqlBody0129.includes("pg_constraint"));
+    assert.ok(sqlBody0129.includes("con.contype = 'f'"));
+    assert.ok(sqlBody0129.includes("att.attname = 'question_id'"));
+    assert.ok(sqlBody0129.includes("drop constraint"));
+  });
+
+  test("constraint baru bernama jelas dan memakai on delete restrict", () => {
+    assert.ok(
+      sqlBody0129.includes(
+        "add constraint student_practice_answers_question_id_fkey",
+      ),
+    );
+    assert.ok(sqlBody0129.includes("references public.questions (id)"));
+    assert.ok(sqlBody0129.includes("on delete restrict"));
+  });
+
+  test("tidak ada lagi on delete cascade di badan migrasi", () => {
+    assert.equal(sqlBody0129.includes("on delete cascade"), false);
+  });
+
+  test("hanya tabel student_practice_answers yang diubah", () => {
+    const alterTargets = [
+      ...sqlBody0129.matchAll(/alter table public\.(\w+)/g),
+    ].map((m) => m[1]);
+    assert.ok(alterTargets.length >= 1);
+    for (const target of alterTargets) {
+      assert.equal(target, "student_practice_answers");
+    }
+    assert.ok(
+      sqlBody0129.includes(
+        "alter table public.student_practice_answers drop constraint",
+      ),
+    );
+  });
+
+  test("kunci asing lain tidak ikut diubah oleh migrasi 0129", () => {
+    assert.equal(sqlBody0129.includes("att.attname = 'game_id'"), false);
+    assert.equal(sqlBody0129.includes("att.attname = 'student_id'"), false);
+    assert.equal(
+      sqlBody0129.includes("student_practice_answers_game_id_fkey"),
+      false,
+    );
   });
 });
 

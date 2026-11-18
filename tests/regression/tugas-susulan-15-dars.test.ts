@@ -82,17 +82,19 @@ describe("migrasi 0125: aturan lulus tidak berubah dari 0118", () => {
   });
 
   test("bukti opsional tetap dihitung dan tetap memicu status proses", () => {
+    // Bukti game (game_ok) tidak lagi ditegaskan di sini: langkah
+    // Game dihapus dari Tugas Susulan oleh migrasi 0128 (perintah
+    // pemilik, 18 Nov 2026). Keadaan sesudah 0128 dikunci test
+    // tugas-susulan-tanpa-langkah-game.
     const siswa = fungsiSql("student_get_catchup_tasks");
     assert.ok(siswa.includes("as kosakata_ok"));
     assert.ok(siswa.includes("as qawaid_ok"));
-    assert.ok(siswa.includes("as game_ok"));
     const cabangProses = siswa.slice(
       siswa.indexOf("then 'proses'") - 260,
       siswa.indexOf("then 'proses'"),
     );
     assert.ok(cabangProses.includes("c.kosakata_ok"));
     assert.ok(cabangProses.includes("c.qawaid_ok"));
-    assert.ok(cabangProses.includes("c.game_ok"));
   });
 
   test("overview guru menghitung selesai dari baca + latihan saja", () => {

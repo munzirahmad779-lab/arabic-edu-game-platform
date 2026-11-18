@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { displayGameName } from "@/lib/game-name";
 import type { KosakataPair } from "@/modules/tugas-susulan/kosakata";
-import { GAME_STEP } from "@/modules/tugas-susulan/game-step";
 import {
   KOSAKATA_STEP,
   QAWAID_STEP,
@@ -27,7 +26,6 @@ export type TugasCardData = {
   qawaidDone: boolean;
   kosakataStartedAt: string | null;
   qawaidStartedAt: string | null;
-  gameDone: boolean;
   latihanLulus: boolean;
   status: string;
   kata: KosakataPair[];
@@ -195,43 +193,6 @@ function TimerStep({
   );
 }
 
-function GameStep({ initialDone }: { initialDone: boolean }) {
-  if (initialDone) {
-    return (
-      <p className="mt-1 text-sm font-bold text-emerald-700">
-        Sudah main {GAME_STEP.name} ✓ Hasilmu tercatat di server.
-      </p>
-    );
-  }
-
-  return (
-    <>
-      <p className="mt-1 text-sm text-neutral-500">
-        Mainkan {GAME_STEP.name} sampai selesai satu ronde penuh.
-        Hasilmu tercatat otomatis ke server sesudah ronde selesai, jadi
-        langkah ini tuntas tanpa tombol konfirmasi.
-      </p>
-      {!GAME_STEP.required ? (
-        <p className="mt-1 text-sm text-neutral-500">
-          Langkah ini tidak wajib: tugasmu tetap bisa lulus tanpa
-          memainkan game ini.
-        </p>
-      ) : null}
-      {GAME_STEP.url ? (
-        <div className="mt-2">
-          <Link
-            href={GAME_STEP.url}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-violet-700"
-          >
-            <span>🎮</span>
-            <span>Main: {GAME_STEP.name}</span>
-          </Link>
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 export function TugasCard({ task }: { task: TugasCardData }) {
   const chip = STATUS_CHIP[task.status] ?? STATUS_CHIP.belum;
   const maxWrong = task.totalQuestions - task.passCorrect;
@@ -249,8 +210,8 @@ export function TugasCard({ task }: { task: TugasCardData }) {
             Kamu tidak hadir pada pertemuan {task.meetingNos.join(" dan ")}.
             Dua langkah WAJIB dan harus dikerjakan segera: Baca Materi
             (Langkah 1) dan Latihan dars ini (Langkah 3). Tugas ini lulus
-            bila kedua langkah wajib itu selesai. Kosakata, qawaid, dan
-            game TIDAK WAJIB.
+            bila kedua langkah wajib itu selesai. Kosakata dan qawaid
+            TIDAK WAJIB.
           </p>
         </div>
         <span
@@ -402,20 +363,6 @@ export function TugasCard({ task }: { task: TugasCardData }) {
               Permainan latihan dars ini belum tersedia. Sampaikan ke
               gurumu.
             </p>
-          )}
-        </li>
-
-        <li>
-          <p className="text-sm font-black text-neutral-900">
-            Langkah 4 · Game solo
-            {!GAME_STEP.required ? <TidakWajibChip /> : null}
-          </p>
-          {!task.latihanLulus && !task.gameDone ? (
-            <p className="mt-1 text-sm text-neutral-500">
-              🔒 Terkunci. Luluskan Latihan Mandiri pada Langkah 3 dulu.
-            </p>
-          ) : (
-            <GameStep initialDone={task.gameDone} />
           )}
         </li>
       </ol>
