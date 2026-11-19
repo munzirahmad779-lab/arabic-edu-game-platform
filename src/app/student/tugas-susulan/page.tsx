@@ -4,7 +4,6 @@ import { requireStudent, getStudentToken } from "@/lib/student-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { judulDars } from "@/modules/tugas-susulan/judul";
-import { qawaidDars } from "@/modules/tugas-susulan/qawaid";
 import { STUDENT_GAMES } from "@/modules/game-results/student-games";
 import { SYARAT_JUMLAH_DARS_TUNTAS } from "@/modules/game-results/solo-lock";
 import { statusKunciGameSolo } from "@/modules/game-results/solo-lock-server";
@@ -28,7 +27,6 @@ export default async function StudentTugasSusulanPage() {
   }
 
   const allRows: TugasCardData[] = (data ?? []).map((t) => {
-    const qw = qawaidDars(t.dars_no);
     return {
       darsNo: t.dars_no,
       judul: judulDars(t.dars_no) ?? "",
@@ -40,11 +38,8 @@ export default async function StudentTugasSusulanPage() {
       correctCount: t.correct_count,
       passCorrect: t.pass_correct,
       bacaDone: t.baca_done,
-      qawaidDone: t.qawaid_done,
-      qawaidStartedAt: t.qawaid_started_at,
       latihanLulus: t.latihan_lulus,
       status: t.status,
-      qawaid: qw ? { judul: qw.judul, isi: qw.isi } : null,
     };
   });
 
@@ -92,9 +87,8 @@ export default async function StudentTugasSusulanPage() {
             Tugas ini muncul karena ada pertemuan yang tidak kamu hadiri.
             Dua langkah WAJIB dan harus dikerjakan segera: baca materi
             sampai selesai (Langkah 1), lalu kerjakan Latihan Mandiri
-            dars itu sampai lulus (Langkah 3). Tugasmu lulus bila kedua
-            langkah wajib itu selesai. Qawaid TIDAK WAJIB, tetapi
-            tetap boleh dikerjakan untuk menambah pemahamanmu.
+            dars itu sampai lulus (Langkah 2). Tugasmu lulus bila kedua
+            langkah wajib itu selesai.
           </p>
           <p className="mt-2 text-xs text-white/70">
             <span className="font-bold">{session.name}</span> · Kelas{" "}

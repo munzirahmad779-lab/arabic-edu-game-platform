@@ -27,19 +27,17 @@ type ProgressDetailRow = {
   student_name: string;
   dars_no: number;
   baca_done: boolean;
-  qawaid_done: boolean;
   answered_count: number;
   correct_count: number;
   total_questions: number;
 };
 
 // Satu segmen rincian proses per dars, contoh: "Dars 3 (Baca
-// selesai)" atau "Dars 1 (Baca, Qawaid selesai; Latihan 10 dari
+// selesai)" atau "Dars 1 (Baca selesai; Latihan 10 dari
 // 30 terjawab)".
 function segmenProses(d: ProgressDetailRow): string {
   const selesai: string[] = [];
   if (d.baca_done) selesai.push("Baca");
-  if (d.qawaid_done) selesai.push("Qawaid");
   const parts: string[] = [];
   if (selesai.length > 0) parts.push(`${selesai.join(", ")} selesai`);
   if (d.total_questions > 0) {
@@ -159,8 +157,7 @@ export default async function TeacherTugasSusulanPage({
           Siswa yang bolong pada pertemuan 1 s.d. 30 mendapat satu tugas per
           dars yang terlewat. Satu tugas terhitung lulus bila siswa tuntas
           membaca materi dan lulus Latihan Mandiri dars itu (salah maksimal
-          5 pada permainan minimal 25 soal). Qawaid
-          tidak wajib. Di bawah tiap nama juga tampil hasil
+          5 pada permainan minimal 25 soal). Di bawah tiap nama juga tampil hasil
           permainan mandiri terbarunya dari semua game solo siswa.
         </p>
         {selected ? (

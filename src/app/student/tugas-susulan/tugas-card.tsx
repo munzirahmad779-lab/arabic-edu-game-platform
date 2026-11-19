@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { displayGameName } from "@/lib/game-name";
-import { QAWAID_STEP } from "@/modules/tugas-susulan/optional-steps";
-import { startCatchupStep, completeCatchupStep } from "./actions";
 
 export type TugasCardData = {
   darsNo: number;
@@ -18,11 +14,8 @@ export type TugasCardData = {
   correctCount: number;
   passCorrect: number;
   bacaDone: boolean;
-  qawaidDone: boolean;
-  qawaidStartedAt: string | null;
   latihanLulus: boolean;
   status: string;
-  qawaid: { judul: string; isi: string[] } | null;
 };
 
 const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
@@ -30,14 +23,6 @@ const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
   proses: { label: "Proses", cls: "bg-amber-100 text-amber-800" },
   lulus: { label: "Lulus", cls: "bg-emerald-100 text-emerald-800" },
 };
-
-function TidakWajibChip() {
-  return (
-    <span className="ms-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-bold text-neutral-600">
-      TIDAK WAJIB
-    </span>
-  );
-}
 
 function WajibChip() {
   return (
@@ -47,157 +32,10 @@ function WajibChip() {
   );
 }
 
-const TOTAL_DETIK = 600; // timer 10 menit
-const BATAS_AKTIF_DETIK = 420; // tombol aktif sesudah 7 menit berjalan
-
-function fmtWaktu(detik: number): string {
-  const s = Math.max(0, Math.ceil(detik));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, "0")}`;
-}
-
-function TimerStep({
-  darsNo,
-  step,
-  icon,
-  title,
-  doneLabel,
-  initialStartedAt,
-  initialDone,
-  opsional,
-  children,
-}: {
-  darsNo: number;
-  step: "qawaid";
-  icon: string;
-  title: string;
-  doneLabel: string;
-  initialStartedAt: string | null;
-  initialDone: boolean;
-  opsional?: boolean;
-  children: ReactNode;
-}) {
-  const router = useRouter();
-  const [startedAt, setStartedAt] = useState<string | null>(initialStartedAt);
-  const [done, setDone] = useState(initialDone);
-  const [now, setNow] = useState(() => Date.now());
-  const [busy, setBusy] = useState(false);
-  const [pesan, setPesan] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!startedAt || done) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [startedAt, done]);
-
-  if (done) {
-    return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-sm font-black text-emerald-800">
-          {icon} {title}: Selesai ✓{opsional ? <TidakWajibChip /> : null}
-        </p>
-      </div>
-    );
-  }
-
-  if (!startedAt) {
-    return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-        <p className="text-sm font-black text-neutral-900">
-          {icon} {title}
-          {opsional ? <TidakWajibChip /> : null}
-        </p>
-        <p className="mt-1 text-sm text-neutral-500">
-          Timer 10 menit mulai berjalan saat bagian ini dibuka. Tombol
-          selesai baru aktif bila sisa waktu tinggal 3 menit atau kurang.
-        </p>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            const res = await startCatchupStep(darsNo, step);
-            setBusy(false);
-            if (res.ok && res.startedAt) {
-              setStartedAt(res.startedAt);
-              setNow(Date.now());
-            } else {
-              setPesan("Belum bisa memulai. Coba lagi sebentar.");
-            }
-          }}
-          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-amber-600 disabled:opacity-50"
-        >
-          <span>⏱️</span>
-          <span>Mulai (timer 10 menit)</span>
-        </button>
-        {pesan ? (
-          <p className="mt-2 text-xs font-bold text-red-600">{pesan}</p>
-        ) : null}
-      </div>
-    );
-  }
-
-  const elapsed = (now - new Date(startedAt).getTime()) / 1000;
-  const sisa = TOTAL_DETIK - elapsed;
-  const bolehSelesai = elapsed >= BATAS_AKTIF_DETIK;
-
-  return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-black text-neutral-900">
-          {icon} {title}
-          {opsional ? <TidakWajibChip /> : null}
-        </p>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-700 shadow-sm">
-          Sisa waktu: {fmtWaktu(sisa)}
-        </span>
-      </div>
-      <div className="mt-3">{children}</div>
-      <button
-        type="button"
-        disabled={!bolehSelesai || busy}
-        onClick={async () => {
-          setBusy(true);
-          const res = await completeCatchupStep(darsNo, step);
-          setBusy(false);
-          if (res.ok) {
-            setDone(true);
-            router.refresh();
-          } else if (res.ditolakWaktu) {
-            // Server menolak karena aturan waktu minimal memang
-            // belum tercapai; hanya untuk penolakan ini pesan waktu
-            // ditampilkan.
-            setPesan(
-              "Server belum menerima: waktu minimal 7 menit belum tercapai. Tunggu sampai tombol aktif.",
-            );
-          } else {
-            setPesan(
-              "Belum tersimpan. Periksa koneksimu lalu coba lagi.",
-            );
-          }
-        }}
-        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
-      >
-        <span>✓</span>
-        <span>
-          {bolehSelesai
-            ? doneLabel
-            : `${doneLabel} (aktif pada sisa 3:00)`}
-        </span>
-      </button>
-      {pesan ? (
-        <p className="mt-2 text-xs font-bold text-red-600">{pesan}</p>
-      ) : null}
-    </div>
-  );
-}
-
 export function TugasCard({ task }: { task: TugasCardData }) {
   const chip = STATUS_CHIP[task.status] ?? STATUS_CHIP.belum;
   const maxWrong = task.totalQuestions - task.passCorrect;
   const langkah2Buka = task.bacaDone;
-  const langkah3Buka = task.bacaDone;
 
   return (
     <article className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-lg">
@@ -209,8 +47,8 @@ export function TugasCard({ task }: { task: TugasCardData }) {
           <p className="mt-1 text-sm text-neutral-500">
             Kamu tidak hadir pada pertemuan {task.meetingNos.join(" dan ")}.
             Dua langkah WAJIB dan harus dikerjakan segera: Baca Materi
-            (Langkah 1) dan Latihan dars ini (Langkah 3). Tugas ini lulus
-            bila kedua langkah wajib itu selesai. Qawaid TIDAK WAJIB.
+            (Langkah 1) dan Latihan dars ini (Langkah 2). Tugas ini lulus
+            bila kedua langkah wajib itu selesai.
           </p>
         </div>
         <span
@@ -254,53 +92,10 @@ export function TugasCard({ task }: { task: TugasCardData }) {
 
         <li>
           <p className="text-sm font-black text-neutral-900">
-            Langkah 2 · Pahami qawaid
-          </p>
-          {!langkah2Buka ? (
-            <p className="mt-1 text-sm text-neutral-500">
-              🔒 Terkunci. Selesaikan Langkah 1 (baca materi) dulu.
-            </p>
-          ) : (
-            <div className="mt-2 space-y-3">
-              <TimerStep
-                darsNo={task.darsNo}
-                step="qawaid"
-                icon="📐"
-                title="Qawaid"
-                doneLabel="Sudah Paham"
-                initialStartedAt={task.qawaidStartedAt}
-                initialDone={task.qawaidDone}
-                opsional={!QAWAID_STEP.required}
-              >
-                {task.qawaid ? (
-                  <div className="rounded-xl border border-amber-100 bg-white px-4 py-3">
-                    <p className="font-black text-neutral-900">
-                      {task.qawaid.judul}
-                    </p>
-                    <ul className="mt-2 list-disc space-y-1 ps-5 text-sm leading-relaxed text-neutral-700">
-                      {task.qawaid.isi.map((baris, i) => (
-                        <li key={i}>{baris}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="text-sm text-neutral-500">
-                    Rangkuman qawaid dars ini belum tersedia. Sampaikan ke
-                    gurumu, lalu tekan Sudah Paham sesudah timer
-                    memungkinkan.
-                  </p>
-                )}
-              </TimerStep>
-            </div>
-          )}
-        </li>
-
-        <li>
-          <p className="text-sm font-black text-neutral-900">
-            Langkah 3 · Kerjakan Latihan Mandiri
+            Langkah 2 · Kerjakan Latihan Mandiri
             <WajibChip />
           </p>
-          {!langkah3Buka ? (
+          {!langkah2Buka ? (
             <p className="mt-1 text-sm text-neutral-500">
               🔒 Terkunci. Selesaikan Langkah 1 (baca materi) dulu.
             </p>

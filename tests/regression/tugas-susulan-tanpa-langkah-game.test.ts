@@ -4,10 +4,13 @@
  * 18 Nov 2026).
  *
  * Tiga perubahan yang dikunci test ini:
- * 1. Kartu tugas hanya punya Langkah 1 Baca (WAJIB), Langkah 2
- *    Kosakata+Qawaid (TIDAK WAJIB), dan Langkah 3 Latihan (WAJIB).
- *    Blok "Langkah 4 · Game solo", chip tidak wajibnya, dan bukti
- *    mainnya hilang seluruhnya dari tugas-card.tsx.
+ * 1. Kartu tugas hanya punya Langkah 1 Baca (WAJIB) dan Langkah 2
+ *    Latihan (WAJIB); langkah Kosakata dan Qawaid yang semula
+ *    mengisi langkah tengah sudah dihapus seluruhnya (perintah
+ *    pemilik, 19 Nov 2026, menyusul langkah Game yang dihapus
+ *    18 Nov 2026). Blok "Langkah 4 · Game solo", chip tidak
+ *    wajibnya, dan bukti mainnya hilang seluruhnya dari
+ *    tugas-card.tsx.
  * 2. Halaman Tugas Susulan memuat bagian "Game Solo" di atas
  *    daftar kartu tugas, memakai kunci yang sama seperti halaman
  *    Latihan Mandiri (statusKunciGameSolo dari solo-lock-server,
@@ -82,16 +85,17 @@ describe("kartu tugas: langkah game hilang seluruhnya", () => {
     assert.equal(card.includes("gameDone"), false);
   });
 
-  test("tiga langkah yang tersisa tetap ada dan berurutan", () => {
+  test("dua langkah yang tersisa tetap ada dan berurutan", () => {
     const i1 = card.indexOf("Langkah 1 · Baca materi");
-    const i2 = card.indexOf("Langkah 2 · Pahami qawaid");
-    const i3 = card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri");
-    assert.ok(i1 > -1 && i2 > i1 && i3 > i2);
+    const i2 = card.indexOf("Langkah 2 · Kerjakan Latihan Mandiri");
+    assert.ok(i1 > -1 && i2 > i1);
+    assert.equal(card.includes("Langkah 3"), false);
   });
 
-  test("pengantar kartu menyebut tidak wajib hanya untuk qawaid, tanpa kosakata", () => {
-    assert.ok(card.includes("Qawaid TIDAK WAJIB."));
+  test("pengantar kartu tidak lagi menyebut langkah tidak wajib apa pun", () => {
+    assert.equal(card.includes("Qawaid"), false);
     assert.equal(card.includes("Kosakata"), false);
+    assert.equal(card.includes("TIDAK WAJIB"), false);
     assert.equal(card.includes("dan game TIDAK WAJIB"), false);
     assert.equal(card.includes("game TIDAK WAJIB"), false);
   });
@@ -129,9 +133,10 @@ describe("halaman tugas susulan: bagian Game Solo di paling depan", () => {
     assert.ok(page.includes("/student/play/${g.slug}"));
   });
 
-  test("pengantar halaman tidak lagi menyebut game sebagai tidak wajib", () => {
-    assert.ok(page.includes("Qawaid TIDAK WAJIB, tetapi"));
+  test("pengantar halaman tidak lagi menyebut langkah tidak wajib apa pun", () => {
+    assert.equal(page.includes("Qawaid"), false);
     assert.equal(page.includes("Kosakata"), false);
+    assert.equal(page.includes("TIDAK WAJIB"), false);
     assert.equal(page.includes("game solo TIDAK WAJIB"), false);
   });
 

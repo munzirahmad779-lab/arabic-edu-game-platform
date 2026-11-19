@@ -5,7 +5,7 @@ import { getStudentToken } from "@/lib/student-auth";
 
 export async function startCatchupStep(
   darsNo: number,
-  step: "baca" | "qawaid" | "game",
+  step: "baca" | "game",
 ): Promise<{ ok: boolean; startedAt: string | null }> {
   const token = await getStudentToken();
   if (!token) return { ok: false, startedAt: null };
@@ -27,7 +27,7 @@ export async function startCatchupStep(
 
 export async function completeCatchupStep(
   darsNo: number,
-  step: "baca" | "qawaid" | "game",
+  step: "baca" | "game",
 ): Promise<{ ok: boolean; ditolakWaktu?: boolean }> {
   const token = await getStudentToken();
   if (!token) return { ok: false, ditolakWaktu: false };
@@ -45,7 +45,7 @@ export async function completeCatchupStep(
   }
 
   // RPC mengembalikan false KHUSUS bila penegakan waktu minimal
-  // server menolak (langkah qawaid belum dibuka atau belum
+  // server menolak (langkah bertimer belum dibuka atau belum
   // 7 menit sejak dibuka); kegagalan lain selalu tiba sebagai error
   // di atas. Keduanya dibedakan ke klien (ditolakWaktu) supaya pesan
   // ke siswa jujur: pesan aturan 7 menit hanya untuk penolakan

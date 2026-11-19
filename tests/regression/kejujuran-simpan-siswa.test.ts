@@ -151,13 +151,18 @@ test("langkah susulan: aksi meneruskan penanda penolakan waktu", () => {
 });
 
 test("langkah susulan: pesan 7 menit hanya untuk penolakan waktu", () => {
-  assert.ok(tugasCard.includes("res.ditolakWaktu"));
-  assert.ok(
+  // Konsumen UI satu-satunya dari penanda ini adalah langkah
+  // Qawaid bertimer di kartu tugas. Langkah itu DIHAPUS atas
+  // perintah pemilik 19 Nov 2026 (menyusul Kosakata), jadi kartu
+  // tidak lagi memuat penyelesaian langkah bertimer maupun kedua
+  // pesan beda sebabnya; pembedaan sebab di server action di atas
+  // tetap dipertahankan sebagai kontrak RPC.
+  assert.equal(tugasCard.includes("res.ditolakWaktu"), false);
+  assert.equal(
     tugasCard.includes("waktu minimal 7 menit belum tercapai"),
+    false,
   );
-  assert.ok(
-    tugasCard.includes("Belum tersimpan. Periksa koneksimu lalu coba lagi."),
-  );
+  assert.equal(tugasCard.includes("completeCatchupStep"), false);
 });
 
 /* ---------------------------------------------------------------

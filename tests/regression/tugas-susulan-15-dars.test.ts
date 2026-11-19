@@ -5,7 +5,7 @@
  * Migrasi 0125 memperluas migrasi 0118 tanpa mengubah aturan
  * lulusnya: kedua RPC dibuat ulang dengan cakupan
  * generate_series(1, 15) dan rentang pertemuan 1 s.d. 30. Test ini
- * membaca berkas migrasi 0125, modul judul dars dan data qawaid, dan
+ * membaca berkas migrasi 0125, modul judul dars, dan
  * dua halaman terkait, lalu memastikan cakupan barunya terpasang,
  * aturan wajib dua langkah tetap sama seperti 0118, dan data
  * Dars 11 s.d. 15 tersedia.
@@ -16,7 +16,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { JUDUL_DARS, judulDars } from "../../src/modules/tugas-susulan/judul";
-import { DAFTAR_QAWAID, qawaidDars } from "../../src/modules/tugas-susulan/qawaid";
 
 const root = process.cwd();
 const migration = readFileSync(
@@ -108,7 +107,7 @@ describe("migrasi 0125: aturan lulus tidak berubah dari 0118", () => {
   });
 });
 
-describe("data judul dan qawaid Dars 1 s.d. 15", () => {
+describe("data judul Dars 1 s.d. 15", () => {
   test("daftar judul memuat tepat 15 dars berurutan", () => {
     const nomor = Object.keys(JUDUL_DARS).map(Number).sort((a, b) => a - b);
     assert.equal(nomor.length, 15);
@@ -118,18 +117,9 @@ describe("data judul dan qawaid Dars 1 s.d. 15", () => {
     });
   });
 
-  test("daftar qawaid memuat tepat 15 dars berurutan", () => {
-    assert.equal(DAFTAR_QAWAID.length, 15);
-    DAFTAR_QAWAID.forEach((meta, i) => {
-      assert.equal(meta.dars, i + 1);
-      assert.ok(meta.isi.length > 0, `qawaid Dars ${meta.dars} tidak kosong`);
-    });
-  });
-
   test("entri Dars 11 s.d. 15 dapat dicari per dars", () => {
     for (let d = 11; d <= 15; d++) {
       assert.ok(judulDars(d), `judul Dars ${d} harus ada`);
-      assert.ok(qawaidDars(d), `qawaid Dars ${d} harus ada`);
     }
   });
 });

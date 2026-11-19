@@ -2,7 +2,7 @@
  * Regression: aturan FINAL Tugas Susulan (keputusan pemilik, 17 Nov 2026).
  *
  * Langkah wajib tinggal 2: (1) Baca Materi dan (2) Latihan soal dars
- * itu sendiri. Kosakata dan Qawaid tidak wajib. Latihan untuk
+ * itu sendiri. Kosakata dan Qawaid semula tidak wajib. Latihan untuk
  * semua dars, termasuk Dars 1 s.d. 5, memakai Latihan Siswa darsnya
  * sendiri; pemetaan lama ke "Campuran Dars 1-5" dihapus.
  *
@@ -12,6 +12,13 @@
  * itu dikunci test tugas-susulan-tanpa-langkah-game. Test di berkas
  * ini tetap membaca migrasi 0118 untuk aturan wajib dua langkahnya,
  * tanpa lagi menegaskan bagian game yang sudah berlalu.
+ *
+ * Catatan lanjutan (perintah pemilik, 19 Nov 2026): langkah
+ * Kosakata lalu Qawaid yang semula tidak wajib kini DIHAPUS
+ * seluruhnya dari kartu tugas; kartu hanya menyisakan dua langkah
+ * wajib itu. Test di berkas ini tetap membaca migrasi 0118 untuk
+ * aturan wajib dua langkahnya, tanpa lagi menegaskan bagian
+ * kosakata dan qawaid yang sudah berlalu.
  *
  * Aturan itu ditegakkan migrasi 0118 (yang menggantikan 0117, tidak
  * pernah diterapkan) pada dua RPC: student_get_catchup_tasks dan
@@ -113,24 +120,25 @@ describe("migrasi 0118: syarat lulus hanya baca + latihan", () => {
   });
 });
 
-describe("kartu tugas siswa: rantai kunci dan label tidak wajib", () => {
-  test("latihan terbuka sesudah baca, bukan sesudah kosakata dan qawaid", () => {
-    assert.ok(card.includes("const langkah3Buka = task.bacaDone;"));
+describe("kartu tugas siswa: rantai kunci dua langkah wajib", () => {
+  test("latihan terbuka sesudah baca", () => {
+    assert.ok(card.includes("const langkah2Buka = task.bacaDone;"));
     assert.equal(
       card.includes("task.kosakataDone && task.qawaidDone"),
       false,
     );
   });
 
-  test("qawaid memakai konfigurasi langkah opsional, kosakata sudah dihapus", () => {
-    assert.ok(card.includes("QAWAID_STEP"));
-    assert.ok(card.includes("opsional={!QAWAID_STEP.required}"));
+  test("kosakata dan qawaid sudah dihapus seluruhnya dari kartu", () => {
     assert.equal(card.includes("KOSAKATA_STEP"), false);
+    assert.equal(card.includes("QAWAID_STEP"), false);
     assert.equal(card.includes("Kosakata"), false);
+    assert.equal(card.includes("Qawaid"), false);
+    assert.equal(card.includes("qawaid"), false);
   });
 });
 
-describe("kartu tugas siswa: penegasan label wajib dan tidak wajib", () => {
+describe("kartu tugas siswa: penegasan label wajib", () => {
   test("chip langkah wajib memuat teks persis WAJIB · KERJAKAN SEGERA", () => {
     const mulai = card.indexOf("function WajibChip()");
     assert.notEqual(mulai, -1, "komponen WajibChip harus ada");
@@ -138,44 +146,38 @@ describe("kartu tugas siswa: penegasan label wajib dan tidak wajib", () => {
     assert.ok(chip.includes("WAJIB · KERJAKAN SEGERA"));
   });
 
-  test("chip wajib tampil tepat dua kali, pada judul Langkah 1 dan Langkah 3", () => {
+  test("chip wajib tampil tepat dua kali, pada judul Langkah 1 dan Langkah 2", () => {
     assert.equal(card.split("<WajibChip />").length - 1, 2);
     const langkah1 = card.slice(
       card.indexOf("Langkah 1 · Baca materi"),
       card.indexOf("Langkah 1 · Baca materi") + 160,
     );
     assert.ok(langkah1.includes("<WajibChip />"));
-    const langkah3 = card.slice(
-      card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri"),
-      card.indexOf("Langkah 3 · Kerjakan Latihan Mandiri") + 160,
+    const langkah2 = card.slice(
+      card.indexOf("Langkah 2 · Kerjakan Latihan Mandiri"),
+      card.indexOf("Langkah 2 · Kerjakan Latihan Mandiri") + 160,
     );
-    assert.ok(langkah3.includes("<WajibChip />"));
+    assert.ok(langkah2.includes("<WajibChip />"));
   });
 
-  test("chip wajib tidak tampil pada judul langkah opsional", () => {
-    const langkah2 = card.slice(
-      card.indexOf("Langkah 2 · Pahami qawaid"),
-      card.indexOf("Langkah 2 · Pahami qawaid") + 160,
-    );
-    assert.equal(langkah2.includes("<WajibChip />"), false);
+  test("tidak ada lagi langkah ketiga atau keempat di kartu", () => {
+    assert.equal(card.includes("Langkah 3"), false);
     // Langkah 4 (Game solo) sudah dihapus seluruhnya dari kartu
     // atas perintah pemilik 18 Nov 2026; rincian keadaan barunya
     // di test tugas-susulan-tanpa-langkah-game.
     assert.equal(card.includes("Langkah 4"), false);
+    assert.equal(card.includes("Pahami qawaid"), false);
   });
 
-  test("chip tidak wajib memakai teks kapital TIDAK WAJIB", () => {
-    const mulai = card.indexOf("function TidakWajibChip()");
-    assert.notEqual(mulai, -1, "komponen TidakWajibChip harus ada");
-    const chip = card.slice(mulai, mulai + 320);
-    assert.ok(chip.includes("TIDAK WAJIB"));
-    assert.equal(chip.includes(">tidak wajib<"), false);
+  test("tidak ada lagi chip atau label tidak wajib di kartu", () => {
+    assert.equal(card.includes("TidakWajibChip"), false);
+    assert.equal(card.includes("TIDAK WAJIB"), false);
   });
 
-  test("pengantar halaman dan kartu menegaskan wajib segera dan tidak wajib", () => {
+  test("pengantar halaman dan kartu menegaskan wajib segera, tanpa label tidak wajib", () => {
     assert.ok(page.includes("WAJIB dan harus dikerjakan segera"));
-    assert.ok(page.includes("TIDAK WAJIB"));
+    assert.equal(page.includes("TIDAK WAJIB"), false);
     assert.ok(card.includes("WAJIB dan harus dikerjakan segera"));
-    assert.ok(card.includes("TIDAK WAJIB"));
+    assert.equal(card.includes("TIDAK WAJIB"), false);
   });
 });
